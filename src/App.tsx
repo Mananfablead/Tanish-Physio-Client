@@ -12,6 +12,7 @@ import BookingPage from "./pages/BookingPage";
 import BookingConfirmationPage from "./pages/BookingConfirmationPage";
 import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/login";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,7 @@ const App = () => (
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/booking-confirmation" element={<BookingConfirmationPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
