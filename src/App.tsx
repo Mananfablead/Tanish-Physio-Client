@@ -11,6 +11,7 @@ import SubscriptionPlansPage from "./pages/SubscriptionPlansPage";
 import BookingPage from "./pages/BookingPage";
 import BookingConfirmationPage from "./pages/BookingConfirmationPage";
 import DashboardPage from "./pages/DashboardPage";
+import VideoCallPage from "./pages/VideoCallPage";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/login";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/booking-confirmation" element={<BookingConfirmationPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/video-call" element={<VideoCallPage />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </BrowserRouter>

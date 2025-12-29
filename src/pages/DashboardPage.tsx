@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Video, Clock, Play, FileText, MessageSquare, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   return (
     <Layout>
       <div className="bg-muted/30 py-8">
@@ -50,7 +51,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <Button variant="hero"><Video className="h-4 w-4 mr-2" />Join Session</Button>
+                <Button variant="hero" onClick={() => navigate('/video-call')}><Video className="h-4 w-4 mr-2" />Join Session</Button>
               </CardContent>
             </Card>
           </TabsContent>
