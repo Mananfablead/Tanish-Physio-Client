@@ -465,7 +465,7 @@ export default function QuestionnairePage() {
   return (
     <Layout showFooter={false}>
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-6 px-4 bg-muted/20">
-        <Card className="w-full max-w-8xl overflow-hidden border-none shadow-xl bg-card/50 backdrop-blur-sm rounded-2xl">
+        <Card className="w-full max-w-7xl overflow-hidden border-none shadow-xl bg-card/50 backdrop-blur-sm rounded-2xl">
           <div className="grid grid-cols-1 md:grid-cols-12 min-h-[500px]">
             {/* Left Column: Reassurance (Desktop only) */}
             <div className="hidden md:flex md:col-span-4 bg-primary/5 p-8 flex-col justify-between border-r border-border/50">
@@ -483,7 +483,7 @@ export default function QuestionnairePage() {
 
                 <div className="space-y-4 pt-4">
                   {[
-                    { icon: ShieldCheck, text: "HIPAA Compliant" },
+                    // { icon: ShieldCheck, text: "HIPAA Compliant" },
                     { icon: Lock, text: "Secure Data Encryption" },
                     { icon: Activity, text: "Personalized Protocol" }
                   ].map((item, i) => (

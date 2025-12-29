@@ -12,7 +12,7 @@ export function Footer() {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
                 <Activity className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">PhysioConnect</span>
+              <span className="text-xl font-bold text-foreground">Tanish Physio</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Professional physiotherapy consultations from the comfort of your home.

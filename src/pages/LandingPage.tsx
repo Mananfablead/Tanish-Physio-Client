@@ -39,6 +39,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import heroImage from "@/assets/hero-physio.jpg";
 
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -91,7 +97,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden gradient-hero">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        <div className="container relative py-16 lg:py-8">
+        <div className="container relative py-16 lg:py-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div 
               className="space-y-8"
@@ -123,12 +129,20 @@ export default function LandingPage() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/questionnaire">
-                  <Button variant="hero" size="xl">
-                    Start Your Recovery
-                    <ArrowRight className="h-5 w-5 ml-1" />
-                  </Button>
-                </Link>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link to="/questionnaire">
+                      <Button variant="hero" size="xl">
+                        Start Your Recovery
+                        <ArrowRight className="h-5 w-5 ml-1" />
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Begin your personalized clinical assessment</p>
+                  </TooltipContent>
+                </Tooltip>
+                
                 <Link to="/therapists">
                   <Button variant="heroOutline" size="xl">
                     Continue as Guest
@@ -138,10 +152,10 @@ export default function LandingPage() {
 
               {/* Trust Indicators */}
               <div className="flex flex-wrap gap-6 pt-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {/* <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Shield className="h-5 w-5 text-primary" />
                   <span>HIPAA Compliant</span>
-                </div>
+                </div> */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Award className="h-5 w-5 text-primary" />
                   <span>Certified Therapists</span>
@@ -429,7 +443,7 @@ export default function LandingPage() {
                   "Personalized treatment plans",
                   "Flexible scheduling - 24/7 availability",
                   "Progress tracking and exercise videos",
-                  "Secure, HIPAA-compliant video calls",
+                  // "Secure, HIPAA-compliant video calls",
                   "Affordable subscription plans"
                 ].map((feature, index) => (
                   <motion.div 
@@ -449,7 +463,7 @@ export default function LandingPage() {
               </div>
 
               <Link to="/questionnaire">
-                <Button variant="hero" size="lg">
+                <Button variant="hero" size="lg" className="mt-3">
                   Start Assessment
                   <ArrowRight className="h-5 w-5 ml-1" />
                 </Button>
@@ -484,7 +498,7 @@ export default function LandingPage() {
       </section>
 
       {/* Subscription Plans Preview */}
-      <section className="py-10 bg-muted/30">
+      <section className="py-8 bg-muted/30">
         <div className="container">
           <motion.div 
             className="text-center max-w-2xl mx-auto mb-16"
@@ -724,7 +738,7 @@ export default function LandingPage() {
                   },
                   {
                     q: "Is my personal and medical data secure?",
-                    a: "We take your privacy seriously. Our platform is fully HIPAA-compliant, and all your sessions and medical data are encrypted and stored securely."
+                    a: "We take your privacy seriously. Our platform is fully secure, and all your sessions and medical data are encrypted and stored securely."
                   },
                   {
                     q: "Are the video sessions recorded?",
@@ -755,8 +769,8 @@ export default function LandingPage() {
                 <ShieldCheck className="h-5 w-5 text-success" />
               </div>
               <div>
-                <h5 className="font-bold text-sm mb-1">HIPAA Compliant</h5>
-                <p className="text-xs text-muted-foreground">Your health data is protected by the highest industry standards.</p>
+                <h5 className="font-bold text-sm mb-1">Data Privacy</h5>
+                <p className="text-xs text-muted-foreground">We follow industry-standard healthcare data security and privacy practices.</p>
               </div>
             </div>
             <div className="flex gap-4">

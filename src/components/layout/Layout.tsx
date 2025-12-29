@@ -1,5 +1,6 @@
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,10 +9,12 @@ interface LayoutProps {
 
 export function Layout({ children, showFooter = true }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1">{children}</main>
-      {showFooter && <Footer />}
-    </div>
+    <TooltipProvider>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1">{children}</main>
+        {showFooter && <Footer />}
+      </div>
+    </TooltipProvider>
   );
 }
