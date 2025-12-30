@@ -23,7 +23,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Tooltip,
@@ -60,8 +60,6 @@ const Login = () => {
     const { login } = useAuth();
     const [mode, setMode] = useState("login"); // login | register | forgot
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const role = searchParams.get('role'); // patient | therapist
 
     const loginForm = useForm<LoginForm>({
         resolver: zodResolver(loginSchema),
@@ -160,24 +158,20 @@ const Login = () => {
                             {mode === "login" && (
                                 <>
                                     <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-                                        {role === 'therapist' ? 'Therapist Login' : 'Welcome back'}
+                                        Welcome back
                                     </h2>
                                     <p className="text-slate-500 mt-2 font-medium">
-                                        {role === 'therapist' 
-                                            ? 'Access your clinical portal and patient records' 
-                                            : 'Access your personalized clinical dashboard'}
+                                        Access your personalized clinical dashboard
                                     </p>
                                 </>
                             )}
                             {mode === "register" && (
                                 <>
                                     <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-                                        {role === 'therapist' ? 'Join as a Therapist' : 'Create account'}
+                                        Create account
                                     </h2>
                                     <p className="text-slate-500 mt-2 font-medium">
-                                        {role === 'therapist'
-                                            ? 'Register to start managing your clinical practice'
-                                            : 'Start your journey to professional recovery today'}
+                                        Start your journey to professional recovery today
                                     </p>
                                 </>
                             )}
@@ -235,7 +229,7 @@ const Login = () => {
                             {mode === "login" && (
                                 <Form {...loginForm}>
                                     <form onSubmit={loginForm.handleSubmit((data) => { 
-                                        login(data.email, 'User', role || 'patient'); 
+                                        login(data.email, 'User'); 
                                         navigate('/'); 
                                     })} className="space-y-5">
                                         <FormField
@@ -331,7 +325,7 @@ const Login = () => {
                             {mode === "register" && (
                                 <Form {...registerForm}>
                                     <form onSubmit={registerForm.handleSubmit((data) => { 
-                                        login(data.email, data.name, role || 'patient'); 
+                                        login(data.email, data.name); 
                                         navigate('/'); 
                                     })} className="space-y-4">
                                         <FormField
@@ -428,7 +422,7 @@ const Login = () => {
                                                     type="submit" 
                                                     className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 active:scale-[0.99] transition-all shadow-lg shadow-green-200 mt-2"
                                                 >
-                                                    Create Clinical Account
+                                                    Create Your Account
                                                 </button>
                                             </TooltipTrigger>
                                             <TooltipContent>

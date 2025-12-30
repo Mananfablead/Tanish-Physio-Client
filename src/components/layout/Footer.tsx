@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Activity, Mail, Phone, MapPin } from "lucide-react";
-
+import logo from '../../assets/logo.webp';
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/30">
@@ -9,10 +9,11 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
+              {/* <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
                 <Activity className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">Tanish Physio</span>
+              </div> */}
+              <img src={logo} alt="Tanish Physio Logo" className="h-20 w-auto object-contain" />
+              {/* <span className="text-xl font-bold text-foreground">Tanish Physio</span> */}
             </Link>
             <p className="text-sm text-muted-foreground">
               Professional physiotherapy consultations from the comfort of your home.
@@ -47,22 +48,22 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                support@physioconnect.com
+             drkhushboo26@gmail.com
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
-                +1 (555) 123-4567
+                 +91 9427555696
               </li>
               <li className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                Available Worldwide
+                <MapPin className="h-4 w-10 text-primary" />
+                5, Dhaval Appts, Besides Telephone Exchange,Choksiwadi Road, Ajaramar Chowk, Adajan
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} PhysioConnect. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Tanish Physio. All rights reserved.</p>
         </div>
       </div>
     </footer>

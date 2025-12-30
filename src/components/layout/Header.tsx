@@ -6,22 +6,13 @@ import {
   Activity, 
   User, 
   Users, 
-  Stethoscope, 
   ArrowRight,
-  ShieldCheck,
   LogOut,
   LayoutDashboard,
   Settings,
   Mail
 } from "lucide-react";
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { 
   Tooltip,
   TooltipContent,
@@ -54,17 +45,10 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [showRoleModal, setShowRoleModal] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
-  };
-
-  const handleRoleSelection = (role: string) => {
-    setShowRoleModal(false);
-    setOpen(false);
-    navigate(`/login?role=${role}`);
   };
 
   return (
@@ -101,7 +85,7 @@ export function Header() {
                     variant="ghost" 
                     size="sm" 
                     className="hidden md:flex"
-                    onClick={() => setShowRoleModal(true)}
+                    onClick={() => navigate('/login')}
                   >
                     Sign In
                   </Button>
@@ -217,7 +201,10 @@ export function Header() {
                       <Button 
                         variant="outline" 
                         className="w-full mb-3"
-                        onClick={() => setShowRoleModal(true)}
+                        onClick={() => {
+                          setOpen(false);
+                          navigate('/login');
+                        }}
                       >
                         Sign In
                       </Button>
@@ -271,59 +258,6 @@ export function Header() {
           </Sheet>
         </div>
       </div>
-
-      {/* Role Selection Modal */}
-      <Dialog open={showRoleModal} onOpenChange={setShowRoleModal}>
-        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden rounded-[2rem] border-none shadow-2xl">
-          <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-8 text-white">
-            <DialogHeader className="p-0">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
-                  <ShieldCheck className="h-8 w-8 text-white" />
-                </div>
-              </div>
-              <DialogTitle className="text-2xl font-bold text-center text-white">Welcome to Tanish Physio</DialogTitle>
-              <DialogDescription className="text-green-50/80 text-center text-base mt-2">
-                Please select your account type to continue to the secure portal.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          
-          <div className="p-8 grid grid-cols-1 gap-4 bg-white">
-            <button
-              onClick={() => handleRoleSelection('patient')}
-              className="flex items-center gap-4 p-5 rounded-2xl border-2 border-slate-100 hover:border-green-500 hover:bg-green-50/50 transition-all group text-left"
-            >
-              <div className="h-14 w-14 rounded-xl bg-green-100 flex items-center justify-center group-hover:bg-green-600 transition-colors">
-                <Users className="h-7 w-7 text-green-700 group-hover:text-white transition-colors" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-slate-900 text-lg">Patient / User</h3>
-                <p className="text-slate-500 text-sm">Access your recovery plans and sessions</p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
-            </button>
-
-            <button
-              onClick={() => handleRoleSelection('therapist')}
-              className="flex items-center gap-4 p-5 rounded-2xl border-2 border-slate-100 hover:border-green-500 hover:bg-green-50/50 transition-all group text-left"
-            >
-              <div className="h-14 w-14 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:bg-green-600 transition-colors">
-                <Stethoscope className="h-7 w-7 text-emerald-700 group-hover:text-white transition-colors" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-slate-900 text-lg">Therapist</h3>
-                <p className="text-slate-500 text-sm">Manage patients and clinical assessments</p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
-            </button>
-
-            {/* <p className="text-center text-[11px] text-slate-400 font-medium mt-4 uppercase tracking-[0.2em]">
-              Secure HIPAA Compliant Portal
-            </p> */}
-          </div>
-        </DialogContent>
-      </Dialog>
     </header>
   );
 }

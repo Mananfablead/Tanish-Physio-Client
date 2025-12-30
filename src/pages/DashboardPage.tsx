@@ -3,12 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Video, Clock, Play, FileText, MessageSquare, Settings, Users, ClipboardCheck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Calendar, Video, Clock, Play, FileText, MessageSquare, Settings, Users } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isTherapist = user?.role === 'therapist';
 
   return (
@@ -75,7 +76,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <Button variant="hero"><Video className="h-4 w-4 mr-2" />Join Session</Button>
+                <Button variant="hero" onClick={() => navigate('/video-call')}><Video className="h-4 w-4 mr-2" />Join Session</Button>
               </CardContent>
             </Card>
           </TabsContent>
