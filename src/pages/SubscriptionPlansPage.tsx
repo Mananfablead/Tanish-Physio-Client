@@ -70,13 +70,34 @@ export default function SubscriptionPlansPage() {
 
   const handleContinue = () => {
     const plan = plans.find(p => p.id === selectedPlan);
-    navigate("/booking", {
-      state: {
-        ...bookingData,
-        plan,
-        promoApplied,
-      },
-    });
+
+    // Check for stored intake and recency
+    let stored = null;
+    try {
+      const raw = sessionStorage.getItem("qw_questionnaire");
+      if (raw) stored = JSON.parse(raw);
+    } catch (e) { stored = null; }
+
+    const RECENT_DAYS = 90;
+    const now = Date.now();
+    const isRecent = (ts: number | undefined | null) => ts && (now - ts) < RECENT_DAYS * 24 * 60 * 60 * 1000;
+
+    if (stored && isRecent(stored.updatedAt)) {
+      // Proceed to booking with prefilled intake
+      navigate("/booking", {
+        state: {
+          ...bookingData,
+          plan,
+          promoApplied,
+          questionnaireData: stored.data,
+        },
+      });
+      return;
+    }
+
+    // No recent intake: save pending plan and redirect user to intake before activation
+    try { sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan)); } catch (e) {}
+    navigate("/questionnaire", { state: { planToActivate: plan } });
   };
 
   const applyPromo = () => {
@@ -84,6 +105,8 @@ export default function SubscriptionPlansPage() {
       setPromoApplied(true);
     }
   };
+
+  const scheduled = (() => { try { const raw = sessionStorage.getItem('qw_scheduled_session'); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } })();
 
   return (
     <Layout>
@@ -93,6 +116,11 @@ export default function SubscriptionPlansPage() {
             <Star className="h-3 w-3 mr-1 fill-primary text-primary" />
             Choose Your Plan
           </Badge>
+          {/* {scheduled && (
+            <div className="mb-4 p-3 rounded-md bg-blue-50 border border-blue-100 text-blue-800 text-sm">
+              You have a reserved session on {new Date(scheduled.reservedAt).toLocaleDateString()}. Pick a plan to unlock it.
+            </div>
+          )} */}
           <h1 className="text-3xl lg:text-4xl font-bold mb-4">
             Start Your Recovery Journey
           </h1>
@@ -177,7 +205,7 @@ export default function SubscriptionPlansPage() {
         </div>
 
         {/* Promo Code */}
-        <Card variant="outline" className="max-w-md mx-auto mb-8">
+        {/* <Card variant="outline" className="max-w-md mx-auto mb-8">
           <CardContent className="p-4">
             <Label className="text-sm font-medium">Have a promo code?</Label>
             <div className="flex gap-2 mt-2">
@@ -209,7 +237,7 @@ export default function SubscriptionPlansPage() {
               Try "RECOVER20" for 20% off
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Plan Details */}
         <div className="max-w-2xl mx-auto">

@@ -44,6 +44,7 @@ export default function BookingPage() {
     price: 199,
     duration: "30 days",
   };
+  const planProvided = !!bookingData?.plan;
 
   const date = bookingData?.date || "Mon, Dec 30";
   const time = bookingData?.time || "10:00";
@@ -51,11 +52,66 @@ export default function BookingPage() {
 
   const finalPrice = promoApplied ? Math.round(plan.price * 0.8) : plan.price;
 
+  // Check stored intake
+  let storedIntake = null;
+  try {
+    const raw = sessionStorage.getItem("qw_questionnaire");
+    if (raw) storedIntake = JSON.parse(raw);
+  } catch (e) { storedIntake = null; }
+
+  const RECENT_DAYS = 90;
+  const now = Date.now();
+  const intakeIsRecent = storedIntake && storedIntake.updatedAt && (now - storedIntake.updatedAt) < RECENT_DAYS * 24 * 60 * 60 * 1000;
+
   const handlePayment = () => {
     setIsProcessing(true);
-    
+
     setTimeout(() => {
       setIsProcessing(false);
+
+      // Persist plan as active subscription
+      try {
+        sessionStorage.setItem("qw_plan", JSON.stringify({ plan, purchasedAt: Date.now(), active: true }));
+      } catch (e) {}
+
+      // Check for existing intake
+      let stored = null;
+      try { const raw = sessionStorage.getItem("qw_questionnaire"); if (raw) stored = JSON.parse(raw); } catch (e) { stored = null; }
+      const RECENT_DAYS = 90;
+      const now = Date.now();
+      const isRecent = (ts: number | undefined | null) => ts && (now - ts) < RECENT_DAYS * 24 * 60 * 60 * 1000;
+
+      // Check for any previously reserved session (from intake-first scheduling)
+      let scheduled = null;
+      try { const raw = sessionStorage.getItem('qw_scheduled_session'); if (raw) scheduled = JSON.parse(raw); } catch (e) { scheduled = null; }
+
+      if (!stored || !isRecent(stored?.updatedAt)) {
+        // Plan purchased, but intake missing or outdated: require intake to unlock sessions
+        toast.success("Payment successful! Please complete a short intake to unlock sessions.");
+        // Save a pending marker to ensure plan activation after intake
+        try { sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan)); } catch (e) {}
+        navigate("/questionnaire", { state: { planToActivate: plan } });
+        return;
+      }
+
+      // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
+      try {
+        const therapist = {
+          id: `th-${Math.floor(Math.random() * 10000)}`,
+          name: "Assigned Clinician",
+          title: "Matched Specialist",
+          assignedAt: Date.now(),
+        };
+        sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
+
+        if (scheduled) {
+          scheduled.locked = false;
+          scheduled.therapist = therapist;
+          scheduled.confirmedAt = Date.now();
+          sessionStorage.setItem('qw_scheduled_session', JSON.stringify(scheduled));
+        }
+      } catch (e) {}
+
       toast.success("Payment successful! Redirecting to your dashboard...");
       navigate("/booking-confirmation", { state: { ...bookingData, finalPrice } });
     }, 2000);
@@ -65,8 +121,20 @@ export default function BookingPage() {
     <Layout>
       <div className="bg-muted/30 py-8">
         <div className="container">
-          <h1 className="text-3xl font-bold mb-2">Complete Your Booking</h1>
-          <p className="text-muted-foreground">Review your session details and complete payment</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Complete Your Booking</h1>
+              <p className="text-muted-foreground">Review your session details and complete payment</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className={`px-3 py-1 rounded-lg text-sm font-black ${intakeIsRecent ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-50 text-yellow-800'}`}>
+                {intakeIsRecent ? 'Intake: Complete' : 'Intake: Required'}
+              </div>
+              <div className={`px-3 py-1 rounded-lg text-sm font-black ${sessionStorage.getItem('qw_plan') ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400'}`}>
+                {sessionStorage.getItem('qw_plan') ? 'Plan: Active' : 'Plan: Not Purchased'}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -212,26 +280,56 @@ export default function BookingPage() {
                   <span className="font-bold text-2xl text-primary">${finalPrice}</span>
                 </div>
 
-                <Button
-                  variant="hero"
-                  size="lg"
-                  className="w-full"
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-4 w-4 mr-2" />
-                      Pay ${finalPrice}
-                    </>
-                  )}
-                </Button>
+                {!planProvided ? (
+                  <>
+                    <div className="p-3 rounded-md bg-blue-50 border border-blue-100 text-blue-800 text-sm mb-4">
+                      You can reserve this session now, then select a plan to unlock it.
+                    </div>
+                    <Button variant="outline" size="lg" className="w-full mb-3" onClick={() => {
+                      // reserve session and redirect to plans
+                      const reserved = {
+                        therapist,
+                        session,
+                        date,
+                        time,
+                        reservedAt: Date.now(),
+                        locked: true,
+                      };
+                      try { sessionStorage.setItem('qw_scheduled_session', JSON.stringify(reserved)); } catch (e) {}
+                      navigate('/plans', { state: { fromReservation: true } });
+                    }}>
+                      Reserve Session
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {!intakeIsRecent && (
+                      <div className="p-3 rounded-md bg-yellow-50 border border-yellow-100 text-yellow-800 text-sm mb-4">
+                        We noticed you don't have a recent intake on file. After payment you'll be prompted to complete the intake to unlock sessions.
+                      </div>
+                    )}
 
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="w-full"
+                      onClick={handlePayment}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4 mr-2" />
+                          Pay ${finalPrice}
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
                 <p className="text-xs text-center text-muted-foreground">
                   By completing this purchase, you agree to our Terms of Service.
                 </p>

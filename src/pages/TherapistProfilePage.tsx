@@ -29,7 +29,6 @@ const therapistData = {
   experience: 12,
   rating: 4.9,
   reviews: 156,
-  price: 80,
   languages: ["English", "Spanish"],
   certifications: [
     "Doctor of Physical Therapy (DPT)",
@@ -46,9 +45,9 @@ const therapistData = {
     "Post-surgical Care",
   ],
   sessionFormats: [
-    { type: "1-on-1", duration: "45 min", price: 80, description: "Private video consultation" },
-    { type: "1-on-1", duration: "60 min", price: 100, description: "Extended private session" },
-    { type: "Group", duration: "60 min", price: 35, description: "Small group session (max 6)" },
+    { type: "1-on-1", duration: "45 min", description: "Private video consultation" },
+    // { type: "1-on-1", duration: "60 min", description: "Extended private session" },
+    { type: "Group", duration: "60 min", description: "Small group session (max 6)" },
   ],
   sampleVideos: [
     { title: "Knee Strengthening Exercises", duration: "5:30" },
@@ -293,7 +292,7 @@ export default function TherapistProfilePage() {
                         : "border-border hover:border-primary/50"
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center mb-1">
                       <div className="flex items-center gap-2">
                         {format.type === "Group" ? (
                           <Users className="h-4 w-4 text-primary" />
@@ -302,7 +301,6 @@ export default function TherapistProfilePage() {
                         )}
                         <span className="font-medium">{format.type}</span>
                       </div>
-                      <span className="font-bold text-primary">${format.price}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">{format.duration} • {format.description}</p>
                   </button>
@@ -390,7 +388,7 @@ export default function TherapistProfilePage() {
 
                 {selectedSlot && (
                   <p className="text-sm text-center text-muted-foreground mt-3">
-                    {weekDays[selectedDay].date} at {selectedSlot} • ${selectedFormat.price}
+                    {weekDays[selectedDay].date} at {selectedSlot} • {selectedFormat.duration}
                   </p>
                 )}
               </CardContent>

@@ -32,12 +32,20 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"; 
 
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/therapists", label: "Find Therapists" },
   { to: "/plans", label: "Plans" },
-  { to: "/dashboard", label: "Dashboard" },
+  // { to: "/profile", label: "Dashboard" },
 ];
 
 export function Header() {
@@ -45,16 +53,24 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [signoutOpen, setSignoutOpen] = useState(false); 
 
   const handleLogout = () => {
+    // open confirmation dialog instead of immediate logout
+    setSignoutOpen(true);
+  };
+
+  const confirmLogout = () => {
+    // perform logout and navigate home
+    setSignoutOpen(false);
     logout();
     navigate('/');
-  };
+  }; 
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-5">
           <img 
             src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png" 
             alt="Tanish Physio Logo" 
@@ -132,14 +148,14 @@ export function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-1 bg-slate-100" />
-                <DropdownMenuItem className="py-3 px-3 rounded-xl cursor-pointer focus:bg-green-50 group transition-colors" asChild>
-                  <Link to="/dashboard" className="flex items-center gap-3">
+                {/* <DropdownMenuItem className="py-3 px-3 rounded-xl cursor-pointer focus:bg-green-50 group transition-colors" asChild>
+                  <Link to="/profile" className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center group-focus:bg-green-100 group-focus:text-green-600 transition-colors">
                       <LayoutDashboard className="h-4 w-4" />
                     </div>
                     <span className="text-sm font-semibold text-slate-700 group-focus:text-green-700">Clinical Dashboard</span>
                   </Link>
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem className="py-3 px-3 rounded-xl cursor-pointer focus:bg-green-50 group transition-colors" asChild>
                   <Link to="/profile" className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center group-focus:bg-green-100 group-focus:text-green-600 transition-colors">
@@ -229,12 +245,6 @@ export function Header() {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
-                        <Link to="/dashboard" onClick={() => setOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start gap-3 py-6 rounded-xl">
-                            <LayoutDashboard className="h-5 w-5 text-slate-500" />
-                            Dashboard
-                          </Button>
-                        </Link>
                         <Link to="/profile" onClick={() => setOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start gap-3 py-6 rounded-xl">
                             <User className="h-5 w-5 text-slate-500" />
@@ -244,7 +254,7 @@ export function Header() {
                         <Button 
                           variant="ghost" 
                           className="w-full justify-start gap-3 py-6 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
-                          onClick={handleLogout}
+                          onClick={() => { setOpen(false); handleLogout(); }}
                         >
                           <LogOut className="h-5 w-5" />
                           Sign Out
@@ -257,6 +267,23 @@ export function Header() {
             </SheetContent>
           </Sheet>
         </div>
+
+        {/* Sign out confirmation dialog */}
+        <Dialog open={signoutOpen} onOpenChange={setSignoutOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Sign Out</DialogTitle>
+              <DialogDescription>Are you sure you want to sign out? You will need to sign in again to access your account.</DialogDescription>
+            </DialogHeader>
+            <div className="pt-2">
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSignoutOpen(false)}>Cancel</Button>
+                <Button variant="destructive" className="ml-2" onClick={confirmLogout}>Sign Out</Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </header>
   );

@@ -14,7 +14,6 @@ const TherapistProfilePage = lazy(() => import("./pages/TherapistProfilePage"));
 const SubscriptionPlansPage = lazy(() => import("./pages/SubscriptionPlansPage"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const BookingConfirmationPage = lazy(() => import("./pages/BookingConfirmationPage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -70,17 +69,12 @@ const App = () => (
                 <BookingConfirmationPage />
               </ProtectedRoute>
             } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } />
             <Route path="/profile" element={
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
             } />
-            <Route path="/video-call/:sessionId" element={
+            <Route path="/video-call" element={
               <ProtectedRoute>
                 <VideoCallPage />
               </ProtectedRoute>

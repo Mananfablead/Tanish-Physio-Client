@@ -1,6 +1,8 @@
 import { Layout } from "@/components/layout/Layout";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +15,6 @@ import {
   Phone, 
   MapPin, 
   Award, 
-  BookOpen, 
   ShieldCheck, 
   Clock,
   Camera,
@@ -22,204 +23,779 @@ import {
   Star,
   Users,
   Calendar,
-  Activity
+  Play,
+  Activity,
+  VideoIcon,
+  Menu,
+  X,
+  ChevronRight
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+// --- Sub-components for Right Panel consistency ---
+
+const RightPanelCard = ({ title, badge, children, footer }: { title: string, badge?: React.ReactNode, children: React.ReactNode, footer?: React.ReactNode }) => (
+  <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{title}</h3>
+        {badge}
+      </div>
+      <div className="space-y-4">
+        {children}
+      </div>
+    </div>
+    {footer && (
+      <div className="flex justify-end items-center gap-3 pt-6 border-t border-slate-50 mt-auto">
+        {footer}
+      </div>
+    )}
+  </Card>
+);
+
+const InfoBlock = ({ label, value, subValue, icon: Icon, iconColor = "text-primary" }: { label: string, value: React.ReactNode, subValue?: string, icon: any, iconColor?: string }) => (
+  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 flex gap-3 items-start transition-all hover:bg-slate-100/50">
+    <div className={`h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0`}>
+      <Icon className={`h-5 w-5 ${iconColor}`} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+      <div className="font-black text-slate-900 truncate">{value}</div>
+      {subValue && <p className="text-xs font-bold text-primary mt-0.5">{subValue}</p>}
+    </div>
+  </div>
+);
+
+// --- End Sub-components ---
 
 export default function ProfilePage() {
   const { user } = useAuth();
 
+  const [activePlan, setActivePlan] = useState<any | null>(null);
+  const [planHistory, setPlanHistory] = useState<any[]>([]);
+  const [nextSession, setNextSession] = useState<any | null>(null);
+  const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+  const [intake, setIntake] = useState<any | null>(null);
+  const [assigned, setAssigned] = useState<any | null>(null);
+  const [selectedSection, setSelectedSection] = useState<string>('personal');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const sections = [
+    { id: 'personal', icon: User, label: 'Personal Info', sub: 'Name, contact, and profile', color: 'text-primary' },
+    { id: 'activePlan', icon: Star, label: 'Active Plan', sub: activePlan ? `${activePlan.plan?.name || activePlan.name}` : 'No active plan', color: 'text-warning' },
+    { id: 'upcoming', icon: Calendar, label: 'Upcoming Session', sub: nextSession ? new Date(nextSession.start).toLocaleDateString() : 'None scheduled', color: 'text-accent' },
+    { id: 'sessionHistory', icon: Play, label: 'Session History', sub: `${sessionHistory?.length || 0} sessions`, color: 'text-primary' },
+    { id: 'subscriptionHistory', icon: FileText, label: 'Subscription History', sub: `${planHistory?.length || 0} purchases`, color: 'text-primary' },
+  ];
+
+  const handleCancelPlan = () => {
+    if (!activePlan) return;
+    const canceled = { ...activePlan, canceledAt: Date.now(), status: 'Canceled' };
+    try {
+      const ph = [canceled, ...planHistory];
+      sessionStorage.setItem('qw_plan_history', JSON.stringify(ph));
+      sessionStorage.removeItem('qw_plan');
+    } catch (e) {}
+    setPlanHistory(prev => [canceled, ...prev]);
+    setActivePlan(null);
+  };
+
+  const handleRenewPlan = () => {
+    if (!activePlan) return;
+    const durationDays = activePlan.plan?.durationDays ?? 30;
+    const renewed = {
+      ...activePlan,
+      purchasedAt: Date.now(),
+      start: Date.now(),
+      end: Date.now() + durationDays * 24 * 60 * 60 * 1000,
+      remainingSessions: activePlan.plan?.sessions ?? activePlan.remainingSessions,
+    };
+    try { sessionStorage.setItem('qw_plan', JSON.stringify(renewed)); } catch (e) {}
+    setActivePlan(renewed);
+    try {
+      const entry = { plan: activePlan.plan ? activePlan.plan : { name: activePlan.name }, purchasedAt: Date.now() };
+      const ph = [entry, ...planHistory];
+      sessionStorage.setItem('qw_plan_history', JSON.stringify(ph));
+      setPlanHistory(ph);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    // Load or seed plan history
+    try {
+      const raw = sessionStorage.getItem('qw_plan'); if (raw) setActivePlan(JSON.parse(raw));
+    } catch (e) {}
+
+    try {
+      let raw = sessionStorage.getItem('qw_plan_history');
+      if (raw) setPlanHistory(JSON.parse(raw));
+      else {
+        const samplePlanHistory = [
+          { plan: { name: 'Premium Wellness Plan', price: 299, duration: '30 days' }, purchasedAt: '2025-12-25' },
+          { plan: { name: 'Monthly Recovery Plan', price: 199, duration: '30 days' }, purchasedAt: '2025-11-20' },
+          { plan: { name: 'Weekly Assessment', price: 79, duration: '7 days' }, purchasedAt: '2025-10-15' },
+          { plan: { name: 'Monthly Starter', price: 149, duration: '30 days' }, purchasedAt: '2025-09-10' },
+          { plan: { name: 'Initial Consultation', price: 99, duration: 'Single' }, purchasedAt: '2025-08-05' },
+        ];
+        try { sessionStorage.setItem('qw_plan_history', JSON.stringify(samplePlanHistory)); } catch (e) {}
+        setPlanHistory(samplePlanHistory);
+
+        // Seed an active plan if none exists yet
+        try {
+          const existing = sessionStorage.getItem('qw_plan');
+          if (!existing) {
+            const sampleActive = {
+              plan: { name: 'Premium Wellness Plan', price: 299, duration: '30 days', sessions: 8, durationDays: 30, description: 'Unlimited access to clinical tools and 8 personal sessions.' },
+              purchasedAt: '2025-12-25',
+              start: '2025-12-25',
+              end: '2026-01-24',
+              remainingSessions: 5
+            };
+            try { sessionStorage.setItem('qw_plan', JSON.stringify(sampleActive)); } catch (e) {}
+            setActivePlan(sampleActive);
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
+
+    // Load or seed scheduled session
+    try {
+      let raw = sessionStorage.getItem('qw_scheduled_session');
+      if (raw) setNextSession(JSON.parse(raw));
+      else {
+        const sampleNext = { 
+          therapist: { 
+            name: 'Dr. Sarah Johnson', 
+            avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face', 
+            contact: '+1 (555) 123-4567', 
+            bio: 'Board-certified orthopedic specialist with over 10 years of experience in clinical rehabilitation.', 
+            specialties: ['Back Pain', 'Post-op Rehab', 'Sports Injuries'], 
+            rating: 4.8 
+          }, 
+          session: { type: 'Video Consultation', duration: '45 min', price: 80 }, 
+          start: '2026-01-05T10:00:00',
+          end: '2026-01-05T10:45:00',
+          location: 'Secure Video Call', 
+          relatedTo: 'Lower back pain recovery', 
+          notes: 'Initial assessment — please have any previous imaging ready.' 
+        }
+        try { sessionStorage.setItem('qw_scheduled_session', JSON.stringify(sampleNext)); } catch (e) {}
+        setNextSession(sampleNext);
+      }
+    } catch (e) {}
+
+    // Load or seed session history
+    try {
+      let raw = sessionStorage.getItem('qw_session_history');
+      if (raw) setSessionHistory(JSON.parse(raw));
+      else {
+        const sampleSessions = [
+          { 
+            therapist: { name: 'Dr. Sarah Johnson', avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face' }, 
+            start: '2025-12-28T14:00:00', 
+            end: '2025-12-28T14:45:00', 
+            duration: '45 min', 
+            recordingUrl: '/video-call?recording=1', 
+            notes: 'Focused on lower back mobility and core stabilization exercises.', 
+            relatedTo: 'Lower back pain', 
+            status: 'Completed' 
+          },
+          { 
+            therapist: { name: 'Dr. A. Lee', avatar: 'https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?w=80&h=80&fit=crop&crop=face' }, 
+            start: '2025-12-15T11:00:00', 
+            end: '2025-12-15T12:00:00', 
+            duration: '60 min', 
+            recordingUrl: '/video-call?recording=2', 
+            notes: 'Reviewed gait mechanics and prescribed strengthening for gluteus medius.', 
+            relatedTo: 'Gait analysis', 
+            status: 'Completed' 
+          },
+        ];
+        try { sessionStorage.setItem('qw_session_history', JSON.stringify(sampleSessions)); } catch (e) {}
+        setSessionHistory(sampleSessions);
+      }
+    } catch (e) {}
+
+    try { const raw = sessionStorage.getItem('qw_questionnaire'); if (raw) setIntake(JSON.parse(raw).data); } catch (e) {}
+    try { const raw = sessionStorage.getItem('qw_assigned'); if (raw) setAssigned(JSON.parse(raw)); } catch (e) {}
+
+    // Default selected section based on available data
+    try {
+      const rawNext = sessionStorage.getItem('qw_scheduled_session');
+      if (rawNext) setSelectedSection('upcoming');
+    } catch (e) {}
+  }, []);
+
+
   return (
     <Layout>
-      <div className="relative overflow-hidden border-b-2 border-primary/10" style={{ backgroundColor: '#f1fafa' }}>
-        {/* Decorative Blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-[120px]" />
+      <div className="relative overflow-hidden bg-primary pt-16 pb-32">
+        {/* Background Patterns */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] -translate-y-1/2" />
+          <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-accent/10 rounded-full blur-[120px] translate-y-1/2" />
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
         </div>
 
-        <div className="container relative py-8 z-10">
-          <div className="flex flex-col md:flex-row items-center gap-8">
+        <div className="container relative z-10">
+          <div className="flex flex-col lg:flex-row items-center lg:items-end gap-8">
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-accent rounded-full blur opacity-25 group-hover:opacity-40 transition duration-500" />
-              <Avatar className="h-32 w-32 border-4 border-white shadow-2xl relative">
-                <AvatarImage src={user?.image} alt={user?.name} />
-                <AvatarFallback className="text-4xl font-bold bg-primary/10 text-primary">
-                  {user?.name?.[0] || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <Button size="icon" className="absolute bottom-1 right-1 h-10 w-10 rounded-full shadow-xl bg-primary hover:bg-primary/90 text-white border-2 border-white">
-                <Camera className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="text-center md:text-left space-y-2">
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">{user?.name}</h1>
-                <Badge variant="secondary" className="capitalize px-4 py-1 text-sm border border-primary/20 shadow-sm">
-                  Patient
-                </Badge>
-              </div>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-slate-600 font-medium">
-                <p className="flex items-center gap-2 hover:text-primary transition-colors">
-                  <Mail className="h-4 w-4 text-primary" /> {user?.email}
-                </p>
-                <p className="flex items-center gap-2 hover:text-primary transition-colors">
-                  <Phone className="h-4 w-4 text-primary" /> +1 (555) 000-0000
-                </p>
+              <div className="absolute -inset-1.5 bg-gradient-to-tr from-primary via-accent to-primary rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-500 animate-gradient-xy" />
+              <div className="relative">
+                <Avatar className="h-40 w-40 rounded-3xl border-4 border-slate-800 shadow-2xl relative overflow-hidden">
+                  <AvatarImage src={user?.image} alt={user?.name} className="object-cover" />
+                  <AvatarFallback className="text-5xl font-black bg-slate-800 text-primary">
+                    {user?.name?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <Button size="icon" className="absolute -bottom-2 -right-2 h-12 w-12 rounded-2xl shadow-2xl bg-primary hover:bg-primary/90 text-white border-4 border-slate-900">
+                  <Camera className="h-6 w-6" />
+                </Button>
               </div>
             </div>
 
-            {/* Top Right Stats Section */}
-            <div className="flex-1" />
-            <div className="hidden lg:flex items-center gap-4">
-              <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-primary/10 shadow-sm flex items-center gap-4 hover:bg-white transition-all group">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Activity className="h-6 w-6 text-primary" />
+            <div className="text-center lg:text-left space-y-4 flex-1">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                  <h1 className="text-5xl font-black text-white tracking-tight">{user?.name}</h1>
+                  {/* <Badge className="bg-slate-800 text-primary hover:bg-primary/30 border-none px-4 py-1 text-xs font-black uppercase tracking-widest">
+                    Pro Patient
+                  </Badge> */}
                 </div>
-                <div>
-                  <p className="text-2xl font-black text-slate-900 leading-none">3</p>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Active Plans</p>
-                </div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-primary/10 shadow-sm flex items-center gap-4 hover:bg-white transition-all group">
-                <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Calendar className="h-6 w-6 text-accent" />
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-slate-900 leading-none">12</p>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Completed</p>
-                </div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-primary/10 shadow-sm flex items-center gap-4 hover:bg-white transition-all group">
-                <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Clock className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-slate-900 leading-none">2</p>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Upcoming</p>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-white font-bold">
+                  <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
+                    <Mail className="h-4 w-4 text-primary" /> {user?.email}
+                  </p>
+                  <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
+                    <Phone className="h-4 w-4 text-primary" /> +1 (555) 000-0000
+                  </p>
+                  <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
+                    <MapPin className="h-4 w-4 text-primary" /> San Francisco, CA
+                  </p>
                 </div>
               </div>
+            </div>
+
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full lg:w-auto">
+              {[
+                { label: 'Active Plans', value: '1', icon: Activity, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Completed', value: '12', icon: Calendar, color: 'text-accent', bg: 'bg-accent/10' },
+                { label: 'Upcoming', value: '1', icon: Clock, color: 'text-success', bg: 'bg-success/10' },
+              ].map((stat, i) => (
+                <div key={i} className="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200 hover:shadow-md transition-all group shadow-sm">
+                  <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                  </div>
+                  <p className="text-2xl font-black text-primary leading-none">{stat.value}</p>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container py-12">
+      <div className="container -mt-16 pb-20 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sidebar Info */}
-          <div className="space-y-6">
-            <Card className="border-t-4 border-t-primary shadow-lg overflow-hidden">
-              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                <CardTitle className="text-lg font-bold">Account Verification</CardTitle>
-                <CardDescription className="font-medium">Status of your patient profile</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="flex items-center gap-4 p-4 bg-success/5 rounded-2xl border border-success/20 group hover:bg-success/10 transition-colors">
-                  <div className="h-10 w-10 rounded-xl bg-success/20 flex items-center justify-center">
-                    <ShieldCheck className="h-6 w-6 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-extrabold text-slate-900">Email Verified</p>
-                    <p className="text-xs font-semibold text-success/80">Verified on Dec 20, 2024</p>
-                  </div>
-                </div>
-              </CardContent>
+          {/* Desktop Sidebar Nav */}
+          <div className="hidden lg:block space-y-6">
+            <Card className="p-4 rounded-2xl border-slate-200 shadow-sm overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+              <div className="space-y-1">
+                {sections.map((item) => (
+                  <button 
+                    key={item.id}
+                    onClick={() => setSelectedSection(item.id)} 
+                    className={`w-full text-left p-3.5 rounded-xl transition-all duration-300 group ${selectedSection === item.id ? 'bg-primary/10 shadow-inner' : 'hover:bg-primary/5'}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg transition-colors ${selectedSection === item.id ? 'bg-white shadow-sm' : 'bg-primary/5 group-hover:bg-white'}`}>
+                        <item.icon className={`h-5 w-5 ${item.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-black text-sm transition-colors ${selectedSection === item.id ? 'text-primary' : 'text-slate-700'}`}>{item.label}</div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">{item.sub}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </Card>
 
-            <Card className="border-t-4 border-t-accent shadow-lg overflow-hidden">
-              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                <CardTitle className="text-lg font-bold">Quick Contact</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="flex items-center gap-4 group">
-                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center group-hover:bg-accent/10 transition-colors">
-                    <Phone className="h-5 w-5 text-slate-400 group-hover:text-accent transition-colors" />
-                  </div>
-                  <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">+1 (555) 000-0000</span>
-                </div>
-                <div className="flex items-center gap-4 group">
-                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center group-hover:bg-accent/10 transition-colors">
-                    <MapPin className="h-5 w-5 text-slate-400 group-hover:text-accent transition-colors" />
-                  </div>
-                  <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">San Francisco, CA</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* <Card className="p-6 rounded-2xl bg-slate-900 text-white overflow-hidden relative group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                <ShieldCheck className="h-24 w-24" />
+              </div>
+              <div className="relative z-10 space-y-4">
+                <h4 className="font-black text-lg leading-tight">Need Medical Assistance?</h4>
+                <p className="text-slate-400 text-sm font-medium">Our support team and therapists are here for you 24/7.</p>
+                <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-black rounded-xl h-11">
+                  Contact Support
+                </Button>
+              </div>
+            </Card> */}
           </div>
 
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 p-1.5 bg-slate-100/80 rounded-2xl mb-8">
-                <TabsTrigger value="personal" className="rounded-xl font-bold py-3 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Personal Info</TabsTrigger>
-                <TabsTrigger value="medical" className="rounded-xl font-bold py-3 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Medical History</TabsTrigger>
-              </TabsList>
+            {/* Mobile Navigation Trigger */}
+            <div className="lg:hidden mb-6">
+              <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-primary transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                    <Menu className="h-5 w-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Current Section</p>
+                    <p className="text-lg font-black text-slate-900 leading-none">
+                      {sections.find(s => s.id === selectedSection)?.label || 'Menu'}
+                    </p>
+                  </div>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                  <ChevronRight className="h-5 w-5" />
+                </div>
+              </button>
+            </div>
 
-              <TabsContent value="personal" className="space-y-6">
-                <Card className="shadow-lg border-primary/5">
-                  <CardHeader className="border-b border-slate-50">
-                    <CardTitle className="text-2xl font-bold text-slate-900">Personal Details</CardTitle>
-                    <CardDescription className="text-slate-500 font-medium text-base">Update your basic contact information</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6 pt-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2.5">
-                        <Label htmlFor="full-name" className="text-sm font-bold text-slate-700">Full Name</Label>
-                        <Input id="full-name" defaultValue={user?.name} className="h-12 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20" />
-                      </div>
-                      <div className="space-y-2.5">
-                        <Label htmlFor="email" className="text-sm font-bold text-slate-700">Email Address</Label>
-                        <Input id="email" defaultValue={user?.email} disabled className="h-12 rounded-xl bg-slate-50 border-slate-200" />
-                      </div>
-                      <div className="space-y-2.5">
-                        <Label htmlFor="phone" className="text-sm font-bold text-slate-700">Phone Number</Label>
-                        <Input id="phone" placeholder="+1 (555) 000-0000" className="h-12 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20" />
-                      </div>
-                      <div className="space-y-2.5">
-                        <Label htmlFor="location" className="text-sm font-bold text-slate-700">Location</Label>
-                        <Input id="location" placeholder="City, Country" className="h-12 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20" />
-                      </div>
-                    </div>
-                    <div className="pt-6 flex justify-end">
-                      <Button className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-bold transition-all">
-                        <Save className="h-5 w-5 mr-2" /> Save Changes
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+            <div className="bg-slate-50 p-6 rounded-2xl space-y-6 border border-slate-200 shadow-sm">
+              {/* Detail panel: shows the selected sidebar item */}
+              <div className="space-y-6">
 
-              <TabsContent value="medical" className="space-y-6">
-                <Card className="shadow-lg border-primary/5">
-                  <CardHeader className="border-b border-slate-50">
-                    <CardTitle className="text-2xl font-bold text-slate-900">Medical Context</CardTitle>
-                    <CardDescription className="text-slate-500 font-medium text-base">Help therapists understand your background</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6 pt-8">
-                    <div className="space-y-2.5">
-                      <Label htmlFor="history" className="text-sm font-bold text-slate-700">Previous Injuries or Conditions</Label>
-                      <Textarea 
-                        id="history" 
-                        placeholder="List any past surgeries, injuries, or chronic conditions..." 
-                        className="min-h-[150px] rounded-2xl border-slate-200 focus:border-primary focus:ring-primary/20 p-4"
-                      />
+                {selectedSection === 'activePlan' && (
+                  <RightPanelCard 
+                    title="Active Plan" 
+                    badge={activePlan && <Badge className="bg-success/10 text-success border-none font-bold">ACTIVE</Badge>}
+                    footer={activePlan && (
+                      <>
+                        <Button variant="outline" className="h-11 rounded-xl border-slate-200 text-slate-600 hover:bg-primary font-bold" onClick={handleCancelPlan}>
+                          Cancel Plan
+                        </Button>
+                        <Button className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black" onClick={handleRenewPlan}>
+                          Renew Now
+                        </Button>
+                      </>
+                    )}
+                  >
+                    {activePlan ? (
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h2 className="text-3xl font-black text-slate-900">{activePlan.plan?.name || activePlan.name}</h2>
+                            <p className="text-slate-500 font-medium mt-1">{activePlan.plan?.description || activePlan.description}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-3xl font-black text-primary">${activePlan.plan?.price ?? activePlan.price}</div>
+                            <div className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">{activePlan.plan?.duration ?? activePlan.duration}</div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <InfoBlock 
+                            label="Purchase Date" 
+                            value={new Date(activePlan.purchasedAt).toLocaleDateString()} 
+                            icon={Calendar} 
+                            iconColor="text-primary"
+                          />
+                          <InfoBlock 
+                            label="Expiration Date" 
+                            value={new Date(activePlan.end || (activePlan.purchasedAt + (30*24*60*60*1000))).toLocaleDateString()} 
+                            icon={Clock} 
+                            iconColor="text-warning"
+                          />
+                          <InfoBlock 
+                            label="Sessions Remaining" 
+                            value={`${activePlan.remainingSessions ?? (activePlan.plan?.sessions ?? '—')} Sessions`} 
+                            icon={Activity} 
+                            iconColor="text-success"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center space-y-4">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                          <Star className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-xl font-black text-slate-900">No Active Plan</h3>
+                          <p className="text-slate-500 font-medium max-w-xs mx-auto">Get started with a wellness plan tailored to your recovery goals.</p>
+                        </div>
+                        <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                          <Link to="/plans">View Plans</Link>
+                        </Button>
+                      </div>
+                    )}
+                  </RightPanelCard>
+                )} 
+
+                {selectedSection === 'upcoming' && (
+                  <div className="space-y-4">
+                    {assigned && (
+                      <RightPanelCard 
+                        title="Assigned therapist" 
+                        badge={<Badge className="bg-primary/10 hover:text-white text-primary border-none font-bold">PRIMARY</Badge>}
+                        footer={(
+                          <Button className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black">
+                            <Users className="h-4 w-4 mr-2" /> Message Clinician
+                          </Button>
+                        )}
+                      >
+                        <div className="flex items-center gap-5">
+                          <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face" className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 shadow-sm" alt={assigned.name} />
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900">Dr. Sarah Johnson</h3>
+                            <p className="text-slate-500 font-medium text-sm line-clamp-2">specialist in ortopadic</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {assigned.specialties?.slice(0, 2).map((s: string) => (
+                                <Badge key={s} variant="outline" className="bg-slate-50 border-slate-200 text-slate-600 text-[10px] font-bold">
+                                  {s}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </RightPanelCard>
+                    )}
+
+                    {nextSession ? (
+                      <RightPanelCard 
+                        title="Upcoming Session" 
+                        badge={<Badge className="bg-primary/10 text-primary hover:text-white border-none font-bold">CONFIRMED</Badge>}
+                        footer={(
+                          <div className="flex gap-3 w-full">
+                            <Button variant="outline" className="flex-1 h-11 rounded-xl border-slate-200 font-bold hover:bg-primary">
+                              <Users className="h-5 w-5 mr-2" /> Message
+                            </Button>
+                            <Link to="/video-call" className="flex-1">
+                              <Button className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black">
+                                <Play className="h-5 w-5 mr-2 fill-white" /> Join Session
+                              </Button>
+                            </Link>
+                          </div>
+                        )}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <InfoBlock 
+                            label="Date & Time" 
+                            value={new Date(nextSession.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            subValue={`${new Date(nextSession.start).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} — ${new Date(nextSession.end).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`}
+                            icon={Calendar} 
+                            iconColor="text-primary"
+                          />
+                          <InfoBlock 
+                            label="Session Type" 
+                            value={nextSession.location}
+                            subValue="1 on 1 Consultation"
+                            icon={VideoIcon} 
+                            iconColor="text-accent"
+                          />
+                          <div className="md:col-span-2">
+                            <InfoBlock 
+                              label="Session Focus" 
+                              value={nextSession.relatedTo || 'General Consultation'}
+                              subValue={nextSession.notes}
+                              icon={Activity} 
+                              iconColor="text-success"
+                            />
+                          </div>
+                        </div>
+                      </RightPanelCard>
+                    ) : (
+                      <RightPanelCard title="Upcoming Session">
+                        <div className="py-8 text-center space-y-4">
+                          <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                            <Calendar className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900">No Upcoming Sessions</h3>
+                            <p className="text-slate-500 font-medium max-w-xs mx-auto">You don't have any sessions scheduled at the moment.</p>
+                          </div>
+                          <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                            <Link to="/therapists">Find a Therapist</Link>
+                          </Button>
+                        </div>
+                      </RightPanelCard>
+                    )}
+                  </div>
+                )}
+
+              {selectedSection === 'sessionHistory' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Session History</h2>
+                      <p className="text-slate-500 font-medium text-sm">Your past consultations and recorded sessions</p>
                     </div>
-                    <div className="space-y-2.5">
-                      <Label htmlFor="goals" className="text-sm font-bold text-slate-700">Recovery Goals</Label>
-                      <Input id="goals" placeholder="e.g. Return to running, Reduce lower back pain" className="h-12 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20" />
+                    <Badge variant="outline" className="px-4 py-1.5 rounded-full border-slate-200 text-slate-600 font-bold bg-white">
+                      {sessionHistory?.length || 0} Sessions
+                    </Badge>
+                  </div>
+
+                  {sessionHistory && sessionHistory.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-6">
+                      {sessionHistory.map((s, idx) => (
+                        <RightPanelCard 
+                          key={idx}
+                          title={s.relatedTo || 'General Consultation'}
+                          badge={<Badge className="bg-success/10 hover:text-white text-success border-none font-bold">COMPLETED</Badge>}
+                          footer={(
+                            <div className="flex gap-3">
+                              <Button variant="ghost" className="h-11 rounded-xl font-bold text-primary hover:text-primary hover:bg-primary/5">
+                                <FileText className="h-4 w-4 mr-2" /> Summary
+                              </Button>
+                              <Button asChild className="h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-6">
+                                <Link to={s.recordingUrl || "#"}>Watch Recording</Link>
+                              </Button>
+                            </div>
+                          )}
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InfoBlock 
+                              label="Therapist" 
+                              value={s.therapist?.name}
+                              icon={User} 
+                              iconColor="text-primary"
+                            />
+                            <InfoBlock 
+                              label="Date & Duration" 
+                              value={new Date(s.start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              subValue={`${s.duration} session`}
+                              icon={Clock} 
+                              iconColor="text-accent"
+                            />
+                            <div className="md:col-span-2">
+                              <InfoBlock 
+                                label="Session Notes" 
+                                value={s.notes}
+                                icon={FileText} 
+                                iconColor="text-slate-400"
+                              />
+                            </div>
+                          </div>
+                        </RightPanelCard>
+                      ))}
                     </div>
-                    <div className="pt-6 flex justify-end">
-                      <Button className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-bold">
-                        <Save className="h-5 w-5 mr-2" /> Update Medical Info
-                      </Button>
+                  ) : (
+                    <RightPanelCard title="Session History">
+                      <div className="py-12 text-center space-y-4">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                          <Play className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <p className="text-slate-500 font-medium">No previous sessions found in your history.</p>
+                      </div>
+                    </RightPanelCard>
+                  )}
+                </div>
+              )}
+
+              {selectedSection === 'subscriptionHistory' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Subscription History</h2>
+                      <p className="text-slate-500 font-medium text-sm">History of your plan purchases and renewals</p>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                  </div>
+
+                  {planHistory && planHistory.length > 0 ? (
+                    <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Plan Name</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Purchase Date</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Amount</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Receipt</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {planHistory.map((p, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="font-bold text-slate-900">{p.plan?.name || p.name}</div>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                  {p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <span className="font-black text-slate-900">${p.plan?.price ?? p.price}</span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <Button variant="ghost" size="sm" className="h-9 w-9 rounded-xl p-0 hover:bg-primary/10 hover:text-primary">
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  ) : (
+                    <RightPanelCard title="Subscription History">
+                      <div className="py-12 text-center space-y-4">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                          <FileText className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <p className="text-slate-500 font-medium">No subscription history found.</p>
+                      </div>
+                    </RightPanelCard>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Show only when user selects Personal Info or Medical History */}
+            {(selectedSection === 'personal' || selectedSection === 'medical') && (
+              <div className="space-y-8">
+                <Tabs defaultValue={selectedSection === 'medical' ? 'medical' : 'personal'} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 h-14 p-1.5 bg-slate-200/50 backdrop-blur-md rounded-2xl mb-8 border border-slate-200 shadow-sm">
+                    <TabsTrigger value="personal" className="rounded-xl font-black text-sm transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Personal Info</TabsTrigger>
+                    <TabsTrigger value="medical" className="rounded-xl font-black text-sm transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">Medical History</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="personal">
+                    <RightPanelCard 
+                      title="Personal Details" 
+                      footer={(
+                        <Button className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black transition-all">
+                          <Save className="h-5 w-5 mr-2" /> Save Changes
+                        </Button>
+                      )}
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2.5">
+                          <Label htmlFor="full-name" className="text-xs font-black text-slate-500 uppercase tracking-widest">Full Name</Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <Input id="full-name" defaultValue={user?.name ?? 'User'} className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold" />
+                          </div>
+                        </div>
+                        <div className="space-y-2.5">
+                          <Label htmlFor="email" className="text-xs font-black text-slate-500 uppercase tracking-widest">Email Address</Label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <Input id="email" defaultValue={user?.email ?? 'manan@gmail.com'} disabled className="h-12 pl-10 rounded-xl bg-slate-50 border-slate-200 font-bold text-slate-500" />
+                          </div>
+                        </div>
+                        <div className="space-y-2.5">
+                          <Label htmlFor="phone" className="text-xs font-black text-slate-500 uppercase tracking-widest">Phone Number</Label>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <Input id="phone" defaultValue={'+1 (555) 000-0000'} className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold" />
+                          </div>
+                        </div>
+                        <div className="space-y-2.5">
+                          <Label htmlFor="location" className="text-xs font-black text-slate-500 uppercase tracking-widest">Location</Label>
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <Input id="location" defaultValue={'San Francisco, CA'} className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold" />
+                          </div>
+                        </div>
+                      </div>
+                    </RightPanelCard>
+                  </TabsContent>
+
+                  <TabsContent value="medical">
+                    <RightPanelCard 
+                      title="Medical Context" 
+                      footer={(
+                        <Button className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black">
+                          <Save className="h-5 w-5 mr-2" /> Update Medical Info
+                        </Button>
+                      )}
+                    >
+                      <div className="space-y-6">
+                        <div className="space-y-2.5">
+                          <Label htmlFor="history" className="text-xs font-black text-slate-500 uppercase tracking-widest">Previous Injuries or Conditions</Label>
+                          <Textarea 
+                            id="history" 
+                            placeholder="List any past surgeries, injuries, or chronic conditions..." 
+                            className="min-h-[120px] rounded-2xl border-slate-200 focus:border-primary focus:ring-primary/20 p-4 font-medium"
+                          />
+                        </div>
+                        <div className="space-y-2.5">
+                          <Label htmlFor="goals" className="text-xs font-black text-slate-500 uppercase tracking-widest">Recovery Goals</Label>
+                          <div className="relative">
+                            <Activity className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                            <Input id="goals" placeholder="e.g. Return to running, Reduce lower back pain" className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold" />
+                          </div>
+                        </div>
+                      </div>
+                    </RightPanelCard>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] lg:hidden">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl p-6 transition-transform transform animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Profile Sections</h3>
+                <p className="text-slate-500 font-medium text-xs uppercase tracking-widest mt-1">Navigate your profile</p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-10 w-10 rounded-xl bg-slate-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="space-y-3 pb-8">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setSelectedSection(section.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+                    selectedSection === section.id 
+                      ? 'bg-primary/10 border-primary/20 shadow-inner' 
+                      : 'bg-slate-50 border-slate-100 hover:bg-white hover:border-primary/30'
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-xl ${
+                    selectedSection === section.id ? 'bg-white shadow-sm' : 'bg-white/50'
+                  }`}>
+                    <section.icon className={`h-5 w-5 ${section.color}`} />
+                  </div>
+                  <div className="text-left flex-1">
+                    <p className={`font-black text-sm ${
+                      selectedSection === section.id ? 'text-primary' : 'text-slate-700'
+                    }`}>
+                      {section.label}
+                    </p>
+                    <p className="text-[11px] text-slate-500 font-medium line-clamp-1">{section.sub}</p>
+                  </div>
+                  {selectedSection === section.id && (
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

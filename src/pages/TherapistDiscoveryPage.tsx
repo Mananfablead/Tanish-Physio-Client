@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+
 import { Star, Search, Filter, MapPin, Clock, Users, Video } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -21,7 +21,7 @@ const therapists = [
     reviews: 156,
     price: 80,
     sessions: ["1-on-1", "Group"],
-    languages: ["English", "Spanish"],
+    languages: ["English", "Gujarati"],
     avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
     availability: "Available Today",
     tags: ["Knee Rehab", "ACL Recovery", "Athletes"],
@@ -35,7 +35,7 @@ const therapists = [
     reviews: 203,
     price: 95,
     sessions: ["1-on-1"],
-    languages: ["English", "Mandarin"],
+    languages: ["English", "Hindi"],
     avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=face",
     availability: "Next Available: Tomorrow",
     tags: ["Lower Back Pain", "Sciatica", "Posture Correction"],
@@ -63,7 +63,7 @@ const therapists = [
     reviews: 312,
     price: 110,
     sessions: ["1-on-1"],
-    languages: ["English", "French"],
+    languages: ["English", "Hindi", "Gujarati"],
     avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&h=150&fit=crop&crop=face",
     availability: "Available Today",
     tags: ["Fibromyalgia", "Arthritis", "Chronic Pain"],
@@ -100,7 +100,6 @@ const therapists = [
 
 export default function TherapistDiscoveryPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [priceRange, setPriceRange] = useState([0, 150]);
   const [sessionType, setSessionType] = useState("all");
   const [language, setLanguage] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -111,16 +110,13 @@ export default function TherapistDiscoveryPage() {
       therapist.specialization.toLowerCase().includes(searchQuery.toLowerCase()) ||
       therapist.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesPrice = 
-      therapist.price >= priceRange[0] && therapist.price <= priceRange[1];
-    
     const matchesSession = 
       sessionType === "all" || therapist.sessions.includes(sessionType);
     
     const matchesLanguage = 
       language === "all" || therapist.languages.includes(language);
 
-    return matchesSearch && matchesPrice && matchesSession && matchesLanguage;
+    return matchesSearch && matchesSession && matchesLanguage;
   });
 
   return (
@@ -147,22 +143,7 @@ export default function TherapistDiscoveryPage() {
               </h3>
 
               <div className="space-y-6">
-                <div>
-                  <Label className="text-sm font-medium">Price Range</Label>
-                  <div className="mt-3">
-                    <Slider
-                      value={priceRange}
-                      onValueChange={setPriceRange}
-                      min={0}
-                      max={150}
-                      step={10}
-                    />
-                    <div className="flex justify-between text-sm text-muted-foreground mt-2">
-                      <span>${priceRange[0]}</span>
-                      <span>${priceRange[1]}</span>
-                    </div>
-                  </div>
-                </div>
+
 
                 <div>
                   <Label className="text-sm font-medium">Session Type</Label>
@@ -187,9 +168,8 @@ export default function TherapistDiscoveryPage() {
                     <SelectContent>
                       <SelectItem value="all">All Languages</SelectItem>
                       <SelectItem value="English">English</SelectItem>
-                      <SelectItem value="Spanish">Spanish</SelectItem>
-                      <SelectItem value="Mandarin">Mandarin</SelectItem>
-                      <SelectItem value="French">French</SelectItem>
+                      <SelectItem value="Hindi">Hindi</SelectItem>
+                      <SelectItem value="Gujarati">Gujarati</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -198,7 +178,6 @@ export default function TherapistDiscoveryPage() {
                   variant="outline" 
                   className="w-full"
                   onClick={() => {
-                    setPriceRange([0, 150]);
                     setSessionType("all");
                     setLanguage("all");
                   }}
@@ -304,12 +283,8 @@ export default function TherapistDiscoveryPage() {
                           </div>
                         </div>
 
-                        {/* Price & CTA */}
+                        {/* CTA */}
                         <div className="flex flex-col items-end justify-between md:text-right">
-                          <div>
-                            <p className="text-2xl font-bold text-primary">${therapist.price}</p>
-                            <p className="text-sm text-muted-foreground">per session</p>
-                          </div>
                           <Link to={`/therapist/${therapist.id}`}>
                             <Button variant="hero">View Profile</Button>
                           </Link>
@@ -328,7 +303,6 @@ export default function TherapistDiscoveryPage() {
                   variant="link" 
                   onClick={() => {
                     setSearchQuery("");
-                    setPriceRange([0, 150]);
                     setSessionType("all");
                     setLanguage("all");
                   }}

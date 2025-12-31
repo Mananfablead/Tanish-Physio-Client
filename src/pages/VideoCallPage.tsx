@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
   X
 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { ArrowRight } from 'lucide-react';
 
 export default function VideoCallPage() {
   const [micOn, setMicOn] = useState(true);
@@ -26,28 +28,52 @@ export default function VideoCallPage() {
   const [showSettings, setShowSettings] = useState(false);
   const navigate = useNavigate();
 
+  // Guard: ensure intake + plan active before allowing access
+  useEffect(() => {
+    try {
+      const planRaw = sessionStorage.getItem('qw_plan');
+      const intakeRaw = sessionStorage.getItem('qw_questionnaire');
+      const plan = planRaw ? JSON.parse(planRaw) : null;
+      const intake = intakeRaw ? JSON.parse(intakeRaw) : null;
+      const RECENT_DAYS = 90;
+      const now = Date.now();
+      const intakeIsRecent = intake && intake.updatedAt && (now - intake.updatedAt) < RECENT_DAYS * 24 * 60 * 60 * 1000;
+
+      if (!plan || !plan.active || !intakeIsRecent) {
+        // redirect to profile (or intake) if not eligible
+        navigate('/profile');
+      }
+    } catch (e) {
+      navigate('/profile');
+    }
+  }, []);
+
+
   const handleEndCall = () => {
-    navigate('/dashboard');
+    navigate('/profile');
   };
 
   return (
     <div className="h-screen bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gray-900 text-white">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
-            <Video className="h-5 w-5" />
+      <div className="flex items-center justify-between px-8 py-4 bg-slate-900 border-b border-slate-800">
+        <div className="flex items-center gap-6">
+          <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center border border-slate-700">
+            <Video className="h-5 w-5 text-slate-300" />
           </div>
           <div>
-            <h1 className="font-semibold">Session with Dr. Sarah Johnson</h1>
-            <p className="text-sm text-gray-400">Dec 30, 2024 • 10:00 AM</p>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider px-2 py-0">Live Session</Badge>
+              <span className="text-slate-500 text-xs font-medium">• 10:00 AM - 10:45 AM</span>
+            </div>
+            <h1 className="text-white font-semibold tracking-tight">Dr. Sarah Johnson</h1>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
-            className={`text-white hover:bg-gray-800 ${showParticipants ? 'bg-gray-700' : ''}`}
+            className={`text-slate-400 hover:text-white hover:bg-slate-800 ${showParticipants ? 'bg-slate-800 text-white' : ''}`}
             onClick={() => {
               setShowParticipants(!showParticipants);
               setShowChat(false);
@@ -55,12 +81,12 @@ export default function VideoCallPage() {
             }}
           >
             <Users className="h-4 w-4 mr-2" />
-            Participants
+            <span className="hidden md:inline">Participants</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className={`text-white hover:bg-gray-800 ${showChat ? 'bg-gray-700' : ''}`}
+            className={`text-slate-400 hover:text-white hover:bg-slate-800 ${showChat ? 'bg-slate-800 text-white' : ''}`}
             onClick={() => {
               setShowChat(!showChat);
               setShowParticipants(false);
@@ -68,69 +94,63 @@ export default function VideoCallPage() {
             }}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
-            Chat
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-gray-800"
-            onClick={() => {
-              setShowSettings(!showSettings);
-              setShowParticipants(false);
-              setShowChat(false);
-            }}
-          >
-            <MoreVertical className="h-4 w-4" />
+            <span className="hidden md:inline">Clinical Chat</span>
           </Button>
         </div>
       </div>
 
       {/* Main Video Area */}
-      <div className="flex-1 relative bg-gray-800 flex">
-        {/* Main Video */}
-        <div className={`flex-1 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center transition-all duration-300 ${showParticipants || showChat ? 'mr-80' : ''}`}>
-          <div className="text-center text-white">
-            <div className="w-32 h-32 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <Users className="h-16 w-16 text-gray-400" />
+      <div className="flex-1 relative bg-slate-950 flex overflow-hidden">
+        {/* Main Video (Doctor) */}
+        <div className={`flex-1 relative flex items-center justify-center transition-all duration-500 ${showParticipants || showChat ? 'md:mr-80' : ''}`}>
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-950/50 pointer-events-none" />
+          <div className="text-center">
+            <div className="w-40 h-40 bg-slate-900 rounded-[2.5rem] mx-auto mb-6 flex items-center justify-center border border-slate-800 shadow-2xl relative overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop&crop=face" 
+                alt="Dr. Sarah Johnson" 
+                className="w-full h-full object-cover opacity-60" 
+              />
+              {/* <div className="absolute inset-0 flex items-center justify-center">
+                <Users className="h-12 w-12 text-slate-700" />
+              </div> */}
             </div>
-            <h2 className="text-xl font-semibold mb-2">Dr. Sarah Johnson</h2>
-            <p className="text-gray-400">Therapist</p>
+            <h2 className="text-2xl font-semibold text-white tracking-tight mb-2">Dr. Sarah Johnson</h2>
+            <p className="text-slate-500 font-medium">Clinical Physiotherapist • Spinal Recovery</p>
           </div>
+
+          {/* Clinician Mini Bio Overlay */}
+          {/* <div className="absolute bottom-8 left-8 p-6 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl max-w-xs">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Clinician Profile</p>
+            <p className="text-sm text-slate-300 leading-relaxed font-medium">
+              Specializing in acute spinal recovery and neuro-muscular rehabilitation with over 12 years of clinical experience.
+            </p>
+          </div> */}
         </div>
 
         {/* Side Panels */}
         {showParticipants && (
-          <div className="w-80 bg-gray-900 border-l border-gray-700 flex flex-col">
-            <div className="p-4 border-b border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold">Participants (2)</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-gray-800"
-                  onClick={() => setShowParticipants(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-white font-semibold">Participants</h3>
+              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white" onClick={() => setShowParticipants(false)}><X className="h-4 w-4" /></Button>
             </div>
-            <div className="flex-1 p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">SJ</span>
-                </div>
-                <div>
-                  <p className="text-white font-medium">Dr. Sarah Johnson</p>
-                  <p className="text-gray-400 text-sm">Host</p>
+            <div className="flex-1 p-6 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">SJ</div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-white font-medium text-sm">Dr. Sarah Johnson</p>
+                    <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4">Host</Badge>
+                  </div>
+                  <p className="text-slate-500 text-xs">Active</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">JD</span>
-                </div>
-                <div>
-                  <p className="text-white font-medium">John Doe</p>
-                  <p className="text-gray-400 text-sm">You</p>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">JD</div>
+                <div className="flex-1">
+                  <p className="text-white font-medium text-sm">John Doe</p>
+                  <p className="text-slate-500 text-xs">You</p>
                 </div>
               </div>
             </div>
@@ -138,115 +158,118 @@ export default function VideoCallPage() {
         )}
 
         {showChat && (
-          <div className="w-80 bg-gray-900 border-l border-gray-700 flex flex-col">
-            <div className="p-4 border-b border-gray-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold">Chat</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-gray-800"
-                  onClick={() => setShowChat(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+          <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-white font-semibold">Clinical Chat</h3>
+              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white" onClick={() => setShowChat(false)}><X className="h-4 w-4" /></Button>
+            </div>
+            <div className="flex-1 p-6 flex flex-col justify-center items-center text-center">
+              <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 border border-slate-700">
+                <MessageSquare className="h-5 w-5 text-slate-500" />
               </div>
+              <p className="text-slate-400 text-sm font-medium">Chat is secure and encrypted</p>
+              <p className="text-slate-600 text-[10px] mt-2 px-6">All clinical notes shared here will be saved to your recovery record.</p>
             </div>
-            <div className="flex-1 p-4 space-y-3 overflow-y-auto">
-              <div className="text-gray-400 text-sm text-center">No messages yet</div>
-            </div>
-            <div className="p-4 border-t border-gray-700">
+            <div className="p-6 border-t border-slate-800">
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Type a message..."
-                  className="flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="Clinical note..."
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-slate-500 placeholder:text-slate-600"
                 />
-                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">
-                  Send
+                <Button size="icon" className="bg-slate-100 hover:bg-white text-slate-900 rounded-xl">
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Self Video */}
-        <div className="absolute bottom-4 right-4 w-64 h-48 bg-gray-700 rounded-lg overflow-hidden border-2 border-white">
-          <div className="w-full h-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center">
-            <div className="text-center text-white">
-              <div className="w-16 h-16 bg-gray-500 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <Video className="h-8 w-8 text-gray-300" />
+        {/* Self Video (Patient) */}
+        <div className={`absolute md:bottom-8 md:right-8 bottom-4 right-4 md:w-64 md:h-44 w-44 h-36 rounded-[2rem] overflow-hidden border-4 border-slate-900 shadow-2xl transition-all duration-500 ${showParticipants || showChat ? 'md:translate-x-[-320px]' : ''}`}>
+          <div className="w-full h-full bg-slate-800 relative flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-14 h-14 bg-slate-700 rounded-2xl mx-auto mb-2 flex items-center justify-center border border-slate-600">
+                <Video className="h-6 w-6 text-slate-500" />
               </div>
-              <p className="text-sm">You</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">You</p>
             </div>
+            {!cameraOn && (
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center">
+                <VideoOff className="h-6 w-6 text-slate-400" />
+              </div>
+            )}
           </div>
-          {!cameraOn && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <VideoOff className="h-8 w-8 text-white" />
-            </div>
-          )}
         </div>
       </div>
 
       {/* Controls */}
-      <div className="bg-gray-900 p-6">
-        <div className="flex items-center justify-center gap-4">
-          {/* Mic */}
-          <Button
-            variant={micOn ? "secondary" : "destructive"}
-            size="lg"
-            className="rounded-full w-14 h-14"
-            onClick={() => setMicOn(!micOn)}
-          >
-            {micOn ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-          </Button>
+      <div className="bg-slate-900 px-4 py-4 md:px-8 md:py-8 border-t border-slate-800 md:relative fixed bottom-0 left-0 right-0 z-40">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between">
+          <div className="w-32 hidden md:flex items-center gap-2">
+            <Badge variant="outline" className="border-slate-700 text-slate-500">HD 1080p</Badge>
+          </div>
+          
+          <div className="flex items-center justify-center gap-4">
+            <Button
+              variant={micOn ? "secondary" : "destructive"}
+              size="icon"
+              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700"
+              onClick={() => setMicOn(!micOn)}
+            >
+              {micOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            </Button>
 
-          {/* Camera */}
-          <Button
-            variant={cameraOn ? "secondary" : "destructive"}
-            size="lg"
-            className="rounded-full w-14 h-14"
-            onClick={() => setCameraOn(!cameraOn)}
-          >
-            {cameraOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
-          </Button>
+            <Button
+              variant={cameraOn ? "secondary" : "destructive"}
+              size="icon"
+              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700"
+              onClick={() => setCameraOn(!cameraOn)}
+            >
+              {cameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </Button>
 
-          {/* Share Screen */}
-          <Button
-            variant={screenSharing ? "default" : "secondary"}
-            size="lg"
-            className="rounded-full w-14 h-14"
-            onClick={() => setScreenSharing(!screenSharing)}
-          >
-            <Share className="h-6 w-6" />
-          </Button>
+            <Button
+              variant={screenSharing ? "default" : "secondary"}
+              size="icon"
+              className={`rounded-2xl md:w-14 md:h-14 w-12 h-12 border-slate-700 ${screenSharing ? 'bg-white text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+              onClick={() => setScreenSharing(!screenSharing)}
+            >
+              <Share className="h-5 w-5" />
+            </Button>
 
-          {/* Settings */}
-          <Button
-            variant="secondary"
-            size="lg"
-            className="rounded-full w-14 h-14"
-            onClick={() => setShowSettings(true)}
-          >
-            <Settings className="h-6 w-6" />
-          </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300"
+              onClick={() => setShowSettings(true)}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
 
-          {/* End Call */}
-          <Button
-            variant="destructive"
-            size="lg"
-            className="rounded-full w-14 h-14 ml-4"
-            onClick={handleEndCall}
-          >
-            <PhoneOff className="h-6 w-6" />
-          </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="rounded-2xl md:w-16 md:h-14 w-14 h-12 bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/20 ml-4"
+              onClick={handleEndCall}
+            >
+              <PhoneOff className="h-6 w-6" />
+            </Button>
+          </div>
+
+          <div className="w-32 flex justify-end">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Connected</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-96 max-w-full mx-4">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-t-lg md:rounded-lg p-4 md:p-6 w-11/12 md:w-96 max-w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-white font-semibold">Settings</h3>
               <Button

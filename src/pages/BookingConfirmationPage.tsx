@@ -78,15 +78,15 @@ export default function BookingConfirmationPage() {
                   </Button>
                 </div>
 
-                <Link to="/dashboard">
+                <Link to="/profile">
                   <Button variant="hero" size="lg">
-                    Go to Dashboard
+                    Go to Profile
                     <ArrowRight className="h-5 w-5 ml-2" />
                   </Button>
                 </Link>
 
                 <p className="text-sm text-muted-foreground mt-6">
-                  You can join the video session from your dashboard 5 minutes before the scheduled time.
+                  You can join the video session from your profile 5 minutes before the scheduled time.
                 </p>
               </CardContent>
             </Card>

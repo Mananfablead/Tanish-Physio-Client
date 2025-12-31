@@ -27,7 +27,7 @@ export function Footer() {
               <li><Link to="/therapists" className="hover:text-primary transition-colors">Find Therapists</Link></li>
               <li><Link to="/plans" className="hover:text-primary transition-colors">Subscription Plans</Link></li>
               <li><Link to="/questionnaire" className="hover:text-primary transition-colors">Health Assessment</Link></li>
-              <li><Link to="/dashboard" className="hover:text-primary transition-colors">My Dashboard</Link></li>
+              <li><Link to="/profile" className="hover:text-primary transition-colors">My Profile</Link></li>
             </ul>
           </div>
 
