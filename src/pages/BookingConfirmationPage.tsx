@@ -70,7 +70,7 @@ export default function BookingConfirmationPage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
                   <Button variant="outline">
                     <Download className="h-4 w-4 mr-2" />
-                    Add to Calendar
+                    Download
                   </Button>
                   <Button variant="outline">
                     <Mail className="h-4 w-4 mr-2" />

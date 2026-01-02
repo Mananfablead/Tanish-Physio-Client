@@ -54,7 +54,7 @@ const RightPanelCard = ({ title, badge, children, footer }: { title: string, bad
 );
 
 const InfoBlock = ({ label, value, subValue, icon: Icon, iconColor = "text-primary" }: { label: string, value: React.ReactNode, subValue?: string, icon: any, iconColor?: string }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 flex gap-3 items-start transition-all hover:bg-slate-100/50">
+  <div className="rounded-xl border border-slate-100 bg-slate-100 p-4 flex gap-3 items-start transition-all hover:bg-slate-200">
     <div className={`h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0`}>
       <Icon className={`h-5 w-5 ${iconColor}`} />
     </div>
@@ -66,7 +66,6 @@ const InfoBlock = ({ label, value, subValue, icon: Icon, iconColor = "text-prima
   </div>
 );
 
-// --- End Sub-components ---
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -82,8 +81,8 @@ export default function ProfilePage() {
 
   const sections = [
     { id: 'personal', icon: User, label: 'Personal Info', sub: 'Name, contact, and profile', color: 'text-primary' },
-    { id: 'activePlan', icon: Star, label: 'Active Plan', sub: activePlan ? `${activePlan.plan?.name || activePlan.name}` : 'No active plan', color: 'text-warning' },
-    { id: 'upcoming', icon: Calendar, label: 'Upcoming Session', sub: nextSession ? new Date(nextSession.start).toLocaleDateString() : 'None scheduled', color: 'text-accent' },
+    { id: 'activePlan', icon: Star, label: 'Active Plan', sub: activePlan ? `${activePlan.plan?.name || activePlan.name}` : 'Explore our plans', color: 'text-warning' },
+    { id: 'upcoming', icon: Calendar, label: 'Upcoming Session', sub: nextSession ? new Date(nextSession.start).toLocaleDateString() : 'No sessions scheduled', color: 'text-accent' },
     { id: 'sessionHistory', icon: Play, label: 'Session History', sub: `${sessionHistory?.length || 0} sessions`, color: 'text-primary' },
     { id: 'subscriptionHistory', icon: FileText, label: 'Subscription History', sub: `${planHistory?.length || 0} purchases`, color: 'text-primary' },
   ];
@@ -121,98 +120,38 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    // Load or seed plan history
+    // Load plan history
     try {
-      const raw = sessionStorage.getItem('qw_plan'); if (raw) setActivePlan(JSON.parse(raw));
+      const raw = sessionStorage.getItem('qw_plan'); 
+      if (raw) setActivePlan(JSON.parse(raw));
     } catch (e) {}
 
     try {
       let raw = sessionStorage.getItem('qw_plan_history');
       if (raw) setPlanHistory(JSON.parse(raw));
       else {
-        const samplePlanHistory = [
-          { plan: { name: 'Premium Wellness Plan', price: 299, duration: '30 days' }, purchasedAt: '2025-12-25' },
-          { plan: { name: 'Monthly Recovery Plan', price: 199, duration: '30 days' }, purchasedAt: '2025-11-20' },
-          { plan: { name: 'Weekly Assessment', price: 79, duration: '7 days' }, purchasedAt: '2025-10-15' },
-          { plan: { name: 'Monthly Starter', price: 149, duration: '30 days' }, purchasedAt: '2025-09-10' },
-          { plan: { name: 'Initial Consultation', price: 99, duration: 'Single' }, purchasedAt: '2025-08-05' },
-        ];
-        try { sessionStorage.setItem('qw_plan_history', JSON.stringify(samplePlanHistory)); } catch (e) {}
-        setPlanHistory(samplePlanHistory);
-
-        // Seed an active plan if none exists yet
-        try {
-          const existing = sessionStorage.getItem('qw_plan');
-          if (!existing) {
-            const sampleActive = {
-              plan: { name: 'Premium Wellness Plan', price: 299, duration: '30 days', sessions: 8, durationDays: 30, description: 'Unlimited access to clinical tools and 8 personal sessions.' },
-              purchasedAt: '2025-12-25',
-              start: '2025-12-25',
-              end: '2026-01-24',
-              remainingSessions: 5
-            };
-            try { sessionStorage.setItem('qw_plan', JSON.stringify(sampleActive)); } catch (e) {}
-            setActivePlan(sampleActive);
-          }
-        } catch (e) {}
+        // Initialize with empty array if no history exists
+        setPlanHistory([]);
       }
     } catch (e) {}
 
-    // Load or seed scheduled session
+    // Load scheduled session
     try {
       let raw = sessionStorage.getItem('qw_scheduled_session');
       if (raw) setNextSession(JSON.parse(raw));
       else {
-        const sampleNext = { 
-          therapist: { 
-            name: 'Dr. Sarah Johnson', 
-            avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face', 
-            contact: '+1 (555) 123-4567', 
-            bio: 'Board-certified orthopedic specialist with over 10 years of experience in clinical rehabilitation.', 
-            specialties: ['Back Pain', 'Post-op Rehab', 'Sports Injuries'], 
-            rating: 4.8 
-          }, 
-          session: { type: 'Video Consultation', duration: '45 min', price: 80 }, 
-          start: '2026-01-05T10:00:00',
-          end: '2026-01-05T10:45:00',
-          location: 'Secure Video Call', 
-          relatedTo: 'Lower back pain recovery', 
-          notes: 'Initial assessment — please have any previous imaging ready.' 
-        }
-        try { sessionStorage.setItem('qw_scheduled_session', JSON.stringify(sampleNext)); } catch (e) {}
-        setNextSession(sampleNext);
+        // Initialize with null if no scheduled session exists
+        setNextSession(null);
       }
     } catch (e) {}
 
-    // Load or seed session history
+    // Load session history
     try {
       let raw = sessionStorage.getItem('qw_session_history');
       if (raw) setSessionHistory(JSON.parse(raw));
       else {
-        const sampleSessions = [
-          { 
-            therapist: { name: 'Dr. Sarah Johnson', avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face' }, 
-            start: '2025-12-28T14:00:00', 
-            end: '2025-12-28T14:45:00', 
-            duration: '45 min', 
-            recordingUrl: '/video-call?recording=1', 
-            notes: 'Focused on lower back mobility and core stabilization exercises.', 
-            relatedTo: 'Lower back pain', 
-            status: 'Completed' 
-          },
-          { 
-            therapist: { name: 'Dr. A. Lee', avatar: 'https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?w=80&h=80&fit=crop&crop=face' }, 
-            start: '2025-12-15T11:00:00', 
-            end: '2025-12-15T12:00:00', 
-            duration: '60 min', 
-            recordingUrl: '/video-call?recording=2', 
-            notes: 'Reviewed gait mechanics and prescribed strengthening for gluteus medius.', 
-            relatedTo: 'Gait analysis', 
-            status: 'Completed' 
-          },
-        ];
-        try { sessionStorage.setItem('qw_session_history', JSON.stringify(sampleSessions)); } catch (e) {}
-        setSessionHistory(sampleSessions);
+        // Initialize with empty array if no session history exists
+        setSessionHistory([]);
       }
     } catch (e) {}
 
@@ -279,9 +218,9 @@ export default function ProfilePage() {
             {/* Stats Section */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full lg:w-auto">
               {[
-                { label: 'Active Plans', value: '1', icon: Activity, color: 'text-primary', bg: 'bg-primary/10' },
-                { label: 'Completed', value: '12', icon: Calendar, color: 'text-accent', bg: 'bg-accent/10' },
-                { label: 'Upcoming', value: '1', icon: Clock, color: 'text-success', bg: 'bg-success/10' },
+                { label: 'Active Plans', value: activePlan ? '1' : '0', icon: Activity, color: 'text-primary', bg: 'bg-primary/10' },
+                { label: 'Completed', value: sessionHistory.length, icon: Calendar, color: 'text-accent', bg: 'bg-accent/10' },
+                { label: 'Upcoming', value: nextSession ? '1' : '0', icon: Clock, color: 'text-success', bg: 'bg-success/10' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200 hover:shadow-md transition-all group shadow-sm">
                   <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
@@ -362,7 +301,7 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className="bg-slate-50 p-6 rounded-2xl space-y-6 border border-slate-200 shadow-sm">
+            <div className="bg-slate-200/40 backdrop-blur p-6 rounded-2xl space-y-6 border border-slate-200 shadow-sm">
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
 
@@ -370,7 +309,7 @@ export default function ProfilePage() {
                   <RightPanelCard 
                     title="Active Plan" 
                     badge={activePlan && <Badge className="bg-success/10 text-success border-none font-bold">ACTIVE</Badge>}
-                    footer={activePlan && (
+                    footer={activePlan ? (
                       <>
                         <Button variant="outline" className="h-11 rounded-xl border-slate-200 text-slate-600 hover:bg-primary font-bold" onClick={handleCancelPlan}>
                           Cancel Plan
@@ -379,6 +318,10 @@ export default function ProfilePage() {
                           Renew Now
                         </Button>
                       </>
+                    ) : (
+                      <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black">
+                        <Link to="/plans">Explore Our Plans</Link>
+                      </Button>
                     )}
                   >
                     {activePlan ? (
@@ -425,7 +368,7 @@ export default function ProfilePage() {
                           <p className="text-slate-500 font-medium max-w-xs mx-auto">Get started with a wellness plan tailored to your recovery goals.</p>
                         </div>
                         <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
-                          <Link to="/plans">View Plans</Link>
+                          <Link to="/plans">Explore Our Plans</Link>
                         </Button>
                       </div>
                     )}
@@ -434,7 +377,7 @@ export default function ProfilePage() {
 
                 {selectedSection === 'upcoming' && (
                   <div className="space-y-4">
-                    {assigned && (
+                    {assigned ? (
                       <RightPanelCard 
                         title="Assigned therapist" 
                         badge={<Badge className="bg-primary/10 hover:text-white text-primary border-none font-bold">PRIMARY</Badge>}
@@ -445,18 +388,35 @@ export default function ProfilePage() {
                         )}
                       >
                         <div className="flex items-center gap-5">
-                          <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face" className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 shadow-sm" alt={assigned.name} />
+                          <img src={assigned.avatar || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face'} className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 shadow-sm" alt={assigned.name} />
                           <div className="space-y-1">
-                            <h3 className="text-xl font-black text-slate-900">Dr. Sarah Johnson</h3>
-                            <p className="text-slate-500 font-medium text-sm line-clamp-2">specialist in ortopadic</p>
+                            <h3 className="text-xl font-black text-slate-900">{assigned.name || 'Dr. Sarah Johnson'}</h3>
+                            <p className="text-slate-500 font-medium text-sm line-clamp-2">{assigned.specialty || 'specialist in ortopadic'}</p>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {assigned.specialties?.slice(0, 2).map((s: string) => (
-                                <Badge key={s} variant="outline" className="bg-slate-50 border-slate-200 text-slate-600 text-[10px] font-bold">
+                              {assigned.specialties?.slice(0, 2).map((s: string, idx: number) => (
+                                <Badge key={idx} variant="outline" className="bg-slate-50 border-slate-200 text-slate-600 text-[10px] font-bold">
                                   {s}
                                 </Badge>
                               ))}
                             </div>
                           </div>
+                        </div>
+                      </RightPanelCard>
+                    ) : (
+                      <RightPanelCard 
+                        title="Assigned therapist" 
+                      >
+                        <div className="py-8 text-center space-y-4">
+                          <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                            <User className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900">No Therapist Assigned Yet</h3>
+                            <p className="text-slate-500 font-medium max-w-xs mx-auto">Complete your questionnaire to get matched with a specialist.</p>
+                          </div>
+                          <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                            <Link to="/questionnaire">Complete Questionnaire</Link>
+                          </Button>
                         </div>
                       </RightPanelCard>
                     )}
@@ -515,7 +475,7 @@ export default function ProfilePage() {
                             <p className="text-slate-500 font-medium max-w-xs mx-auto">You don't have any sessions scheduled at the moment.</p>
                           </div>
                           <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
-                            <Link to="/therapists">Find a Therapist</Link>
+                            <Link to="/therapists">Book a Session</Link>
                           </Button>
                         </div>
                       </RightPanelCard>
@@ -585,7 +545,13 @@ export default function ProfilePage() {
                         <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
                           <Play className="h-8 w-8 text-slate-300" />
                         </div>
-                        <p className="text-slate-500 font-medium">No previous sessions found in your history.</p>
+                        <div className="space-y-1">
+                          <h3 className="text-xl font-black text-slate-900">No Session History</h3>
+                          <p className="text-slate-500 font-medium">You haven't completed any sessions yet.</p>
+                        </div>
+                        <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                          <Link to="/therapists">Book a Session</Link>
+                        </Button>
                       </div>
                     </RightPanelCard>
                   )}
@@ -642,7 +608,13 @@ export default function ProfilePage() {
                         <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
                           <FileText className="h-8 w-8 text-slate-300" />
                         </div>
-                        <p className="text-slate-500 font-medium">No subscription history found.</p>
+                        <div className="space-y-1">
+                          <h3 className="text-xl font-black text-slate-900">No Subscription History</h3>
+                          <p className="text-slate-500 font-medium">You haven't purchased any plans yet.</p>
+                        </div>
+                        <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                          <Link to="/plans">Explore Our Plans</Link>
+                        </Button>
                       </div>
                     </RightPanelCard>
                   )}

@@ -148,13 +148,13 @@ const StepWrapper = ({
 
           <div className="mt-8 flex items-center justify-between gap-4">
             {stepNum > 1 ? (
-              <Button variant="outline" onClick={onBack} className="h-12 px-4 md:px-6 rounded-xl font-black text-slate-500 border-slate-200 hover:bg-slate-50 transition-all">Back</Button>
+              <Button variant="outline" onClick={onBack} className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all">Back</Button>
             ) : (
               <div />
             )}
 
             {showNext && (
-              <Button onClick={onNext} disabled={isNextDisabled} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:bg-primary/90 shadow group">
+              <Button onClick={onNext} disabled={isNextDisabled} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
                 {nextLabel}
                 <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -358,25 +358,25 @@ export default function QuestionnairePage() {
 
   return (
     <Layout showFooter={false}>
-      <div className="min-h-screen bg-[#fafbfc] pb-20">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 pb-20">
         {/* Progress Header */}
         {!isReviewing && (
-          <div className="sticky top-14 md:top-16 z-40 bg-white/70 backdrop-blur-2xl border-b border-slate-100/50 py-4 md:py-5 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
+          <div className="sticky top-14 md:top-16 z-40 bg-white/80 backdrop-blur-xl border-b border-primary/20 py-4 md:py-5 shadow-sm">
             <div className="container max-w-5xl px-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Step {activeStep} of {totalSteps}
                   </span>
                 </div>
-                <Badge variant="secondary" className="hidden sm:flex bg-primary/5 text-primary border-none font-black px-3 py-1 rounded-lg">
+                <Badge variant="secondary" className="hidden sm:flex bg-accent/10 text-accent border border-accent/20 font-black px-3 py-1 rounded-lg">
                   {Math.floor(((activeStep - 1) / totalSteps) * 100)}% Complete
                 </Badge>
               </div>
-              <div className="h-1 w-full lg:h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-1 w-full lg:h-1.5 bg-primary/20 rounded-full overflow-hidden">
                 <motion.div 
-                  className="h-full bg-primary"
+                  className="h-full bg-gradient-to-r from-primary to-accent"
                   initial={{ width: 0 }}
                   animate={{ width: `${((activeStep - 1) / totalSteps) * 100}%` }}
                   transition={{ duration: 0.8, ease: "circOut" }}
@@ -390,18 +390,18 @@ export default function QuestionnairePage() {
           <div className="flex flex-col lg:flex-row gap-8">
             <aside className="hidden lg:block lg:w-2/5">
               <div className="rounded-2xl
-  bg-gradient-to-b from-primary/50 via-slate-100 to-primary/30
-  border border-slate-200/60
+  bg-gradient-to-b from-primary/20 via-secondary/30 to-accent/10
+  border border-primary/20
   p-8
-  shadow-sm">
+  shadow-lg shadow-primary/10">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground flex items-center justify-center shadow-sm">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase text-slate-900 tracking-wide">Personalized Care Intake</p>
-                    <h2 className="text-lg font-black text-slate-900">Guided clinical intake</h2>
-                    <p className="text-sm text-slate-500 mt-1">This intake helps clinicians prioritize your needs — ~3 minutes</p>
+                    <p className="text-xs font-black uppercase text-primary tracking-wide">Personalized Care Intake</p>
+                    <h2 className="text-lg font-black text-slate-800">Guided clinical intake</h2>
+                    <p className="text-sm text-slate-600 mt-1">This intake helps clinicians prioritize your needs — ~3 minutes</p>
                   </div>
                 </div>
 
@@ -519,7 +519,7 @@ export default function QuestionnairePage() {
                             <RadioGroupItem value={gender} id={gender} className="peer sr-only" />
                             <Label
                               htmlFor={gender}
-                              className="flex flex-col items-center justify-center rounded-2xl border-2 border-slate-100 bg-white p-4 lg:p-8 hover:bg-slate-50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/[0.03] cursor-pointer transition-all text-sm font-black shadow-sm min-h-[48px]"
+                              className="flex flex-col items-center justify-center rounded-2xl border-2 border-primary/20 bg-white p-4 lg:p-8 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-black shadow-sm min-h-[48px]"
                             >
                               {gender}
                             </Label>
@@ -609,7 +609,7 @@ export default function QuestionnairePage() {
                         <RadioGroupItem value={duration} id={duration} className="peer sr-only" />
                         <Label
                           htmlFor={duration}
-                          className="flex items-center rounded-2xl border-2 border-slate-100 bg-white p-6 hover:bg-slate-50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all text-sm font-bold shadow-sm group"
+                          className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-6 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-bold shadow-sm group"
                         >
                           <div className={`w-6 h-6 rounded-full border-2 mr-5 flex items-center justify-center transition-all ${
                             data.painDuration === duration ? "border-primary bg-primary" : "border-slate-200 group-hover:border-primary/40"
@@ -633,12 +633,12 @@ export default function QuestionnairePage() {
                   onNext={handleNext}
                   onBack={handleBack}
                 >
-                  <div className="bg-slate-50/50 p-10 rounded-3xl border border-slate-100 space-y-12">
+                  <div className="bg-gradient-to-br from-primary/5 to-secondary/10 p-10 rounded-3xl border border-primary/20 space-y-12 shadow-inner">
                     <div className="text-center relative">
-                      <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 blur-3xl rounded-full" />
                       <span className="text-8xl font-black text-primary tracking-tighter relative tabular-nums">{data.painLevel}</span>
-                      <span className="text-3xl font-bold text-slate-300 relative">/10</span>
-                      <p className="text-sm font-black uppercase tracking-[0.3em] text-primary/60 mt-4 relative">
+                      <span className="text-3xl font-bold text-primary/60 relative">/10</span>
+                      <p className="text-sm font-black uppercase tracking-[0.3em] text-primary mt-4 relative">
                         {data.painLevel <= 3 ? "Mild" : data.painLevel <= 7 ? "Moderate" : "Severe"}
                       </p>
                     </div>
@@ -691,7 +691,7 @@ export default function QuestionnairePage() {
                         <RadioGroupItem value={type} id={type} className="peer sr-only" />
                         <Label
                           htmlFor={type}
-                          className="flex flex-col items-center justify-center text-center rounded-2xl border-2 border-slate-100 bg-white p-8 h-40 hover:bg-slate-50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/[0.03] cursor-pointer transition-all text-sm font-black leading-tight shadow-sm"
+                          className="flex flex-col items-center justify-center text-center rounded-2xl border-2 border-primary/20 bg-white p-8 h-40 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-black leading-tight shadow-sm"
                         >
                           {type}
                         </Label>
@@ -725,9 +725,9 @@ export default function QuestionnairePage() {
                         <RadioGroupItem value={type.value} id={type.value} className="peer sr-only" />
                         <Label
                           htmlFor={type.value}
-                          className="flex items-center rounded-2xl border-2 border-slate-100 bg-white p-3 lg:p-6 hover:bg-slate-50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all shadow-sm group min-h-[48px]"
+                          className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-3 lg:p-6 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all shadow-sm group min-h-[48px]"
                         >
-                          <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-colors mr-6">
+                          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-accent group-hover:text-primary-foreground transition-colors mr-6">
                             <type.icon className="h-6 w-6" />
                           </div>
                           <div className="flex-1">
@@ -801,8 +801,8 @@ export default function QuestionnairePage() {
                             { label: "Session Style", value: data.sessionType, icon: Edit2, step: 6 },
                             { label: "Availability", value: data.preferredTimes.join(", "), icon: Clock, step: 7 },
                           ].map((item, i) => (
-                            <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
-                              <div className="h-12 w-12 rounded-md bg-white shadow-sm flex items-center justify-center text-primary">
+                            <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 border border-slate-100">
+                              <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary">
                                 <item.icon className="h-6 w-6" />
                               </div>
                               <div className="flex-1">

@@ -10,7 +10,8 @@ import {
   LogOut,
   LayoutDashboard,
   Settings,
-  Mail
+  Mail,
+  Calendar
 } from "lucide-react";
 import { useState } from "react";
 import { 
@@ -45,7 +46,7 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/therapists", label: "Find Therapists" },
   { to: "/plans", label: "Plans" },
-  // { to: "/profile", label: "Dashboard" },
+  // { to: "/schedule", label: "Schedule" },
 ];
 
 export function Header() {
@@ -148,12 +149,13 @@ export function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="my-1 bg-slate-100" />
+              
                 {/* <DropdownMenuItem className="py-3 px-3 rounded-xl cursor-pointer focus:bg-green-50 group transition-colors" asChild>
-                  <Link to="/profile" className="flex items-center gap-3">
+                  <Link to="/schedule" className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center group-focus:bg-green-100 group-focus:text-green-600 transition-colors">
-                      <LayoutDashboard className="h-4 w-4" />
+                      <Calendar className="h-4 w-4" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-700 group-focus:text-green-700">Clinical Dashboard</span>
+                    <span className="text-sm font-semibold text-slate-700 group-focus:text-green-700">My Schedule</span>
                   </Link>
                 </DropdownMenuItem> */}
                 <DropdownMenuItem className="py-3 px-3 rounded-xl cursor-pointer focus:bg-green-50 group transition-colors" asChild>
@@ -197,6 +199,18 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[280px]">
               <div className="flex flex-col gap-4 mt-8">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                        <Avatar className="h-10 w-10 border-2 border-green-500">
+                          <AvatarImage src={user?.image} alt={user?.name} />
+                          <AvatarFallback className="bg-green-100 text-green-700 font-bold">
+                            {user?.name?.[0] || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-slate-900">{user?.name}</span>
+                          <span className="text-[10px] text-slate-500 truncate max-w-[150px]">{user?.email}</span>
+                        </div>
+                      </div>
                 {navLinks.map((link) => (
                   <Link
                     key={link.to}
@@ -232,19 +246,14 @@ export function Header() {
                     </>
                   ) : (
                     <div className="space-y-4">
-                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                        <Avatar className="h-10 w-10 border-2 border-green-500">
-                          <AvatarImage src={user?.image} alt={user?.name} />
-                          <AvatarFallback className="bg-green-100 text-green-700 font-bold">
-                            {user?.name?.[0] || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-900">{user?.name}</span>
-                          <span className="text-[10px] text-slate-500 truncate max-w-[150px]">{user?.email}</span>
-                        </div>
-                      </div>
+                      
                       <div className="grid grid-cols-1 gap-2">
+                        {/* <Link to="/schedule" onClick={() => setOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-3 py-6 rounded-xl">
+                            <Calendar className="h-5 w-5 text-slate-500" />
+                            My Schedule
+                          </Button>
+                        </Link> */}
                         <Link to="/profile" onClick={() => setOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start gap-3 py-6 rounded-xl">
                             <User className="h-5 w-5 text-slate-500" />

@@ -18,6 +18,11 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const VideoCallPage = lazy(() => import("./pages/VideoCallPage"));
+const FAQPage = lazy(() => import("./pages/FAQPage"));
+const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
+const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
+const ContactUsPage = lazy(() => import("./pages/ContactUsPage"));
+const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/routing/ProtectedRoute";
@@ -79,6 +84,13 @@ const App = () => (
                 <VideoCallPage />
               </ProtectedRoute>
             } />
+            
+            {/* Support pages */}
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/aboutUs" element={<AboutUsPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/contact" element={<ContactUsPage />} />
+            <Route path="/schedule" element={<SchedulePage />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
