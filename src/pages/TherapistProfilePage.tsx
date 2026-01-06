@@ -134,11 +134,6 @@ export default function TherapistProfilePage() {
       {/* Hero Section */}
       <div className="bg-muted/30 py-8">
         <div className="container">
-          <Link to="/therapists" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6">
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back to Therapists
-          </Link>
-
           <div className="flex flex-col md:flex-row gap-8">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -151,7 +146,7 @@ export default function TherapistProfilePage() {
               />
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="flex-1"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -159,7 +154,9 @@ export default function TherapistProfilePage() {
               <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                 <div>
                   <h1 className="text-3xl font-bold">{therapistData.name}</h1>
-                  <p className="text-lg text-muted-foreground">{therapistData.title}</p>
+                  <p className="text-lg text-muted-foreground">
+                    {therapistData.title}
+                  </p>
                 </div>
                 <Badge variant="success" className="text-sm">
                   <Clock className="h-3 w-3 mr-1" />
@@ -171,7 +168,9 @@ export default function TherapistProfilePage() {
                 <div className="flex items-center gap-1">
                   <Star className="h-5 w-5 fill-warning text-warning" />
                   <span className="font-semibold">{therapistData.rating}</span>
-                  <span className="text-muted-foreground">({therapistData.reviews} reviews)</span>
+                  <span className="text-muted-foreground">
+                    ({therapistData.reviews} reviews)
+                  </span>
                 </div>
                 <div className="text-muted-foreground">
                   {therapistData.experience} years experience
@@ -199,13 +198,22 @@ export default function TherapistProfilePage() {
           <div className="lg:col-span-2 space-y-8">
             <Tabs defaultValue="about">
               <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0">
-                <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                <TabsTrigger
+                  value="about"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
                   About
                 </TabsTrigger>
-                <TabsTrigger value="videos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                <TabsTrigger
+                  value="videos"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
                   Sample Videos
                 </TabsTrigger>
-                <TabsTrigger value="reviews" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                <TabsTrigger
+                  value="reviews"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
                   Reviews
                 </TabsTrigger>
               </TabsList>
@@ -213,7 +221,9 @@ export default function TherapistProfilePage() {
               <TabsContent value="about" className="pt-6 space-y-8">
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Biography</h3>
-                  <p className="text-muted-foreground leading-relaxed">{therapistData.bio}</p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {therapistData.bio}
+                  </p>
                 </div>
 
                 <div>
@@ -232,7 +242,11 @@ export default function TherapistProfilePage() {
               <TabsContent value="videos" className="pt-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   {therapistData.sampleVideos.map((video, index) => (
-                    <Card key={index} variant="interactive" className="group cursor-pointer">
+                    <Card
+                      key={index}
+                      variant="interactive"
+                      className="group cursor-pointer"
+                    >
                       <CardContent className="p-4">
                         <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
@@ -241,7 +255,9 @@ export default function TherapistProfilePage() {
                           </div>
                         </div>
                         <h4 className="font-medium">{video.title}</h4>
-                        <p className="text-sm text-muted-foreground">{video.duration}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {video.duration}
+                        </p>
                       </CardContent>
                     </Card>
                   ))}
@@ -259,12 +275,18 @@ export default function TherapistProfilePage() {
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`h-4 w-4 ${i < review.rating ? "fill-warning text-warning" : "text-muted"}`}
+                                className={`h-4 w-4 ${
+                                  i < review.rating
+                                    ? "fill-warning text-warning"
+                                    : "text-muted"
+                                }`}
                               />
                             ))}
                           </div>
                         </div>
-                        <span className="text-sm text-muted-foreground">{review.date}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {review.date}
+                        </span>
                       </div>
                       <p className="text-muted-foreground">{review.comment}</p>
                     </CardContent>
@@ -302,7 +324,9 @@ export default function TherapistProfilePage() {
                         <span className="font-medium">{format.type}</span>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{format.duration} • {format.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {format.duration} • {format.description}
+                    </p>
                   </button>
                 ))}
               </CardContent>
@@ -348,8 +372,12 @@ export default function TherapistProfilePage() {
                           : "bg-muted hover:bg-muted/80"
                       }`}
                     >
-                      <p className="text-xs font-medium">{day.date.split(" ")[0]}</p>
-                      <p className="text-sm">{day.date.split(" ").slice(1).join(" ")}</p>
+                      <p className="text-xs font-medium">
+                        {day.date.split(" ")[0]}
+                      </p>
+                      <p className="text-sm">
+                        {day.date.split(" ").slice(1).join(" ")}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -359,7 +387,9 @@ export default function TherapistProfilePage() {
                   {weekDays[selectedDay].slots.map((slot) => (
                     <button
                       key={slot.time}
-                      onClick={() => slot.available && setSelectedSlot(slot.time)}
+                      onClick={() =>
+                        slot.available && setSelectedSlot(slot.time)
+                      }
                       disabled={!slot.available}
                       className={`py-2 px-3 rounded-lg text-sm transition-all ${
                         !slot.available
@@ -388,7 +418,8 @@ export default function TherapistProfilePage() {
 
                 {selectedSlot && (
                   <p className="text-sm text-center text-muted-foreground mt-3">
-                    {weekDays[selectedDay].date} at {selectedSlot} • {selectedFormat.duration}
+                    {weekDays[selectedDay].date} at {selectedSlot} •{" "}
+                    {selectedFormat.duration}
                   </p>
                 )}
               </CardContent>

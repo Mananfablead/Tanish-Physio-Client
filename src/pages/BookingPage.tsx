@@ -124,14 +124,30 @@ export default function BookingPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Complete Your Booking</h1>
-              <p className="text-muted-foreground">Review your session details and complete payment</p>
+              <p className="text-muted-foreground">
+                Review your session details and complete payment
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`px-3 py-1 rounded-lg text-sm font-black ${intakeIsRecent ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-50 text-yellow-800'}`}>
-                {intakeIsRecent ? 'Intake: Complete' : 'Intake: Required'}
+              <div
+                className={`px-3 py-1 rounded-lg text-sm font-black ${
+                  intakeIsRecent
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-yellow-50 text-yellow-800"
+                }`}
+              >
+                {intakeIsRecent ? "Intake: Complete" : "Intake: Required"}
               </div>
-              <div className={`px-3 py-1 rounded-lg text-sm font-black ${sessionStorage.getItem('qw_plan') ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400'}`}>
-                {sessionStorage.getItem('qw_plan') ? 'Plan: Active' : 'Plan: Not Purchased'}
+              <div
+                className={`px-3 py-1 rounded-lg text-sm font-black ${
+                  sessionStorage.getItem("qw_plan")
+                    ? "bg-primary/10 text-primary"
+                    : "bg-slate-100 text-slate-400"
+                }`}
+              >
+                {sessionStorage.getItem("qw_plan")
+                  ? "Plan: Active"
+                  : "Plan: Not Purchased"}
               </div>
             </div>
           </div>
@@ -150,14 +166,26 @@ export default function BookingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  className="space-y-3"
+                >
                   {[
-                    { value: "card", label: "Credit / Debit Card", icon: CreditCard },
+                    {
+                      value: "card",
+                      label: "Credit / Debit Card",
+                      icon: CreditCard,
+                    },
                     { value: "paypal", label: "PayPal", icon: Wallet },
                     { value: "apple", label: "Apple Pay", icon: Wallet },
                   ].map((method) => (
                     <div key={method.value}>
-                      <RadioGroupItem value={method.value} id={method.value} className="peer sr-only" />
+                      <RadioGroupItem
+                        value={method.value}
+                        id={method.value}
+                        className="peer sr-only"
+                      />
                       <Label
                         htmlFor={method.value}
                         className="flex items-center gap-3 rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
@@ -177,19 +205,30 @@ export default function BookingPage() {
                   >
                     <div>
                       <Label htmlFor="cardName">Name on Card</Label>
-                      <Input id="cardName" placeholder="John Doe" className="mt-2" />
+                      <Input
+                        id="cardName"
+                        placeholder="John Doe"
+                        className="mt-2"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="cardNumber">Card Number</Label>
                       <div className="relative mt-2">
-                        <Input id="cardNumber" placeholder="4242 4242 4242 4242" />
+                        <Input
+                          id="cardNumber"
+                          placeholder="4242 4242 4242 4242"
+                        />
                         <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input id="expiry" placeholder="MM/YY" className="mt-2" />
+                        <Input
+                          id="expiry"
+                          placeholder="MM/YY"
+                          className="mt-2"
+                        />
                       </div>
                       <div>
                         <Label htmlFor="cvc">CVC</Label>
@@ -211,7 +250,8 @@ export default function BookingPage() {
                   <div>
                     <p className="font-medium text-sm">Secure Payment</p>
                     <p className="text-xs text-muted-foreground">
-                      Your payment is encrypted and secure. We never store your card details.
+                      Your payment is encrypted and secure. We never store your
+                      card details.
                     </p>
                   </div>
                 </div>
@@ -235,7 +275,9 @@ export default function BookingPage() {
                   />
                   <div>
                     <p className="font-medium">{therapist.name}</p>
-                    <p className="text-sm text-muted-foreground">{therapist.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {therapist.title}
+                    </p>
                   </div>
                 </div>
 
@@ -243,7 +285,9 @@ export default function BookingPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span>{session.type} Session ({session.duration})</span>
+                    <span>
+                      {session.type} Session ({session.duration})
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -261,43 +305,58 @@ export default function BookingPage() {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="font-medium">{plan.name}</p>
-                    <p className="text-sm text-muted-foreground">{plan.duration}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {plan.duration}
+                    </p>
                   </div>
-                  <p className="font-semibold">${plan.price}</p>
+                  <p className="font-semibold">₹{plan.price}</p>
                 </div>
 
                 {promoApplied && (
                   <div className="flex justify-between items-center text-success">
                     <span className="text-sm">Promo Discount (20%)</span>
-                    <span>-${Math.round(plan.price * 0.2)}</span>
+                    <span>-₹{Math.round(plan.price * 0.2)}</span>
                   </div>
                 )}
-
                 <Separator />
-
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-lg">Total</span>
-                  <span className="font-bold text-2xl text-primary">${finalPrice}</span>
+                  <span className="font-bold text-2xl text-primary">
+                    ₹{finalPrice}
+                  </span>
                 </div>
 
                 {!planProvided ? (
                   <>
                     <div className="p-3 rounded-md bg-blue-50 border border-blue-100 text-blue-800 text-sm mb-4">
-                      You can reserve this session now, then select a plan to unlock it.
+                      You can reserve this session now, then select a plan to
+                      unlock it.
                     </div>
-                    <Button variant="outline" size="lg" className="w-full mb-3" onClick={() => {
-                      // reserve session and redirect to plans
-                      const reserved = {
-                        therapist,
-                        session,
-                        date,
-                        time,
-                        reservedAt: Date.now(),
-                        locked: true,
-                      };
-                      try { sessionStorage.setItem('qw_scheduled_session', JSON.stringify(reserved)); } catch (e) {}
-                      navigate('/plans', { state: { fromReservation: true } });
-                    }}>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full mb-3"
+                      onClick={() => {
+                        // reserve session and redirect to plans
+                        const reserved = {
+                          therapist,
+                          session,
+                          date,
+                          time,
+                          reservedAt: Date.now(),
+                          locked: true,
+                        };
+                        try {
+                          sessionStorage.setItem(
+                            "qw_scheduled_session",
+                            JSON.stringify(reserved)
+                          );
+                        } catch (e) {}
+                        navigate("/plans", {
+                          state: { fromReservation: true },
+                        });
+                      }}
+                    >
                       Reserve Session
                     </Button>
                   </>
@@ -305,7 +364,9 @@ export default function BookingPage() {
                   <>
                     {!intakeIsRecent && (
                       <div className="p-3 rounded-md bg-yellow-50 border border-yellow-100 text-yellow-800 text-sm mb-4">
-                        We noticed you don't have a recent intake on file. After payment you'll be prompted to complete the intake to unlock sessions.
+                        We noticed you don't have a recent intake on file. After
+                        payment you'll be prompted to complete the intake to
+                        unlock sessions.
                       </div>
                     )}
 
@@ -324,14 +385,15 @@ export default function BookingPage() {
                       ) : (
                         <>
                           <Lock className="h-4 w-4 mr-2" />
-                          Pay ${finalPrice}
+                          Pay ₹{finalPrice}
                         </>
                       )}
                     </Button>
                   </>
                 )}
                 <p className="text-xs text-center text-muted-foreground">
-                  By completing this purchase, you agree to our Terms of Service.
+                  By completing this purchase, you agree to our Terms of
+                  Service.
                 </p>
               </CardContent>
             </Card>

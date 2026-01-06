@@ -695,110 +695,103 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Featured Physiotherapists */}
-      <section className="py-16 relative overflow-hidden border-y border-primary/10" style={{ backgroundColor: '#f1fafa' }}>
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px]" />
-        </div>
-        <div className="container relative z-10">
-          <motion.div 
-            className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <div className="max-w-2xl">
-              <Badge variant="secondary" className="mb-4 border border-primary/20">Our Experts</Badge>
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">Meet Our Top-Rated Therapists</h2>
-              <p className="text-muted-foreground">
-                Work with the best in the field. All our therapists are certified and highly experienced.
-              </p>
-            </div>
-            <Link to="/therapists">
-              <Button variant="outline" className="rounded-full px-6 hover:bg-primary hover:text-white transition-all">
-                View All Therapists
-              </Button>
-            </Link>
-          </motion.div>
+  {/* Featured Therapist – Single */}
+<section
+  className="py-20 relative overflow-hidden border-y border-primary/10"
+  style={{ backgroundColor: "#f1fafa" }}
+>
+  {/* Background glow */}
+  <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
+    <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px]" />
+  </div>
 
-          <motion.div 
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
-            variants={stagger}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-          >
-            {[
-              {
-                name: "Dr. Alex Rivera",
-                specialization: "Sports Medicine",
-                exp: "12 years",
-                rating: 4.9,
-                image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=464&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-              },
-              {
-                name: "Dr. Sarah Miller",
-                specialization: "Orthopedic Specialist",
-                exp: "8 years",
-                rating: 4.8,
-                image: "https://media.istockphoto.com/id/1270790502/photo/medical-concept-of-indian-beautiful-female-doctor-with-note-book.webp?a=1&b=1&s=612x612&w=0&k=20&c=fg_7luuQzYkY9AOwJDtX817uZTIDoFdKgTVG-kIf7BA="
-              },
-              {
-                name: "Dr. James Wilson",
-                specialization: "Neuro-Physiotherapist",
-                exp: "15 years",
-                rating: 5.0,
-                image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGRvY3RvcnN8ZW58MHx8MHx8fDA%3D"
-              },
-              {
-                name: "Dr. Maya Patel",
-                specialization: "Pediatric Physio",
-                exp: "10 years",
-                rating: 4.9,
-                image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGRvY3RvcnN8ZW58MHx8MHx8fDA%3D"
-              }
-            ].map((therapist, index) => (
-              <motion.div key={index} variants={fadeInUp}>
-                <Card className="overflow-hidden group hover:shadow-2xl transition-all duration-500 border border-primary/10 bg-white">
-                  <div className="relative aspect-[4/5] overflow-hidden">
-                    <img 
-                      src={therapist.image} 
-                      alt={therapist.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <Badge className="absolute top-4 right-4 bg-success text-success-foreground border-none shadow-lg">
-                      Available Today
-                    </Badge>
-                  </div>
-                  <div className="p-5 relative">
-                    <h4 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{therapist.name}</h4>
-                    <p className="text-sm text-primary font-medium mb-3">{therapist.specialization}</p>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{therapist.exp} exp</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-warning text-warning" />
-                        <span className="font-bold text-foreground">{therapist.rating}</span>
-                      </div>
-                    </div>
-                    <Link to={`/therapist/${index + 1}`}>
-                      <Button className="w-full rounded-xl group-hover:bg-primary group-hover:text-white transition-all duration-300 flex items-center justify-center gap-2" variant="secondary">
-                        View Profile
-                        <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                      </Button>
-                    </Link>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+  <div className="container relative z-10">
+    <motion.div
+      className="grid lg:grid-cols-2 gap-16 items-center"
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      {/* Therapist Image */}
+      <motion.div
+        initial={{ opacity: 0, x: -30 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        className="relative"
+      >
+        <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+          <img
+            src="https://images.unsplash.com/photo-1622253692010-333f2da6031d"
+            alt="Dr. Alex Rivera"
+            className="w-full h-[420px] object-cover rounded-3xl"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          <Badge className="absolute top-6 right-6 bg-success text-success-foreground shadow-lg">
+            Available Today
+          </Badge>
         </div>
-      </section>
+      </motion.div>
+
+      {/* Therapist Details */}
+      <motion.div
+        initial={{ opacity: 0, x: 30 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        className="space-y-6"
+      >
+        <Badge variant="secondary" className="border border-primary/20 w-fit">
+          Featured Therapist
+        </Badge>
+
+        <h2 className="text-3xl lg:text-4xl font-bold">
+          Dr. Alex Rivera
+        </h2>
+
+        <p className="text-primary font-semibold text-lg">
+          Sports & Orthopedic Physiotherapist
+        </p>
+
+        <div className="flex items-center gap-6 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            <span>12+ Years Experience</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Star className="h-4 w-4 fill-warning text-warning" />
+            <span className="font-semibold">4.9 Rating</span>
+          </div>
+        </div>
+
+        <p className="text-muted-foreground leading-relaxed max-w-xl">
+          Specialized in sports injuries, post-surgery rehabilitation, and chronic
+          pain management. Known for personalized recovery plans and fast results
+          through virtual physiotherapy.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <Link to="/questionnaire">
+            <Button size="lg" className="rounded-full">
+              Start Assessment
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+          </Link>
+
+          <Link to="/therapist/1">
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full border-primary/30"
+            >
+              View Full Profile
+            </Button>
+          </Link>
+        </div>
+      </motion.div>
+    </motion.div>
+  </div>
+</section>
+
 
       {/* FAQ Section */}
       <section className="py-10 bg-muted/30">

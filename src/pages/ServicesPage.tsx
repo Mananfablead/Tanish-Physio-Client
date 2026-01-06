@@ -1,15 +1,15 @@
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ServicesGrid } from "@/components/ui/ServicesGrid";
-import { 
-  ShieldCheck, 
-  UserCheck, 
-  Home, 
+import { EnhancedServicesGrid } from "@/components/ui/EnhancedServicesGrid";
+import {
+  ShieldCheck,
+  UserCheck,
+  Home,
   TrendingUp,
   ArrowRight,
   Lock,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -21,7 +21,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function ServicesPage() {
@@ -41,10 +47,12 @@ export default function ServicesPage() {
               Our Specialized Services
             </h1>
             <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-3xl mx-auto">
-              Expert-led, personalized physiotherapy care designed to help you achieve optimal health and wellness. 
-              Our team of certified specialists provides comprehensive treatment options tailored to your unique needs.
+              Expert-led, personalized physiotherapy care designed to help you
+              achieve optimal health and wellness. Our team of certified
+              specialists provides comprehensive treatment options tailored to
+              your unique needs.
             </p>
-            
+
             {/* <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button size="lg" className="h-12 px-8 rounded-xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
                 Book Appointment
@@ -52,45 +60,35 @@ export default function ServicesPage() {
             </div> */}
 
             {/* Stats Badges */}
-        <div className="flex flex-wrap justify-center gap-6 mt-12">
-        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            <span className="font-bold text-slate-700">
-            Evidence-Based Treatment
-            </span>
-        </div>
+            <div className="flex flex-wrap justify-center gap-6 mt-12">
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                <span className="font-bold text-slate-700">
+                  Evidence-Based Treatment
+                </span>
+              </div>
 
-        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            <span className="font-bold text-slate-700">
-            Personalized Care Plans
-            </span>
-        </div>
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <span className="font-bold text-slate-700">
+                  Personalized Care Plans
+                </span>
+              </div>
 
-        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
-            <Lock className="h-5 w-5 text-primary" />
-            <span className="font-bold text-slate-700">
-            Secure & Private Care
-            </span>
-        </div>
-        </div>
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
+                <Lock className="h-5 w-5 text-primary" />
+                <span className="font-bold text-slate-700">
+                  Secure & Private Care
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Services Grid Section */}
       <div className="container ">
-        {/* <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
-            Comprehensive Physiotherapy Services
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Our specialized services cover a wide range of conditions and patient needs, 
-            ensuring you receive the most appropriate care for your specific situation.
-          </p>
-        </div> */}
-
-        <ServicesGrid />
+        <EnhancedServicesGrid />
       </div>
 
       {/* Highlight Section */}
@@ -191,7 +189,7 @@ export default function ServicesPage() {
             </p>
           </Card>
         </div>
-      </div> */} 
+      </div> */}
 
       {/* CTA Banner */}
       {/* <div className="bg-gradient-to-r from-primary to-accent py-20">

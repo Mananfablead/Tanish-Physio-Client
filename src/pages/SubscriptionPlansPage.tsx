@@ -174,7 +174,7 @@ export default function SubscriptionPlansPage() {
 
                   <div className="text-sm text-muted-foreground mb-6">
                     {typeof plan.sessions === "number" 
-                      ? `Up to ₹{plan.sessions} session₹{plan.sessions > 1 ? "s" : ""}`
+                      ? `Up to ${plan.sessions} session${plan.sessions > 1 ? "s" : ""}`
                       : "Unlimited sessions"
                     }
                   </div>
