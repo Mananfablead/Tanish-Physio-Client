@@ -1,11 +1,34 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Calendar, Video, ArrowRight, Download, Mail } from "lucide-react";
+import {
+  CheckCircle,
+  Calendar,
+  Video,
+  ArrowRight,
+  Download,
+  Mail,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function BookingConfirmationPage() {
+  const location = useLocation();
+  const bookingData = location.state;
+
+  // Extract booking details
+  const therapist = bookingData?.therapist || {
+    name: "Dr. Sarah Johnson",
+    title: "Sports Injury Specialist",
+    avatar:
+      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
+  };
+
+  const sessionDate = bookingData?.date || "Mon, Dec 30, 2024";
+  const sessionTime = bookingData?.time || "10:00 AM (45 min)";
+  const serviceName =
+    bookingData?.service?.name || bookingData?.planName || "Therapy Session";
+  const servicePrice = bookingData?.finalPrice || bookingData?.planPrice || 199;
 
   return (
     <Layout>
@@ -29,22 +52,27 @@ export default function BookingConfirmationPage() {
 
                 <h1 className="text-3xl font-bold mb-2">Booking Confirmed!</h1>
                 <p className="text-muted-foreground mb-8">
-                  Your session has been successfully booked. You'll receive a confirmation email shortly.
+                  Your {serviceName} session has been successfully booked.
+                  You'll receive a confirmation email shortly.
                 </p>
 
                 {/* Session Details */}
                 <div className="bg-muted/50 rounded-xl p-6 mb-8 text-left space-y-4">
-                  <h3 className="font-semibold text-center mb-4">Session Details</h3>
-                  
+                  <h3 className="font-semibold text-center mb-4">
+                    Session Details
+                  </h3>
+
                   <div className="flex items-center gap-3">
                     <img
-                      src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face"
-                      alt="Dr. Sarah Johnson"
+                      src={therapist.avatar}
+                      alt={therapist.name}
                       className="w-12 h-12 rounded-lg object-cover"
                     />
                     <div>
-                      <p className="font-medium">Dr. Sarah Johnson</p>
-                      <p className="text-sm text-muted-foreground">Sports Injury Specialist</p>
+                      <p className="font-medium">{therapist.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {therapist.title}
+                      </p>
                     </div>
                   </div>
 
@@ -53,14 +81,14 @@ export default function BookingConfirmationPage() {
                       <Calendar className="h-4 w-4 text-primary" />
                       <div>
                         <p className="text-sm text-muted-foreground">Date</p>
-                        <p className="font-medium">Mon, Dec 30, 2024</p>
+                        <p className="font-medium">{sessionDate}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Video className="h-4 w-4 text-primary" />
                       <div>
                         <p className="text-sm text-muted-foreground">Time</p>
-                        <p className="font-medium">10:00 AM (45 min)</p>
+                        <p className="font-medium">{sessionTime}</p>
                       </div>
                     </div>
                   </div>
@@ -78,15 +106,16 @@ export default function BookingConfirmationPage() {
                   </Button>
                 </div>
 
-                <Link to="/profile">
+                <Link to="/">
                   <Button variant="hero" size="lg">
-                    Go to Profile
+                    Back to Home
                     <ArrowRight className="h-5 w-5 ml-2" />
                   </Button>
                 </Link>
 
                 <p className="text-sm text-muted-foreground mt-6">
-                  You can join the video session from your profile 5 minutes before the scheduled time.
+                  You can join the video session from your profile 5 minutes
+                  before the scheduled time.
                 </p>
               </CardContent>
             </Card>
