@@ -26,7 +26,7 @@ const ContactUsPage = lazy(() => import("./pages/ContactUsPage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 
-import { AuthProvider } from "./context/AuthContext";
+
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 import PublicRoute from "./components/routing/PublicRoute";
 
@@ -34,8 +34,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
+    <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -93,7 +92,6 @@ const App = () => (
         </Suspense>
       </BrowserRouter>
     </TooltipProvider>
-    </AuthProvider>
   </QueryClientProvider>
 );
 

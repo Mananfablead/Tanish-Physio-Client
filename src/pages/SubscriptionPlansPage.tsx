@@ -22,6 +22,11 @@ const plans = [
       "Chat support",
       "Session recording",
     ],
+    services: [
+      "Orthopedic Physiotherapy",
+      "Basic exercise plan",
+      "Therapist consultation",
+    ],
     popular: false,
   },
   {
@@ -36,6 +41,13 @@ const plans = [
       "Priority chat support",
       "Session recordings",
       "Progress tracking",
+    ],
+    services: [
+      "Orthopedic Physiotherapy",
+      "Neuro Physiotherapy",
+      "Sports Physiotherapy",
+      "Customized exercise plans",
+      "Weekly progress reports",
     ],
     popular: false,
   },
@@ -54,6 +66,15 @@ const plans = [
       "Advanced progress tracking",
       "Personalized exercise plans",
       "Group session access",
+    ],
+    services: [
+      "All physiotherapy services",
+      "Personalized treatment plans",
+      "Unlimited exercise plans",
+      "Regular progress assessments",
+      "Home visit services",
+      "Nutrition consultation",
+      "Injury prevention programs",
     ],
     popular: true,
   },
@@ -179,14 +200,41 @@ export default function SubscriptionPlansPage() {
                     }
                   </div>
 
-                  <ul className="space-y-3 text-left">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="space-y-4 text-left">
+                    <div>
+                      <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
+                        <span className="bg-primary/10 p-1 rounded">
+                          <CheckCircle className="h-3 w-3 text-primary" />
+                        </span>
+                        Included Features
+                      </h4>
+                      <ul className="space-y-2">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
+                        <span className="bg-primary/10 p-1 rounded">
+                          <Star className="h-3 w-3 text-primary" />
+                        </span>
+                        Services Provided
+                      </h4>
+                      <ul className="space-y-2">
+                        {plan.services.map((service, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span>{service}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
 
                   <Button
                     variant={selectedPlan === plan.id ? "hero" : "outline"}

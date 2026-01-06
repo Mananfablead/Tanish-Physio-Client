@@ -4,7 +4,7 @@ import logo from '../../assets/logo.webp';
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/30">
-      <div className="container py-12">
+      <div className="container py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
@@ -35,7 +35,7 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/therapists" className="hover:text-primary transition-colors">Find Therapists</Link></li>
+              <li><Link to="/services" className="hover:text-primary transition-colors">Services</Link></li>
               <li><Link to="/plans" className="hover:text-primary transition-colors">Subscription Plans</Link></li>
               <li><Link to="/questionnaire" className="hover:text-primary transition-colors">Health Assessment</Link></li>
               <li><Link to="/profile" className="hover:text-primary transition-colors">My Profile</Link></li>
@@ -80,7 +80,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
+        <div className="border-t border-border mt-4 pt-4 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Tanish Physiotherapy & Fitness Clinic.</p>
         </div>
       </div>

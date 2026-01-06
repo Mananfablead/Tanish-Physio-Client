@@ -24,7 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+
 import { 
   Tooltip,
   TooltipContent,
@@ -57,7 +57,12 @@ type RegisterForm = z.infer<typeof registerSchema>;
 type ForgotForm = z.infer<typeof forgotSchema>;
 
 const Login = () => {
-    const { login } = useAuth();
+    const login = (email: string, name: string, role: string = 'patient') => {
+        // Mock login function - in a real app this would set user context
+        console.log('Login with:', email, name, role);
+        // In a real app, you would call the actual login function here
+        window.location.href = '/'; // Redirect to home after login
+      };
     const [mode, setMode] = useState("login"); // login | register | forgot
     const navigate = useNavigate();
 
