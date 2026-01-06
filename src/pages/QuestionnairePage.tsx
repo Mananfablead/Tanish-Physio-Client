@@ -352,7 +352,7 @@ export default function QuestionnairePage() {
     }
 
     // Default behavior: continue to therapist discovery with intake data
-    navigate("/schedule", { state: { questionnaireData: data, assigned } });
+    navigate("/plans", { state: { questionnaireData: data, assigned } });
   };
 
 
@@ -469,7 +469,7 @@ export default function QuestionnairePage() {
                                 navigate('/booking', { state: { plan: pending, questionnaireData: stored.data, therapist: assigned } });
                                 return;
                               }
-                              navigate('/schedule', { state: { questionnaireData: stored.data, assigned } });
+                              navigate('/plans', { state: { questionnaireData: stored.data, assigned } });
                             }
                           }}>Use & Continue</Button>
                         </div>

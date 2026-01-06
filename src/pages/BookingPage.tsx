@@ -168,7 +168,7 @@ export default function BookingPage() {
         !sessionStorage.getItem("qw_user") &&
         !localStorage.getItem("authToken");
 
-      toast.success("Payment successful! Your booking is confirmed.");
+      toast.success("Payment successful!.");
       navigate("/schedule", {
         state: {
           ...bookingData,

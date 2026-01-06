@@ -35,6 +35,7 @@ import {
   parseISO,
 } from "date-fns";
 import { motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -78,8 +79,16 @@ export default function SchedulePage() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isPastSessionsOpen, setIsPastSessionsOpen] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+  const [selectedTime, setSelectedTime] = useState<string>("10:00");
+  const [customTime, setCustomTime] = useState<string>("");
+  
+  // Mock available times for selected date
+  const availableTimes = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+    "14:00", "14:30", "15:00", "15:30", "16:00"
+  ];
 
   // Mock data for sessions
   const mockUpcomingSessions = [
@@ -318,7 +327,9 @@ export default function SchedulePage() {
                   View Confirmation
                 </Button>
               )}
-              <Button className="h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-black px-6 shadow-md shadow-primary/20">
+              <Button className="h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-black px-6 shadow-md shadow-primary/20" 
+                onClick={() => setIsBookingModalOpen(true)}
+              >
                 <Plus className="h-5 w-5 mr-2" />
                 Book New Session
               </Button>
@@ -375,8 +386,16 @@ export default function SchedulePage() {
                       const isToday = isSameDay(day, today);
                       const isSelected = isSameDay(day, selectedDate);
                       const hasSession = getSessionsForDate(day).length > 0;
+                      const isPast = day < today && !isToday;
 
-                      return (
+                      return isPast ? (
+                        <div
+                          key={index}
+                          className="h-10 rounded-xl text-sm font-medium text-slate-300"
+                        >
+                          {format(day, "d")}
+                        </div>
+                      ) : (
                         <button
                           key={index}
                           onClick={() => setSelectedDate(day)}
@@ -466,7 +485,7 @@ export default function SchedulePage() {
                                       >
                                         {session.type}
                                       </Badge>
-                                      <Badge
+                                      {/* <Badge
                                         className={`text-xs rounded-full px-3 py-1 ${
                                           session.status === "Completed"
                                             ? "bg-gradient-to-r from-success to-emerald-500 text-white border-success/30"
@@ -476,7 +495,7 @@ export default function SchedulePage() {
                                         }`}
                                       >
                                         {session.status}
-                                      </Badge>
+                                      </Badge> */}
                                     </div>
                                   </div>
                                   <Button
@@ -519,21 +538,16 @@ export default function SchedulePage() {
                               ) : null}
 
                               {session.status !== "Completed" && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
-                                  >
-                                    <Calendar className="h-4 w-4 mr-2" />{" "}
-                                    Reschedule
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-red-50 hover:text-red-600"
-                                  >
-                                    <X className="h-4 w-4 mr-2" /> Cancel
-                                  </Button>
-                                </>
+                                <Button
+                                  variant="outline"
+                                  className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
+                                  onClick={() => {
+                                    // Redirect to booking confirmation page
+                                    navigate("/booking-confirmation");
+                                  }}
+                                >
+                                  Confirm
+                                </Button>
                               )}
                             </div>
                           </motion.div>
@@ -554,7 +568,13 @@ export default function SchedulePage() {
                           {format(selectedDate, "MMMM d, yyyy")}.
                         </p>
                       </div>
-                      <Button className="h-11 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold px-6 mt-4">
+                      <Button 
+                        className="h-11 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold px-6 mt-4"
+                        onClick={() => {
+                          setIsBookingModalOpen(true);
+                          setCustomTime(""); // Reset custom time when opening
+                        }}
+                      >
                         <Plus className="h-4 w-4 mr-2" /> Book Session
                       </Button>
                     </div>
@@ -562,229 +582,84 @@ export default function SchedulePage() {
                 </CardContent>
               </Card>
 
-              {/* Upcoming vs Past Sessions */}
-              <div className="mt-8">
-                <div className="flex border-b border-slate-200 pb-3 mb-4">
-                  <button
-                    onClick={() => setActiveTab("upcoming")}
-                    className={`px-4 py-2 font-black text-sm rounded-t-lg transition-colors ${
-                      activeTab === "upcoming"
-                        ? "text-primary border-b-2 border-primary"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" /> Upcoming Sessions
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("past")}
-                    className={`px-4 py-2 font-black text-sm rounded-t-lg transition-colors ${
-                      activeTab === "past"
-                        ? "text-primary border-b-2 border-primary"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4" /> Past Sessions
-                    </div>
-                  </button>
-                </div>
 
-                <div className="space-y-4">
-                  {activeTab === "upcoming" ? (
-                    upcomingSessions.length > 0 ? (
-                      upcomingSessions.map((session, index) => (
-                        <motion.div
-                          key={session.id}
-                          className="border rounded-xl p-5 bg-white hover:shadow-md transition-all"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
-                        >
-                          <div className="flex items-start gap-4">
-                            <Avatar className="h-14 w-14 rounded-xl border border-slate-200">
-                              <AvatarImage
-                                src={session.therapist.avatar}
-                                alt={session.therapist.name}
-                              />
-                              <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary rounded-xl">
-                                {session.therapist.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <h3 className="font-black text-slate-900 text-lg">
-                                    {session.therapist.name}
-                                  </h3>
-                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span className="text-sm text-slate-600 flex items-center gap-1">
-                                      <Calendar className="h-4 w-4" />{" "}
-                                      {format(session.date, "MMM d, yyyy")}
-                                    </span>
-                                    <span className="text-sm text-slate-600 flex items-center gap-1">
-                                      <Clock className="h-4 w-4" />{" "}
-                                      {session.startTime} - {session.endTime}
-                                    </span>
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs rounded-full px-3 py-1 border-slate-300 text-slate-600 font-bold"
-                                    >
-                                      {session.type}
-                                    </Badge>
-                                    <Badge className="bg-gradient-to-r from-primary to-accent text-white text-xs rounded-full px-3 py-1">
-                                      {session.status}
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-600"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </div>
-
-                              <p className="text-sm text-slate-500 mt-3 flex items-start gap-1">
-                                <User className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
-                                <span className="font-bold">Focus:</span>{" "}
-                                {session.relatedTo}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex gap-3 mt-5 justify-end">
-                            <Button
-                              variant="outline"
-                              className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
-                            >
-                              <Calendar className="h-4 w-4 mr-2" /> Reschedule
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-red-50 hover:text-red-600"
-                            >
-                              <X className="h-4 w-4 mr-2" /> Cancel
-                            </Button>
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="py-12 text-center space-y-4">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                          <Clock className="h-8 w-8 text-slate-400" />
-                        </div>
-                        <h3 className="text-lg font-black text-slate-900">
-                          No upcoming sessions
-                        </h3>
-                        <p className="text-slate-500 font-medium">
-                          You have no upcoming appointments scheduled.
-                        </p>
-                      </div>
-                    )
-                  ) : pastSessions.length > 0 ? (
-                    pastSessions.map((session, index) => (
-                      <motion.div
-                        key={session.id}
-                        className="border rounded-xl p-5 bg-white hover:shadow-md transition-all"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                      >
-                        <div className="flex items-start gap-4">
-                          <Avatar className="h-14 w-14 rounded-xl border border-slate-200">
-                            <AvatarImage
-                              src={session.therapist.avatar}
-                              alt={session.therapist.name}
-                            />
-                            <AvatarFallback className="bg-gradient-to-br from-success/10 to-emerald-500/10 text-success rounded-xl">
-                              {session.therapist.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-black text-slate-900 text-lg">
-                                  {session.therapist.name}
-                                </h3>
-                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                  <span className="text-sm text-slate-600 flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />{" "}
-                                    {format(session.date, "MMM d, yyyy")}
-                                  </span>
-                                  <span className="text-sm text-slate-600 flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />{" "}
-                                    {session.startTime} - {session.endTime}
-                                  </span>
-                                  <Badge className="bg-gradient-to-r from-success to-emerald-500 text-white text-xs rounded-full px-3 py-1">
-                                    {session.status}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-600"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </div>
-
-                            <p className="text-sm text-slate-500 mt-3 flex items-start gap-1">
-                              <User className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
-                              <span className="font-bold">Focus:</span>{" "}
-                              {session.relatedTo}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3 mt-5 justify-end">
-                          <Button
-                            variant="outline"
-                            className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
-                          >
-                            <FileText className="h-4 w-4 mr-2" /> Session
-                            Summary
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
-                          >
-                            <VideoIcon className="h-4 w-4 mr-2" /> Watch
-                            Recording
-                          </Button>
-                        </div>
-                      </motion.div>
-                    ))
-                  ) : (
-                    <div className="py-12 text-center space-y-4">
-                      <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                        <CheckCircle className="h-8 w-8 text-slate-400" />
-                      </div>
-                      <h3 className="text-lg font-black text-slate-900">
-                        No past sessions
-                      </h3>
-                      <p className="text-slate-500 font-medium">
-                        You have no completed appointments to show.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Booking Modal */}
+      {isBookingModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black text-slate-900">Book Session</h3>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsBookingModalOpen(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="font-bold text-slate-800 mb-2">
+                {format(selectedDate, "EEEE, MMMM d, yyyy")}
+              </h4>
+              <p className="text-slate-600 text-sm">Select a time for your session</p>
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="font-bold text-slate-800 mb-3">Available Times</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {availableTimes.map((time) => (
+                  <Button
+                    key={time}
+                    variant={selectedTime === time ? "default" : "outline"}
+                    className="py-2"
+                    onClick={() => setSelectedTime(time)}
+                  >
+                    {time}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="font-bold text-slate-800 mb-3">Or Enter Custom Time</h4>
+              <Input
+                type="time"
+                value={customTime}
+                onChange={(e) => setCustomTime(e.target.value)}
+                className="w-full"
+                placeholder="HH:MM"
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setIsBookingModalOpen(false)}
+              >
+                Reschedule
+              </Button>
+              <Button 
+                className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                onClick={() => {
+                  // In a real app, this would confirm the booking
+                  setIsBookingModalOpen(false);
+                  toast.success(`Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${customTime || selectedTime}`);
+                }}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
