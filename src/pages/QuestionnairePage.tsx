@@ -469,7 +469,7 @@ export default function QuestionnairePage() {
                                 navigate('/booking', { state: { plan: pending, questionnaireData: stored.data, therapist: assigned } });
                                 return;
                               }
-                              navigate('/therapists', { state: { questionnaireData: stored.data, assigned } });
+                              navigate('/schedule', { state: { questionnaireData: stored.data, assigned } });
                             }
                           }}>Use & Continue</Button>
                         </div>
