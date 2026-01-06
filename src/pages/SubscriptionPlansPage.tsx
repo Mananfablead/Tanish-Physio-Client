@@ -142,7 +142,7 @@ export default function SubscriptionPlansPage() {
             >
               <Card
                 variant={plan.popular ? "featured" : "interactive"}
-                className={`relative h-full cursor-pointer ${
+                className={`relative h-full cursor-pointer ₹{
                   selectedPlan === plan.id ? "ring-2 ring-primary" : ""
                 }`}
                 onClick={() => setSelectedPlan(plan.id)}
@@ -165,16 +165,16 @@ export default function SubscriptionPlansPage() {
                   <div className="mb-6">
                     {plan.originalPrice && (
                       <span className="text-lg text-muted-foreground line-through mr-2">
-                        ${plan.originalPrice}
+                        ₹{plan.originalPrice}
                       </span>
                     )}
-                    <span className="text-4xl font-bold">${plan.price}</span>
+                    <span className="text-4xl font-bold">₹{plan.price}</span>
                     <span className="text-muted-foreground">/{plan.duration}</span>
                   </div>
 
                   <div className="text-sm text-muted-foreground mb-6">
                     {typeof plan.sessions === "number" 
-                      ? `Up to ${plan.sessions} session${plan.sessions > 1 ? "s" : ""}`
+                      ? `Up to ₹{plan.sessions} session₹{plan.sessions > 1 ? "s" : ""}`
                       : "Unlimited sessions"
                     }
                   </div>
@@ -254,7 +254,7 @@ export default function SubscriptionPlansPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold">
-                    ${promoApplied 
+                    ₹{promoApplied 
                       ? Math.round((plans.find(p => p.id === selectedPlan)?.price || 0) * 0.8)
                       : plans.find(p => p.id === selectedPlan)?.price
                     }

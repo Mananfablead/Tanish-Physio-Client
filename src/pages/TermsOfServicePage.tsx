@@ -1,9 +1,11 @@
 import React from 'react';
+import { Layout } from '../components/layout/Layout';
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <Layout>
+      <div className="min-h-screen bg-background py-12">
+        <div className="container mx-auto px-4 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">Terms of Service</h1>
         <p className="text-center text-muted-foreground mb-12">Last updated: {new Date().toLocaleDateString()}</p>
         
@@ -89,5 +91,6 @@ export default function TermsOfServicePage() {
         </div>
       </div>
     </div>
+    </Layout>
   );
 }

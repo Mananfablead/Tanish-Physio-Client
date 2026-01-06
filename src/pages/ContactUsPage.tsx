@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Layout } from '../components/layout/Layout';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
@@ -26,8 +27,9 @@ export default function ContactUsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <Layout>
+      <div className="min-h-screen bg-background py-12">
+        <div className="container mx-auto px-4 max-w-6xl">
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">Contact Us</h1>
         <p className="text-center text-muted-foreground mb-12">Get in touch with our support team</p>
         
@@ -157,5 +159,6 @@ export default function ContactUsPage() {
         </div>
       </div>
     </div>
+    </Layout>
   );
 }

@@ -1,7 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,7 +67,13 @@ const InfoBlock = ({ label, value, subValue, icon: Icon, iconColor = "text-prima
 
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const user = {
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    image: undefined
+  };
+
+  // Mock user data for profile page
 
   const [activePlan, setActivePlan] = useState<any | null>(null);
   const [planHistory, setPlanHistory] = useState<any[]>([]);
@@ -320,7 +325,7 @@ export default function ProfilePage() {
                       </>
                     ) : (
                       <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black">
-                        <Link to="/plans">Explore Our Plans</Link>
+                        {/* <Link to="/plans">Explore Our Plans</Link> */}
                       </Button>
                     )}
                   >

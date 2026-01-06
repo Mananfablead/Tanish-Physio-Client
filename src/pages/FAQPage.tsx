@@ -1,4 +1,5 @@
 import React from 'react';
+import { Layout } from '../components/layout/Layout';
 
 export default function FAQPage() {
   const faqs = [
@@ -29,24 +30,26 @@ export default function FAQPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">Frequently Asked Questions</h1>
-        <p className="text-center text-muted-foreground mb-12">Find answers to common questions about our services</p>
-        
-        <div className="space-y-6">
-          {faqs.map((faq, index) => (
-            <div key={index} className="border rounded-lg p-6 bg-card">
-              <h3 className="text-xl font-semibold mb-2">{faq.question}</h3>
-              <p className="text-muted-foreground">{faq.answer}</p>
-            </div>
-          ))}
-        </div>
-        
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground">Still have questions? Contact our support team for further assistance.</p>
+    <Layout>
+      <div className="min-h-screen bg-background py-12">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">Frequently Asked Questions</h1>
+          <p className="text-center text-muted-foreground mb-12">Find answers to common questions about our services</p>
+          
+          <div className="space-y-6">
+            {faqs.map((faq, index) => (
+              <div key={index} className="border rounded-lg p-6 bg-card">
+                <h3 className="text-xl font-semibold mb-2">{faq.question}</h3>
+                <p className="text-muted-foreground">{faq.answer}</p>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-12 text-center">
+            <p className="text-muted-foreground">Still have questions? Contact our support team for further assistance.</p>
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

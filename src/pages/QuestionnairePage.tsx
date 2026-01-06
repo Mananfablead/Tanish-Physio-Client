@@ -390,10 +390,10 @@ export default function QuestionnairePage() {
           <div className="flex flex-col lg:flex-row gap-8">
             <aside className="hidden lg:block lg:w-2/5">
               <div className="rounded-2xl
-  bg-gradient-to-b from-primary/20 via-secondary/30 to-accent/10
-  border border-primary/20
-  p-8
-  shadow-lg shadow-primary/10">
+                  bg-gradient-to-b from-primary/20 via-secondary/30 to-accent/10
+                  border border-primary/20
+                  p-8
+                  shadow-lg shadow-primary/10">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground flex items-center justify-center shadow-sm">
                     <ShieldCheck className="h-5 w-5" />
@@ -415,15 +415,15 @@ export default function QuestionnairePage() {
                       return (
                         <li key={k} className={`flex items-center gap-3 ${current ? 'text-primary' : 'text-slate-400'}`} aria-current={current ? 'step' : undefined}>
                           <div className={`
-    h-9 w-9 rounded-full flex items-center justify-center
-    text-sm font-black transition-all
-    ${current
+                            h-9 w-9 rounded-full flex items-center justify-center
+                            text-sm font-black transition-all
+                            ${current
                               ? "bg-primary text-white shadow-md shadow-primary/20"
                               : completed
                                 ? "bg-emerald-100 text-emerald-700"
                                 : "bg-slate-100 text-slate-400"
                             }
-  `}
+                          `}
                           >
                             {completed ? <CheckCircle className="h-4 w-4" /> : stepNum}
                           </div>

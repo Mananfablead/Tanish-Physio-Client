@@ -228,8 +228,10 @@ const Login = () => {
                         <div className="space-y-6">
                             {mode === "login" && (
                                 <Form {...loginForm}>
-                                    <form onSubmit={loginForm.handleSubmit((data) => { 
+                                    <form onSubmit={loginForm.handleSubmit(async (data) => { 
                                         login(data.email, 'User'); 
+                                        // Wait for a brief moment to ensure state update propagates
+                                        await new Promise(resolve => setTimeout(resolve, 100));
                                         navigate('/'); 
                                     })} className="space-y-5">
                                         <FormField
@@ -324,8 +326,10 @@ const Login = () => {
 
                             {mode === "register" && (
                                 <Form {...registerForm}>
-                                    <form onSubmit={registerForm.handleSubmit((data) => { 
+                                    <form onSubmit={registerForm.handleSubmit(async (data) => { 
                                         login(data.email, data.name); 
+                                        // Wait for a brief moment to ensure state update propagates
+                                        await new Promise(resolve => setTimeout(resolve, 100));
                                         navigate('/'); 
                                     })} className="space-y-4">
                                         <FormField

@@ -17,6 +17,7 @@ const BookingConfirmationPage = lazy(() => import("./pages/BookingConfirmationPa
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const VideoCallPage = lazy(() => import("./pages/VideoCallPage"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
@@ -41,11 +42,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
           
-            <Route path="/questionnaire" element={
-              <ProtectedRoute>
-                <QuestionnairePage />
-              </ProtectedRoute>
-            } />
+            <Route path="/questionnaire" element={<QuestionnairePage />} />
             <Route path="/therapists" element={
               <ProtectedRoute>
                 <TherapistDiscoveryPage />
@@ -74,22 +71,19 @@ const App = () => (
                 <BookingConfirmationPage />
               </ProtectedRoute>
             } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            } />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/video-call" element={
               <ProtectedRoute>
                 <VideoCallPage />
               </ProtectedRoute>
             } />
-            
+
             {/* Support pages */}
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/aboutUs" element={<AboutUsPage />} />
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/contact" element={<ContactUsPage />} />
+            <Route path="/services" element={<ServicesPage />} />
             <Route path="/schedule" element={<SchedulePage />} />
             
             <Route path="*" element={<NotFound />} />
