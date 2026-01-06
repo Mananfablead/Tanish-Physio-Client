@@ -84,6 +84,11 @@ export default function SubscriptionPlansPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<string>("monthly");
+  const [expandedPlan, setExpandedPlan] = useState<{[key: string]: {features: boolean, services: boolean}}>({
+    daily: { features: false, services: false },
+    weekly: { features: false, services: false },
+    monthly: { features: false, services: false },
+  });
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
 
@@ -209,12 +214,37 @@ export default function SubscriptionPlansPage() {
                         Included Features
                       </h4>
                       <ul className="space-y-2">
-                        {plan.features.map((feature, idx) => (
+                        {plan.features.slice(0, 2).map((feature, idx) => (
                           <li key={idx} className="flex items-start gap-2 text-sm">
                             <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
                             <span>{feature}</span>
                           </li>
                         ))}
+                        {(plan.features.length > 2 && expandedPlan[plan.id]?.features) ? (
+                          plan.features.slice(2).map((feature, idx) => (
+                            <li key={idx+2} className="flex items-start gap-2 text-sm">
+                              <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
+                              <span>{feature}</span>
+                            </li>
+                          ))
+                        ) : null}
+                        {plan.features.length > 2 && (
+                          <li className="flex items-start gap-2 text-sm text-primary font-medium cursor-pointer" onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedPlan(prev => ({
+                              ...prev,
+                              [plan.id]: {
+                                ...prev[plan.id],
+                                features: !prev[plan.id].features
+                              }
+                            }));
+                          }}>
+                            <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span>
+                              {expandedPlan[plan.id]?.features ? 'Show less' : `+${plan.features.length - 2} more features`}
+                            </span>
+                          </li>
+                        )}
                       </ul>
                     </div>
                     
@@ -226,12 +256,37 @@ export default function SubscriptionPlansPage() {
                         Services Provided
                       </h4>
                       <ul className="space-y-2">
-                        {plan.services.map((service, idx) => (
+                        {plan.services.slice(0, 2).map((service, idx) => (
                           <li key={idx} className="flex items-start gap-2 text-sm">
                             <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                             <span>{service}</span>
                           </li>
                         ))}
+                        {(plan.services.length > 2 && expandedPlan[plan.id]?.services) ? (
+                          plan.services.slice(2).map((service, idx) => (
+                            <li key={idx+2} className="flex items-start gap-2 text-sm">
+                              <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                              <span>{service}</span>
+                            </li>
+                          ))
+                        ) : null}
+                        {plan.services.length > 2 && (
+                          <li className="flex items-start gap-2 text-sm text-primary font-medium cursor-pointer" onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedPlan(prev => ({
+                              ...prev,
+                              [plan.id]: {
+                                ...prev[plan.id],
+                                services: !prev[plan.id].services
+                              }
+                            }));
+                          }}>
+                            <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span>
+                              {expandedPlan[plan.id]?.services ? 'Show less' : `+${plan.services.length - 2} more services`}
+                            </span>
+                          </li>
+                        )}
                       </ul>
                     </div>
                   </div>
