@@ -90,8 +90,8 @@ export default function SchedulePage() {
     "14:00", "14:30", "15:00", "15:30", "16:00"
   ];
 
-  // Mock data for sessions
-  const mockUpcomingSessions = [
+  // State for sessions
+  const [sessions, setSessions] = useState([
     {
       id: "1",
       therapist: {
@@ -140,7 +140,7 @@ export default function SchedulePage() {
       relatedTo: "Knee rehabilitation",
       notes: "Post-surgical recovery session.",
     },
-  ];
+  ]);
 
   const mockPastSessions = [
     {
@@ -190,20 +190,20 @@ export default function SchedulePage() {
   };
 
   const getSessionsForDate = (date: Date) => {
-    return mockUpcomingSessions.filter((session) =>
-      isSameDay(parseISO(session.date.toISOString()), date)
+    return sessions.filter((session) =>
+      isSameDay(new Date(session.date), date)
     );
   };
 
   const today = new Date();
-  const upcomingSessions = mockUpcomingSessions;
+  const upcomingSessions = sessions;
   const pastSessions = mockPastSessions;
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 pt-16 pb-20">
         <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {hasBookingSummary && (
+          {/* {hasBookingSummary && (
             <div className="mb-8 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10 rounded-2xl p-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -275,10 +275,10 @@ export default function SchedulePage() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Guest User Information */}
-                {bookingData?.guestUser && (
+                {/* {bookingData?.guestUser && (
                   <div className="mt-6 pt-6 border-t border-primary/10">
                     <h3 className="font-black text-slate-900 mb-3">
                       Contact Information
@@ -307,7 +307,7 @@ export default function SchedulePage() {
                 )}
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div className="space-y-2">
@@ -319,14 +319,14 @@ export default function SchedulePage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              {bookingData?.fromServices && (
+              {/* {bookingData?.fromServices && (
                 <Button
                   className="h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black px-6 shadow-md shadow-emerald-200"
                   onClick={() => navigate("/booking-confirmation")}
                 >
                   View Confirmation
                 </Button>
-              )}
+              )} */}
               <Button className="h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-black px-6 shadow-md shadow-primary/20" 
                 onClick={() => setIsBookingModalOpen(true)}
               >
@@ -532,11 +532,9 @@ export default function SchedulePage() {
                                   Summary
                                 </Button>
                               ) : isSameDay(session.date, today) ? (
-                                <Button className="h-10 rounded-xl text-sm font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white">
-                                  <Play className="h-4 w-4 mr-2" /> Join Session
-                                </Button>
+                                <></>
                               ) : null}
-
+                            
                               {session.status !== "Completed" && (
                                 <Button
                                   variant="outline"
@@ -649,9 +647,32 @@ export default function SchedulePage() {
               <Button 
                 className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                 onClick={() => {
-                  // In a real app, this would confirm the booking
+                  // Add the new session to the sessions array
+                  const newSession = {
+                    id: `session_${Date.now()}`,
+                    therapist: {
+                      name: "Dr. Sarah Johnson", // Using a default therapist
+                      avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
+                    },
+                    date: new Date(selectedDate),
+                    startTime: customTime || selectedTime,
+                    endTime: customTime ? 
+                      // Calculate end time based on 45 min duration
+                      new Date(new Date(`1970-01-01T${customTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5) : 
+                      new Date(new Date(`1970-01-01T${selectedTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5),
+                    type: "Video",
+                    status: "Confirmed",
+                    location: "Secure Video Call",
+                    relatedTo: "General consultation",
+                    notes: "Newly booked session",
+                  };
+                  
+                  setSessions([...sessions, newSession]);
                   setIsBookingModalOpen(false);
                   toast.success(`Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${customTime || selectedTime}`);
+                  
+                  // Optionally navigate to booking confirmation
+                  // navigate("/booking-confirmation");
                 }}
               >
                 Confirm
