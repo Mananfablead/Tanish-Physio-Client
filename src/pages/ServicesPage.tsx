@@ -8,6 +8,7 @@ import {
   Home, 
   TrendingUp,
   ArrowRight,
+  Lock,
   CheckCircle
 } from "lucide-react";
 import {
@@ -27,7 +28,7 @@ export default function ServicesPage() {
   return (
     <Layout>
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-secondary/10 pt-16 pb-24">
+      <div className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-secondary/10 pt-16 pb-20">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2" />
           <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] translate-y-1/2" />
@@ -44,34 +45,42 @@ export default function ServicesPage() {
               Our team of certified specialists provides comprehensive treatment options tailored to your unique needs.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {/* <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button size="lg" className="h-12 px-8 rounded-xl font-black text-lg bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
                 Book Appointment
               </Button>
-            </div>
+            </div> */}
 
             {/* Stats Badges */}
-            <div className="flex flex-wrap justify-center gap-6 mt-12">
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                <span className="font-bold text-slate-700">500+ Certified Therapists</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="font-bold text-slate-700">98% Recovery Rate</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
-                <Home className="h-5 w-5 text-primary" />
-                <span className="font-bold text-slate-700">24/7 Support</span>
-              </div>
-            </div>
+        <div className="flex flex-wrap justify-center gap-6 mt-12">
+        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            <span className="font-bold text-slate-700">
+            Evidence-Based Treatment
+            </span>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <span className="font-bold text-slate-700">
+            Personalized Care Plans
+            </span>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-slate-200">
+            <Lock className="h-5 w-5 text-primary" />
+            <span className="font-bold text-slate-700">
+            Secure & Private Care
+            </span>
+        </div>
+        </div>
           </div>
         </div>
       </div>
 
       {/* Services Grid Section */}
-      <div className="container py-20">
-        <div className="text-center mb-16">
+      <div className="container ">
+        {/* <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
             Comprehensive Physiotherapy Services
           </h2>
@@ -79,13 +88,13 @@ export default function ServicesPage() {
             Our specialized services cover a wide range of conditions and patient needs, 
             ensuring you receive the most appropriate care for your specific situation.
           </p>
-        </div>
+        </div> */}
 
         <ServicesGrid />
       </div>
 
       {/* Highlight Section */}
-      <div className="bg-gradient-to-r from-primary/5 to-accent/5 py-20">
+      {/* <div className="bg-gradient-to-r from-primary/5 to-accent/5 py-20">
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
@@ -141,7 +150,7 @@ export default function ServicesPage() {
       </div>
 
       {/* Process Section */}
-      <div className="container py-20">
+      {/* <div className="container py-20">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
             Simple Steps to Recovery
@@ -182,10 +191,10 @@ export default function ServicesPage() {
             </p>
           </Card>
         </div>
-      </div>
+      </div> */} 
 
       {/* CTA Banner */}
-      <div className="bg-gradient-to-r from-primary to-accent py-20">
+      {/* <div className="bg-gradient-to-r from-primary to-accent py-20">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-black text-white mb-6">
@@ -205,7 +214,7 @@ export default function ServicesPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </Layout>
   );
 }

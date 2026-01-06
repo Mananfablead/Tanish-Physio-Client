@@ -30,9 +30,14 @@ interface Service {
     whatToExpect: string[];
     resultsTimeline: string;
   };
+  media?: {
+    heroImage?: string;
+    aboutImage?: string;
+    videoUrl?: string;
+  };
 }
 
-const services: Service[] = [
+export const services: Service[] = [
   {
     id: 1,
     icon: <Activity className="h-6 w-6" />,
@@ -58,10 +63,14 @@ const services: Service[] = [
         "Post-surgical rehabilitation",
         "Arthritis management",
         "Sports injuries",
-        "Work-related injuries"
+        "Work-related injuries",
+        "Fracture recovery",
+        "Tendon injuries",
+        "Muscle strains",
+        "Postural dysfunction"
       ],
       sessionDuration: "45-60 min",
-      priceRange: "$80-150",
+      priceRange: "₹4000-7500",
       prerequisites: "Medical referral recommended",
       whatToExpect: [
         "Initial assessment and evaluation",
@@ -70,6 +79,11 @@ const services: Service[] = [
         "Exercise prescription for home"
       ],
       resultsTimeline: "2-6 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/e2e8f0/64748b?text=Orthopedic+Therapy",
+      aboutImage: "https://placehold.co/600x400/f1f5f9/64748b?text=Therapy+Session",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -97,10 +111,14 @@ const services: Service[] = [
         "Multiple sclerosis",
         "Spinal cord injuries",
         "Traumatic brain injury",
-        "Peripheral neuropathy"
+        "Peripheral neuropathy",
+        "Cerebral palsy",
+        "Guillain-Barre syndrome",
+        "Spina bifida",
+        "Autism spectrum disorders"
       ],
       sessionDuration: "45-60 min",
-      priceRange: "$90-160",
+      priceRange: "₹4500-8000",
       prerequisites: "Neurologist referral required",
       whatToExpect: [
         "Comprehensive neurological assessment",
@@ -109,6 +127,11 @@ const services: Service[] = [
         "Adaptive equipment training"
       ],
       resultsTimeline: "4-12 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/dbeafe/3b82f6?text=Neuro+Therapy",
+      aboutImage: "https://placehold.co/600x400/e0f2fe/0ea5e9?text=Neuro+Session",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -136,10 +159,14 @@ const services: Service[] = [
         "Concussions",
         "Overuse injuries",
         "Muscle strains",
-        "Tennis/golfer's elbow"
+        "Tennis/golfer's elbow",
+        "Shin splints",
+        "Plantar fasciitis",
+        "Runner's knee",
+        "Swimmer's shoulder"
       ],
       sessionDuration: "30-60 min",
-      priceRange: "$85-155",
+      priceRange: "₹4250-7750",
       prerequisites: "Sports physical evaluation",
       whatToExpect: [
         "Sports-specific movement analysis",
@@ -148,6 +175,11 @@ const services: Service[] = [
         "Performance enhancement training"
       ],
       resultsTimeline: "1-8 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/dcfce7/22c55e?text=Sports+Therapy",
+      aboutImage: "https://placehold.co/600x400/ecfdf5/16a34a?text=Sports+Session",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -175,10 +207,14 @@ const services: Service[] = [
         "Cystic fibrosis",
         "Torticollis",
         "Hip dysplasia",
-        "Gross motor delays"
+        "Gross motor delays",
+        "Autism spectrum disorders",
+        "Down syndrome",
+        "Muscular dystrophy",
+        "Juvenile arthritis"
       ],
       sessionDuration: "30-45 min",
-      priceRange: "$75-140",
+      priceRange: "₹3750-7000",
       prerequisites: "Parental consent required",
       whatToExpect: [
         "Play-based assessment",
@@ -187,6 +223,11 @@ const services: Service[] = [
         "Developmental milestone tracking"
       ],
       resultsTimeline: "3-12 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/fef3c7/f59e0b?text=Pediatric+Therapy",
+      aboutImage: "https://placehold.co/600x400/fffbeb/f59e0b?text=Child+Therapy",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -214,10 +255,14 @@ const services: Service[] = [
         "Diastasis recti",
         "Urinary incontinence",
         "Postural changes",
-        "Postpartum recovery"
+        "Postpartum recovery",
+        "C-section recovery",
+        "Carpal tunnel syndrome",
+        "Round ligament pain",
+        "Sciatic pain"
       ],
       sessionDuration: "45-60 min",
-      priceRange: "$80-145",
+      priceRange: "₹4000-7250",
       prerequisites: "Pregnancy confirmation",
       whatToExpect: [
         "Pelvic floor assessment",
@@ -226,6 +271,11 @@ const services: Service[] = [
         "Breathing exercises"
       ],
       resultsTimeline: "4-10 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/fce7f3/ec4899?text=Maternity+Therapy",
+      aboutImage: "https://placehold.co/600x400/fdf2f8/ec4899?text=Maternity+Session",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -253,10 +303,14 @@ const services: Service[] = [
         "Ankle sprains",
         "Shin splints",
         "Metatarsalgia",
-        "Flat feet/overpronation"
+        "Flat feet/overpronation",
+        "Heel spurs",
+        "Bunions",
+        "Morton's neuroma",
+        "Tarsal tunnel syndrome"
       ],
       sessionDuration: "30-45 min",
-      priceRange: "$75-135",
+      priceRange: "₹3750-6750",
       prerequisites: "Footwear assessment",
       whatToExpect: [
         "Gait and biomechanical analysis",
@@ -265,6 +319,11 @@ const services: Service[] = [
         "Orthotic recommendations"
       ],
       resultsTimeline: "2-8 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/ddd6fe/8b5cf6?text=Podiatry+Therapy",
+      aboutImage: "https://placehold.co/600x400/ece9fe/8b5cf6?text=Foot+Session",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -292,10 +351,14 @@ const services: Service[] = [
         "Headaches",
         "Sciatica",
         "Joint dysfunction",
-        "Postural imbalances"
+        "Postural imbalances",
+        "Herniated discs",
+        "Scoliosis",
+        "TMJ disorders",
+        "Whiplash injuries"
       ],
       sessionDuration: "20-30 min",
-      priceRange: "$60-120",
+      priceRange: "₹3000-6000",
       prerequisites: "No recent spine surgery",
       whatToExpect: [
         "Spinal assessment",
@@ -304,6 +367,11 @@ const services: Service[] = [
         "Home care recommendations"
       ],
       resultsTimeline: "1-4 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/fef2f2/ef4444?text=Chiropractic",
+      aboutImage: "https://placehold.co/600x400/ffebee/ef4444?text=Spine+Therapy",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -331,10 +399,14 @@ const services: Service[] = [
         "Metabolic syndrome",
         "Diabetes management",
         "Cardiovascular risk reduction",
-        "Mobility limitations due to weight"
+        "Mobility limitations due to weight",
+        "Pre-diabetes",
+        "Hypertension",
+        "Sleep apnea",
+        "Fatty liver disease"
       ],
       sessionDuration: "45-60 min",
-      priceRange: "$95-170",
+      priceRange: "₹4750-8500",
       prerequisites: "Medical clearance",
       whatToExpect: [
         "Body composition analysis",
@@ -343,6 +415,11 @@ const services: Service[] = [
         "Progress tracking"
       ],
       resultsTimeline: "8-16 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/f3e8ff/a855f7?text=Weight+Management",
+      aboutImage: "https://placehold.co/600x400/faf5ff/a855f7?text=Wellness+Journey",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -370,10 +447,14 @@ const services: Service[] = [
         "Cellulite reduction",
         "Facial rejuvenation",
         "Scar tissue management",
-        "Acne treatment"
+        "Acne treatment",
+        "Wrinkle reduction",
+        "Pigmentation issues",
+        "Stretch marks",
+        "Hair thinning"
       ],
       sessionDuration: "30-45 min",
-      priceRange: "$100-200",
+      priceRange: "₹5000-10000",
       prerequisites: "Skin assessment",
       whatToExpect: [
         "Skin/hair analysis",
@@ -382,6 +463,11 @@ const services: Service[] = [
         "Home care routine"
       ],
       resultsTimeline: "4-12 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/ecfdf5/10b981?text=Cosmetic+Care",
+      aboutImage: "https://placehold.co/600x400/f0fdf4/10b981?text=Aesthetic+Therapy",
+      videoUrl: "https://example.com/video"
     }
   },
   {
@@ -409,10 +495,14 @@ const services: Service[] = [
         "Chronic pain management",
         "Elderly care",
         "Postpartum recovery",
-        "General physiotherapy needs"
+        "General physiotherapy needs",
+        "Post-hospitalization",
+        "Chronic illness management",
+        "Palliative care",
+        "Rehabilitation after stroke"
       ],
       sessionDuration: "45-60 min",
-      priceRange: "$120-200",
+      priceRange: "₹6000-10000",
       prerequisites: "Safe home environment",
       whatToExpect: [
         "In-home assessment",
@@ -421,6 +511,11 @@ const services: Service[] = [
         "Family education"
       ],
       resultsTimeline: "2-12 weeks"
+    },
+    media: {
+      heroImage: "https://placehold.co/800x400/f0f9ff/0ea5e9?text=Home+Service",
+      aboutImage: "https://placehold.co/600x400/f0f9ff/0ea5e9?text=In-Home+Care",
+      videoUrl: "https://example.com/video"
     }
   }
 ];
@@ -442,6 +537,7 @@ export function ServicesGrid({ services: customServices }: ServicesGridProps = {
           description={service.description}
           benefits={service.benefits}
           details={service.details}
+          serviceId={service.id}
         />
       ))}
     </div>

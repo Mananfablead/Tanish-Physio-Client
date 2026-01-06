@@ -24,6 +24,7 @@ const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const ContactUsPage = lazy(() => import("./pages/ContactUsPage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
+const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/routing/ProtectedRoute";
@@ -84,6 +85,7 @@ const App = () => (
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/contact" element={<ContactUsPage />} />
             <Route path="/services" element={<ServicesPage />} />
+            <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
             <Route path="/schedule" element={<SchedulePage />} />
             
             <Route path="*" element={<NotFound />} />
