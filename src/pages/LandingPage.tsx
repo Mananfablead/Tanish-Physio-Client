@@ -501,14 +501,14 @@ export default function LandingPage() {
             </Carousel>
           </div>
 
-          <div className="mt-16 text-center">
+          {/* <div className="mt-16 text-center">
             <Link to="/questionnaire">
               <Button variant="outline" size="lg" className="rounded-full border-primary/20 hover:bg-primary/5 hover:text-primary shadow-lg shadow-black/10">
                 Find the right therapist for your condition
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
-          </div>
+          </div> */}
         </div>
       </section>
 

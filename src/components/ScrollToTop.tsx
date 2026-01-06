@@ -10,7 +10,7 @@ const ScrollToTop = () => {
     window.scrollTo({
       top: 0,
       left: 0,
-      behavior: 'smooth' // Optional: adds smooth scrolling animation
+      behavior: 'smooth'
     });
   }, [pathname, navigationType]);
 
