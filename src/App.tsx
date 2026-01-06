@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import ScrollToTop from "@/components/ScrollToTop";
 
 // Lazy load pages for better performance and loading states
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -39,6 +40,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Suspense fallback={<LoadingScreen />}>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<LandingPage />} />
           
