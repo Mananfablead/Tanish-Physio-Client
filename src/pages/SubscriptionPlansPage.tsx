@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, Star, Zap, ArrowRight, Tag } from "lucide-react";
+import { CheckCircle, Star, Zap, ArrowRight, Tag, ShieldCheck, Video, Award, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
 const plans = [
@@ -84,7 +84,7 @@ export default function SubscriptionPlansPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<string>("monthly");
-  const [expandedPlan, setExpandedPlan] = useState<{[key: string]: {features: boolean, services: boolean}}>({
+  const [expandedPlan, setExpandedPlan] = useState<{ [key: string]: { features: boolean, services: boolean } }>({
     daily: { features: false, services: false },
     weekly: { features: false, services: false },
     monthly: { features: false, services: false },
@@ -122,7 +122,7 @@ export default function SubscriptionPlansPage() {
     }
 
     // No recent intake: save pending plan and redirect user to intake before activation
-    try { sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan)); } catch (e) {}
+    try { sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan)); } catch (e) { }
     navigate("/questionnaire", { state: { planToActivate: plan } });
   };
 
@@ -136,29 +136,51 @@ export default function SubscriptionPlansPage() {
 
   return (
     <Layout>
-      <div className="bg-muted/30 py-12">
-        <div className="container text-center max-w-3xl">
-          <Badge variant="secondary" className="mb-4">
-            <Star className="h-3 w-3 mr-1 fill-primary text-primary" />
-            Choose Your Plan
+      <div className="bg-muted/30 py-14">
+        <div className="container text-center  space-y-5">
+
+          {/* BADGE */}
+          <Badge
+            variant="secondary"
+            className="mx-auto inline-flex items-center gap-2 px-4 py-1"
+          >
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            Flexible Therapy Plans
           </Badge>
+
+          {/* OPTIONAL INFO / RESERVED SESSION */}
           {/* {scheduled && (
-            <div className="mb-4 p-3 rounded-md bg-blue-50 border border-blue-100 text-blue-800 text-sm">
-              You have a reserved session on {new Date(scheduled.reservedAt).toLocaleDateString()}. Pick a plan to unlock it.
-            </div>
-          )} */}
-          <h1 className="text-3xl lg:text-4xl font-bold mb-4">
-            Start Your Recovery Journey
+      <div className="mx-auto max-w-2xl p-4 rounded-lg bg-blue-50 border border-blue-100 text-blue-800 text-sm">
+        Your session is reserved for{" "}
+        <span className="font-medium">
+          {new Date(scheduled.reservedAt).toLocaleDateString()}
+        </span>
+        . Select a plan to unlock it.
+      </div>
+    )} */}
+
+          {/* HEADLINE */}
+          <h1 className="text-3xl lg:text-5xl font-bold leading-tight">
+            Start Your Recovery,
+            <span className="text-primary"> Guided by Experts</span>
           </h1>
-          <p className="text-muted-foreground">
-            Choose a plan that fits your needs. All plans include access to certified physiotherapists and personalized care.
+
+          {/* SUBTEXT */}
+          <p className="text-muted-foreground text-base lg:text-lg max-w-3xl mx-auto">
+            Choose a therapy plan that matches your recovery goals. Every plan includes
+            one-on-one guidance from certified physiotherapists, personalized programs,
+            and continuous progress tracking.
           </p>
+
+
+
         </div>
       </div>
 
-      <div className="container py-12">
+
+      <div className="container pb-12">
         {/* Plans Grid */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
+        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-12">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -199,7 +221,7 @@ export default function SubscriptionPlansPage() {
                   </div>
 
                   <div className="text-sm text-muted-foreground mb-6">
-                    {typeof plan.sessions === "number" 
+                    {typeof plan.sessions === "number"
                       ? `Up to ${plan.sessions} session${plan.sessions > 1 ? "s" : ""}`
                       : "Unlimited sessions"
                     }
@@ -222,7 +244,7 @@ export default function SubscriptionPlansPage() {
                         ))}
                         {(plan.features.length > 2 && expandedPlan[plan.id]?.features) ? (
                           plan.features.slice(2).map((feature, idx) => (
-                            <li key={idx+2} className="flex items-start gap-2 text-sm">
+                            <li key={idx + 2} className="flex items-start gap-2 text-sm">
                               <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
                               <span>{feature}</span>
                             </li>
@@ -247,7 +269,7 @@ export default function SubscriptionPlansPage() {
                         )}
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
                         <span className="bg-primary/10 p-1 rounded">
@@ -264,7 +286,7 @@ export default function SubscriptionPlansPage() {
                         ))}
                         {(plan.services.length > 2 && expandedPlan[plan.id]?.services) ? (
                           plan.services.slice(2).map((service, idx) => (
-                            <li key={idx+2} className="flex items-start gap-2 text-sm">
+                            <li key={idx + 2} className="flex items-start gap-2 text-sm">
                               <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                               <span>{service}</span>
                             </li>
@@ -343,9 +365,10 @@ export default function SubscriptionPlansPage() {
         </Card> */}
 
         {/* Plan Details */}
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <Card variant="gradient">
-            <CardContent className="p-6">
+            <CardContent className="p-6 space-y-6">
+              {/* PLAN SUMMARY */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-lg mb-1">
@@ -355,12 +378,12 @@ export default function SubscriptionPlansPage() {
                     Auto-renews after {plans.find(p => p.id === selectedPlan)?.duration}. Cancel anytime.
                   </p>
                 </div>
+
                 <div className="text-right">
                   <p className="text-2xl font-bold">
-                    ₹{promoApplied 
+                    ₹{promoApplied
                       ? Math.round((plans.find(p => p.id === selectedPlan)?.price || 0) * 0.8)
-                      : plans.find(p => p.id === selectedPlan)?.price
-                    }
+                      : plans.find(p => p.id === selectedPlan)?.price}
                   </p>
                   {promoApplied && (
                     <p className="text-sm text-success">20% off applied</p>
@@ -368,21 +391,66 @@ export default function SubscriptionPlansPage() {
                 </div>
               </div>
 
+              {/* DIVIDER */}
+              <div className="border-t" />
+
+              {/* WHAT YOU GET */}
+              <div>
+                <h4 className="font-medium mb-3">What you get with this plan</h4>
+                <div className="grid md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                    1-on-1 live video sessions
+                  </div>
+                  <div className="flex gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                    Personal recovery roadmap
+                  </div>
+                  <div className="flex gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                    Exercise videos & guidance
+                  </div>
+                  <div className="flex gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                    Progress tracking & follow-ups
+                  </div>
+                </div>
+              </div>
+
+              {/* TRUST / SAFETY */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-green-500" />
+                  Secure & private
+                </div>
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-blue-500" />
+                  HD video calls
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="h-4 w-4 text-yellow-500" />
+                  Certified experts
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-purple-500" />
+                  Flexible scheduling
+                </div>
+              </div>
+
+              {/* CTA */}
               <Button
                 variant="hero"
                 size="lg"
-                className="w-full mt-6"
+                className="w-full"
                 onClick={handleContinue}
               >
                 Continue to Booking
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground mt-4">
-                By continuing, you agree to our Terms of Service and Privacy Policy.
-                You can cancel your subscription at any time.
-              </p>
+
             </CardContent>
+
           </Card>
         </div>
       </div>
