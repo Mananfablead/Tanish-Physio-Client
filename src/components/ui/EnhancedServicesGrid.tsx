@@ -33,7 +33,7 @@ interface Service {
     detailedDescription: string;
     conditionsTreated: string[];
     sessionDuration: string;
-    priceRange: string;
+    price: string;
     prerequisites: string;
     whatToExpect: string[];
     resultsTimeline: string;
@@ -81,7 +81,7 @@ export const services: Service[] = [
         "Postural dysfunction",
       ],
       sessionDuration: "45-60 min",
-      priceRange: "₹4000-7500",
+      price: "₹4000",
       prerequisites: "Medical referral recommended",
       whatToExpect: [
         "Initial assessment and evaluation",
@@ -134,7 +134,7 @@ export const services: Service[] = [
         "Autism spectrum disorders",
       ],
       sessionDuration: "45-60 min",
-      priceRange: "₹4500-8000",
+      price: "₹4500",
       prerequisites: "Neurologist referral required",
       whatToExpect: [
         "Comprehensive neurological assessment",
@@ -187,7 +187,7 @@ export const services: Service[] = [
         "Swimmer's shoulder",
       ],
       sessionDuration: "30-60 min",
-      priceRange: "₹4250-7750",
+      price: "₹4250",
       prerequisites: "Sports physical evaluation",
       whatToExpect: [
         "Sports-specific movement analysis",
@@ -240,7 +240,7 @@ export const services: Service[] = [
         "Juvenile arthritis",
       ],
       sessionDuration: "30-45 min",
-      priceRange: "₹3750-7000",
+      price: "₹3750",
       prerequisites: "Parental consent required",
       whatToExpect: [
         "Play-based assessment",
@@ -293,7 +293,7 @@ export const services: Service[] = [
         "Sciatic pain",
       ],
       sessionDuration: "45-60 min",
-      priceRange: "₹4000-7250",
+      price: "₹4000",
       prerequisites: "Pregnancy confirmation",
       whatToExpect: [
         "Pelvic floor assessment",
@@ -346,7 +346,7 @@ export const services: Service[] = [
         "Tarsal tunnel syndrome",
       ],
       sessionDuration: "30-45 min",
-      priceRange: "₹3750-6750",
+      price: "₹3750",
       prerequisites: "Footwear assessment",
       whatToExpect: [
         "Gait and biomechanical analysis",
@@ -399,7 +399,7 @@ export const services: Service[] = [
         "Whiplash injuries",
       ],
       sessionDuration: "20-30 min",
-      priceRange: "₹3000-6000",
+      price: "₹3000",
       prerequisites: "No recent spine surgery",
       whatToExpect: [
         "Spinal assessment",
@@ -451,7 +451,7 @@ export const services: Service[] = [
         "Fatty liver disease",
       ],
       sessionDuration: "45-60 min",
-      priceRange: "₹4750-8500",
+      price: "₹4750",
       prerequisites: "Medical clearance",
       whatToExpect: [
         "Body composition analysis",
@@ -504,7 +504,7 @@ export const services: Service[] = [
         "Hair thinning",
       ],
       sessionDuration: "30-45 min",
-      priceRange: "₹5000-10000",
+      price: "₹5000",
       prerequisites: "Skin assessment",
       whatToExpect: [
         "Skin/hair analysis",
@@ -557,7 +557,7 @@ export const services: Service[] = [
         "Rehabilitation after stroke",
       ],
       sessionDuration: "45-60 min",
-      priceRange: "₹6000-10000",
+      price: "₹6000",
       prerequisites: "Safe home environment",
       whatToExpect: [
         "In-home assessment",
@@ -604,7 +604,7 @@ export const services: Service[] = [
         "Strengthening exercises",
       ],
       sessionDuration: "30-60 min",
-      priceRange: "₹5000-10000",
+      price: "₹5000",
       prerequisites: "Medical clearance",
       whatToExpect: [
         "Assessment by a physiotherapist",
@@ -678,7 +678,7 @@ export function EnhancedServicesGrid({
   };
 
   return (
-    <div className="space-y-8 py-4">
+    <div className="space-y-8 py-6">
       {/* Filters Section */}
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
@@ -752,6 +752,15 @@ export function EnhancedServicesGrid({
                 <h3 className="text-xl font-bold text-slate-900 mb-2">
                   {service.title}
                 </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-slate-500">
+                    Session Duration: {service.details.sessionDuration}
+                  </span>
+
+                  <span className="text-lg font-bold text-primary">
+                    {service.details.price}
+                  </span>
+                </div>
                 <p className="text-slate-600 mb-4">{service.description}</p>
                 <div className="mb-4">
                   <h4 className="font-semibold text-slate-800 mb-2">

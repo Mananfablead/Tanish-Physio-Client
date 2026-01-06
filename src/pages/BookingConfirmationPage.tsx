@@ -1,11 +1,34 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Calendar, Video, ArrowRight, Download, Mail } from "lucide-react";
+import {
+  CheckCircle,
+  Calendar,
+  Video,
+  ArrowRight,
+  Download,
+  Mail,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function BookingConfirmationPage() {
+  const location = useLocation();
+  const bookingData = location.state;
+
+  // Extract booking details
+  const therapist = bookingData?.therapist || {
+    name: "Dr. Sarah Johnson",
+    title: "Sports Injury Specialist",
+    avatar:
+      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
+  };
+
+  const sessionDate = bookingData?.date || "Mon, Dec 30, 2024";
+  const sessionTime = bookingData?.time || "10:00 AM (45 min)";
+  const serviceName =
+    bookingData?.service?.name || bookingData?.planName || "Therapy Session";
+  const servicePrice = bookingData?.finalPrice || bookingData?.planPrice || 199;
 
   return (
     <Layout>
@@ -29,9 +52,10 @@ export default function BookingConfirmationPage() {
 
                 <h1 className="text-3xl font-bold mb-2">Booking Confirmed!</h1>
                 <p className="text-muted-foreground mb-8">
-                  Your session has been successfully booked. You'll receive a confirmation email shortly.
+                  Your {serviceName} session has been successfully booked.
+                  You'll receive a confirmation email shortly.
                 </p>
-                
+
                 {/* Email Information */}
                 {/* <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 text-left">
                   <h3 className="font-semibold text-lg mb-3 text-blue-800 flex items-center gap-2">
@@ -39,7 +63,8 @@ export default function BookingConfirmationPage() {
                     Account Information
                   </h3>
                   <p className="text-blue-700 mb-3">
-                    We've sent an email to your registered email address with your login credentials.
+                    We've sent an email to your registered email address with
+                    your login credentials.
                   </p>
                   <div className="space-y-2 text-blue-700">
                     <p className="font-medium">Email contains:</p>
@@ -50,9 +75,7 @@ export default function BookingConfirmationPage() {
                     </ul>
                   </div>
                   <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-                    <p className="text-blue-800 font-medium">
-                      Next Steps:
-                    </p>
+                    <p className="text-blue-800 font-medium">Next Steps:</p>
                     <ol className="list-decimal pl-5 mt-2 space-y-1 text-blue-700">
                       <li>Use your email and the provided password to login</li>
                       <li>Change your password for security</li>
@@ -179,7 +202,8 @@ export default function BookingConfirmationPage() {
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-6">
-                  You can join the video session from your profile 5 minutes before the scheduled time.
+                  You can join the video session from your profile 5 minutes
+                  before the scheduled time.
                 </p>
               </CardContent>
             </Card>

@@ -5,16 +5,23 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { AuthProvider } from "@/context/AuthContext";
 import ScrollToTop from "@/components/ScrollToTop";
 
 // Lazy load pages for better performance and loading states
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const QuestionnairePage = lazy(() => import("./pages/QuestionnairePage"));
-const TherapistDiscoveryPage = lazy(() => import("./pages/TherapistDiscoveryPage"));
+const TherapistDiscoveryPage = lazy(
+  () => import("./pages/TherapistDiscoveryPage")
+);
 const TherapistProfilePage = lazy(() => import("./pages/TherapistProfilePage"));
-const SubscriptionPlansPage = lazy(() => import("./pages/SubscriptionPlansPage"));
+const SubscriptionPlansPage = lazy(
+  () => import("./pages/SubscriptionPlansPage")
+);
 const BookingPage = lazy(() => import("./pages/BookingPage"));
-const BookingConfirmationPage = lazy(() => import("./pages/BookingConfirmationPage"));
+const BookingConfirmationPage = lazy(
+  () => import("./pages/BookingConfirmationPage")
+);
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/login"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -27,73 +34,85 @@ const ContactUsPage = lazy(() => import("./pages/ContactUsPage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 
-
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 import PublicRoute from "./components/routing/PublicRoute";
+
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Suspense fallback={<LoadingScreen />}>
-          <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-          
-            <Route path="/questionnaire" element={<QuestionnairePage />} />
-            <Route path="/therapists" element={
-              <ProtectedRoute>
-                <TherapistDiscoveryPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/therapist/:id" element={
-              <ProtectedRoute>
-                <TherapistProfilePage />
-              </ProtectedRoute>
-            } />
-            <Route path="/plans" element={<SubscriptionPlansPage />} />
-            
-            <Route path="/login" element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Suspense fallback={<LoadingScreen />}>
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
 
-            <Route path="/booking" element={
-              <ProtectedRoute>
-                <BookingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/booking-confirmation" element={
-              <ProtectedRoute>
-                <BookingConfirmationPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/video-call" element={
-              <ProtectedRoute>
-                <VideoCallPage />
-              </ProtectedRoute>
-            } />
+              <Route path="/questionnaire" element={<QuestionnairePage />} />
+              <Route
+                path="/therapists"
+                element={
+                  <ProtectedRoute>
+                    <TherapistDiscoveryPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/therapist/:id"
+                element={
+                  <ProtectedRoute>
+                    <TherapistProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/plans" element={<SubscriptionPlansPage />} />
 
-            {/* Support pages */}
-            <Route path="/faq" element={<FAQPage />} />
-            <Route path="/aboutUs" element={<AboutUsPage />} />
-            <Route path="/terms" element={<TermsOfServicePage />} />
-            <Route path="/contact" element={<ContactUsPage />} />
-            <Route path="/services" element={<ServicesPage />} />
-            <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
-            <Route path="/schedule" element={<SchedulePage />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
+
+              <Route path="/booking" element={<BookingPage />} />
+              <Route
+                path="/booking-confirmation"
+                element={<BookingConfirmationPage />}
+              />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route
+                path="/video-call"
+                element={
+                  <ProtectedRoute>
+                    <VideoCallPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Support pages */}
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/aboutUs" element={<AboutUsPage />} />
+              <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/contact" element={<ContactUsPage />} />
+              <Route path="/services" element={<ServicesPage />} />
+              <Route
+                path="/service/:serviceId"
+                element={<ServiceDetailPage />}
+              />
+              <Route path="/schedule" element={<SchedulePage />} />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

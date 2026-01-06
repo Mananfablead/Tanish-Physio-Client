@@ -26,25 +26,38 @@ export default function BookingPage() {
   const bookingData = location.state;
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [guestUserData, setGuestUserData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
+
+  // Check if user is a guest (not logged in)
+  const isGuestUser =
+    !sessionStorage.getItem("qw_user") && !localStorage.getItem("authToken");
+
+  // Handle service-based booking data
+  const serviceBooking = bookingData?.fromService;
 
   const therapist = bookingData?.therapist || {
     name: "Dr. Sarah Johnson",
     title: "Sports Injury Specialist",
-    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face",
+    avatar:
+      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face",
   };
 
   const session = bookingData?.session || {
     type: "1-on-1",
-    duration: "45 min",
-    price: 80,
+    duration: serviceBooking ? bookingData.service.duration : "45 min",
+    price: serviceBooking ? parseInt(bookingData.service.price) : 80,
   };
 
   const plan = bookingData?.plan || {
-    name: "Monthly Plan",
-    price: 199,
-    duration: "30 days",
+    name: serviceBooking ? `${bookingData.service.name} Plan` : "Monthly Plan",
+    price: serviceBooking ? parseInt(bookingData.service.price) : 199,
+    duration: serviceBooking ? bookingData.service.duration : "30 days",
   };
-  const planProvided = !!bookingData?.plan;
+  const planProvided = !!bookingData?.plan || serviceBooking;
 
   const date = bookingData?.date || "Mon, Dec 30";
   const time = bookingData?.time || "10:00";
@@ -57,39 +70,74 @@ export default function BookingPage() {
   try {
     const raw = sessionStorage.getItem("qw_questionnaire");
     if (raw) storedIntake = JSON.parse(raw);
-  } catch (e) { storedIntake = null; }
+  } catch (e) {
+    storedIntake = null;
+  }
 
   const RECENT_DAYS = 90;
   const now = Date.now();
-  const intakeIsRecent = storedIntake && storedIntake.updatedAt && (now - storedIntake.updatedAt) < RECENT_DAYS * 24 * 60 * 60 * 1000;
+  const intakeIsRecent =
+    storedIntake &&
+    storedIntake.updatedAt &&
+    now - storedIntake.updatedAt < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
   const handlePayment = () => {
     setIsProcessing(true);
+
+    // For guest users, save their information to sessionStorage
+    if (isGuestUser) {
+      try {
+        const guestInfo = {
+          ...guestUserData,
+          createdAt: Date.now(),
+        };
+        sessionStorage.setItem("qw_guest_user", JSON.stringify(guestInfo));
+      } catch (e) {
+        console.error("Failed to save guest user data", e);
+      }
+    }
 
     setTimeout(() => {
       setIsProcessing(false);
 
       // Persist plan as active subscription
       try {
-        sessionStorage.setItem("qw_plan", JSON.stringify({ plan, purchasedAt: Date.now(), active: true }));
+        sessionStorage.setItem(
+          "qw_plan",
+          JSON.stringify({ plan, purchasedAt: Date.now(), active: true })
+        );
       } catch (e) {}
-
       // Check for existing intake
       let stored = null;
-      try { const raw = sessionStorage.getItem("qw_questionnaire"); if (raw) stored = JSON.parse(raw); } catch (e) { stored = null; }
+      try {
+        const raw = sessionStorage.getItem("qw_questionnaire");
+        if (raw) stored = JSON.parse(raw);
+      } catch (e) {
+        stored = null;
+      }
       const RECENT_DAYS = 90;
       const now = Date.now();
-      const isRecent = (ts: number | undefined | null) => ts && (now - ts) < RECENT_DAYS * 24 * 60 * 60 * 1000;
+      const isRecent = (ts: number | undefined | null) =>
+        ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
       // Check for any previously reserved session (from intake-first scheduling)
       let scheduled = null;
-      try { const raw = sessionStorage.getItem('qw_scheduled_session'); if (raw) scheduled = JSON.parse(raw); } catch (e) { scheduled = null; }
+      try {
+        const raw = sessionStorage.getItem("qw_scheduled_session");
+        if (raw) scheduled = JSON.parse(raw);
+      } catch (e) {
+        scheduled = null;
+      }
 
       if (!stored || !isRecent(stored?.updatedAt)) {
         // Plan purchased, but intake missing or outdated: require intake to unlock sessions
-        toast.success("Payment successful! Please complete a short intake to unlock sessions.");
+        toast.success(
+          "Payment successful! Please complete a short intake to unlock sessions."
+        );
         // Save a pending marker to ensure plan activation after intake
-        try { sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan)); } catch (e) {}
+        try {
+          sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan));
+        } catch (e) {}
         navigate("/questionnaire", { state: { planToActivate: plan } });
         return;
       }
@@ -108,12 +156,29 @@ export default function BookingPage() {
           scheduled.locked = false;
           scheduled.therapist = therapist;
           scheduled.confirmedAt = Date.now();
-          sessionStorage.setItem('qw_scheduled_session', JSON.stringify(scheduled));
+          sessionStorage.setItem(
+            "qw_scheduled_session",
+            JSON.stringify(scheduled)
+          );
         }
       } catch (e) {}
 
-      toast.success("Payment successful! Redirecting to your dashboard...");
-      navigate("/booking-confirmation", { state: { ...bookingData, finalPrice } });
+      // Check if user is a guest (not logged in)
+      const wasGuestUser =
+        !sessionStorage.getItem("qw_user") &&
+        !localStorage.getItem("authToken");
+
+      toast.success("Payment successful! Your booking is confirmed.");
+      navigate("/schedule", {
+        state: {
+          ...bookingData,
+          finalPrice,
+          guestUser: wasGuestUser
+            ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}")
+            : undefined,
+          fromServices: true,
+        },
+      });
     }, 2000);
   };
 
@@ -156,8 +221,68 @@ export default function BookingPage() {
 
       <div className="container py-8">
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Payment Form */}
+          {/* Guest User Form and Payment Form */}
           <div className="lg:col-span-2 space-y-6">
+            {isGuestUser && (
+              <Card variant="elevated">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    Your Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="guestName">Full Name</Label>
+                      <Input
+                        id="guestName"
+                        placeholder="Enter your full name"
+                        value={guestUserData.name}
+                        onChange={(e) =>
+                          setGuestUserData({
+                            ...guestUserData,
+                            name: e.target.value,
+                          })
+                        }
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="guestEmail">Email Address</Label>
+                      <Input
+                        id="guestEmail"
+                        type="email"
+                        placeholder="Enter your email address"
+                        value={guestUserData.email}
+                        onChange={(e) =>
+                          setGuestUserData({
+                            ...guestUserData,
+                            email: e.target.value,
+                          })
+                        }
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="guestPhone">Phone Number</Label>
+                      <Input
+                        id="guestPhone"
+                        placeholder="Enter your phone number"
+                        value={guestUserData.phone}
+                        onChange={(e) =>
+                          setGuestUserData({
+                            ...guestUserData,
+                            phone: e.target.value,
+                          })
+                        }
+                        className="mt-2"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card variant="elevated">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -188,7 +313,7 @@ export default function BookingPage() {
                       />
                       <Label
                         htmlFor={method.value}
-                        className="flex items-center gap-3 rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                        className="flex items-center gap-3 rounded-lg border-2 border-muted bg-popover p-4 hover:bg-popover-hover hover:text-black peer-data-[state=checked]:border-primary cursor-pointer"
                       >
                         <method.icon className="h-5 w-5 text-primary" />
                         {method.label}
@@ -281,26 +406,7 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                {/* Session Details */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {session.type} Session ({session.duration})
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{date}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{time}</span>
-                  </div>
-                </div>
-
                 <Separator />
-
                 {/* Plan */}
                 <div className="flex justify-between items-center">
                   <div>
@@ -375,7 +481,11 @@ export default function BookingPage() {
                       size="lg"
                       className="w-full"
                       onClick={handlePayment}
-                      disabled={isProcessing}
+                      disabled={
+                        isProcessing ||
+                        (isGuestUser &&
+                          (!guestUserData.name || !guestUserData.email))
+                      }
                     >
                       {isProcessing ? (
                         <>
@@ -391,6 +501,12 @@ export default function BookingPage() {
                     </Button>
                   </>
                 )}
+                {isGuestUser &&
+                  (!guestUserData.name || !guestUserData.email) && (
+                    <p className="text-xs text-center text-destructive">
+                      Please fill in your name and email to continue
+                    </p>
+                  )}
                 <p className="text-xs text-center text-muted-foreground">
                   By completing this purchase, you agree to our Terms of
                   Service.
