@@ -4,7 +4,7 @@ import logo from '../../assets/logo.webp';
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/30">
-      <div className="container py-8">
+      <div className="container py-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
@@ -80,7 +80,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-4 pt-4 text-center text-sm text-muted-foreground">
+        <div className="border-t border-border mt-4 pt-4   text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Tanish Physiotherapy & Fitness Clinic.</p>
         </div>
       </div>

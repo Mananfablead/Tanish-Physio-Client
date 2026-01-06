@@ -267,23 +267,31 @@ export default function SchedulePage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Guest User Information */}
                 {bookingData?.guestUser && (
                   <div className="mt-6 pt-6 border-t border-primary/10">
-                    <h3 className="font-black text-slate-900 mb-3">Contact Information</h3>
+                    <h3 className="font-black text-slate-900 mb-3">
+                      Contact Information
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <p className="text-sm text-slate-500">Name</p>
-                        <p className="font-medium">{bookingData.guestUser.name}</p>
+                        <p className="font-medium">
+                          {bookingData.guestUser.name}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Email</p>
-                        <p className="font-medium">{bookingData.guestUser.email}</p>
+                        <p className="font-medium">
+                          {bookingData.guestUser.email}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Phone</p>
-                        <p className="font-medium">{bookingData.guestUser.phone || 'Not provided'}</p>
+                        <p className="font-medium">
+                          {bookingData.guestUser.phone || "Not provided"}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -303,9 +311,9 @@ export default function SchedulePage() {
             </div>
             <div className="flex flex-wrap gap-3">
               {bookingData?.fromServices && (
-                <Button 
+                <Button
                   className="h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black px-6 shadow-md shadow-emerald-200"
-                  onClick={() => navigate('/booking-confirmation')}
+                  onClick={() => navigate("/booking-confirmation")}
                 >
                   View Confirmation
                 </Button>

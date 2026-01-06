@@ -352,7 +352,7 @@ export default function QuestionnairePage() {
     }
 
     // Default behavior: continue to therapist discovery with intake data
-    navigate("/therapists", { state: { questionnaireData: data, assigned } });
+    navigate("/schedule", { state: { questionnaireData: data, assigned } });
   };
 
 

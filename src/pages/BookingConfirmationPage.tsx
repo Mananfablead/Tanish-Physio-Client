@@ -33,7 +33,7 @@ export default function BookingConfirmationPage() {
   return (
     <Layout>
       <div className="min-h-[70vh] flex items-center justify-center py-12">
-        <div className="container max-w-2xl">
+        <div className="container max-w-6xl">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -55,6 +55,34 @@ export default function BookingConfirmationPage() {
                   Your {serviceName} session has been successfully booked.
                   You'll receive a confirmation email shortly.
                 </p>
+
+                {/* Email Information */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8 text-left">
+                  <h3 className="font-semibold text-lg mb-3 text-blue-800 flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-blue-600" />
+                    Account Information
+                  </h3>
+                  <p className="text-blue-700 mb-3">
+                    We've sent an email to your registered email address with
+                    your login credentials.
+                  </p>
+                  <div className="space-y-2 text-blue-700">
+                    <p className="font-medium">Email contains:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Login password for your account</li>
+                      <li>Temporary access instructions</li>
+                      <li>Profile setup guide</li>
+                    </ul>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                    <p className="text-blue-800 font-medium">Next Steps:</p>
+                    <ol className="list-decimal pl-5 mt-2 space-y-1 text-blue-700">
+                      <li>Use your email and the provided password to login</li>
+                      <li>Change your password for security</li>
+                      <li>Access your profile to manage your bookings</li>
+                    </ol>
+                  </div>
+                </div>
 
                 {/* Session Details */}
                 <div className="bg-muted/50 rounded-xl p-6 mb-8 text-left space-y-4">
@@ -106,12 +134,19 @@ export default function BookingConfirmationPage() {
                   </Button>
                 </div>
 
-                <Link to="/">
-                  <Button variant="hero" size="lg">
-                    Back to Home
-                    <ArrowRight className="h-5 w-5 ml-2" />
-                  </Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link to="/login">
+                    <Button variant="hero" size="lg" className="w-full">
+                      Login to Your Account
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                  <Link to="/">
+                    <Button variant="outline" size="lg" className="w-full">
+                      Continue to Home
+                    </Button>
+                  </Link>
+                </div>
 
                 <p className="text-sm text-muted-foreground mt-6">
                   You can join the video session from your profile 5 minutes

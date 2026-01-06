@@ -192,7 +192,9 @@ const ServiceSidebar = ({
   return (
     <div className="space-y-6 sticky top-24">
       <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-        <h3 className="text-xl font-bold text-slate-900 mb-4">Service Details</h3>
+        <h3 className="text-xl font-bold text-slate-900 mb-4">
+          Service Details
+        </h3>
 
         <div className="space-y-4 mb-4">
           <div className="flex justify-between">
@@ -236,43 +238,43 @@ const ServiceSidebar = ({
           Book Session Now
         </Button>
 
-      {/* Trust Indicators */}
-      <div className="mt-4 space-y-3 pt-4 border-t border-slate-200">
-        <div className="flex items-start gap-2">
-          <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <span className="text-sm text-slate-600">Certified therapists</span>
-        </div>
-        <div className="flex items-start gap-2">
-          <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <span className="text-sm text-slate-600">
-            Evidence-based treatment
-          </span>
-        </div>
-        <div className="flex items-start gap-2">
-          <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-          <span className="text-sm text-slate-600">Home visit available</span>
+        {/* Trust Indicators */}
+        <div className="mt-4 space-y-3 pt-4 border-t border-slate-200">
+          <div className="flex items-start gap-2">
+            <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            <span className="text-sm text-slate-600">Certified therapists</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            <span className="text-sm text-slate-600">
+              Evidence-based treatment
+            </span>
+          </div>
+          <div className="flex items-start gap-2">
+            <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            <span className="text-sm text-slate-600">Home visit available</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Testimonial */}
-    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-      <div className="flex items-center gap-1 mb-3">
-        {[...Array(5)].map((_, i) => (
-          <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-        ))}
+      {/* Testimonial */}
+      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+        <div className="flex items-center gap-1 mb-3">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+          ))}
+        </div>
+        <p className="text-slate-600 italic mb-3">
+          "The therapy sessions helped me recover faster than I expected. The
+          therapist was very professional and caring."
+        </p>
+        <p className="text-sm text-slate-500">
+          - Sarah J., Orthopedic Physiotherapy
+        </p>
       </div>
-      <p className="text-slate-600 italic mb-3">
-        "The therapy sessions helped me recover faster than I expected. The
-        therapist was very professional and caring."
-      </p>
-      <p className="text-sm text-slate-500">
-        - Sarah J., Orthopedic Physiotherapy
-      </p>
     </div>
-  </div>
   );
-}
+};
 
 // Collapsible List Component
 const CollapsibleList = ({
@@ -460,7 +462,9 @@ export default function ServiceDetailPage() {
                     service: {
                       id: service.id,
                       name: service.details.title,
-                      price: service.details.priceRange.replace("₹", "").split("-")[0],
+                      price: service.details.priceRange
+                        .replace("₹", "")
+                        .split("-")[0],
                       duration: service.details.sessionDuration,
                     },
                     fromService: true,
