@@ -37,6 +37,7 @@ const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 import PublicRoute from "./components/routing/PublicRoute";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -47,6 +48,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Suspense fallback={<LoadingScreen />}>
+            <ScrollToTop />
             <Routes>
               <Route path="/" element={<LandingPage />} />
 
