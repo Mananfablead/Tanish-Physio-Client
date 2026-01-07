@@ -145,8 +145,21 @@ export default function ProfilePage() {
       let raw = sessionStorage.getItem('qw_scheduled_session');
       if (raw) setNextSession(JSON.parse(raw));
       else {
-        // Initialize with null if no scheduled session exists
-        setNextSession(null);
+        // Initialize with fake data if no scheduled session exists
+        const fakeSession = {
+          id: 'fake-session-1',
+          start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).getTime(), // 2 days from now
+          end: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).getTime(), // 1 hour after start
+          location: 'Video Call',
+          relatedTo: 'Physical Therapy Session',
+          notes: 'Follow-up on knee rehabilitation progress',
+          therapist: {
+            name: 'Dr. Sarah Johnson',
+            specialty: 'Orthopedic Specialist'
+          }
+        };
+        sessionStorage.setItem('qw_scheduled_session', JSON.stringify(fakeSession));
+        setNextSession(fakeSession);
       }
     } catch (e) {}
 
@@ -155,8 +168,37 @@ export default function ProfilePage() {
       let raw = sessionStorage.getItem('qw_session_history');
       if (raw) setSessionHistory(JSON.parse(raw));
       else {
-        // Initialize with empty array if no session history exists
-        setSessionHistory([]);
+        // Initialize with fake data if no session history exists
+        const fakeSessionHistory = [
+          {
+            id: 'fake-session-1',
+            start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime(), // 7 days ago
+            end: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000).getTime(), // 45 minutes duration
+            duration: '45 min',
+            relatedTo: 'Physical Therapy',
+            notes: 'Discussed exercises for lower back pain. Patient showed improvement in mobility.',
+            therapist: {
+              name: 'Dr. Sarah Johnson',
+              specialty: 'Orthopedic Specialist'
+            },
+            recordingUrl: '#'
+          },
+          {
+            id: 'fake-session-2',
+            start: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).getTime(), // 3 days ago
+            end: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).getTime(), // 60 minutes duration
+            duration: '60 min',
+            relatedTo: 'Occupational Therapy',
+            notes: 'Patient working on daily activity improvements. Recommended ergonomic adjustments at work.',
+            therapist: {
+              name: 'Dr. Michael Chen',
+              specialty: 'Occupational Therapist'
+            },
+            recordingUrl: '#'
+          }
+        ];
+        sessionStorage.setItem('qw_session_history', JSON.stringify(fakeSessionHistory));
+        setSessionHistory(fakeSessionHistory);
       }
     } catch (e) {}
 
@@ -419,12 +461,8 @@ export default function ProfilePage() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <div className="text-3xl font-black text-primary">
-                              ₹{activePlan.plan?.price ?? activePlan.price}
-                            </div>
-                            <div className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                              {activePlan.plan?.duration ?? activePlan.duration}
-                            </div>
+                            <div className="text-3xl font-black text-primary">₹{activePlan.plan?.price ?? activePlan.price}</div>
+                            <div className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">{activePlan.plan?.duration ?? activePlan.duration}</div>
                           </div>
                         </div>
 
@@ -643,11 +681,8 @@ export default function ProfilePage() {
                               moment.
                             </p>
                           </div>
-                          <Button
-                            asChild
-                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                          >
-                            <Link to="/therapists">Book a Session</Link>
+                          <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                            <Link to="/">Book a Session</Link>
                           </Button>
                         </div>
                       </RightPanelCard>
@@ -776,94 +811,60 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    {planHistory && planHistory.length > 0 ? (
-                      <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                  Plan Name
-                                </th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                  Purchase Date
-                                </th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
-                                  Amount
-                                </th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
-                                  Receipt
-                                </th>
+                  {planHistory && planHistory.length > 0 ? (
+                    <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Plan Name</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Purchase Date</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Amount</th>
+                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Receipt</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {planHistory.map((p, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="font-bold text-slate-900">{p.plan?.name || p.name}</div>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                  {p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <span className="font-black text-slate-900">₹{p.plan?.price ?? p.price}</span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <Button variant="ghost" size="sm" className="h-9 w-9 rounded-xl p-0 hover:bg-primary/10 hover:text-primary">
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                </td>
                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {planHistory.map((p, idx) => (
-                                <tr
-                                  key={idx}
-                                  className="hover:bg-slate-50/50 transition-colors"
-                                >
-                                  <td className="px-6 py-4">
-                                    <div className="font-bold text-slate-900">
-                                      {p.plan?.name || p.name}
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                                    {p.purchasedAt
-                                      ? new Date(
-                                          p.purchasedAt
-                                        ).toLocaleDateString(undefined, {
-                                          year: "numeric",
-                                          month: "short",
-                                          day: "numeric",
-                                        })
-                                      : "-"}
-                                  </td>
-                                  <td className="px-6 py-4 text-right">
-                                    <span className="font-black text-slate-900">
-                                      ${p.plan?.price ?? p.price}
-                                    </span>
-                                  </td>
-                                  <td className="px-6 py-4 text-center">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-9 w-9 rounded-xl p-0 hover:bg-primary/10 hover:text-primary"
-                                    >
-                                      <FileText className="h-4 w-4" />
-                                    </Button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  ) : (
+                    <RightPanelCard title="Subscription History">
+                      <div className="py-12 text-center space-y-4">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                          <FileText className="h-8 w-8 text-slate-300" />
                         </div>
-                      </Card>
-                    ) : (
-                      <RightPanelCard title="Subscription History">
-                        <div className="py-12 text-center space-y-4">
-                          <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                            <FileText className="h-8 w-8 text-slate-300" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="text-xl font-black text-slate-900">
-                              No Subscription History
-                            </h3>
-                            <p className="text-slate-500 font-medium">
-                              You haven't purchased any plans yet.
-                            </p>
-                          </div>
-                          <Button
-                            asChild
-                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                          >
-                            <Link to="/plans">Explore Our Plans</Link>
-                          </Button>
+                        <div className="space-y-1">
+                          <h3 className="text-xl font-black text-slate-900">No Subscription History</h3>
+                          <p className="text-slate-500 font-medium">You haven't purchased any plans yet.</p>
                         </div>
-                      </RightPanelCard>
-                    )}
-                  </div>
-                )}
-              </div>
+                        <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                          <Link to="/plans">Explore Our Plans</Link>
+                        </Button>
+                      </div>
+                    </RightPanelCard>
+                  )}
+                </div>
+              )}
+            </div>
 
               {/* Show only when user selects Personal Info or Medical History */}
               {(selectedSection === "personal" ||

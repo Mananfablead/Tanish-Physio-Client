@@ -197,8 +197,8 @@ const Login = () => {
                                             onClick={() => setMode("login")}
                                             className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-300 ${
                                                 mode === "login" 
-                                                ? "bg-white text-green-700 shadow-sm" 
-                                                : "text-slate-500 hover:text-green-600"
+                                                ? "bg-white text-primary shadow-sm" 
+                                                : "text-slate-500 hover:text-primary"
                                             }`}
                                         >
                                             Sign In
@@ -215,8 +215,8 @@ const Login = () => {
                                             onClick={() => setMode("register")}
                                             className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-300 ${
                                                 mode === "register" 
-                                                ? "bg-white text-green-700 shadow-sm" 
-                                                : "text-slate-500 hover:text-green-600"
+                                                ? "bg-white text-primary shadow-sm" 
+                                                : "text-slate-500 hover:text-primary"
                                             }`}
                                         >
                                             Create Account
@@ -271,7 +271,7 @@ const Login = () => {
                                                         <button 
                                                             type="button" 
                                                             onClick={() => setMode("forgot")}
-                                                            className="text-[11px] font-bold text-green-600 hover:text-green-700 uppercase tracking-wider transition-colors"
+                                                            className="text-[11px] font-bold text-primary hover:text-green-700 uppercase tracking-wider transition-colors"
                                                         >
                                                             Forgot?
                                                         </button>
@@ -315,7 +315,7 @@ const Login = () => {
                                             <TooltipTrigger asChild>
                                                 <button 
                                                     type="submit" 
-                                                    className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 active:scale-[0.99] transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 group"
+                                                    className="w-full bg-primary text-white font-bold py-4 rounded-xl  active:scale-[0.99] transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 group"
                                                 >
                                                     Sign In to Account
                                                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -429,7 +429,7 @@ const Login = () => {
                                             <TooltipTrigger asChild>
                                                 <button 
                                                     type="submit" 
-                                                    className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 active:scale-[0.99] transition-all shadow-lg shadow-green-200 mt-2"
+                                                    className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-primary active:scale-[0.99] transition-all shadow-lg shadow-green-200 mt-2"
                                                 >
                                                     Create Your Account
                                                 </button>

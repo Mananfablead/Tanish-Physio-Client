@@ -327,7 +327,7 @@ export default function SchedulePage() {
                   View Confirmation
                 </Button>
               )} */}
-              <Button className="h-12 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-black px-6 shadow-md shadow-primary/20" 
+              <Button className="h-12 rounded-xl bg-primary hover:from-primary/90 hover:to-accent/90 text-white font-black px-6 shadow-md shadow-primary/20" 
                 onClick={() => setIsBookingModalOpen(true)}
               >
                 <Plus className="h-5 w-5 mr-2" />
@@ -403,7 +403,7 @@ export default function SchedulePage() {
                             isToday
                               ? "bg-primary/10 border border-primary/20 text-primary font-black"
                               : isSelected
-                              ? "bg-gradient-to-br from-primary to-accent text-white font-black shadow-md"
+                              ? "bg-primary text-white font-black shadow-md"
                               : "text-slate-700 hover:bg-slate-100"
                           } ${hasSession ? "relative" : ""}`}
                         >
@@ -567,7 +567,7 @@ export default function SchedulePage() {
                         </p>
                       </div>
                       <Button 
-                        className="h-11 rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold px-6 mt-4"
+                        className="h-11 rounded-xl bg-primary hover:from-primary/90 hover:to-accent/90 text-white font-bold px-6 mt-4"
                         onClick={() => {
                           setIsBookingModalOpen(true);
                           setCustomTime(""); // Reset custom time when opening

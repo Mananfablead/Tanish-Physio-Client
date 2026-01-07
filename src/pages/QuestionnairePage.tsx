@@ -154,7 +154,7 @@ const StepWrapper = ({
             )}
 
             {showNext && (
-              <Button onClick={onNext} disabled={isNextDisabled} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
+              <Button onClick={onNext} disabled={isNextDisabled} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
                 {nextLabel}
                 <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -347,7 +347,7 @@ export default function QuestionnairePage() {
       try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) {}
 
       // navigate to booking flow with plan and questionnaire
-      navigate("/booking", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
+      navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
       return;
     }
 
