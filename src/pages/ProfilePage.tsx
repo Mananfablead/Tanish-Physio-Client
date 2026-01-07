@@ -145,8 +145,21 @@ export default function ProfilePage() {
       let raw = sessionStorage.getItem('qw_scheduled_session');
       if (raw) setNextSession(JSON.parse(raw));
       else {
-        // Initialize with null if no scheduled session exists
-        setNextSession(null);
+        // Initialize with fake data if no scheduled session exists
+        const fakeSession = {
+          id: 'fake-session-1',
+          start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).getTime(), // 2 days from now
+          end: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).getTime(), // 1 hour after start
+          location: 'Video Call',
+          relatedTo: 'Physical Therapy Session',
+          notes: 'Follow-up on knee rehabilitation progress',
+          therapist: {
+            name: 'Dr. Sarah Johnson',
+            specialty: 'Orthopedic Specialist'
+          }
+        };
+        sessionStorage.setItem('qw_scheduled_session', JSON.stringify(fakeSession));
+        setNextSession(fakeSession);
       }
     } catch (e) {}
 
@@ -155,8 +168,37 @@ export default function ProfilePage() {
       let raw = sessionStorage.getItem('qw_session_history');
       if (raw) setSessionHistory(JSON.parse(raw));
       else {
-        // Initialize with empty array if no session history exists
-        setSessionHistory([]);
+        // Initialize with fake data if no session history exists
+        const fakeSessionHistory = [
+          {
+            id: 'fake-session-1',
+            start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime(), // 7 days ago
+            end: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000).getTime(), // 45 minutes duration
+            duration: '45 min',
+            relatedTo: 'Physical Therapy',
+            notes: 'Discussed exercises for lower back pain. Patient showed improvement in mobility.',
+            therapist: {
+              name: 'Dr. Sarah Johnson',
+              specialty: 'Orthopedic Specialist'
+            },
+            recordingUrl: '#'
+          },
+          {
+            id: 'fake-session-2',
+            start: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).getTime(), // 3 days ago
+            end: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).getTime(), // 60 minutes duration
+            duration: '60 min',
+            relatedTo: 'Occupational Therapy',
+            notes: 'Patient working on daily activity improvements. Recommended ergonomic adjustments at work.',
+            therapist: {
+              name: 'Dr. Michael Chen',
+              specialty: 'Occupational Therapist'
+            },
+            recordingUrl: '#'
+          }
+        ];
+        sessionStorage.setItem('qw_session_history', JSON.stringify(fakeSessionHistory));
+        setSessionHistory(fakeSessionHistory);
       }
     } catch (e) {}
 
@@ -337,7 +379,7 @@ export default function ProfilePage() {
                             <p className="text-slate-500 font-medium mt-1">{activePlan.plan?.description || activePlan.description}</p>
                           </div>
                           <div className="text-right">
-                            <div className="text-3xl font-black text-primary">${activePlan.plan?.price ?? activePlan.price}</div>
+                            <div className="text-3xl font-black text-primary">₹{activePlan.plan?.price ?? activePlan.price}</div>
                             <div className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">{activePlan.plan?.duration ?? activePlan.duration}</div>
                           </div>
                         </div>
@@ -480,7 +522,7 @@ export default function ProfilePage() {
                             <p className="text-slate-500 font-medium max-w-xs mx-auto">You don't have any sessions scheduled at the moment.</p>
                           </div>
                           <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
-                            <Link to="/therapists">Book a Session</Link>
+                            <Link to="/">Book a Session</Link>
                           </Button>
                         </div>
                       </RightPanelCard>
@@ -594,7 +636,7 @@ export default function ProfilePage() {
                                   {p.purchasedAt ? new Date(p.purchasedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                  <span className="font-black text-slate-900">${p.plan?.price ?? p.price}</span>
+                                  <span className="font-black text-slate-900">₹{p.plan?.price ?? p.price}</span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                   <Button variant="ghost" size="sm" className="h-9 w-9 rounded-xl p-0 hover:bg-primary/10 hover:text-primary">

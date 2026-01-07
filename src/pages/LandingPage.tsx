@@ -628,21 +628,21 @@ export default function LandingPage() {
             {[
               {
                 title: "Daily Plan",
-                price: "$29",
+                price: "₹29",
                 validity: "Per day",
                 features: ["Single session", "Consultation", "Exercise plan"],
                 highlight: false
               },
               {
                 title: "Weekly Plan",
-                price: "$149",
+                price: "₹149",
                 validity: "Per week",
                 features: ["3 sessions", "24/7 chat", "Full recovery plan"],
                 highlight: true
               },
               {
                 title: "Monthly Plan",
-                price: "$499",
+                price: "₹499",
                 validity: "Per month",
                 features: ["Unlimited sessions", "Personal coach", "Premium support"],
                 highlight: false
