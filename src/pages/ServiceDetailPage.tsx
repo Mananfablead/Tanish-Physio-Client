@@ -4,10 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee } from "lucide-react";
-import { services } from "@/components/ui/ServicesGrid";
-import { useState, useMemo } from "react";
+import { Service } from "@/types/service";
+import { fetchServiceById } from "@/store/serviceSlice";
+import { useEffect, useState, useMemo } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from "@/store";
+import type { AppDispatch } from "@/store";
 import { useAuth } from "@/context/AuthContext";
 
+// Use the Service type from the shared types
 // Define extended service data structure
 interface ExtendedService {
   id: number;
@@ -22,6 +27,7 @@ interface ExtendedService {
     detailedDescription: string;
     conditionsTreated: string[];
     sessionDuration: string;
+    price: string;
     priceRange: string;
     prerequisites: string;
     whatToExpect: string[];
@@ -59,9 +65,10 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => (
             >
               <IndianRupee className="h-4 w-4" />
               {(() => {
-                const priceRange = service.details.priceRange.replace("₹", "");
+                const priceRange = service.details.priceRange || service.details.price;
+                const cleanedPriceRange = priceRange.replace("₹", "");
                 // Extract first price from range (e.g., "4000-7500" -> "4000")
-                const fixedPrice = priceRange.split("-")[0];
+                const fixedPrice = cleanedPriceRange.split("-")[0];
                 return fixedPrice;
               })()}
             </Badge>
@@ -180,7 +187,7 @@ const ServiceSidebar = ({
         service: {
           id: service.id,
           name: service.details.title,
-          price: service.details.priceRange.replace("₹", "").split("-")[0],
+          price: (service.details.priceRange || service.details.price).replace("₹", "").split("-")[0],
           duration: service.details.sessionDuration,
         },
         fromService: true,
@@ -208,9 +215,10 @@ const ServiceSidebar = ({
             <span className="font-medium text-slate-900 flex items-center gap-1">
               <IndianRupee className="h-4 w-4" />
               {(() => {
-                const priceRange = service.details.priceRange.replace("₹", "");
+                const priceRange = service.details.priceRange || service.details.price;
+                const cleanedPriceRange = priceRange.replace("₹", "");
                 // Extract first price from range (e.g., "4000-7500" -> "4000")
-                const fixedPrice = priceRange.split("-")[0];
+                const fixedPrice = cleanedPriceRange.split("-")[0];
                 return fixedPrice;
               })()}
             </span>
@@ -336,21 +344,43 @@ const CollapsibleList = ({
 export default function ServiceDetailPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
+  const dispatch: AppDispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-
-  const service = useMemo(
-    () => services.find((s) => s.id === parseInt(serviceId || "")),
-    [serviceId]
-  );
-
-  if (!service) {
+  
+  // Get service from Redux store
+  const { selectedService, loading, error } = useSelector((state: RootState) => state.services);
+  
+  useEffect(() => {
+    if (serviceId) {
+      dispatch(fetchServiceById(serviceId));
+    }
+  }, [dispatch, serviceId]);
+  
+  // Use the service from Redux store
+  const service = selectedService;
+  
+  if (loading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-lg text-slate-600">Loading service...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  if (error || !service) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">
               Service Not Found
             </h1>
+            <p className="text-slate-600 mb-4">{error}</p>
             <Button onClick={() => navigate("/services")}>
               Back to Services
             </Button>
@@ -380,65 +410,68 @@ export default function ServiceDetailPage() {
               Services
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-slate-900">{service.details.title}</span>
+            <span className="text-slate-900">{service?.details.title || 'Loading...'}</span>
           </div>
 
           <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
-            <ServiceHero service={service} />
+            {service && (
+              <>
+                <ServiceHero service={service} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-8">
-                <ServiceMedia service={service} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 space-y-8">
+                    <ServiceMedia service={service} />
 
-                <div className="border-t border-slate-200 pt-8">
-                  <CollapsibleList
-                    title="Conditions We Treat"
-                    items={service.details.conditionsTreated}
-                    icon={
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                    }
-                  />
+                    <div className="border-t border-slate-200 pt-8">
+                      <CollapsibleList
+                        title="Conditions We Treat"
+                        items={service.details.conditionsTreated}
+                        icon={
+                          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                        }
+                      />
+                    </div>
+
+                    <div className="border-t border-slate-200 pt-8">
+                      <CollapsibleList
+                        title="What to Expect"
+                        items={service.details.whatToExpect}
+                        icon={
+                          <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                        }
+                      />
+                    </div>
+
+                    <div className="border-t border-slate-200 pt-8">
+                      <CollapsibleList
+                        title="Service Benefits"
+                        items={service.details.benefits}
+                        icon={
+                          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-1">
+                    <ServiceSidebar service={service} navigate={navigate} />
+                  </div>
                 </div>
-
-                <div className="border-t border-slate-200 pt-8">
-                  <CollapsibleList
-                    title="What to Expect"
-                    items={service.details.whatToExpect}
-                    icon={
-                      <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
-                    }
-                  />
-                </div>
-
-                <div className="border-t border-slate-200 pt-8">
-                  <CollapsibleList
-                    title="Service Benefits"
-                    items={service.details.benefits}
-                    icon={
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="lg:col-span-1">
-                <ServiceSidebar service={service} navigate={navigate} />
-              </div>
-            </div>
+              </>
+            )}
           </Card>
 
           {/* Floating Bottom CTA for Mobile */}
+          {service && (
           <div className="fixed bottom-6 left-6 right-6 lg:hidden">
             <div className="flex items-center justify-between bg-white rounded-xl p-3 mb-2 shadow-lg border">
               <div>
                 <p className="text-sm font-medium text-slate-900">
                   {(() => {
-                    const priceRange = service.details.priceRange.replace(
-                      "₹",
-                      ""
-                    );
+                    const priceRange = service.details.priceRange || service.details.price;
+                    const cleanedPriceRange = priceRange.replace("₹", "");
                     // Extract first price from range (e.g., "4000-7500" -> "4000")
-                    const fixedPrice = priceRange.split("-")[0];
+                    const fixedPrice = cleanedPriceRange.split("-")[0];
                     return fixedPrice;
                   })()}
                 </p>
@@ -462,7 +495,7 @@ export default function ServiceDetailPage() {
                     service: {
                       id: service.id,
                       name: service.details.title,
-                      price: service.details.priceRange
+                      price: (service.details.priceRange || service.details.price)
                         .replace("₹", "")
                         .split("-")[0],
                       duration: service.details.sessionDuration,
@@ -476,6 +509,7 @@ export default function ServiceDetailPage() {
               Book Session
             </Button>
           </div>
+          )}
         </div>
       </div>
     </Layout>
