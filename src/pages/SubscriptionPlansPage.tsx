@@ -366,7 +366,7 @@ export default function SubscriptionPlansPage() {
 
         {/* Plan Details */}
         <div className="max-w-6xl mx-auto">
-          <Card variant="gradient">
+          <Card className="bg-slate-90 shadow-xl">
             <CardContent className="p-6 space-y-6">
               {/* PLAN SUMMARY */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">

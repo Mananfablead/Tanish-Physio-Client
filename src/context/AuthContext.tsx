@@ -1,15 +1,21 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../store';
+import { logout as logoutAction, fetchProfile } from '../store/authSlice';
 
 interface User {
+  id: string;
   email: string;
   name: string;
-  image?: string;
   role?: string;
+  phone?: string;
+  image?: string;
+  healthProfile?: any;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, name: string, role?: string) => void;
+  login: (email: string, name: string, role?: string) => void; // Keeping for compatibility
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -17,34 +23,27 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const dispatch: AppDispatch = useDispatch();
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  // Initialize from localStorage
+  // Initialize profile on mount if user is authenticated
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (isAuthenticated && !user) {
+      dispatch(fetchProfile());
     }
-  }, []);
+  }, [isAuthenticated, user, dispatch]);
 
+  // Mock login function for compatibility - in real app, use the Redux auth
   const login = (email: string, name: string, role: string = 'patient') => {
-    const newUser = { 
-      email, 
-      name, 
-      role,
-      image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}` 
-    };
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    console.warn('Direct login called - use Redux actions instead');
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+    dispatch(logoutAction());
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

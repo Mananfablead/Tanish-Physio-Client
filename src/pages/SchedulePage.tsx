@@ -183,11 +183,20 @@ export default function SchedulePage() {
     );
   };
 
-  const getDaysInMonth = () => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    return eachDayOfInterval({ start, end });
-  };
+  const getCalendarDays = () => {
+  const start = startOfMonth(currentMonth);
+  const end = endOfMonth(currentMonth);
+
+  const daysInMonth = eachDayOfInterval({ start, end });
+
+  const startWeekday = start.getDay(); // 0 = Sunday
+
+  // Empty slots before 1st
+  const emptyDays = Array(startWeekday).fill(null);
+
+  return [...emptyDays, ...daysInMonth];
+};
+
 
   const getSessionsForDate = (date: Date) => {
     return sessions.filter((session) =>
@@ -382,43 +391,49 @@ export default function SchedulePage() {
                   </div>
 
                   <div className="grid grid-cols-7 gap-1">
-                    {getDaysInMonth().map((day, index) => {
-                      const isToday = isSameDay(day, today);
-                      const isSelected = isSameDay(day, selectedDate);
-                      const hasSession = getSessionsForDate(day).length > 0;
-                      const isPast = day < today && !isToday;
+  {getCalendarDays().map((day, index) => {
+    if (!day) {
+      return <div key={index} className="h-10" />;
+    }
 
-                      return isPast ? (
-                        <div
-                          key={index}
-                          className="h-10 rounded-xl text-sm font-medium text-slate-300"
-                        >
-                          {format(day, "d")}
-                        </div>
-                      ) : (
-                        <button
-                          key={index}
-                          onClick={() => setSelectedDate(day)}
-                          className={`h-10 rounded-xl text-sm font-medium transition-all ${
-                            isToday
-                              ? "bg-primary/10 border border-primary/20 text-primary font-black"
-                              : isSelected
-                              ? "bg-primary text-white font-black shadow-md"
-                              : "text-slate-700 hover:bg-slate-100"
-                          } ${hasSession ? "relative" : ""}`}
-                        >
-                          {format(day, "d")}
-                          {hasSession && (
-                            <div
-                              className={`absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
-                                isSelected ? "bg-white" : "bg-primary"
-                              }`}
-                            ></div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+    const isToday = isSameDay(day, today);
+    const isSelected = isSameDay(day, selectedDate);
+    const hasSession = getSessionsForDate(day).length > 0;
+    const isPast = day < today && !isToday;
+
+    return isPast ? (
+      <div
+        key={index}
+        className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
+      >
+        {format(day, "d")}
+      </div>
+    ) : (
+      <button
+        key={index}
+        onClick={() => setSelectedDate(day)}
+        className={`h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all ${
+          isToday
+            ? "bg-primary/10 border border-primary/20 text-primary font-black"
+            : isSelected
+            ? "bg-primary text-white font-black shadow-md"
+            : "text-slate-700 hover:bg-slate-100"
+        } ${hasSession ? "relative" : ""}`}
+      >
+        {format(day, "d")}
+
+        {hasSession && (
+          <span
+            className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
+              isSelected ? "bg-white" : "bg-primary"
+            }`}
+          />
+        )}
+      </button>
+    );
+  })}
+</div>
+
                 </CardContent>
               </Card>
             </div>

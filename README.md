@@ -1,8 +1,34 @@
-# Welcome to your Lovable project
+# Tanish Physio - Your Wellness Path
 
-## Project info
+A comprehensive digital wellness platform that connects patients with certified physiotherapists for personalized treatment plans and video consultations. This application provides accessible, professional physiotherapy services from the comfort of your home.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## About the Project
+
+**Tanish Physio** was founded by Dr. Khushboo with a vision to revolutionize how people access physiotherapy services. The platform addresses challenges many individuals face in attending in-person sessions due to busy schedules, transportation issues, or mobility limitations. By combining professional expertise with cutting-edge technology, Tanish Physio delivers effective treatments and promotes overall wellness.
+
+### Key Features
+
+- **Video Consultations**: Connect with certified physiotherapists from anywhere
+- **Personalized Treatment Plans**: Tailored programs for various conditions
+- **Service Booking**: Schedule appointments at your convenience
+- **Progress Tracking**: Monitor your wellness journey
+- **Multiple Service Offerings**: From orthopedic rehabilitation to specialized programs
+- **Home Service Options**: In-home physiotherapy services available
+- **Therapist Discovery**: Find the right professional for your needs
+
+### Services Offered
+
+- Orthopedic rehabilitation
+- Neurological physiotherapy
+- Sports injury recovery
+- Post-surgical rehabilitation
+- Chronic pain management
+- Weight management programs
+- Posture correction
+- Geriatric physiotherapy
+- Pediatric physiotherapy
+- Women's health physiotherapy
+- In-home physiotherapy services
 
 ## How can I edit this code?
 
@@ -50,9 +76,9 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+## Technologies Used
 
-This project is built with:
+This wellness platform is built with:
 
 - Vite
 - TypeScript

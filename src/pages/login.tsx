@@ -24,6 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuthRedux } from '@/hooks/useAuthRedux';
 
 import { 
   Tooltip,
@@ -57,12 +58,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 type ForgotForm = z.infer<typeof forgotSchema>;
 
 const Login = () => {
-    const login = (email: string, name: string, role: string = 'patient') => {
-        // Mock login function - in a real app this would set user context
-        console.log('Login with:', email, name, role);
-        // In a real app, you would call the actual login function here
-        window.location.href = '/'; // Redirect to home after login
-      };
+    const { handleLogin, handleRegister, loading, error } = useAuthRedux();
     const [mode, setMode] = useState("login"); // login | register | forgot
     const navigate = useNavigate();
 
@@ -231,13 +227,18 @@ const Login = () => {
 
                         {/* Form Content */}
                         <div className="space-y-6">
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                                    <div className="flex items-center gap-2 text-red-700">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span className="text-sm font-medium">{error}</span>
+                                    </div>
+                                </div>
+                            )}
                             {mode === "login" && (
                                 <Form {...loginForm}>
                                     <form onSubmit={loginForm.handleSubmit(async (data) => { 
-                                        login(data.email, 'User'); 
-                                        // Wait for a brief moment to ensure state update propagates
-                                        await new Promise(resolve => setTimeout(resolve, 100));
-                                        navigate('/'); 
+                                        await handleLogin(data.email, data.password); 
                                     })} className="space-y-5">
                                         <FormField
                                             control={loginForm.control}
@@ -315,10 +316,23 @@ const Login = () => {
                                             <TooltipTrigger asChild>
                                                 <button 
                                                     type="submit" 
-                                                    className="w-full bg-primary text-white font-bold py-4 rounded-xl  active:scale-[0.99] transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 group"
+                                                    disabled={loading}
+                                                    className="w-full bg-primary text-white font-bold py-4 rounded-xl  active:scale-[0.99] transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                                                 >
-                                                    Sign In to Account
-                                                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                                    {loading ? (
+                                                        <>
+                                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            Signing In...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Sign In to Account
+                                                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                                        </>
+                                                    )}
                                                 </button>
                                             </TooltipTrigger>
                                             <TooltipContent>
@@ -332,10 +346,7 @@ const Login = () => {
                             {mode === "register" && (
                                 <Form {...registerForm}>
                                     <form onSubmit={registerForm.handleSubmit(async (data) => { 
-                                        login(data.email, data.name); 
-                                        // Wait for a brief moment to ensure state update propagates
-                                        await new Promise(resolve => setTimeout(resolve, 100));
-                                        navigate('/'); 
+                                        await handleRegister(data.name, data.email, data.password); 
                                     })} className="space-y-4">
                                         <FormField
                                             control={registerForm.control}
@@ -429,9 +440,20 @@ const Login = () => {
                                             <TooltipTrigger asChild>
                                                 <button 
                                                     type="submit" 
-                                                    className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-primary active:scale-[0.99] transition-all shadow-lg shadow-green-200 mt-2"
+                                                    disabled={loading}
+                                                    className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-primary active:scale-[0.99] transition-all shadow-lg shadow-green-200 mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                                 >
-                                                    Create Your Account
+                                                    {loading ? (
+                                                        <>
+                                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            Creating Account...
+                                                        </>
+                                                    ) : (
+                                                        'Create Your Account'
+                                                    )}
                                                 </button>
                                             </TooltipTrigger>
                                             <TooltipContent>
