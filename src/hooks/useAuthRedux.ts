@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { login, register, logout, fetchProfile, clearError } from '../store/authSlice';
+import { login, register, logout, fetchProfile, clearError, forgotPassword } from '../store/slices/authSlice';
 import { RootState, AppDispatch } from '../store';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './use-toast';
@@ -16,6 +16,8 @@ export const useAuthRedux = () => {
   const handleLogin = async (email: string, password: string) => {
     try {
       const result = await dispatch(login({ email, password }));
+      
+      // Check if the login was successful
       if (login.fulfilled.match(result)) {
         toast({
           title: "Login Successful",
@@ -23,16 +25,21 @@ export const useAuthRedux = () => {
         });
         navigate('/');
       } else if (login.rejected.match(result)) {
+        // Handle the rejected case with the error from the API
+        const errorMessage = result.payload as string || 'Login failed';
         toast({
           title: "Login Failed",
-          description: result.payload as string,
+          description: errorMessage,
           variant: "destructive",
         });
+        // The error will also be reflected in the Redux state
       }
-    } catch (err) {
+    } catch (err: any) {
+      // This handles unexpected errors
+      const errorMessage = err.message || "An error occurred during login.";
       toast({
         title: "Login Failed",
-        description: "An error occurred during login.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -84,6 +91,31 @@ export const useAuthRedux = () => {
     dispatch(clearError());
   };
 
+  const handleForgotPassword = async (email: string) => {
+    try {
+      const result = await dispatch(forgotPassword({ email }));
+      if (forgotPassword.fulfilled.match(result)) {
+        toast({
+          title: "Password Reset Email Sent",
+          description: "We've sent a password reset link to your email address.",
+        });
+        navigate('/login');
+      } else if (forgotPassword.rejected.match(result)) {
+        toast({
+          title: "Password Reset Request Failed",
+          description: result.payload as string,
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Password Reset Request Failed",
+        description: "An error occurred while processing your request.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     user,
     isAuthenticated,
@@ -92,6 +124,7 @@ export const useAuthRedux = () => {
     handleLogin,
     handleRegister,
     handleLogout,
+    handleForgotPassword,
     clearAuthError,
   };
 };

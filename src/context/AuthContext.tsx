@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { logout as logoutAction, fetchProfile } from '../store/authSlice';
+import { logout as logoutAction, fetchProfile } from '../store/slices/authSlice';
 
 interface User {
   id: string;

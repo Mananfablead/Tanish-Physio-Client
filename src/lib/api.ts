@@ -31,10 +31,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth data if token is invalid
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login'; // Redirect to login
+      // Don't redirect on login attempts, just reject the promise
+      const isLoginAttempt = error.config.url?.includes('/auth/login');
+      if (!isLoginAttempt) {
+        // Clear auth data if token is invalid
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login'; // Redirect to login
+      }
     }
     return Promise.reject(error);
   }

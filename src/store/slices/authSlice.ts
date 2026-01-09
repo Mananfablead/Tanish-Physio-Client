@@ -1,6 +1,36 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import api from '../lib/api';
-import { User } from '../types/user';
+import api from '../../lib/api';
+import { User } from '../../types/user';
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  statusCode: number;
+}
+
+interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+interface RegisterResponse {
+  token: string;
+  user: User;
+}
+
+interface ProfileResponse {
+  _id: string;
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+  phone?: string;
+  image?: string;
+  healthProfile?: any;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface AuthState {
   user: User | null;
@@ -19,12 +49,17 @@ const initialState: AuthState = {
 };
 
 // Async thunk for login
-export const login = createAsyncThunk(
+export const login = createAsyncThunk<
+  { token: string; user: User },
+  { email: string; password: string },
+  { rejectValue: string }
+>(
   'auth/login',
-  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue }) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { token, user } = response.data.data;
+      const apiResponse = response.data as ApiResponse<LoginResponse>;
+      const { token, user } = apiResponse.data;
       
       // Save token to localStorage
       localStorage.setItem('token', token);
@@ -40,15 +75,17 @@ export const login = createAsyncThunk(
 );
 
 // Async thunk for register
-export const register = createAsyncThunk(
+export const register = createAsyncThunk<
+  { token: string; user: User },
+  { name: string; email: string; password: string; phone?: string },
+  { rejectValue: string }
+>(
   'auth/register',
-  async (
-    { name, email, password, phone }: { name: string; email: string; password: string; phone?: string },
-    { rejectWithValue }
-  ) => {
+  async ({ name, email, password, phone }, { rejectWithValue }) => {
     try {
       const response = await api.post('/auth/register', { name, email, password, phone });
-      const { token, user } = response.data.data;
+      const apiResponse = response.data as ApiResponse<RegisterResponse>;
+      const { token, user } = apiResponse.data;
       
       // Save token to localStorage
       localStorage.setItem('token', token);
@@ -67,10 +104,12 @@ export const register = createAsyncThunk(
 export const logout = createAsyncThunk('auth/logout', async (_, { dispatch }) => {
   try {
     await api.post('/auth/logout');
+    // Dispatch logoutSync to update the state
+    dispatch(logoutSync());
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    // Clear localStorage and state
+    // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
@@ -80,13 +119,30 @@ export const logout = createAsyncThunk('auth/logout', async (_, { dispatch }) =>
 export const fetchProfile = createAsyncThunk('auth/fetchProfile', async (_, { rejectWithValue }) => {
   try {
     const response = await api.get('/auth/profile');
-    return response.data.data;
+    const apiResponse = response.data as ApiResponse<ProfileResponse>;
+    return apiResponse.data;
   } catch (error: any) {
     return rejectWithValue(
       error.response?.data?.message || 'Failed to fetch profile'
     );
   }
 });
+
+// Async thunk for forgot password
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async ({ email }: { email: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Password reset request failed'
+      );
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',
@@ -150,7 +206,16 @@ const authSlice = createSlice({
       })
       // Fetch profile cases
       .addCase(fetchProfile.fulfilled, (state, action) => {
-        state.user = action.payload;
+        // Map ProfileResponse to User interface
+        state.user = {
+          id: action.payload.id,
+          name: action.payload.name,
+          email: action.payload.email,
+          role: action.payload.role,
+          phone: action.payload.phone,
+          image: action.payload.image,
+          healthProfile: action.payload.healthProfile,
+        };
         state.isAuthenticated = true;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
@@ -159,9 +224,27 @@ const authSlice = createSlice({
         // Clear invalid token
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+      })
+      // Forgot password cases
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
 export const { clearError, setCredentials, logoutSync } = authSlice.actions;
+
+// Selectors
+export const selectCurrentUser = (state: { auth: AuthState }) => state.auth.user;
+export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
+export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.loading;
+
 export default authSlice.reducer;

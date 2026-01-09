@@ -26,7 +26,9 @@ const BookingConfirmationPage = lazy(
   () => import("./pages/BookingConfirmationPage")
 );
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Login = lazy(() => import("./pages/login"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const VideoCallPage = lazy(() => import("./pages/VideoCallPage"));
@@ -37,8 +39,8 @@ const ContactUsPage = lazy(() => import("./pages/ContactUsPage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 
-import ProtectedRoute from "./components/routing/ProtectedRoute";
-import PublicRoute from "./components/routing/PublicRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
 
 
 const queryClient = new QueryClient();
@@ -80,17 +82,53 @@ const App = () => (
                     path="/login"
                     element={
                       <PublicRoute>
-                        <Login />
+                        <LoginPage />
                       </PublicRoute>
                     }
                   />
 
-                  <Route path="/booking" element={<BookingPage />} />
+                  <Route
+                    path="/register"
+                    element={
+                      <PublicRoute>
+                        <RegisterPage />
+                      </PublicRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/forgot-password"
+                    element={
+                      <PublicRoute>
+                        <ForgotPasswordPage />
+                      </PublicRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/booking"
+                    element={
+                      <ProtectedRoute>
+                        <BookingPage />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/booking-confirmation"
-                    element={<BookingConfirmationPage />}
+                    element={
+                      <ProtectedRoute>
+                        <BookingConfirmationPage />
+                      </ProtectedRoute>
+                    }
                   />
-                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/video-call"
                     element={
@@ -110,7 +148,14 @@ const App = () => (
                     path="/service/:serviceId"
                     element={<ServiceDetailPage />}
                   />
-                  <Route path="/schedule" element={<SchedulePage />} />
+                  <Route
+                    path="/schedule"
+                    element={
+                      <ProtectedRoute>
+                        <SchedulePage />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>

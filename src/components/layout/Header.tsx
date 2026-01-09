@@ -9,7 +9,9 @@ import {
   LayoutDashboard,
   Settings,
   Mail,
-  Calendar
+  Calendar,
+  User,
+  LogOut
 } from "lucide-react";
 import { useState } from "react";
 import { 
@@ -17,9 +19,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-
-
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '@/store/slices/authSlice';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -33,8 +40,20 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  
+  // Get user from Redux store
+  const user = useSelector(selectCurrentUser);
+  const isAuthenticated = !!user;
 
-
+  const handleLogout = () => {
+    // Clear auth data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Navigate to home or login
+    navigate('/');
+    // Refresh the page to clear any remaining state
+    window.location.reload();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -62,34 +81,78 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="hidden md:flex"
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Access your professional or patient portal</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link to="/questionnaire" className="hidden md:block">
-                <Button variant="hero" size="sm">
-                  Get Started
+          {/* Show profile dropdown when authenticated */}
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="relative h-8 rounded-full flex items-center gap-2">
+                  {user?.image ? (
+                    <img 
+                      src={user.image} 
+                      alt={user.name || 'User'} 
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
+                      <User className="h-4 w-4" />
+                    </div>
+                  )}
+                  <span className="hidden md:inline text-sm font-medium truncate max-w-[100px]">{user?.name || user?.email?.split('@')[0]}</span>
                 </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Start your clinical assessment today</p>
-            </TooltipContent>
-          </Tooltip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="p-2 border-b border-gray-100">
+                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[150px]">{user?.email}</p>
+                </div>
+                <DropdownMenuItem className="p-2" onClick={() => navigate('/profile')}>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="p-2 cursor-pointer" 
+                  onClick={handleLogout}
+                >
+                  <div className="flex items-center gap-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Log out</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="hidden md:flex"
+                    onClick={() => navigate('/login')}
+                  >
+                    Sign In
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Access your professional or patient portal</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link to="/questionnaire" className="hidden md:block">
+                    <Button variant="hero" size="sm">
+                      Get Started
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Start your clinical assessment today</p>
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
 
           {/* Mobile Navigation */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -116,21 +179,52 @@ export function Header() {
                   </Link>
                 ))}
                 <div className="border-t border-border pt-4 mt-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full mb-3"
-                    onClick={() => {
-                      setOpen(false);
-                      navigate('/login');
-                    }}
-                  >
-                    Sign In
-                  </Button>
-                  <Link to="/questionnaire" onClick={() => setOpen(false)}>
-                    <Button variant="hero" className="w-full">
-                      Get Started
-                    </Button>
-                  </Link>
+                  {isAuthenticated ? (
+                    <>
+                      <div className="mb-3">
+                        <Button 
+                          variant="outline" 
+                          className="w-full mb-2"
+                          onClick={() => {
+                            setOpen(false);
+                            navigate('/profile');
+                          }}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Profile
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={() => {
+                            setOpen(false);
+                            handleLogout();
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Log Out
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        className="w-full mb-3"
+                        onClick={() => {
+                          setOpen(false);
+                          navigate('/login');
+                        }}
+                      >
+                        Sign In
+                      </Button>
+                      <Link to="/questionnaire" onClick={() => setOpen(false)}>
+                        <Button variant="hero" className="w-full">
+                          Get Started
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>

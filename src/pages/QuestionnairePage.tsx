@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from 'react-redux';
+import { Question } from '@/store/slices/questionnaireSlice';
+import { useToast } from '@/hooks/use-toast';
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,52 +22,25 @@ import {
   Stethoscope
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  fetchActiveQuestionnaire,
+  submitQuestionnaireResponse,
+  selectActiveQuestionnaire,
+  selectQuestionnaireLoading,
+  selectQuestionnaireError,
+} from '@/store/slices/questionnaireSlice';
 
 interface QuestionnaireData {
-  age: string;
-  gender: string;
-  painArea: string;
-  painDuration: string;
-  painLevel: number;
-  injuryType: string;
-  sessionType: string;
-  preferredTimes: string[];
+  [key: string]: any; // Dynamic response for any question
 }
 
-const initialData: QuestionnaireData = {
-  age: "",
-  gender: "",
-  painArea: "",
-  painDuration: "",
-  painLevel: 5,
-  injuryType: "",
-  sessionType: "",
-  preferredTimes: [],
-};
+const initialData: QuestionnaireData = {};
 
-const bodyAreas = [
-  { id: "neck", label: "Neck", position: "top-[15%] left-[50%] -translate-x-1/2" },
-  { id: "shoulder-left", label: "Left Shoulder", position: "top-[22%] left-[35%]" },
-  { id: "shoulder-right", label: "Right Shoulder", position: "top-[22%] right-[35%]" },
-  { id: "upper-back", label: "Upper Back", position: "top-[28%] left-[50%] -translate-x-1/2" },
-  { id: "lower-back", label: "Lower Back", position: "top-[40%] left-[50%] -translate-x-1/2" },
-  { id: "hip", label: "Hip", position: "top-[48%] left-[50%] -translate-x-1/2" },
-  { id: "knee-left", label: "Left Knee", position: "top-[65%] left-[42%]" },
-  { id: "knee-right", label: "Right Knee", position: "top-[65%] right-[42%]" },
-  { id: "ankle-left", label: "Left Ankle", position: "top-[85%] left-[42%]" },
-  { id: "ankle-right", label: "Right Ankle", position: "top-[85%] right-[42%]" },
-  { id: "elbow-left", label: "Left Elbow", position: "top-[35%] left-[28%]" },
-  { id: "elbow-right", label: "Right Elbow", position: "top-[35%] right-[28%]" },
-  { id: "wrist-left", label: "Left Wrist", position: "top-[48%] left-[22%]" },
-  { id: "wrist-right", label: "Right Wrist", position: "top-[48%] right-[22%]" },
-];
+// This will be populated from the backend questionnaire
+const bodyAreas = [];
 
-const timeSlots = [
-  "Morning (6AM-12PM)",
-  "Afternoon (12PM-5PM)",
-  "Evening (5PM-9PM)",
-  "Night (9PM-12AM)",
-];
+// This will be populated from the backend questionnaire
+const timeSlots = [];
 
 const stepTitles: { [key: number]: string } = {
   1: "Patient Profile",
@@ -77,26 +53,7 @@ const stepTitles: { [key: number]: string } = {
 };
 
 const getStepHelper = (step: number, data: QuestionnaireData) => {
-  switch (step) {
-    case 1:
-      return "Confidential details to personalize your care.";
-    case 2:
-      return data.painArea ? `Selected: ${bodyAreas.find(a => a.id === data.painArea)?.label}` : "Select the area that best matches your discomfort.";
-    case 3:
-      if (!data.painDuration) return "How long have you been experiencing this?";
-      if (data.painDuration.includes("More than") || data.painDuration.includes("3-6")) return "Chronic pain can affect daily life — we’ll ensure a prioritized assessment.";
-      return "Early-stage pain often responds well to targeted treatment — we’ll take a focused approach.";
-    case 4:
-      return data.painLevel >= 8 ? "Severe pain noted — we can prioritize urgent care options." : "Rate the intensity so we can match the right care plan.";
-    case 5:
-      return "Tell us what led to your condition — it helps clinicians diagnose and plan treatment.";
-    case 6:
-      return "Choose the session format that fits your schedule and comfort.";
-    case 7:
-      return "Select general times you are available so we can match clinicians accordingly.";
-    default:
-      return "";
-  }
+  return "Answer the question to continue";
 };
 
 interface StepWrapperProps {
@@ -112,6 +69,141 @@ interface StepWrapperProps {
   nextLabel?: string;
   showNext?: boolean;
 }
+
+interface DynamicQuestionComponentProps {
+  question: Question & { type?: string; question?: string };
+  value: any;
+  onChange: (value: any) => void;
+}
+
+const DynamicQuestionComponent: React.FC<DynamicQuestionComponentProps> = ({ question, value, onChange }: DynamicQuestionComponentProps) => {
+  const renderQuestionField = () => {
+    // Use the type field from API response (might be 'type' or 'questionType')
+    const questionType = question.type || question.questionType;
+    const questionOptions = question.options || [];
+    
+    switch (questionType) {
+      case 'text':
+        return (
+          <Input
+            type="text"
+            placeholder="Enter your answer"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full p-3 border rounded-lg"
+          />
+        );
+      case 'number':
+        return (
+          <Input
+            type="number"
+            placeholder="Enter a number"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full p-3 border rounded-lg"
+          />
+        );
+      case 'radio':
+        return (
+          <RadioGroup
+            value={value}
+            onValueChange={onChange}
+            className="grid grid-cols-1 gap-3"
+          >
+            {questionOptions?.map((option) => (
+              <div key={option} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={option} />
+                <Label htmlFor={option}>{option}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        );
+      case 'checkbox':
+        return (
+          <div className="space-y-2">
+            {questionOptions?.map((option) => {
+              const isChecked = Array.isArray(value) ? value.includes(option) : false;
+              return (
+                <div key={option} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={option}
+                    checked={isChecked}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        if (Array.isArray(value)) {
+                          onChange([...value, option]);
+                        } else {
+                          onChange([option]);
+                        }
+                      } else {
+                        if (Array.isArray(value)) {
+                          onChange(value.filter((item: string) => item !== option));
+                        } else {
+                          onChange([]);
+                        }
+                      }
+                    }}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor={option}>{option}</Label>
+                </div>
+              );
+            })}
+          </div>
+        );
+      case 'select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full p-3 border rounded-lg"
+          >
+            <option value="">Select an option</option>
+            {questionOptions?.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        );
+      case 'slider':
+        return (
+          <div className="space-y-4">
+            <Slider
+              value={[parseInt(value) || 5]}
+              onValueChange={([newValue]) => onChange(newValue)}
+              min={questionOptions && questionOptions.length > 0 ? parseInt(questionOptions[0]) || 0 : 0}
+              max={questionOptions && questionOptions.length > 1 ? parseInt(questionOptions[1]) || 10 : 10}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>{questionOptions?.[0] || '0'}</span>
+              <span className="font-bold">{value || 5}</span>
+              <span>{questionOptions?.[1] || '10'}</span>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <Input
+            type="text"
+            placeholder="Enter your answer"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full p-3 border rounded-lg"
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {renderQuestionField()}
+    </div>
+  );
+};
 
 const StepWrapper = ({ 
   stepNum, 
@@ -167,9 +259,17 @@ const StepWrapper = ({
 };
 
 export default function QuestionnairePage() {
+  const dispatch: any = useDispatch(); // Temporary fix for async dispatch issue
+  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const pendingPlan = (location.state as any)?.planToActivate || null;
+
+  const { activeQuestionnaire, loading, error } = useSelector((state: any) => ({
+    activeQuestionnaire: selectActiveQuestionnaire(state),
+    loading: selectQuestionnaireLoading(state),
+    error: selectQuestionnaireError(state),
+  }));
 
   const [data, setData] = useState<QuestionnaireData>(initialData);
   const [activeStep, setActiveStep] = useState(1);
@@ -180,7 +280,7 @@ export default function QuestionnairePage() {
   const [progressExpanded, setProgressExpanded] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  const totalSteps = 7;
+  const totalSteps = activeQuestionnaire?.questions?.length || 1; // Use actual number of questions from backend
 
   const STORAGE_KEY_QUESTIONNAIRE = "qw_questionnaire";
   const STORAGE_KEY_PLAN = "qw_plan";
@@ -256,26 +356,28 @@ export default function QuestionnairePage() {
     return undefined;
   }, []);
 
+  useEffect(() => {
+    // Fetch active questionnaire from backend
+    dispatch(fetchActiveQuestionnaire());
+  }, [dispatch]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: error,
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
+
 
   const updateData = (field: keyof QuestionnaireData, value: any) => {
     setData((prev) => {
       const next = { ...prev, [field]: value } as QuestionnaireData;
       // persist
       saveStoredQuestionnaire(next);
-
-      // robust auto-advance: derive from next values (avoid stale 'data')
-      const shouldAutoAdvance =
-        field === "painArea" ||
-        field === "painDuration" ||
-        field === "injuryType" ||
-        field === "sessionType" ||
-        (field === "gender" && !!next.age);
-
-      if (shouldAutoAdvance) {
-        setTimeout(() => {
-          handleNext();
-        }, 400);
-      }
 
       return next;
     });
@@ -329,6 +431,19 @@ export default function QuestionnairePage() {
   const handleSubmit = () => {
     // persist intake
     saveStoredQuestionnaire(data);
+
+    // If we have an active questionnaire, submit responses to backend
+    if (activeQuestionnaire) {
+      const responses = Object.keys(data).reduce((acc, key) => {
+        acc[key] = data[key];
+        return acc;
+      }, {} as Record<string, any>);
+
+      dispatch(submitQuestionnaireResponse({
+        questionnaireId: activeQuestionnaire._id || activeQuestionnaire.id,
+        responses
+      }));
+    }
 
     // If we were navigated here to activate a plan, complete activation and send user to booking
     const pending = pendingPlan || (() => {
@@ -444,8 +559,22 @@ export default function QuestionnairePage() {
             <main className="lg:w-3/5 w-full ">
               <div className="pt-8 ">
 
+                {/* Show loading state while fetching questionnaire */}
+                {loading && (
+                  <div className="mb-6">
+                    <Card className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="text-sm font-black">Loading questionnaire...</div>
+                          <div className="text-xs text-slate-500">Please wait while we prepare your personalized questions.</div>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                )}
+
                 {/* Stored intake banner */}
-                {storedIntakeFound && !isReviewing && (
+                {storedIntakeFound && !isReviewing && !loading && activeQuestionnaire && (
                   <div className="mb-6">
                     <Card className="p-4">
                       <div className="flex items-center justify-between gap-4">
@@ -481,306 +610,44 @@ export default function QuestionnairePage() {
                 <AnimatePresence mode="wait">
             {!isReviewing ? (
               <motion.div key={`step-${activeStep}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }} >
-                {/* Step 1 */}
-                <StepWrapper 
-                  stepNum={1} 
-                  title="Patient Profile" 
-                  description="Confidential details to personalize your care"
-                  activeStep={activeStep}
-                  totalSteps={totalSteps}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  isNextDisabled={!data.age || !data.gender}
-                >
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 ">
-                    <div className="space-y-4">
-                      <Label htmlFor="age" className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Current Age</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        inputMode="numeric"
-                        placeholder="e.g. 28"
-                        value={data.age}
-                        onChange={(e) => updateData("age", e.target.value)}
-                        className="min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl border-slate-200 focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm"
-                      />
-                      <p className="text-[10px] font-bold text-slate-400 ml-1">Age helps us determine therapy intensity</p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Gender Identity</Label>
-                      <RadioGroup
-                        value={data.gender}
-                        onValueChange={(value) => updateData("gender", value)}
-                        className="grid grid-cols-2 md:grid-cols-3 gap-4"
-                      >
-                        {["Male", "Female", "Other"].map((gender) => (
-                          <div key={gender}>
-                            <RadioGroupItem value={gender} id={gender} className="peer sr-only" />
-                            <Label
-                              htmlFor={gender}
-                              className="flex flex-col items-center justify-center rounded-2xl border-2 border-primary/20 bg-white p-4 lg:p-8 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-black shadow-sm min-h-[48px]"
-                            >
-                              {gender}
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                    </div>
+                {loading && (
+                  <div className="flex justify-center items-center h-64">
+                    <p>Loading questionnaire...</p>
                   </div>
-                </StepWrapper>
-
-                {/* Step 2 */}
-                <StepWrapper 
-                  stepNum={2} 
-                  title="Area of Concern" 
-                  description="Select the primary area of discomfort"
-                  activeStep={activeStep}
-                  totalSteps={totalSteps}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  isNextDisabled={!data.painArea}
-                >
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div className="relative w-full aspect-[3/4] max-w-[260px] md:max-w-[300px] mx-auto bg-slate-50 rounded-3xl p-6 md:p-8 shadow-inner border border-slate-100 flex items-center justify-center">
-                      <svg viewBox="0 0 100 200" className="w-full h-full opacity-10 text-slate-900">
-                        <ellipse cx="50" cy="18" rx="12" ry="15" fill="currentColor" />
-                        <rect x="35" y="35" width="30" height="50" rx="5" fill="currentColor" />
-                        <rect x="20" y="35" width="12" height="45" rx="4" fill="currentColor" />
-                        <rect x="68" y="35" width="12" height="45" rx="4" fill="currentColor" />
-                        <rect x="35" y="88" width="13" height="55" rx="4" fill="currentColor" />
-                        <rect x="52" y="88" width="13" height="55" rx="4" fill="currentColor" />
-                      </svg>
-
-                      {bodyAreas.map((area) => (
-                        <button
-                          key={area.id}
-                          className={`absolute ${area.position} w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-                            data.painArea === area.id
-                              ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
-                              : "bg-slate-300 hover:bg-primary/40"
-                          }`}
-                          onClick={() => updateData("painArea", area.id)}
-                        />
-                      ))}
-                    </div>
-
-                    <div className="flex flex-wrap justify-start gap-3">
-                      {bodyAreas.map((area) => (
-                        <Badge
-                          key={area.id}
-                          variant={data.painArea === area.id ? "default" : "secondary"}
-                          className={`cursor-pointer transition-all px-6 py-4 text-xs font-black rounded-2xl ${
-                            data.painArea === area.id ? "shadow-2xl scale-110" : "bg-white hover:bg-slate-50 border-slate-100"
-                          }`}
-                          onClick={() => updateData("painArea", area.id)}
-                        >
-                          {area.label}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </StepWrapper>
-
-                {/* Step 3 */}
-                <StepWrapper 
-                  stepNum={3} 
-                  title="Condition History" 
-                  description="How long have you been experiencing this?"
-                  activeStep={activeStep}
-                  totalSteps={totalSteps}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  isNextDisabled={!data.painDuration}
-                >
-                  <RadioGroup
-                    value={data.painDuration}
-                    onValueChange={(value) => updateData("painDuration", value)}
-                    className="grid grid-cols-1 gap-4"
-                  >
-                    {[
-                      "Less than 1 week",
-                      "1-4 weeks",
-                      "1-3 months",
-                      "3-6 months",
-                      "More than 6 months",
-                    ].map((duration) => (
-                      <div key={duration}>
-                        <RadioGroupItem value={duration} id={duration} className="peer sr-only" />
-                        <Label
-                          htmlFor={duration}
-                          className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-6 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-bold shadow-sm group"
-                        >
-                          <div className={`w-6 h-6 rounded-full border-2 mr-5 flex items-center justify-center transition-all ${
-                            data.painDuration === duration ? "border-primary bg-primary" : "border-slate-200 group-hover:border-primary/40"
-                          }`}>
-                            {data.painDuration === duration && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-                          </div>
-                          {duration}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </StepWrapper>
-
-                {/* Step 4 */}
-                <StepWrapper 
-                  stepNum={4} 
-                  title="Pain Severity" 
-                  description="Rate your discomfort on a scale of 1-10"
-                  activeStep={activeStep}
-                  totalSteps={totalSteps}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                >
-                  <div className="bg-gradient-to-br from-primary/5 to-secondary/10 p-10 rounded-3xl border border-primary/20 space-y-12 shadow-inner">
-                    <div className="text-center relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 blur-3xl rounded-full" />
-                      <span className="text-8xl font-black text-primary tracking-tighter relative tabular-nums">{data.painLevel}</span>
-                      <span className="text-3xl font-bold text-primary/60 relative">/10</span>
-                      <p className="text-sm font-black uppercase tracking-[0.3em] text-primary mt-4 relative">
-                        {data.painLevel <= 3 ? "Mild" : data.painLevel <= 7 ? "Moderate" : "Severe"}
-                      </p>
-                    </div>
-
-                    <div className="px-4">
-                      <Slider
-                        value={[data.painLevel]}
-                        onValueChange={([value]) => {
-                          updateData("painLevel", value);
-                        }}
-                        min={1}
-                        max={10}
-                        step={1}
-                        className="w-full py-4 md:py-6"
-                      />
-                      <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-slate-400 pt-6">
-                        <span>Mild</span>
-                        <span>Moderate</span>
-                        <span>Severe</span>
-                      </div>
-                    </div>
-                  </div>
-                </StepWrapper>
-
-                {/* Step 5 */}
-                <StepWrapper 
-                  stepNum={5} 
-                  title="Injury Context" 
-                  description="What caused your pain or discomfort?"
-                  activeStep={activeStep}
-                  totalSteps={totalSteps}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  isNextDisabled={!data.injuryType}
-                >
-                  <RadioGroup
-                    value={data.injuryType}
-                    onValueChange={(value) => updateData("injuryType", value)}
-                    className="grid grid-cols-2 md:grid-cols-3 gap-4"
-                  >
-                    {[
-                      "Sports Injury",
-                      "Work-related",
-                      "Accident/Trauma",
-                      "Post-surgery",
-                      "Chronic/Age-related",
-                      "Unknown/Gradual onset",
-                    ].map((type) => (
-                      <div key={type}>
-                        <RadioGroupItem value={type} id={type} className="peer sr-only" />
-                        <Label
-                          htmlFor={type}
-                          className="flex flex-col items-center justify-center text-center rounded-2xl border-2 border-primary/20 bg-white p-8 h-40 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-black leading-tight shadow-sm"
-                        >
-                          {type}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </StepWrapper>
-
-                {/* Step 6 */}
-                <StepWrapper 
-                  stepNum={6} 
-                  title="Session Format" 
-                  description="How do you prefer to attend therapy?"
-                  activeStep={activeStep}
-                  totalSteps={totalSteps}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  isNextDisabled={!data.sessionType}
-                >
-                  <RadioGroup
-                    value={data.sessionType}
-                    onValueChange={(value) => updateData("sessionType", value)}
-                    className="grid grid-cols-1 gap-4"
-                  >
-                    {[
-                      { value: "1-on-1", title: "Personal 1-on-1", desc: "Private sessions with clinical focus", icon: User },
-                      { value: "group", title: "Group Recovery", desc: "Collaborative sessions with peers", icon: Activity },
-                      // { value: "home", title: "Digital Home-Care", desc: "Self-paced guided programs", icon: Stethoscope },
-                    ].map((type) => (
-                      <div key={type.value}>
-                        <RadioGroupItem value={type.value} id={type.value} className="peer sr-only" />
-                        <Label
-                          htmlFor={type.value}
-                          className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-3 lg:p-6 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all shadow-sm group min-h-[48px]"
-                        >
-                          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-accent group-hover:text-primary-foreground transition-colors mr-6">
-                            <type.icon className="h-6 w-6" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-black text-slate-900">{type.title}</p>
-                            <p className="text-xs text-slate-500 font-medium mt-1">{type.desc}</p>
-                          </div>
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                            data.sessionType === type.value ? "border-primary bg-primary" : "border-slate-200"
-                          }`}>
-                            {data.sessionType === type.value && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-                          </div>
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </StepWrapper>
-
-                {/* Step 7 */}
-                <StepWrapper 
-                  stepNum={7} 
-                  title="Availability" 
-                  description="Select your general availability"
-                  activeStep={activeStep}
-                  totalSteps={totalSteps}
-                  onNext={() => setIsReviewing(true)}
-                  onBack={handleBack}
-                  isNextDisabled={data.preferredTimes.length === 0}
-                  nextLabel="View Assessment Summary"
-                >
-                  <div className="grid grid-cols-1 gap-3 mb-8">
-                    {timeSlots.map((slot) => {
-                      const isSelected = data.preferredTimes.includes(slot);
+                )}
+                {!loading && activeQuestionnaire && activeQuestionnaire.questions && (
+                  <div>
+                    {activeQuestionnaire.questions.map((question, index) => {
+                      const stepNumber = index + 1;
+                      if (stepNumber !== activeStep) return null;
+          
                       return (
-                        <button
-                          key={slot}
-                          onClick={() => toggleTimeSlot(slot)}
-                          className={`flex items-center p-4 lg:p-6 rounded-2xl border-2 transition-all text-sm font-black shadow-sm min-h-[48px] ${
-                            isSelected 
-                              ? "border-primary bg-primary/[0.03] text-primary" 
-                              : "border-slate-50 bg-white hover:bg-slate-50 text-slate-600"
-                          }`}
+                        <StepWrapper 
+                          key={question._id || question.id}
+                          stepNum={stepNumber} 
+                          title={question.question || question.questionText || `Question ${stepNumber}`} 
+                          description="Please answer the question below"
+                          activeStep={activeStep}
+                          totalSteps={totalSteps}
+                          onNext={handleNext}
+                          onBack={handleBack}
+                          isNextDisabled={question.required && !data[question._id || question.id]}
                         >
-                          <div className={`w-6 h-6 rounded-lg border-2 mr-5 flex items-center justify-center transition-all ${
-                            isSelected ? "bg-primary border-primary shadow-lg shadow-primary/20" : "border-slate-200"
-                          }`}>
-                            {isSelected && <CheckCircle className="h-4 w-4 text-white" />}
-                          </div>
-                          {slot}
-                        </button>
+                          <DynamicQuestionComponent 
+                            question={question} 
+                            value={data[question._id || question.id] || ''} 
+                            onChange={(value) => updateData(question._id || question.id, value)} 
+                          />
+                        </StepWrapper>
                       );
                     })}
                   </div>
-                </StepWrapper>
+                )}
+                {!loading && !activeQuestionnaire && (
+                  <div className="flex justify-center items-center h-64">
+                    <p>No questionnaire available</p>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div key="review" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
@@ -790,44 +657,31 @@ export default function QuestionnairePage() {
                       <div>
                         <h3 className="text-lg font-black text-slate-900">Clinical Intake Summary</h3>
                         <p className="text-sm text-slate-500 mt-2">Confirm the clinical details we’ll use to match you with the right specialists.</p>
-
+          
                         <div className="mt-6 space-y-4">
-                          {[
-                            { label: "Patient Profile", value: `${data.age} yrs, ${data.gender}`, icon: User, step: 1 },
-                            { label: "Focus Area", value: bodyAreas.find(a => a.id === data.painArea)?.label || data.painArea, icon: Activity, step: 2 },
-                            { label: "Condition Duration", value: data.painDuration, icon: Clock, step: 3 },
-                            { label: "Intensity Level", value: `${data.painLevel}/10`, icon: Activity, step: 4 },
-                            { label: "Context", value: data.injuryType, icon: Stethoscope, step: 5 },
-                            { label: "Session Style", value: data.sessionType, icon: Edit2, step: 6 },
-                            { label: "Availability", value: data.preferredTimes.join(", "), icon: Clock, step: 7 },
-                          ].map((item, i) => (
-                            <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 border border-slate-100">
+                          {activeQuestionnaire?.questions?.map((question, index) => (
+                            <div key={question.id} className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 border border-slate-100">
                               <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary">
-                                <item.icon className="h-6 w-6" />
+                                <Edit2 className="h-6 w-6" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">{item.label}</p>
-                                <p className="text-sm font-black text-slate-900">{item.value}</p>
+                                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">{question.question || question.questionText}</p>
+                                <p className="text-sm font-black text-slate-900">{data[question._id || question.id] || 'No response'}</p>
                               </div>
-                              <button onClick={() => { setIsReviewing(false); setActiveStep(item.step); }} className="text-slate-400 hover:text-primary">Edit</button>
+                              <button onClick={() => { setIsReviewing(false); setActiveStep(index + 1); }} className="text-slate-400 hover:text-primary">Edit</button>
                             </div>
                           ))}
                         </div>
                       </div>
-
+          
                       <div>
                         <h4 className="text-sm font-black text-slate-900">Next Steps</h4>
                         <p className="text-sm text-slate-500 mt-2">We’ll use these details to surface clinicians who best match your needs. You will be able to review profiles and choose a specialist.</p>
-
+          
                         <div className="mt-6">
                           <Button onClick={handleSubmit} className="w-full h-16 rounded-xl font-black bg-primary">Continue to Specialist Matches <ArrowRight className="ml-3 h-5 w-5" /></Button>
                           <p className="text-[12px] text-slate-500 mt-3">Your responses are encrypted and shared only with Clinician-compliant providers.</p>
                         </div>
-
-                        {/* <div className="mt-6 text-[12px] text-slate-500">
-                          <div className="font-black">Trust</div>
-                          <div className="mt-2">HIPAA-compliant • Clinician-reviewed</div>
-                        </div> */}
                       </div>
                     </div>
                   </CardContent>
