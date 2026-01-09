@@ -29,8 +29,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchAllServices } from "@/store/serviceSlice";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from "@/store";
+import type { AppDispatch } from "@/store";
 
 export default function ServicesPage() {
+  const dispatch: AppDispatch = useDispatch();
+  const { services, loading, error } = useSelector((state: RootState) => state.services);
+  useEffect(() => {
+    dispatch(fetchAllServices());
+  }, [dispatch]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-lg text-slate-600">Loading services...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <p className="text-lg text-red-600">Error: {error}</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Retry
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -88,7 +127,7 @@ export default function ServicesPage() {
 
       {/* Services Grid Section */}
       <div className="container ">
-        <EnhancedServicesGrid />
+        <EnhancedServicesGrid services={services} />
       </div>
 
       {/* Highlight Section */}

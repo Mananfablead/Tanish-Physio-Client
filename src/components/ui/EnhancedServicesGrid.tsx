@@ -21,10 +21,11 @@ import {
 import { Link } from "react-router-dom";
 
 interface Service {
-  id: number;
+  id: number | string;
   icon: React.ReactNode;
   title: string;
   description: string;
+  category?: string;
   benefits: string[];
   details: {
     title: string;
@@ -50,6 +51,7 @@ export const services: Service[] = [
     id: 1,
     icon: <Activity className="h-6 w-6" />,
     title: "Orthopedic Physiotherapy",
+    category: "Physiotherapy",
     description:
       "Specialized care for musculoskeletal conditions, injuries, and post-surgical rehabilitation to restore mobility and function.",
     benefits: [
@@ -103,6 +105,7 @@ export const services: Service[] = [
     id: 2,
     icon: <Brain className="h-6 w-6" />,
     title: "Neuro Physiotherapy",
+    category: "Physiotherapy",
     description:
       "Treatment for neurological conditions including stroke, Parkinson's disease, and spinal cord injuries.",
     benefits: [
@@ -156,6 +159,7 @@ export const services: Service[] = [
     id: 3,
     icon: <Users className="h-6 w-6" />,
     title: "Sports Physiotherapy",
+    category: "Physiotherapy",
     description:
       "Targeted treatment for athletes and active individuals dealing with sports-related injuries and performance enhancement.",
     benefits: [
@@ -209,6 +213,7 @@ export const services: Service[] = [
     id: 4,
     icon: <Baby className="h-6 w-6" />,
     title: "Pediatric Physiotherapy",
+    category: "Physiotherapy",
     description:
       "Gentle, child-friendly therapy for developmental delays, neurological conditions, and musculoskeletal issues.",
     benefits: [
@@ -630,7 +635,7 @@ interface EnhancedServicesGridProps {
 
 export function EnhancedServicesGrid({
   services: customServices,
-}: EnhancedServicesGridProps = {}) {
+}: EnhancedServicesGridProps) {
   const servicesToDisplay = customServices || services;
 
   // State for filters and pagination
@@ -641,21 +646,32 @@ export function EnhancedServicesGrid({
 
   // Get unique categories for filter
   const categories = useMemo(() => {
-    const allCategories = servicesToDisplay.map(
-      (service) => service.title.split(" ")[0]
+    const uniqueCategories = Array.from(
+      new Set(
+        servicesToDisplay
+          .map((service) => {
+            // Use the category field from the service, fallback to first word of title
+            return service?.category || service?.title?.split(' ')[0] || 'Other';
+          })
+          .map(cat => cat.trim())
+          .filter(Boolean)
+      )
     );
-    return ["all", ...Array.from(new Set(allCategories))];
+
+    return ["all", ...uniqueCategories];
   }, [servicesToDisplay]);
+
 
   // Filter services based on search term and category
   const filteredServices = useMemo(() => {
     return servicesToDisplay.filter((service) => {
       const matchesSearch =
-        service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.description.toLowerCase().includes(searchTerm.toLowerCase());
+        service.title?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+        service.description?.toLowerCase().includes(searchTerm?.toLowerCase());
 
       const matchesCategory =
         categoryFilter === "all" ||
+        service.category?.toLowerCase().includes(categoryFilter.toLowerCase()) ||
         service.title.toLowerCase().includes(categoryFilter.toLowerCase());
 
       return matchesSearch && matchesCategory;
@@ -702,29 +718,34 @@ export function EnhancedServicesGrid({
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <Badge
-              key={category}
-              variant={categoryFilter === category ? "default" : "outline"}
-              className={`cursor-pointer transition-all duration-200 px-4 py-2 ${
-                categoryFilter === category
-                  ? "bg-primary hover:bg-primary text-white shadow-md"
-                  : "hover:bg-secondary hover:shadow-sm"
-              }`}
-              onClick={() => {
-                setCategoryFilter(category);
-                handleFilterChange();
-              }}
-            >
-              <span className="flex items-center gap-1">
-                {categoryFilter === category && (
-                  <span className="h-2 w-2 rounded-full bg-white"></span>
-                )}
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </span>
-            </Badge>
-          ))}
+          {categories.map((category) => {
+            const isActive = categoryFilter === category;
+
+            return (
+              <Badge
+                key={category}
+                variant={isActive ? "default" : "outline"}
+                className={`
+          cursor-pointer px-4 py-2 transition-all duration-200
+          ${isActive
+                    ? "bg-primary text-white shadow-md"
+                    : "hover:bg-secondary hover:shadow-sm"}
+        `}
+                onClick={() => setCategoryFilter(category)}
+              >
+                <span className="flex items-center gap-2">
+                  {isActive && (
+                    <span className="h-2 w-2 rounded-full bg-white" />
+                  )}
+                  {category === "all"
+                    ? "All"
+                    : category.charAt(0).toUpperCase() + category.slice(1)}
+                </span>
+              </Badge>
+            );
+          })}
         </div>
+
       </div>
 
       {/* Services Grid */}
@@ -754,11 +775,11 @@ export function EnhancedServicesGrid({
                 </h3>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm text-slate-500">
-                    Session Duration: {service.details.sessionDuration}
+                    Session Duration: {service?.details?.sessionDuration}
                   </span>
 
                   <span className="text-lg font-bold text-primary">
-                    {service.details.price}
+                    {service?.details?.price}
                   </span>
                 </div>
                 <p className="text-slate-600 mb-4">{service.description}</p>
@@ -777,7 +798,7 @@ export function EnhancedServicesGrid({
                     ))}
                   </ul>
                 </div>
-                <Link to={`/service/${service.id}`}>
+                <Link to={`/service/${service?.id}`}>
                   <Button
                     variant="outline"
                     className="mt-auto w-full rounded-xl border-primary text-primary hover:bg-primary hover:text-white font-bold"
