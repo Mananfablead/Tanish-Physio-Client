@@ -5,7 +5,7 @@ import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import authReducer from './slices/authSlice';
 import questionnaireReducer from './slices/questionnaireSlice';
 // import authReducer from './authSlice';
-import serviceReducer from './serviceSlice';
+import serviceReducer from './slices/serviceSlice.ts';
 
 // Redux Persist config
 const persistConfig = {
