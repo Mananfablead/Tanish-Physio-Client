@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import api from '../lib/api';
+import api from '../../lib/api';
 
 // Import the service type from the shared types
-import { Service } from '../types/service';
+import { Service } from '../../types/service';
 
 // Helper function to transform API service data to expected format
 const transformServiceFromAPI = (apiService: any): Service => {

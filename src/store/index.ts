@@ -11,7 +11,7 @@ import serviceReducer from './serviceSlice';
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth'], // only auth will be persisted
+  whitelist: ['auth'], 
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);

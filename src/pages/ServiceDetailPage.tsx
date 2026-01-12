@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee } from "lucide-react";
 import { Service } from "@/types/service";
-import { fetchServiceById } from "@/store/serviceSlice";
+import { fetchServiceById } from "@/store/slices/serviceSlice";
 import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from "@/store";
