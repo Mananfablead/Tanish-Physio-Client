@@ -82,9 +82,13 @@ export default function BookingPage() {
     now - storedIntake.updatedAt < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
   const handlePayment = () => {
-    setIsProcessing(true);
-
-    // For guest users, save their information to sessionStorage
+    // Validate guest user data if applicable
+    if (isGuestUser && (!guestUserData.name || !guestUserData.email)) {
+      toast.error("Please fill in your name and email to continue");
+      return;
+    }
+    
+    // Prepare guest user data
     if (isGuestUser) {
       try {
         const guestInfo = {
@@ -97,90 +101,135 @@ export default function BookingPage() {
       }
     }
 
-    setTimeout(() => {
-      setIsProcessing(false);
+    // Razorpay options
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_S250uIjk1rVbsT";
 
-      // Persist plan as active subscription
-      try {
-        sessionStorage.setItem(
-          "qw_plan",
-          JSON.stringify({ plan, purchasedAt: Date.now(), active: true })
-        );
-      } catch (e) {}
-      // Check for existing intake
-      let stored = null;
-      try {
-        const raw = sessionStorage.getItem("qw_questionnaire");
-        if (raw) stored = JSON.parse(raw);
-      } catch (e) {
-        stored = null;
-      }
-      const RECENT_DAYS = 90;
-      const now = Date.now();
-      const isRecent = (ts: number | undefined | null) =>
-        ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
-
-      // Check for any previously reserved session (from intake-first scheduling)
-      let scheduled = null;
-      try {
-        const raw = sessionStorage.getItem("qw_scheduled_session");
-        if (raw) scheduled = JSON.parse(raw);
-      } catch (e) {
-        scheduled = null;
-      }
-
-      if (!stored || !isRecent(stored?.updatedAt)) {
-        // Plan purchased, but intake missing or outdated: require intake to unlock sessions
-        toast.success(
-          "Payment successful! Please complete a short intake to unlock sessions."
-        );
-        // Save a pending marker to ensure plan activation after intake
+    
+    const options = {
+      key: razorpayKey,
+      amount: finalPrice * 100, // Convert to paise (multiply by 100)
+      currency: "INR",
+      name: "Tanish physio",
+      description: "Session Booking Payment",
+      image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
+      handler: function (response: any) {
+        // Payment successful - handle success flow
         try {
-          sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan));
-        } catch (e) {}
-        navigate("/questionnaire", { state: { planToActivate: plan } });
+          // Persist plan as active subscription
+          sessionStorage.setItem(
+            "qw_plan",
+            JSON.stringify({ plan, purchasedAt: Date.now(), active: true })
+          );
+          
+          // Check for existing intake
+          let stored = null;
+          try {
+            const raw = sessionStorage.getItem("qw_questionnaire");
+            if (raw) stored = JSON.parse(raw);
+          } catch (e) {
+            stored = null;
+          }
+          const RECENT_DAYS = 90;
+          const now = Date.now();
+          const isRecent = (ts: number | undefined | null) =>
+            ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
+
+          // Check for any previously reserved session (from intake-first scheduling)
+          let scheduled = null;
+          try {
+            const raw = sessionStorage.getItem("qw_scheduled_session");
+            if (raw) scheduled = JSON.parse(raw);
+          } catch (e) {
+            scheduled = null;
+          }
+
+          if (!stored || !isRecent(stored?.updatedAt)) {
+            // Plan purchased, but intake missing or outdated: require intake to unlock sessions
+            toast.success(
+              "Payment successful! Please complete a short intake to unlock sessions."
+            );
+            // Save a pending marker to ensure plan activation after intake
+            try {
+              sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan));
+            } catch (e) {}
+            navigate("/questionnaire", { state: { planToActivate: plan } });
+            return;
+          }
+
+          // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
+          try {
+            const therapist = {
+              id: `th-${Math.floor(Math.random() * 10000)}`,
+              name: "Assigned Clinician",
+              title: "Matched Specialist",
+              assignedAt: Date.now(),
+            };
+            sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
+
+            if (scheduled) {
+              scheduled.locked = false;
+              scheduled.therapist = therapist;
+              scheduled.confirmedAt = Date.now();
+              sessionStorage.setItem(
+                "qw_scheduled_session",
+                JSON.stringify(scheduled)
+              );
+            }
+          } catch (e) {}
+
+          // Check if user is a guest (not logged in)
+          const wasGuestUser =
+            !sessionStorage.getItem("qw_user") &&
+            !localStorage.getItem("authToken");
+
+          toast.success("Payment successful!.");
+          navigate("/schedule", {
+            state: {
+              ...bookingData,
+              finalPrice,
+              guestUser: wasGuestUser
+                ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}")
+                : undefined,
+              fromServices: true,
+            },
+          });
+        } catch (error) {
+          console.error("Error processing payment success:", error);
+          toast.error("Something went wrong after payment. Please contact support.");
+        }
+      },
+      prefill: {
+        name: isGuestUser ? guestUserData.name : "Customer",
+        email: isGuestUser ? guestUserData.email : "customer@example.com",
+        contact: isGuestUser ? guestUserData.phone : "9999999999",
+      },
+      theme: {
+        color: "#3b82f6", // Tailwind blue-500
+      },
+      modal: {
+        ondismiss: function() {
+          // Handle when user closes the payment modal without completing payment
+          toast.info("Payment was cancelled. You can try again later.");
+        }
+      }
+    };
+
+    // Initialize and open Razorpay checkout
+    if (typeof window !== 'undefined' && (window as any).Razorpay) {
+      // Check if key exists before creating Razorpay instance
+      if (!options.key || options.key === "rzp_test_1234567890") {
+        toast.error("Razorpay key is not configured properly. Please contact support.");
         return;
       }
-
-      // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
-      try {
-        const therapist = {
-          id: `th-${Math.floor(Math.random() * 10000)}`,
-          name: "Assigned Clinician",
-          title: "Matched Specialist",
-          assignedAt: Date.now(),
-        };
-        sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
-
-        if (scheduled) {
-          scheduled.locked = false;
-          scheduled.therapist = therapist;
-          scheduled.confirmedAt = Date.now();
-          sessionStorage.setItem(
-            "qw_scheduled_session",
-            JSON.stringify(scheduled)
-          );
-        }
-      } catch (e) {}
-
-      // Check if user is a guest (not logged in)
-      const wasGuestUser =
-        !sessionStorage.getItem("qw_user") &&
-        !localStorage.getItem("authToken");
-
-      toast.success("Payment successful!.");
-      navigate("/schedule", {
-        state: {
-          ...bookingData,
-          finalPrice,
-          guestUser: wasGuestUser
-            ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}")
-            : undefined,
-          fromServices: true,
-        },
-      });
-    }, 2000);
+      
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } else {
+      console.error("Razorpay SDK not loaded");
+      toast.error("Payment gateway not loaded. Please try again.");
+    }
   };
+console.log("Razorpay Key:", import.meta.env.VITE_RAZORPAY_KEY_ID || "uvPkIj6Wi9gO3WYHqje57gh7");
 
   return (
     <Layout>

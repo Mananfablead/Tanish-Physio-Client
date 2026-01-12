@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout/Layout";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import {
 } from "date-fns";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
+import { getAvailability, confirmSession } from "@/lib/api";
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -57,22 +58,20 @@ export default function SchedulePage() {
   const bookingSummary = hasBookingSummary
     ? {
         therapist: bookingData.therapist || {
-          name: bookingData?.therapistName || "Dr. Sarah Johnson",
-          title: bookingData?.therapistTitle || "Sports Injury Specialist",
-          avatar:
-            bookingData?.therapistAvatar ||
-            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
+          name: bookingData?.therapistName,
+          title: bookingData?.therapistTitle,
+          avatar: bookingData?.therapistAvatar,
         },
         session: bookingData.session || {
-          type: bookingData?.sessionType || "1-on-1",
-          duration: bookingData?.sessionDuration || "45 min",
-          price: bookingData?.sessionPrice || 80,
+          type: bookingData?.sessionType,
+          duration: bookingData?.sessionDuration,
+          price: bookingData?.sessionPrice,
         },
-        date: bookingData.date || new Date(),
-        time: bookingData.time || "10:00",
+        date: bookingData.date,
+        time: bookingData.time,
         plan: bookingData.plan || {
-          name: bookingData?.planName || "Monthly Plan",
-          price: bookingData?.planPrice || 199,
+          name: bookingData?.planName,
+          price: bookingData?.planPrice,
         },
       }
     : null;
@@ -81,101 +80,86 @@ export default function SchedulePage() {
   const [isPastSessionsOpen, setIsPastSessionsOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
-  const [selectedTime, setSelectedTime] = useState<string>("10:00");
-  const [customTime, setCustomTime] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
   
-  // Mock available times for selected date
-  const availableTimes = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
-    "14:00", "14:30", "15:00", "15:30", "16:00"
-  ];
+  // State for availability
+  const [availability, setAvailability] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get available times for selected date from availability API
+  const getAvailableTimesForDate = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const dateAvailability = availability.find((avail) => {
+      const availDate = new Date(avail.date);
+      return isSameDay(availDate, date);
+    });
+    
+    if (dateAvailability && dateAvailability.availableTimes) {
+      return dateAvailability.availableTimes;
+    }
+    
+    return [];
+  };
+
+  // Calculate available times based on selected date and availability data using useMemo
+  const availableTimes = useMemo(() => {
+    if (!availability || !Array.isArray(availability)) return [];
+    return getAvailableTimesForDate(selectedDate);
+  }, [selectedDate, availability]);
+
+  // Helper function to get related time slots based on selected hour
+  // Generate time slots on the frontend without checking backend availability
+  const getRelatedTimeSlots = (selectedTimeSlot: string) => {
+    if (!selectedTimeSlot) return [];
+    
+    // Extract the hour from the selected time
+    const selectedHour = selectedTimeSlot.split(':')[0];
+    const relatedSlots = [];
+    
+    // Generate all 15-minute intervals for the selected hour: XX:00, XX:15, XX:30, XX:45
+    const minutes = ['00', '15', '30', '45'];
+    for (const minute of minutes) {
+      const timeSlot = `${selectedHour}:${minute}`;
+      
+      // Add the time slot regardless of backend availability
+      relatedSlots.push(timeSlot);
+    }
+    
+    // Also add the next hour's :00 slot
+    const nextHour = (parseInt(selectedHour) + 1).toString().padStart(2, '0');
+    const nextHourSlot = `${nextHour}:00`;
+    relatedSlots.push(nextHourSlot);
+    
+    return relatedSlots;
+  };
+
+  // Get related time slots for the currently selected time
+  const relatedTimeSlots = getRelatedTimeSlots(selectedTime);
 
   // State for sessions
-  const [sessions, setSessions] = useState([
-    {
-      id: "1",
-      therapist: {
-        name: "Dr. Sarah Johnson",
-        avatar:
-          "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() + 1)),
-      startTime: "10:00",
-      endTime: "10:45",
-      type: "Video",
-      status: "Confirmed",
-      location: "Secure Video Call",
-      relatedTo: "Lower back pain recovery",
-      notes: "Initial assessment — please have any previous imaging ready.",
-    },
-    {
-      id: "2",
-      therapist: {
-        name: "Dr. A. Lee",
-        avatar:
-          "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() + 3)),
-      startTime: "14:00",
-      endTime: "14:45",
-      type: "Video",
-      status: "Confirmed",
-      location: "Secure Video Call",
-      relatedTo: "Gait analysis",
-      notes: "Reviewing progress on mobility exercises.",
-    },
-    {
-      id: "3",
-      therapist: {
-        name: "Dr. Michael Chen",
-        avatar:
-          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() + 7)),
-      startTime: "09:30",
-      endTime: "10:15",
-      type: "In-person",
-      status: "Confirmed",
-      location: "123 Wellness Center, Suite 201",
-      relatedTo: "Knee rehabilitation",
-      notes: "Post-surgical recovery session.",
-    },
-  ]);
 
-  const mockPastSessions = [
-    {
-      id: "4",
-      therapist: {
-        name: "Dr. Emily Rodriguez",
-        avatar:
-          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() - 5)),
-      startTime: "11:00",
-      endTime: "11:45",
-      type: "Video",
-      status: "Completed",
-      location: "Secure Video Call",
-      relatedTo: "Shoulder mobility",
-      notes: "Follow-up on exercises for rotator cuff strengthening.",
-    },
-    {
-      id: "5",
-      therapist: {
-        name: "Dr. Michael Chen",
-        avatar:
-          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() - 12)),
-      startTime: "09:30",
-      endTime: "10:15",
-      type: "In-person",
-      status: "Completed",
-      location: "123 Wellness Center, Suite 201",
-      relatedTo: "Knee rehabilitation",
-      notes: "Post-surgical recovery session.",
-    },
-  ];
+  const [sessions, setSessions] = useState([]);
+
+  // Fetch availability data on component mount
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      try {
+        setLoading(true);
+        const response: any = await getAvailability();
+        setAvailability(response.data?.data?.availability || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching availability:', err);
+        setError('Failed to load availability data');
+        toast.error('Failed to load availability data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAvailability();
+  }, []);
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) =>
@@ -204,9 +188,24 @@ export default function SchedulePage() {
     );
   };
 
+  // Helper function to check if a date has availability
+  const getAvailabilityForDate = (date: Date) => {
+    if (!availability || !Array.isArray(availability)) return [];
+    
+    const dateString = format(date, 'yyyy-MM-dd');
+    return availability.filter((avail) => {
+      // Convert the availability date string to Date object for comparison
+      const availDate = new Date(avail.date);
+      return isSameDay(availDate, date);
+    });
+  };
+
+  // Helper function to check if a date has any availability
+  const hasAvailabilityForDate = (date: Date) => {
+    return getAvailabilityForDate(date).length > 0;
+  };
+
   const today = new Date();
-  const upcomingSessions = sessions;
-  const pastSessions = mockPastSessions;
 
   return (
     <Layout>
@@ -391,47 +390,71 @@ export default function SchedulePage() {
                   </div>
 
                   <div className="grid grid-cols-7 gap-1">
-  {getCalendarDays().map((day, index) => {
-    if (!day) {
-      return <div key={index} className="h-10" />;
-    }
+                  {loading ? (
+                    // Show loading placeholders while availability data is loading
+                    Array.from({ length: 42 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
+                      >
+                        <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
+                      </div>
+                    ))
+                  ) : (
+                    getCalendarDays().map((day, index) => {
+      if (!day) {
+        return <div key={index} className="h-10" />;
+      }
 
-    const isToday = isSameDay(day, today);
-    const isSelected = isSameDay(day, selectedDate);
-    const hasSession = getSessionsForDate(day).length > 0;
-    const isPast = day < today && !isToday;
+      const isToday = isSameDay(day, today);
+      const isSelected = isSameDay(day, selectedDate);
+      const hasSession = getSessionsForDate(day).length > 0;
+      const hasAvailability = hasAvailabilityForDate(day);
+      const isPast = day < today && !isToday;
 
-    return isPast ? (
-      <div
-        key={index}
-        className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
-      >
-        {format(day, "d")}
-      </div>
-    ) : (
-      <button
-        key={index}
-        onClick={() => setSelectedDate(day)}
-        className={`h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all ${
-          isToday
-            ? "bg-primary/10 border border-primary/20 text-primary font-black"
-            : isSelected
-            ? "bg-primary text-white font-black shadow-md"
-            : "text-slate-700 hover:bg-slate-100"
-        } ${hasSession ? "relative" : ""}`}
-      >
-        {format(day, "d")}
+      return isPast ? (
+        <div
+          key={index}
+          className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
+        >
+          {format(day, "d")}
+        </div>
+      ) : (
+        <button
+          key={index}
+          onClick={() => setSelectedDate(day)}
+          className={`h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all ${
+            isToday
+              ? "bg-primary/10 border border-primary/20 text-primary font-black"
+              : isSelected
+              ? "bg-primary text-white font-black shadow-md"
+              : "text-slate-700 hover:bg-slate-100"
+          } ${hasSession || hasAvailability ? "relative" : ""}`}
+        >
+          {format(day, "d")}
 
-        {hasSession && (
-          <span
-            className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
-              isSelected ? "bg-white" : "bg-primary"
-            }`}
-          />
-        )}
-      </button>
-    );
-  })}
+          {(hasSession || hasAvailability) && (
+            <>
+              {hasSession && (
+                <span
+                  className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
+                    isSelected ? "bg-white" : "bg-primary"
+                  }`}
+                />
+              )}
+              {hasAvailability && !hasSession && (
+                <span
+                  className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${
+                    isSelected ? "bg-white" : "bg-green-500"
+                  }`}
+                />
+              )}
+            </>
+          )}
+        </button>
+      );
+    })
+                  )}
 </div>
 
                 </CardContent>
@@ -585,7 +608,6 @@ export default function SchedulePage() {
                         className="h-11 rounded-xl bg-primary hover:from-primary/90 hover:to-accent/90 text-white font-bold px-6 mt-4"
                         onClick={() => {
                           setIsBookingModalOpen(true);
-                          setCustomTime(""); // Reset custom time when opening
                         }}
                       >
                         <Plus className="h-4 w-4 mr-2" /> Book Session
@@ -626,72 +648,146 @@ export default function SchedulePage() {
             
             <div className="mb-6">
               <h4 className="font-bold text-slate-800 mb-3">Available Times</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {availableTimes.map((time) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    className="py-2"
-                    onClick={() => setSelectedTime(time)}
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <h4 className="font-bold text-slate-800 mb-3">Or Enter Custom Time</h4>
-              <Input
-                type="time"
-                value={customTime}
-                onChange={(e) => setCustomTime(e.target.value)}
-                className="w-full"
-                placeholder="HH:MM"
-              />
-            </div>
-            
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setIsBookingModalOpen(false)}
-              >
-                Reschedule
-              </Button>
-              <Button 
-                className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                onClick={() => {
-                  // Add the new session to the sessions array
-                  const newSession = {
-                    id: `session_${Date.now()}`,
-                    therapist: {
-                      name: "Dr. Sarah Johnson", // Using a default therapist
-                      avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-                    },
-                    date: new Date(selectedDate),
-                    startTime: customTime || selectedTime,
-                    endTime: customTime ? 
-                      // Calculate end time based on 45 min duration
-                      new Date(new Date(`1970-01-01T${customTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5) : 
-                      new Date(new Date(`1970-01-01T${selectedTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5),
-                    type: "Video",
-                    status: "Confirmed",
-                    location: "Secure Video Call",
-                    relatedTo: "General consultation",
-                    notes: "Newly booked session",
-                  };
+              {availableTimes.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {availableTimes.map((time) => (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? "default" : "outline"}
+                        className="py-2"
+                        onClick={() => {
+                          setSelectedTime(time);
+                          // When a time is selected, related slots will be calculated automatically
+                        }}
+                      >
+                        {time}
+                      </Button>
+                    ))}
+                  </div>
                   
-                  setSessions([...sessions, newSession]);
-                  setIsBookingModalOpen(false);
-                  toast.success(`Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${customTime || selectedTime}`);
+                  {/* Show related time slots when a time is selected */}
+                  {selectedTime && relatedTimeSlots.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="font-bold text-slate-800 mb-3">Related Time Slots</h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {relatedTimeSlots.map((time) => (
+                          <Button
+                            key={`related-${time}`}
+                            variant={selectedTime === time ? "default" : "outline"}
+                            className="py-2"
+                            onClick={() => setSelectedTime(time)}
+                          >
+                            {time}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
-                  // Optionally navigate to booking confirmation
-                  // navigate("/booking-confirmation");
-                }}
-              >
-                Confirm
-              </Button>
+                  <div className="flex gap-3 mt-6">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => setIsBookingModalOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                      onClick={() => {
+                        // Check if a time has been selected
+                        if (!selectedTime) {
+                          toast.error("Please select a time for your session");
+                          return;
+                        }
+                        
+                        // Call the API to confirm the session
+                        const sessionData = {
+                          date: selectedDate.toISOString(),
+                          time: selectedTime,
+                          therapistId: availability.find((avail) => isSameDay(new Date(avail.date), selectedDate))?.therapistId
+                        };
+                        
+                        toast.promise(
+                          confirmSession(sessionData)
+                            .then((response) => {
+                              // Find the availability for the selected date to get therapist information
+                              const dateAvailability = availability.find((avail) => {
+                                const availDate = new Date(avail.date);
+                                return isSameDay(availDate, selectedDate);
+                              });
+                              
+                              // Use therapist info from availability
+                              const therapistInfo = dateAvailability?.therapistId || {};
+                              
+                              // Add the new session to the sessions array
+                              const newSession = {
+                                id: `session_${Date.now()}`,
+                                therapist: {
+                                  name: therapistInfo.name || "",
+                                  avatar: therapistInfo.avatar || "",
+                                },
+                                date: new Date(selectedDate),
+                                startTime: selectedTime,
+                                endTime: 
+                                  // Calculate end time based on 45 min duration
+                                  new Date(new Date(`1970-01-01T${selectedTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5),
+                                type: "Video",
+                                status: "Confirmed",
+                                location: "Secure Video Call",
+                                relatedTo: "General consultation",
+                                notes: "Newly booked session",
+                              };
+                              
+                              setSessions([...sessions, newSession]);
+                              setIsBookingModalOpen(false);
+                              return newSession;
+                            })
+                            .catch((error) => {
+                              console.error('Failed to confirm session:', error);
+                              throw error;
+                            }),
+                          {
+                            loading: 'Confirming session...',
+                            success: (data) => `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`,
+                            error: 'Failed to book session',
+                          }
+                        );
+                        
+                        // Optionally navigate to booking confirmation
+                        // navigate("/booking-confirmation");
+                      }}
+                      disabled={!selectedTime}
+                    >
+                      Confirm
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4">
+                    <Calendar className="h-8 w-8 text-primary/60" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-red-500">
+                      Not Available
+                    </h3>
+                    <p className="text-slate-500">
+                      {loading ? "Loading availability..." : `No available times for ${format(selectedDate, "MMM d, yyyy")}`}
+                    </p>
+                  </div>
+                  <div className="mt-6">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setIsBookingModalOpen(false)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

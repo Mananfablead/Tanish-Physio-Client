@@ -172,7 +172,7 @@ const ForgotPasswordPage = () => {
                                         <button 
                                             type="submit" 
                                             disabled={loading}
-                                            className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 active:scale-[0.99] transition-all shadow-lg shadow-green-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                                            className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-primary active:scale-[0.99] transition-all shadow-lg shadow-green-200 disabled:opacity-70 disabled:cursor-not-allowed"
                                         >
                                             {loading ? (
                                                 <>

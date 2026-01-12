@@ -44,4 +44,17 @@ api.interceptors.response.use(
   }
 );
 
+// Availability API functions
+export const getAvailability = () => {
+  return api.get('/availability');
+};
+
+export const getAvailabilityByTherapist = (therapistId: string) => {
+  return api.get(`/availability/therapist/${therapistId}`);
+};
+
+export const confirmSession = (sessionData: any) => {
+  return api.post('/sessions/confirm', sessionData);
+};
+
 export default api;
