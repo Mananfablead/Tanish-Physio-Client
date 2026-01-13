@@ -26,6 +26,7 @@ interface ExtendedService {
     benefits: string[];
     detailedDescription: string;
     conditionsTreated: string[];
+    features: string[];
     sessionDuration: string;
     price: string;
     priceRange: string;
@@ -425,7 +426,7 @@ export default function ServiceDetailPage() {
                     <div className="border-t border-slate-200 pt-8">
                       <CollapsibleList
                         title="Conditions We Treat"
-                        items={service.details.conditionsTreated}
+                        items={service.details.features}
                         icon={
                           <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
                         }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -8,82 +8,120 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, Star, Zap, ArrowRight, Tag, ShieldCheck, Video, Award, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
+import { RootState, useAppDispatch } from '@/store';
 
-const plans = [
-  {
-    id: "daily",
-    name: "Daily Pass",
-    price: 29,
-    duration: "24 hours",
-    sessions: 1,
-    features: [
-      "1 video session",
-      "Exercise plan access",
-      "Chat support",
-      "Session recording",
-    ],
-    services: [
-      "Orthopedic Physiotherapy",
-      "Basic exercise plan",
-      "Therapist consultation",
-    ],
-    popular: false,
-  },
-  {
-    id: "weekly",
-    name: "Weekly Plan",
-    price: 79,
-    duration: "7 days",
-    sessions: 3,
-    features: [
-      "Up to 3 sessions",
-      "Full exercise library",
-      "Priority chat support",
-      "Session recordings",
-      "Progress tracking",
-    ],
-    services: [
-      "Orthopedic Physiotherapy",
-      "Neuro Physiotherapy",
-      "Sports Physiotherapy",
-      "Customized exercise plans",
-      "Weekly progress reports",
-    ],
-    popular: false,
-  },
-  {
-    id: "monthly",
-    name: "Monthly Plan",
-    price: 199,
-    originalPrice: 249,
-    duration: "30 days",
-    sessions: "Unlimited",
-    features: [
-      "Unlimited sessions",
-      "Full exercise library",
-      "24/7 priority support",
-      "All session recordings",
-      "Advanced progress tracking",
-      "Personalized exercise plans",
-      "Group session access",
-    ],
-    services: [
-      "All physiotherapy services",
-      "Personalized treatment plans",
-      "Unlimited exercise plans",
-      "Regular progress assessments",
-      "Home visit services",
-      "Nutrition consultation",
-      "Injury prevention programs",
-    ],
-    popular: true,
-  },
-];
+// const plans = [
+//   {
+//     id: "daily",
+//     name: "Daily Pass",
+//     price: 29,
+//     duration: "24 hours",
+//     sessions: 1,
+//     features: [
+//       "1 video session",
+//       "Exercise plan access",
+//       "Chat support",
+//       "Session recording",
+//     ],
+//     services: [
+//       "Orthopedic Physiotherapy",
+//       "Basic exercise plan",
+//       "Therapist consultation",
+//     ],
+//     popular: false,
+//   },
+//   {
+//     id: "weekly",
+//     name: "Weekly Plan",
+//     price: 79,
+//     duration: "7 days",
+//     sessions: 3,
+//     features: [
+//       "Up to 3 sessions",
+//       "Full exercise library",
+//       "Priority chat support",
+//       "Session recordings",
+//       "Progress tracking",
+//     ],
+//     services: [
+//       "Orthopedic Physiotherapy",
+//       "Neuro Physiotherapy",
+//       "Sports Physiotherapy",
+//       "Customized exercise plans",
+//       "Weekly progress reports",
+//     ],
+//     popular: false,
+//   },
+//   {
+//     id: "monthly",
+//     name: "Monthly Plan",
+//     price: 199,
+//     originalPrice: 249,
+//     duration: "30 days",
+//     sessions: "Unlimited",
+//     features: [
+//       "Unlimited sessions",
+//       "Full exercise library",
+//       "24/7 priority support",
+//       "All session recordings",
+//       "Advanced progress tracking",
+//       "Personalized exercise plans",
+//       "Group session access",
+//     ],
+//     services: [
+//       "All physiotherapy services",
+//       "Personalized treatment plans",
+//       "Unlimited exercise plans",
+//       "Regular progress assessments",
+//       "Home visit services",
+//       "Nutrition consultation",
+//       "Injury prevention programs",
+//     ],
+//     popular: true,
+//   },
+// ];
+
+// Initialize with empty array, will be populated by Redux
+const plans = [];
 
 export default function SubscriptionPlansPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  
+  // Get subscription plans from Redux store
+  const { plans: subscriptionPlans, loading, error } = useSelector((state: RootState) => state.subscriptions);
+  
+  // Initialize selectedPlan based on fetched plans or default to 'monthly'
   const [selectedPlan, setSelectedPlan] = useState<string>("monthly");
+  
+  // Fetch subscription plans when component mounts
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlans());
+  }, [dispatch]);
+  
+  // Update expandedPlan state when subscriptionPlans change
+  useEffect(() => {
+    if (subscriptionPlans && subscriptionPlans.length > 0) {
+      const initialExpandedState: { [key: string]: { features: boolean, services: boolean } } = {};
+      subscriptionPlans.forEach(plan => {
+        const planId = plan.planId || plan.id;
+        initialExpandedState[planId] = { features: false, services: false };
+      });
+      setExpandedPlan(initialExpandedState);
+      
+      // Set default selected plan if available
+      if (subscriptionPlans.length > 0 && !subscriptionPlans.find(p => p.planId === selectedPlan)) {
+        const defaultPlan = subscriptionPlans.find(p => p.popular) || subscriptionPlans[0];
+        if (defaultPlan) {
+          setSelectedPlan(defaultPlan.planId || defaultPlan.id || "monthly");
+        }
+      }
+    }
+  }, [subscriptionPlans]);
+  
   const [expandedPlan, setExpandedPlan] = useState<{ [key: string]: { features: boolean, services: boolean } }>({
     daily: { features: false, services: false },
     weekly: { features: false, services: false },
@@ -95,7 +133,7 @@ export default function SubscriptionPlansPage() {
   const bookingData = location.state;
 
   const handleContinue = () => {
-    const plan = plans.find(p => p.id === selectedPlan);
+    const plan = subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan);
 
     // Check for stored intake and recency
     let stored = null;
@@ -181,9 +219,20 @@ export default function SubscriptionPlansPage() {
       <div className="container pb-12">
         {/* Plans Grid */}
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-12">
-          {plans.map((plan, index) => (
+          {loading ? (
+            <div className="col-span-full text-center py-8">
+              <p>Loading subscription plans...</p>
+            </div>
+          ) : error ? (
+            <div className="col-span-full text-center py-8">
+              <p className="text-destructive">Error loading subscription plans: {error}</p>
+            </div>
+          ) : (
+            subscriptionPlans.map((plan, index) => {
+              const planId = plan.planId || plan.id;
+              return (
             <motion.div
-              key={plan.id}
+              key={planId}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -191,9 +240,9 @@ export default function SubscriptionPlansPage() {
               <Card
                 variant={plan.popular ? "featured" : "interactive"}
                 className={`relative h-full cursor-pointer ₹{
-                  selectedPlan === plan.id ? "ring-2 ring-primary" : ""
+                  selectedPlan === planId ? "ring-2 ring-primary" : ""
                 }`}
-                onClick={() => setSelectedPlan(plan.id)}
+                onClick={() => setSelectedPlan(planId)}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -242,7 +291,7 @@ export default function SubscriptionPlansPage() {
                             <span>{feature}</span>
                           </li>
                         ))}
-                        {(plan.features.length > 2 && expandedPlan[plan.id]?.features) ? (
+                        {(plan.features.length > 2 && expandedPlan[planId]?.features) ? (
                           plan.features.slice(2).map((feature, idx) => (
                             <li key={idx + 2} className="flex items-start gap-2 text-sm">
                               <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
@@ -255,15 +304,15 @@ export default function SubscriptionPlansPage() {
                             e.stopPropagation();
                             setExpandedPlan(prev => ({
                               ...prev,
-                              [plan.id]: {
-                                ...prev[plan.id],
-                                features: !prev[plan.id].features
+                              [planId]: {
+                                ...prev[planId],
+                                features: !prev[planId].features
                               }
                             }));
                           }}>
                             <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                             <span>
-                              {expandedPlan[plan.id]?.features ? 'Show less' : `+${plan.features.length - 2} more features`}
+                              {expandedPlan[planId]?.features ? 'Show less' : `+${plan.features.length - 2} more features`}
                             </span>
                           </li>
                         )}
@@ -278,13 +327,13 @@ export default function SubscriptionPlansPage() {
                         Services Provided
                       </h4>
                       <ul className="space-y-2">
-                        {plan.services.slice(0, 2).map((service, idx) => (
+                        {plan.services?.slice(0, 2).map((service, idx) => (
                           <li key={idx} className="flex items-start gap-2 text-sm">
                             <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                             <span>{service}</span>
                           </li>
                         ))}
-                        {(plan.services.length > 2 && expandedPlan[plan.id]?.services) ? (
+                        {(plan.services && plan.services.length > 2 && expandedPlan[planId]?.services) ? (
                           plan.services.slice(2).map((service, idx) => (
                             <li key={idx + 2} className="flex items-start gap-2 text-sm">
                               <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
@@ -292,20 +341,20 @@ export default function SubscriptionPlansPage() {
                             </li>
                           ))
                         ) : null}
-                        {plan.services.length > 2 && (
+                        {plan.services && plan.services.length > 2 && (
                           <li className="flex items-start gap-2 text-sm text-primary font-medium cursor-pointer" onClick={(e) => {
                             e.stopPropagation();
                             setExpandedPlan(prev => ({
                               ...prev,
-                              [plan.id]: {
-                                ...prev[plan.id],
-                                services: !prev[plan.id].services
+                              [planId]: {
+                                ...prev[planId],
+                                services: !prev[planId].services
                               }
                             }));
                           }}>
                             <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                             <span>
-                              {expandedPlan[plan.id]?.services ? 'Show less' : `+${plan.services.length - 2} more services`}
+                              {expandedPlan[planId]?.services ? 'Show less' : `+${plan.services.length - 2} more services`}
                             </span>
                           </li>
                         )}
@@ -314,19 +363,20 @@ export default function SubscriptionPlansPage() {
                   </div>
 
                   <Button
-                    variant={selectedPlan === plan.id ? "hero" : "outline"}
+                    variant={selectedPlan === planId ? "hero" : "outline"}
                     className="w-full mt-6"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedPlan(plan.id);
+                      setSelectedPlan(planId);
                     }}
                   >
-                    {selectedPlan === plan.id ? "Selected" : "Select Plan"}
+                    {selectedPlan === planId ? "Selected" : "Select Plan"}
                   </Button>
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
+          );})
+          )}
         </div>
 
         {/* Promo Code */}
@@ -372,18 +422,18 @@ export default function SubscriptionPlansPage() {
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-lg mb-1">
-                    {plans.find(p => p.id === selectedPlan)?.name}
+                    {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.name}
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    Auto-renews after {plans.find(p => p.id === selectedPlan)?.duration}. Cancel anytime.
+                    Auto-renews after {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.duration}. Cancel anytime.
                   </p>
                 </div>
 
                 <div className="text-right">
                   <p className="text-2xl font-bold">
                     ₹{promoApplied
-                      ? Math.round((plans.find(p => p.id === selectedPlan)?.price || 0) * 0.8)
-                      : plans.find(p => p.id === selectedPlan)?.price}
+                      ? Math.round(((subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price || 0) * 0.8))
+                      : subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price}
                   </p>
                   {promoApplied && (
                     <p className="text-sm text-success">20% off applied</p>

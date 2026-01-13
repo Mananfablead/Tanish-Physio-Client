@@ -19,6 +19,7 @@ const transformServiceFromAPI = (apiService: any): Service => {
       benefits: Array.isArray(apiService.benefits) ? apiService.benefits : [],
       detailedDescription: apiService.detailedDescription || apiService.description || 'Detailed description',
       conditionsTreated: Array.isArray(apiService.conditionsTreated) ? apiService.conditionsTreated : [],
+      features: Array.isArray(apiService.features) ? apiService.features : [],
       sessionDuration: apiService.duration || apiService.sessionDuration || '30 min',
       price: `₹${apiService.price || 0}`,
       priceRange: `₹${apiService.price || 0}`,

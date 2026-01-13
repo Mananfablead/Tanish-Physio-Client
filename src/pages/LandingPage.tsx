@@ -53,6 +53,11 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 
+// Import Redux hooks and subscription actions
+import { useSelector } from 'react-redux';
+import { RootState, useAppDispatch } from '@/store';
+import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
+
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -97,7 +102,16 @@ const CountUp = ({ value, duration = 2 }: { value: string; duration?: number }) 
 export default function LandingPage() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
-
+  
+  // Fetch subscription plans from Redux store
+  const dispatch = useAppDispatch();
+  const { plans: subscriptionPlans, loading, error } = useSelector((state: RootState) => state.subscriptions);
+  
+  // Fetch subscription plans when component mounts
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlans());
+  }, [dispatch]);
+  
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 600) {
@@ -625,45 +639,35 @@ export default function LandingPage() {
             whileInView="animate"
             viewport={{ once: true }}
           >
-            {[
-              {
-                title: "Daily Plan",
-                price: "₹29",
-                validity: "Per day",
-                features: ["Single session", "Consultation", "Exercise plan"],
-                highlight: false
-              },
-              {
-                title: "Weekly Plan",
-                price: "₹149",
-                validity: "Per week",
-                features: ["3 sessions", "24/7 chat", "Full recovery plan"],
-                highlight: true
-              },
-              {
-                title: "Monthly Plan",
-                price: "₹499",
-                validity: "Per month",
-                features: ["Unlimited sessions", "Personal coach", "Premium support"],
-                highlight: false
-              }
-            ].map((plan, index) => (
-              <motion.div key={index} variants={fadeInUp}>
-                <Card className={`relative h-full p-8 flex flex-col ${plan.highlight ? "border-primary shadow-lg scale-105 z-10" : "border-border shadow-sm"}`}>
-                  {plan.highlight && (
+            {loading ? (
+              <div className="col-span-full text-center py-8">
+                <p>Loading subscription plans...</p>
+              </div>
+            ) : error ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-destructive">Error loading subscription plans: {error}</p>
+              </div>
+            ) : (
+              subscriptionPlans.slice(0, 3).map((plan, index) => {
+                const planId = plan.planId || plan.id;
+                const highlight = plan.popular || planId === 'weekly';
+                return (
+              <motion.div key={planId} variants={fadeInUp}>
+                <Card className={`relative h-full p-8 flex flex-col ${highlight ? "border-primary shadow-lg scale-105 z-10" : "border-border shadow-sm"}`}>
+                  {highlight && (
                     <Badge className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground">
                       Best Value
                     </Badge>
                   )}
                   <div className="mb-8">
-                    <h3 className="text-xl font-bold mb-2">{plan.title}</h3>
+                    <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground text-sm">{plan.validity}</span>
+                      <span className="text-4xl font-bold">₹{plan.price}</span>
+                      <span className="text-muted-foreground text-sm">/{plan.duration}</span>
                     </div>
                   </div>
                   <ul className="space-y-4 mb-8 flex-grow">
-                    {plan.features.map((feature, i) => (
+                    {plan.features.slice(0, 3).map((feature, i) => (
                       <li key={i} className="flex items-center gap-3 text-sm">
                         <CheckCircle className="h-4 w-4 text-primary" />
                         <span>{feature}</span>
@@ -674,14 +678,15 @@ export default function LandingPage() {
                   <Link to="/plans" className="w-full">
                     <Button 
                       className="w-full" 
-                      variant={plan.highlight ? "default" : "outline"}
+                      variant={highlight ? "default" : "outline"}
                     >
-                      {plan.highlight ? "Choose Weekly" : `Select ${plan.title.split(' ')[0]}`}
+                      {highlight ? "Choose Plan" : `Select ${plan.name.split(' ')[0]}`}
                     </Button>
                   </Link>
                 </Card>
               </motion.div>
-            ))}
+            );})
+            )}
           </motion.div>
 
           <div className="mt-16 text-center">

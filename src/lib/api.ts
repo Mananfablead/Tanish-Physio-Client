@@ -57,4 +57,9 @@ export const confirmSession = (sessionData: any) => {
   return api.post('/sessions/confirm', sessionData);
 };
 
+// Subscription API functions
+export const getSubscriptionPlans = () => {
+  return api.get('/subscriptions');
+};
+
 export default api;
