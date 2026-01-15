@@ -7,6 +7,7 @@ import questionnaireReducer from './slices/questionnaireSlice';
 import subscriptionReducer from './slices/subscriptionSlice';
 // import authReducer from './authSlice';
 import serviceReducer from './slices/serviceSlice.ts';
+import bookingsReducer from './slices/bookingsSlice';
 
 // Redux Persist config
 const persistConfig = {
@@ -23,6 +24,7 @@ export const store = configureStore({
     questionnaires: questionnaireReducer,
     subscriptions: subscriptionReducer,
     services: serviceReducer,
+    bookings: bookingsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
