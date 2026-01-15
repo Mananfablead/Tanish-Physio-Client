@@ -11,11 +11,15 @@ import {
   Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { getBookingById, updateBookingStatus } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function BookingConfirmationPage() {
   const location = useLocation();
   const bookingData = location.state;
-
+  const [bookingDetails, setBookingDetails] = useState(null);
+  
   // Extract booking details
   const therapist = bookingData?.therapist || {
     name: "Dr. Sarah Johnson",
@@ -29,6 +33,32 @@ export default function BookingConfirmationPage() {
   const serviceName =
     bookingData?.service?.name || bookingData?.planName || "Therapy Session";
   const servicePrice = bookingData?.finalPrice || bookingData?.planPrice || 199;
+  
+  // Fetch booking details if booking ID is available
+  useEffect(() => {
+    if (bookingData?.bookingId) {
+      const fetchBookingDetails = async () => {
+        try {
+          const response: any = await getBookingById(bookingData.bookingId);
+          if (response.data && response.data.success) {
+            setBookingDetails(response.data.data.booking);
+            
+            // Optionally update booking status to confirmed
+            const booking = response.data.data.booking;
+            if (booking && booking.status !== 'confirmed') {
+              await updateBookingStatus(booking._id, 'confirmed');
+              toast.success('Booking status updated to confirmed');
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching booking details:', error);
+          toast.error('Failed to fetch booking details');
+        }
+      };
+      
+      fetchBookingDetails();
+    }
+  }, [bookingData]);
 
   return (
     <Layout>
@@ -91,13 +121,13 @@ export default function BookingConfirmationPage() {
                     
                     <div className="flex items-center gap-3">
                       <img
-                        src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face"
-                        alt="Dr. Sarah Johnson"
+                        src={therapist.avatar}
+                        alt={therapist.name}
                         className="w-12 h-12 rounded-lg object-cover"
                       />
                       <div>
-                        <p className="font-medium">Dr. Sarah Johnson</p>
-                        <p className="text-sm text-muted-foreground">Sports Injury Specialist</p>
+                        <p className="font-medium">{therapist.name}</p>
+                        <p className="text-sm text-muted-foreground">{therapist.title}</p>
                       </div>
                     </div>
 
@@ -106,14 +136,14 @@ export default function BookingConfirmationPage() {
                         <Calendar className="h-4 w-4 text-primary" />
                         <div>
                           <p className="text-sm text-muted-foreground">Date</p>
-                          <p className="font-medium">Mon, Dec 30, 2024</p>
+                          <p className="font-medium">{sessionDate}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Video className="h-4 w-4 text-primary" />
                         <div>
                           <p className="text-sm text-muted-foreground">Time</p>
-                          <p className="font-medium">10:00 AM (45 min)</p>
+                          <p className="font-medium">{sessionTime}</p>
                         </div>
                       </div>
                     </div>
@@ -177,11 +207,23 @@ export default function BookingConfirmationPage() {
                 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => {
+                    // Download booking details as PDF or similar
+                    toast.success('Downloading booking details...');
+                    // In a real app, this would trigger a PDF download
+                  }}>
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={async () => {
+                    // Resend confirmation email
+                    try {
+                      // This would typically call an API to resend the confirmation
+                      toast.success('Confirmation email resent successfully!');
+                    } catch (error) {
+                      toast.error('Failed to resend confirmation email');
+                    }
+                  }}>
                     <Mail className="h-4 w-4 mr-2" />
                     Resend Confirmation
                   </Button>

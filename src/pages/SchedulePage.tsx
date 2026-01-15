@@ -36,7 +36,7 @@ import {
 } from "date-fns";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
-import { getAvailability } from "@/lib/api";
+import { getAvailability, getAllSessions, getUpcomingSessions, getSessionById, createSession, updateSession, deleteSession, getSessionsByUserId, getSessionsByTherapistId, getCompletedSessions, getScheduledSessions, cancelSession, rescheduleSession, getSessionNotes, addSessionNotes, getPastSessions, getTodaySessions } from "@/lib/api";
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -138,27 +138,46 @@ export default function SchedulePage() {
   const relatedTimeSlots = getRelatedTimeSlots(selectedTime);
 
   // State for sessions
+  const [sessions, setSessions] = useState<any[]>([]);
 
-  const [sessions, setSessions] = useState([]);
-
-  // Fetch availability data on component mount
+  // Fetch availability and sessions data on component mount
   useEffect(() => {
-    const fetchAvailability = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response: any = await getAvailability();
-        setAvailability(response.data?.data?.availability || []);
+        
+        // Fetch both availability and sessions
+        const [availabilityResponse, sessionsResponse] = await Promise.all([
+          getAvailability(),
+          getUpcomingSessions()
+        ]);
+        
+        const availabilityData: any = availabilityResponse;
+        const sessionsData: any = sessionsResponse;
+        
+        setAvailability(availabilityData.data?.data?.availability || []);
+        
+        // Update sessions with actual data from API
+        if (sessionsData.data?.success) {
+          setSessions(sessionsData.data.data.sessions || []);
+        } else {
+          setSessions([]);
+        }
+        
         setError(null);
       } catch (err) {
-        console.error('Error fetching availability:', err);
-        setError('Failed to load availability data');
-        toast.error('Failed to load availability data');
+        console.error('Error fetching data:', err);
+        setError('Failed to load schedule data');
+        toast.error('Failed to load schedule data');
+        // Fallback to empty arrays
+        setAvailability([]);
+        setSessions([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAvailability();
+    fetchData();
   }, []);
 
   const navigateMonth = (direction: "prev" | "next") => {
@@ -188,21 +207,21 @@ export default function SchedulePage() {
     );
   };
 
-  // Helper function to check if a date has availability
+  // Helper function to get availability for a specific date
   const getAvailabilityForDate = (date: Date) => {
-    if (!availability || !Array.isArray(availability)) return [];
+    if (!availability || !Array.isArray(availability)) return null;
     
     const dateString = format(date, 'yyyy-MM-dd');
-    return availability.filter((avail) => {
-      // Convert the availability date string to Date object for comparison
-      const availDate = new Date(avail.date);
-      return isSameDay(availDate, date);
+    return availability.find((avail) => {
+      // Compare date strings directly
+      return avail.date === dateString;
     });
   };
 
   // Helper function to check if a date has any availability
   const hasAvailabilityForDate = (date: Date) => {
-    return getAvailabilityForDate(date).length > 0;
+    const availability = getAvailabilityForDate(date);
+    return availability && availability.status === 'available' && (!availability.availableTimes || availability.availableTimes.length > 0);
   };
 
   const today = new Date();
@@ -372,6 +391,25 @@ export default function SchedulePage() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Legend for calendar colors */}
+                  <div className="flex flex-wrap gap-4 mb-4 justify-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></div>
+                      <span className="text-xs text-slate-600">Booked</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
+                      <span className="text-xs text-slate-600">Available</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-red-100 border border-red-300"></div>
+                      <span className="text-xs text-slate-600">Unavailable</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+                      <span className="text-xs text-slate-600">Not Booked</span>
+                    </div>
+                  </div>
                   <div className="text-center mb-4">
                     <h3 className="font-black text-slate-900">
                       {format(currentMonth, "MMMM yyyy")}
@@ -409,7 +447,8 @@ export default function SchedulePage() {
       const isToday = isSameDay(day, today);
       const isSelected = isSameDay(day, selectedDate);
       const hasSession = getSessionsForDate(day).length > 0;
-      const hasAvailability = hasAvailabilityForDate(day);
+      const availabilityForDate = getAvailabilityForDate(day);
+      const hasAvailability = availabilityForDate && availabilityForDate.status === 'available' && (!availabilityForDate.availableTimes || availabilityForDate.availableTimes.length > 0);
       const isPast = day < today && !isToday;
 
       return isPast ? (
@@ -419,39 +458,59 @@ export default function SchedulePage() {
         >
           {format(day, "d")}
         </div>
-      ) : (
+      ) : availabilityForDate ? (
         <button
           key={index}
-          onClick={() => setSelectedDate(day)}
-          className={`h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all ${
+          onClick={() => {
+            setSelectedDate(day);
+            // Only open booking modal if the date has availability and no session is booked
+            if (hasAvailability && !hasSession) {
+              setIsBookingModalOpen(true);
+            }
+          }}
+          className={`h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center transition-all ${
             isToday
               ? "bg-primary/10 border border-primary/20 text-primary font-black"
               : isSelected
               ? "bg-primary text-white font-black shadow-md"
-              : "text-slate-700 hover:bg-slate-100"
-          } ${hasSession || hasAvailability ? "relative" : ""}`}
+              : hasSession
+              ? "bg-blue-100 text-blue-800 hover:bg-blue-200"  // Blue for booked sessions
+              : availabilityForDate
+              ? (availabilityForDate.status === 'available' ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-red-100 text-red-800 hover:bg-red-200")  // Green for available, Red for unavailable
+              : "bg-gray-100 text-gray-500 hover:bg-gray-200"  // Gray for dates with no availability data (Not Booked)
+          } ${hasSession || availabilityForDate ? "relative" : ""}`}
         >
-          {format(day, "d")}
-
-          {(hasSession || hasAvailability) && (
+          <span className="text-xs">{format(day, "d")}</span>
+        
+          {(hasSession || availabilityForDate) && (
             <>
               {hasSession && (
                 <span
                   className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
-                    isSelected ? "bg-white" : "bg-primary"
+                    isSelected ? "bg-white" : "bg-blue-500"  // Blue dot for booked
                   }`}
                 />
               )}
-              {hasAvailability && !hasSession && (
+              {availabilityForDate?.status === 'available' && !hasSession && (
                 <span
                   className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${
-                    isSelected ? "bg-white" : "bg-green-500"
+                    isSelected ? "bg-white" : "bg-green-500"  // Green dot for available
                   }`}
                 />
               )}
             </>
           )}
         </button>
+      ) : (
+        <div
+          key={index}
+          className="h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        >
+          <span className="text-xs">{format(day, "d")}</span>
+          {/* <span className="text-[0.6rem] font-bold mt-0.5">
+            Not Booked
+          </span> */}
+        </div>
       );
     })
                   )}
@@ -577,9 +636,33 @@ export default function SchedulePage() {
                                 <Button
                                   variant="outline"
                                   className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
-                                  onClick={() => {
-                                    // Redirect to booking confirmation page
-                                    navigate("/booking-confirmation");
+                                  onClick={async () => {
+                                    try {
+                                      // Update session status to confirmed
+                                      const sessionUpdateData = {
+                                        status: "confirmed",
+                                        notes: "Session confirmed by user"
+                                      };
+                                      
+                                      const response: any = await updateSession(session.id, sessionUpdateData);
+                                      
+                                      if (response.data?.success) {
+                                        // Update the local session data
+                                        const updatedSessions = sessions.map(sess => 
+                                          sess.id === session.id 
+                                            ? { ...sess, status: "confirmed" } 
+                                            : sess
+                                        );
+                                        setSessions(updatedSessions);
+                                        
+                                        toast.success("Session confirmed successfully!");
+                                      } else {
+                                        toast.error("Failed to confirm session");
+                                      }
+                                    } catch (error) {
+                                      console.error("Error confirming session:", error);
+                                      toast.error("Failed to confirm session");
+                                    }
                                   }}
                                 >
                                   Confirm
@@ -667,7 +750,7 @@ export default function SchedulePage() {
                   </div>
                   
                   {/* Show related time slots when a time is selected */}
-                  {selectedTime && relatedTimeSlots.length > 0 && (
+                  {/* {selectedTime && relatedTimeSlots.length > 0 && (
                     <div className="mt-6">
                       <h4 className="font-bold text-slate-800 mb-3">Related Time Slots</h4>
                       <div className="grid grid-cols-3 gap-2">
@@ -683,7 +766,7 @@ export default function SchedulePage() {
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
                   
                   <div className="flex gap-3 mt-6">
                     <Button 
@@ -695,57 +778,40 @@ export default function SchedulePage() {
                     </Button>
                     <Button 
                       className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                      onClick={() => {
+                      onClick={async () => {
                         // Check if a time has been selected
                         if (!selectedTime) {
                           toast.error("Please select a time for your session");
                           return;
                         }
                         
-                        // In a real implementation, we would call an API to confirm the session
-                        // For now, we'll simulate the API call
-                        toast.promise(
-                          new Promise((resolve) => {
-                            setTimeout(() => {
-                              // Find the availability for the selected date to get therapist information
-                              const dateAvailability = availability.find((avail) => {
-                                const availDate = new Date(avail.date);
-                                return isSameDay(availDate, selectedDate);
-                              });
-                              
-                              // Use therapist info from availability
-                              const therapistInfo = dateAvailability?.therapistId || {};
-                              
-                              // Add the new session to the sessions array
-                              const newSession = {
-                                id: `session_${Date.now()}`,
-                                therapist: {
-                                  name: therapistInfo.name || "",
-                                  avatar: therapistInfo.avatar || "",
-                                },
-                                date: new Date(selectedDate),
-                                startTime: selectedTime,
-                                endTime: 
-                                  // Calculate end time based on 45 min duration
-                                  new Date(new Date(`1970-01-01T${selectedTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5),
-                                type: "Video",
-                                status: "Confirmed",
-                                location: "Secure Video Call",
-                                relatedTo: "General consultation",
-                                notes: "Newly booked session",
-                              };
-                              
-                              setSessions([...sessions, newSession]);
-                              setIsBookingModalOpen(false);
-                              resolve(newSession);
-                            }, 1000); // Simulate API call delay
-                          }),
-                          {
-                            loading: 'Confirming session...',
-                            success: (data) => `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`,
-                            error: 'Failed to book session',
+                        // Create session via API
+                        try {
+                          const sessionData = {
+                            bookingId: bookingData?.bookingId || null,  // Include bookingId if available
+                            date: format(selectedDate, 'yyyy-MM-dd'),
+                            time: selectedTime,
+                            type: "1-on-1",  // Changed to match expected format
+                            status: "scheduled",
+                     
+                          };
+                          
+                          const response: any = await createSession(sessionData);
+                          
+                          if (response.data?.success) {
+                            const newSession = response.data.data.session;
+                            
+                            // Update local sessions array
+                            setSessions([...sessions, newSession]);
+                            setIsBookingModalOpen(false);
+                            toast.success(`Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`);
+                          } else {
+                            toast.error('Failed to book session');
                           }
-                        );
+                        } catch (error) {
+                          console.error('Error creating session:', error);
+                          toast.error('Failed to book session');
+                        }
                         
                         // Optionally navigate to booking confirmation
                         // navigate("/booking-confirmation");
