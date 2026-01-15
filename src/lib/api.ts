@@ -62,4 +62,13 @@ export const getSubscriptionPlans = () => {
   return api.get('/subscriptions');
 };
 
+// Questionnaire API functions
+export const getActiveQuestionnaire = () => {
+  return api.get('/questionnaires/active');
+};
+
+export const submitQuestionnaireResponse = (data: { questionnaireId: string; responses: { questionId: string; answer: any }[] }) => {
+  return api.post('/questionnaires/submit', data);
+};
+
 export default api;

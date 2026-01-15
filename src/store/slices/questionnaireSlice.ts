@@ -2,17 +2,22 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '@/lib/api';
 
 // Define types
+export type QuestionType = 'text' | 'mcq' | 'slider' | 'skalaeton';
+
 export interface Question {
-  id: string;
-  questionText: string;
-  questionType: 'text' | 'number' | 'radio' | 'checkbox' | 'select' | 'range';
-  options?: string[];
+  _id: string;
+  question: string;
+  type: QuestionType;
   required: boolean;
+  active: boolean;
   order: number;
+  options: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Questionnaire {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   questions: Question[];
@@ -46,6 +51,12 @@ export const fetchActiveQuestionnaire = createAsyncThunk<
     try {
       const response = await api.get('/questionnaires/active');
       const apiResponse = response.data as ApiResponse;
+      
+      // Validate response according to backend spec
+      if (!apiResponse.success || apiResponse.statusCode !== 200) {
+        return rejectWithValue(apiResponse.message || 'Failed to fetch questionnaire');
+      }
+      
       return apiResponse.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch questionnaire');
@@ -63,7 +74,7 @@ interface SubmitApiResponse {
 
 export const submitQuestionnaireResponse = createAsyncThunk<
   any,
-  { questionnaireId: string; responses: Record<string, any> },
+  { questionnaireId: string; responses: { questionId: string; answer: any }[] },
   { rejectValue: string }
 >(
   'questionnaire/submitQuestionnaireResponse',
@@ -71,6 +82,12 @@ export const submitQuestionnaireResponse = createAsyncThunk<
     try {
       const response = await api.post('/questionnaires/submit', data);
       const apiResponse = response.data as SubmitApiResponse;
+      
+      // Validate response according to backend spec
+      if (!apiResponse.success || apiResponse.statusCode !== 200) {
+        return rejectWithValue(apiResponse.message || 'Failed to submit questionnaire');
+      }
+      
       return apiResponse;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to submit questionnaire');

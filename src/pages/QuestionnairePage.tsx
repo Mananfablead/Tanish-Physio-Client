@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
-import { Question } from '@/store/slices/questionnaireSlice';
+import { Question, QuestionType } from '@/store/slices/questionnaireSlice';
 import { useToast } from '@/hooks/use-toast';
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,15 @@ import {
   ArrowRight,
   Clock,
   User,
-  Stethoscope
+  Stethoscope,
+  Heart,
+  Brain,
+  Eye,
+  Bone,
+  Syringe,
+  Droplets,
+  Waves,
+  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -71,15 +79,15 @@ interface StepWrapperProps {
 }
 
 interface DynamicQuestionComponentProps {
-  question: Question & { type?: string; question?: string };
+  question: Question;
   value: any;
   onChange: (value: any) => void;
 }
 
 const DynamicQuestionComponent: React.FC<DynamicQuestionComponentProps> = ({ question, value, onChange }: DynamicQuestionComponentProps) => {
   const renderQuestionField = () => {
-    // Use the type field from API response (might be 'type' or 'questionType')
-    const questionType = question.type || question.questionType;
+    // Use the type field from API response
+    const questionType = question.type;
     const questionOptions = question.options || [];
     
     switch (questionType) {
@@ -93,79 +101,34 @@ const DynamicQuestionComponent: React.FC<DynamicQuestionComponentProps> = ({ que
             className="w-full p-3 border rounded-lg"
           />
         );
-      case 'number':
+      case 'mcq':
         return (
-          <Input
-            type="number"
-            placeholder="Enter a number"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full p-3 border rounded-lg"
-          />
-        );
-      case 'radio':
-        return (
-          <RadioGroup
-            value={value}
-            onValueChange={onChange}
-            className="grid grid-cols-1 gap-3"
-          >
+          <div className="space-y-3">
             {questionOptions?.map((option) => (
-              <div key={option} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={option} />
-                <Label htmlFor={option}>{option}</Label>
+              <div 
+                key={option}
+                className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                  value === option
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-slate-200 hover:border-primary/50 hover:bg-slate-50'
+                }`}
+                onClick={() => onChange(option)}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                    value === option
+                      ? 'border-primary bg-primary'
+                      : 'border-slate-300'
+                  }`}>
+                    {value === option && (
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    )}
+                  </div>
+                  <span className="text-base font-medium">{option}</span>
+                </div>
               </div>
             ))}
-          </RadioGroup>
-        );
-      case 'checkbox':
-        return (
-          <div className="space-y-2">
-            {questionOptions?.map((option) => {
-              const isChecked = Array.isArray(value) ? value.includes(option) : false;
-              return (
-                <div key={option} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={option}
-                    checked={isChecked}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        if (Array.isArray(value)) {
-                          onChange([...value, option]);
-                        } else {
-                          onChange([option]);
-                        }
-                      } else {
-                        if (Array.isArray(value)) {
-                          onChange(value.filter((item: string) => item !== option));
-                        } else {
-                          onChange([]);
-                        }
-                      }
-                    }}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor={option}>{option}</Label>
-                </div>
-              );
-            })}
           </div>
-        );
-      case 'select':
-        return (
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full p-3 border rounded-lg"
-          >
-            <option value="">Select an option</option>
-            {questionOptions?.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
         );
       case 'slider':
         return (
@@ -173,15 +136,36 @@ const DynamicQuestionComponent: React.FC<DynamicQuestionComponentProps> = ({ que
             <Slider
               value={[parseInt(value) || 5]}
               onValueChange={([newValue]) => onChange(newValue)}
-              min={questionOptions && questionOptions.length > 0 ? parseInt(questionOptions[0]) || 0 : 0}
+              min={questionOptions && questionOptions.length > 0 ? parseInt(questionOptions[0]) || 1 : 1}
               max={questionOptions && questionOptions.length > 1 ? parseInt(questionOptions[1]) || 10 : 10}
               step={1}
               className="w-full"
             />
             <div className="flex justify-between text-sm text-gray-500">
-              <span>{questionOptions?.[0] || '0'}</span>
+              <span>{questionOptions?.[0] || '1'}</span>
               <span className="font-bold">{value || 5}</span>
               <span>{questionOptions?.[1] || '10'}</span>
+            </div>
+          </div>
+        );
+      case 'skalaeton':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-3">
+              {questionOptions?.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`px-4 py-2 rounded-full border transition-all ${
+                    value === option
+                      ? 'bg-primary text-white border-primary shadow-md'
+                      : 'bg-white text-slate-700 border-slate-300 hover:border-primary hover:bg-primary/5'
+                  }`}
+                  onClick={() => onChange(option)}
+                >
+                  {option}
+                </button>
+              ))}
             </div>
           </div>
         );
@@ -280,7 +264,8 @@ export default function QuestionnairePage() {
   const [progressExpanded, setProgressExpanded] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  const totalSteps = activeQuestionnaire?.questions?.length || 1; // Use actual number of questions from backend
+  const filteredQuestions = activeQuestionnaire?.questions?.filter(q => q.active).sort((a, b) => a.order - b.order) || [];
+  const totalSteps = filteredQuestions.length || 1; // Use actual number of active questions from backend sorted by order
 
   const STORAGE_KEY_QUESTIONNAIRE = "qw_questionnaire";
   const STORAGE_KEY_PLAN = "qw_plan";
@@ -434,14 +419,14 @@ export default function QuestionnairePage() {
 
     // If we have an active questionnaire, submit responses to backend
     if (activeQuestionnaire) {
-      const responses = Object.keys(data).reduce((acc, key) => {
-        acc[key] = data[key];
-        return acc;
-      }, {} as Record<string, any>);
+      const responses = Object.keys(data).map(key => ({
+        questionId: key,
+        answer: data[key]
+      }));
 
       dispatch(submitQuestionnaireResponse({
-        questionnaireId: activeQuestionnaire._id || activeQuestionnaire.id,
-        responses
+        questionnaireId: activeQuestionnaire._id,
+        responses: responses
       }));
     }
 
@@ -615,28 +600,28 @@ export default function QuestionnairePage() {
                     <p>Loading questionnaire...</p>
                   </div>
                 )}
-                {!loading && activeQuestionnaire && activeQuestionnaire.questions && (
+                {!loading && activeQuestionnaire && filteredQuestions && (
                   <div>
-                    {activeQuestionnaire.questions.map((question, index) => {
+                    {filteredQuestions.map((question, index) => {
                       const stepNumber = index + 1;
                       if (stepNumber !== activeStep) return null;
           
                       return (
                         <StepWrapper 
-                          key={question._id || question.id}
+                          key={question._id}
                           stepNum={stepNumber} 
-                          title={question.question || question.questionText || `Question ${stepNumber}`} 
+                          title={question.question || `Question ${stepNumber}`} 
                           description="Please answer the question below"
                           activeStep={activeStep}
                           totalSteps={totalSteps}
                           onNext={handleNext}
                           onBack={handleBack}
-                          isNextDisabled={question.required && !data[question._id || question.id]}
+                          isNextDisabled={question.required && !data[question._id]}
                         >
                           <DynamicQuestionComponent 
                             question={question} 
-                            value={data[question._id || question.id] || ''} 
-                            onChange={(value) => updateData(question._id || question.id, value)} 
+                            value={data[question._id] || ''} 
+                            onChange={(value) => updateData(question._id, value)} 
                           />
                         </StepWrapper>
                       );
@@ -659,14 +644,14 @@ export default function QuestionnairePage() {
                         <p className="text-sm text-slate-500 mt-2">Confirm the clinical details we’ll use to match you with the right specialists.</p>
           
                         <div className="mt-6 space-y-4">
-                          {activeQuestionnaire?.questions?.map((question, index) => (
-                            <div key={question.id} className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 border border-slate-100">
+                          {filteredQuestions.map((question, index) => (
+                            <div key={question._id} className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 border border-slate-100">
                               <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary">
                                 <Edit2 className="h-6 w-6" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">{question.question || question.questionText}</p>
-                                <p className="text-sm font-black text-slate-900">{data[question._id || question.id] || 'No response'}</p>
+                                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">{question.question}</p>
+                                <p className="text-sm font-black text-slate-900">{data[question._id] || 'No response'}</p>
                               </div>
                               <button onClick={() => { setIsReviewing(false); setActiveStep(index + 1); }} className="text-slate-400 hover:text-primary">Edit</button>
                             </div>
