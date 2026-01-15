@@ -149,7 +149,7 @@ export default function SchedulePage() {
         // Fetch both availability and sessions
         const [availabilityResponse, sessionsResponse] = await Promise.all([
           getAvailability(),
-          getUpcomingSessions()
+          getAllSessions()
         ]);
         
         const availabilityData: any = availabilityResponse;
@@ -552,29 +552,29 @@ export default function SchedulePage() {
                             transition={{ duration: 0.3, delay: index * 0.1 }}
                           >
                             <div className="flex items-start gap-4">
-                              <Avatar className="h-14 w-14 rounded-xl border border-slate-200">
+                              {/* <Avatar className="h-14 w-14 rounded-xl border border-slate-200">
                                 <AvatarImage
-                                  src={session.therapist.avatar}
-                                  alt={session.therapist.name}
+                                  src={session.therapistId?.avatar}
+                                  alt={session.therapistId?.name}
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary rounded-xl">
-                                  {session.therapist.name
+                                  {session.therapistId?.name
                                     .split(" ")
                                     .map((n) => n[0])
                                     .join("")}
                                 </AvatarFallback>
-                              </Avatar>
+                              </Avatar> */}
 
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between">
                                   <div>
                                     <h3 className="font-black text-slate-900 text-lg">
-                                      {session.therapist.name}
+                                      {session.therapistId?.name || session.bookingId?.therapistName || 'Unknown Therapist'}
                                     </h3>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                       <span className="text-sm text-slate-600 flex items-center gap-1">
                                         <Clock className="h-4 w-4" />{" "}
-                                        {session.startTime} - {session.endTime}
+                                        {session.time || session.startTime} - {session.endTime || 'N/A'}
                                       </span>
                                       <Badge
                                         variant="outline"
@@ -606,16 +606,15 @@ export default function SchedulePage() {
 
                                 <p className="text-sm text-slate-500 mt-3 flex items-start gap-1">
                                   <User className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
-                                  <span className="font-bold">Focus:</span>{" "}
-                                  {session.relatedTo}
+                                  <span className="font-bold">Service:</span>{" "}
+                                  {session.bookingId?.serviceName || 'General Session'}
                                 </p>
 
-                                {session.location && (
-                                  <p className="text-sm text-slate-500 mt-1 flex items-start gap-1">
-                                    <MapPin className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
-                                    {session.location}
-                                  </p>
-                                )}
+                                <p className="text-sm text-slate-500 mt-1 flex items-start gap-1">
+                                  <Calendar className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
+                                  <span className="font-bold">Date:</span>{" "}
+                                  {format(new Date(session.date), 'MMM d, yyyy')}
+                                </p>
                               </div>
                             </div>
 
@@ -644,12 +643,12 @@ export default function SchedulePage() {
                                         notes: "Session confirmed by user"
                                       };
                                       
-                                      const response: any = await updateSession(session.id, sessionUpdateData);
+                                      const response: any = await updateSession(session._id, sessionUpdateData);
                                       
                                       if (response.data?.success) {
                                         // Update the local session data
                                         const updatedSessions = sessions.map(sess => 
-                                          sess.id === session.id 
+                                          sess._id === session._id 
                                             ? { ...sess, status: "confirmed" } 
                                             : sess
                                         );
@@ -793,14 +792,16 @@ export default function SchedulePage() {
                             time: selectedTime,
                             type: "1-on-1",  // Changed to match expected format
                             status: "scheduled",
-                     
+                            notes: "Newly booked session",
+                            relatedTo: "General consultation",
+                            location: "Secure Video Call"
                           };
-                          
+                                                  
                           const response: any = await createSession(sessionData);
-                          
+                                                  
                           if (response.data?.success) {
                             const newSession = response.data.data.session;
-                            
+                                                    
                             // Update local sessions array
                             setSessions([...sessions, newSession]);
                             setIsBookingModalOpen(false);
