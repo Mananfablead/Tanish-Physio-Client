@@ -15,7 +15,7 @@ const api = axios.create({
 // Request interceptor to add token to headers
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVmODJjOWNkMjU2MzJmNDQ3MjY3OGUiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3Njg0NjI1MzAsImV4cCI6MTc2ODU0ODkzMH0.B7SrQOJ2iVnw5nu1owpVals6El6g5XVMTdczabtjpI8"
+    const token = localStorage.getItem('token') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVlMzNjNWMzYWI2MGI4NmUxMDJjMDAiLCJyb2xlIjoicGF0aWVudCIsImlhdCI6MTc2ODUzNzI3MiwiZXhwIjoxNzY4NjIzNjcyfQ.eSXc25yrKdFnVapjSBDAtQLjDcH8HYtKUW0oVqHTWiM';
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -61,14 +61,14 @@ export const confirmSession = (sessionData: any) => {
 export const getSubscriptionPlans = () => {
   return api.get('/subscriptions');
 };
-
-// Questionnaire API functions
 export const getActiveQuestionnaire = () => {
   return api.get('/questionnaires/active');
 };
 
 export const submitQuestionnaireResponse = (data: { questionnaireId: string; responses: { questionId: string; answer: any }[] }) => {
   return api.post('/questionnaires/submit', data);
+};
+
 // Booking API functions
 export const createBooking = (bookingData: any) => {
   return api.post('/bookings', bookingData);
