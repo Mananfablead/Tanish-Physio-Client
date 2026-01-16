@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import api from '../lib/api';
+import api from '../../lib/api';
 
 // Import the service type from the shared types
-import { Service } from '../types/service';
+import { Service } from '../../types/service';
 
 // Helper function to transform API service data to expected format
 const transformServiceFromAPI = (apiService: any): Service => {
@@ -19,6 +19,7 @@ const transformServiceFromAPI = (apiService: any): Service => {
       benefits: Array.isArray(apiService.benefits) ? apiService.benefits : [],
       detailedDescription: apiService.detailedDescription || apiService.description || 'Detailed description',
       conditionsTreated: Array.isArray(apiService.conditionsTreated) ? apiService.conditionsTreated : [],
+      features: Array.isArray(apiService.features) ? apiService.features : [],
       sessionDuration: apiService.duration || apiService.sessionDuration || '30 min',
       price: `₹${apiService.price || 0}`,
       priceRange: `₹${apiService.price || 0}`,

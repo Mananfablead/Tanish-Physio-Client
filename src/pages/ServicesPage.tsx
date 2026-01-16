@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { fetchAllServices } from "@/store/serviceSlice";
+import { fetchAllServices } from "@/store/slices/serviceSlice";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from "@/store";

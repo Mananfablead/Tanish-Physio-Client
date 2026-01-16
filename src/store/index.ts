@@ -4,14 +4,16 @@ import storage from 'redux-persist/lib/storage'; // defaults to localStorage for
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import authReducer from './slices/authSlice';
 import questionnaireReducer from './slices/questionnaireSlice';
-import authReducer from './authSlice';
-import serviceReducer from './serviceSlice';
+import subscriptionReducer from './slices/subscriptionSlice';
+// import authReducer from './authSlice';
+import serviceReducer from './slices/serviceSlice.ts';
+import bookingsReducer from './slices/bookingsSlice';
 
 // Redux Persist config
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth'], // only auth will be persisted
+  whitelist: ['auth'], 
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
@@ -20,7 +22,9 @@ export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
     questionnaires: questionnaireReducer,
+    subscriptions: subscriptionReducer,
     services: serviceReducer,
+    bookings: bookingsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

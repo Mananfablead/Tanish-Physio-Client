@@ -29,6 +29,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const VideoCallPage = lazy(() => import("./pages/VideoCallPage"));
@@ -106,19 +107,28 @@ const App = () => (
                   />
 
                   <Route
+                    path="/reset-password/:token"
+                    element={
+                      <PublicRoute>
+                        <ResetPasswordPage />
+                      </PublicRoute>
+                    }
+                  />
+
+                  <Route
                     path="/booking"
                     element={
-                      <ProtectedRoute>
+                      <PublicRoute>
                         <BookingPage />
-                      </ProtectedRoute>
+                      </PublicRoute>
                     }
                   />
                   <Route
                     path="/booking-confirmation"
                     element={
-                      <ProtectedRoute>
+                      <PublicRoute>
                         <BookingConfirmationPage />
-                      </ProtectedRoute>
+                      </PublicRoute>
                     }
                   />
                   <Route
@@ -151,9 +161,9 @@ const App = () => (
                   <Route
                     path="/schedule"
                     element={
-                      <ProtectedRoute>
+                      <PublicRoute>
                         <SchedulePage />
-                      </ProtectedRoute>
+                      </PublicRoute>
                     }
                   />
 

@@ -11,6 +11,7 @@ export interface Service {
     benefits: string[];
     detailedDescription: string;
     conditionsTreated: string[];
+    features: string[];
     sessionDuration: string;
     price: string;
     priceRange: string; // Added for compatibility with component

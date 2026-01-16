@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee } from "lucide-react";
 import { Service } from "@/types/service";
-import { fetchServiceById } from "@/store/serviceSlice";
+import { fetchServiceById } from "@/store/slices/serviceSlice";
 import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from "@/store";
@@ -26,6 +26,7 @@ interface ExtendedService {
     benefits: string[];
     detailedDescription: string;
     conditionsTreated: string[];
+    features: string[];
     sessionDuration: string;
     price: string;
     priceRange: string;
@@ -416,16 +417,16 @@ export default function ServiceDetailPage() {
           <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
             {service && (
               <>
-                <ServiceHero service={service} />
+                <ServiceHero service={service as ExtendedService} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2 space-y-8">
-                    <ServiceMedia service={service} />
+                    <ServiceMedia service={service as ExtendedService} />
 
                     <div className="border-t border-slate-200 pt-8">
                       <CollapsibleList
                         title="Conditions We Treat"
-                        items={service.details.conditionsTreated}
+                        items={service.details.features}
                         icon={
                           <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
                         }
@@ -454,7 +455,7 @@ export default function ServiceDetailPage() {
                   </div>
 
                   <div className="lg:col-span-1">
-                    <ServiceSidebar service={service} navigate={navigate} />
+                    <ServiceSidebar service={service as ExtendedService} navigate={navigate} />
                   </div>
                 </div>
               </>

@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { login, register, logout, fetchProfile, clearError, forgotPassword } from '../store/slices/authSlice';
+import { login, register, logout, fetchProfile, clearError, forgotPassword, resetPassword } from '../store/slices/authSlice';
 import { RootState, AppDispatch } from '../store';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './use-toast';
@@ -116,6 +116,31 @@ export const useAuthRedux = () => {
     }
   };
 
+  const handleResetPassword = async (token: string, password: string) => {
+    try {
+      const result = await dispatch(resetPassword({ token, password }));
+      if (resetPassword.fulfilled.match(result)) {
+        toast({
+          title: "Password Reset Successful",
+          description: "Your password has been reset successfully.",
+        });
+        navigate('/login');
+      } else if (resetPassword.rejected.match(result)) {
+        toast({
+          title: "Password Reset Failed",
+          description: result.payload as string,
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Password Reset Failed",
+        description: "An error occurred while resetting your password.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     user,
     isAuthenticated,
@@ -125,6 +150,7 @@ export const useAuthRedux = () => {
     handleRegister,
     handleLogout,
     handleForgotPassword,
+    handleResetPassword,
     clearAuthError,
   };
 };

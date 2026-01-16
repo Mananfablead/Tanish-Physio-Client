@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout/Layout";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import {
 } from "date-fns";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
+import { getAvailability, getAllSessions, getUpcomingSessions, getSessionById, createSession, updateSession, deleteSession, getSessionsByUserId, getSessionsByTherapistId, getCompletedSessions, getScheduledSessions, cancelSession, rescheduleSession, getSessionNotes, addSessionNotes, getPastSessions, getTodaySessions } from "@/lib/api";
 
 export default function SchedulePage() {
   const location = useLocation();
@@ -57,22 +58,20 @@ export default function SchedulePage() {
   const bookingSummary = hasBookingSummary
     ? {
         therapist: bookingData.therapist || {
-          name: bookingData?.therapistName || "Dr. Sarah Johnson",
-          title: bookingData?.therapistTitle || "Sports Injury Specialist",
-          avatar:
-            bookingData?.therapistAvatar ||
-            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
+          name: bookingData?.therapistName,
+          title: bookingData?.therapistTitle,
+          avatar: bookingData?.therapistAvatar,
         },
         session: bookingData.session || {
-          type: bookingData?.sessionType || "1-on-1",
-          duration: bookingData?.sessionDuration || "45 min",
-          price: bookingData?.sessionPrice || 80,
+          type: bookingData?.sessionType,
+          duration: bookingData?.sessionDuration,
+          price: bookingData?.sessionPrice,
         },
-        date: bookingData.date || new Date(),
-        time: bookingData.time || "10:00",
+        date: bookingData.date,
+        time: bookingData.time,
         plan: bookingData.plan || {
-          name: bookingData?.planName || "Monthly Plan",
-          price: bookingData?.planPrice || 199,
+          name: bookingData?.planName,
+          price: bookingData?.planPrice,
         },
       }
     : null;
@@ -81,101 +80,105 @@ export default function SchedulePage() {
   const [isPastSessionsOpen, setIsPastSessionsOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
-  const [selectedTime, setSelectedTime] = useState<string>("10:00");
-  const [customTime, setCustomTime] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
   
-  // Mock available times for selected date
-  const availableTimes = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
-    "14:00", "14:30", "15:00", "15:30", "16:00"
-  ];
+  // State for availability
+  const [availability, setAvailability] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get available times for selected date from availability API
+  const getAvailableTimesForDate = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const dateAvailability = availability.find((avail) => {
+      const availDate = new Date(avail.date);
+      return isSameDay(availDate, date);
+    });
+    
+    if (dateAvailability && dateAvailability.availableTimes) {
+      return dateAvailability.availableTimes;
+    }
+    
+    return [];
+  };
+
+  // Calculate available times based on selected date and availability data using useMemo
+  const availableTimes = useMemo(() => {
+    if (!availability || !Array.isArray(availability)) return [];
+    return getAvailableTimesForDate(selectedDate);
+  }, [selectedDate, availability]);
+
+  // Helper function to get related time slots based on selected hour
+  // Generate time slots on the frontend without checking backend availability
+  const getRelatedTimeSlots = (selectedTimeSlot: string) => {
+    if (!selectedTimeSlot) return [];
+    
+    // Extract the hour from the selected time
+    const selectedHour = selectedTimeSlot.split(':')[0];
+    const relatedSlots = [];
+    
+    // Generate all 15-minute intervals for the selected hour: XX:00, XX:15, XX:30, XX:45
+    const minutes = ['00', '15', '30', '45'];
+    for (const minute of minutes) {
+      const timeSlot = `${selectedHour}:${minute}`;
+      
+      // Add the time slot regardless of backend availability
+      relatedSlots.push(timeSlot);
+    }
+    
+    // Also add the next hour's :00 slot
+    const nextHour = (parseInt(selectedHour) + 1).toString().padStart(2, '0');
+    const nextHourSlot = `${nextHour}:00`;
+    relatedSlots.push(nextHourSlot);
+    
+    return relatedSlots;
+  };
+
+  // Get related time slots for the currently selected time
+  const relatedTimeSlots = getRelatedTimeSlots(selectedTime);
 
   // State for sessions
-  const [sessions, setSessions] = useState([
-    {
-      id: "1",
-      therapist: {
-        name: "Dr. Sarah Johnson",
-        avatar:
-          "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() + 1)),
-      startTime: "10:00",
-      endTime: "10:45",
-      type: "Video",
-      status: "Confirmed",
-      location: "Secure Video Call",
-      relatedTo: "Lower back pain recovery",
-      notes: "Initial assessment — please have any previous imaging ready.",
-    },
-    {
-      id: "2",
-      therapist: {
-        name: "Dr. A. Lee",
-        avatar:
-          "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() + 3)),
-      startTime: "14:00",
-      endTime: "14:45",
-      type: "Video",
-      status: "Confirmed",
-      location: "Secure Video Call",
-      relatedTo: "Gait analysis",
-      notes: "Reviewing progress on mobility exercises.",
-    },
-    {
-      id: "3",
-      therapist: {
-        name: "Dr. Michael Chen",
-        avatar:
-          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() + 7)),
-      startTime: "09:30",
-      endTime: "10:15",
-      type: "In-person",
-      status: "Confirmed",
-      location: "123 Wellness Center, Suite 201",
-      relatedTo: "Knee rehabilitation",
-      notes: "Post-surgical recovery session.",
-    },
-  ]);
+  const [sessions, setSessions] = useState<any[]>([]);
 
-  const mockPastSessions = [
-    {
-      id: "4",
-      therapist: {
-        name: "Dr. Emily Rodriguez",
-        avatar:
-          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() - 5)),
-      startTime: "11:00",
-      endTime: "11:45",
-      type: "Video",
-      status: "Completed",
-      location: "Secure Video Call",
-      relatedTo: "Shoulder mobility",
-      notes: "Follow-up on exercises for rotator cuff strengthening.",
-    },
-    {
-      id: "5",
-      therapist: {
-        name: "Dr. Michael Chen",
-        avatar:
-          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
-      },
-      date: new Date(new Date().setDate(new Date().getDate() - 12)),
-      startTime: "09:30",
-      endTime: "10:15",
-      type: "In-person",
-      status: "Completed",
-      location: "123 Wellness Center, Suite 201",
-      relatedTo: "Knee rehabilitation",
-      notes: "Post-surgical recovery session.",
-    },
-  ];
+  // Fetch availability and sessions data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch both availability and sessions
+        const [availabilityResponse, sessionsResponse] = await Promise.all([
+          getAvailability(),
+          getAllSessions()
+        ]);
+        
+        const availabilityData: any = availabilityResponse;
+        const sessionsData: any = sessionsResponse;
+        
+        setAvailability(availabilityData.data?.data?.availability || []);
+        
+        // Update sessions with actual data from API
+        if (sessionsData.data?.success) {
+          setSessions(sessionsData.data.data.sessions || []);
+        } else {
+          setSessions([]);
+        }
+        
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load schedule data');
+        toast.error('Failed to load schedule data');
+        // Fallback to empty arrays
+        setAvailability([]);
+        setSessions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) =>
@@ -204,9 +207,24 @@ export default function SchedulePage() {
     );
   };
 
+  // Helper function to get availability for a specific date
+  const getAvailabilityForDate = (date: Date) => {
+    if (!availability || !Array.isArray(availability)) return null;
+    
+    const dateString = format(date, 'yyyy-MM-dd');
+    return availability.find((avail) => {
+      // Compare date strings directly
+      return avail.date === dateString;
+    });
+  };
+
+  // Helper function to check if a date has any availability
+  const hasAvailabilityForDate = (date: Date) => {
+    const availability = getAvailabilityForDate(date);
+    return availability && availability.status === 'available' && (!availability.availableTimes || availability.availableTimes.length > 0);
+  };
+
   const today = new Date();
-  const upcomingSessions = sessions;
-  const pastSessions = mockPastSessions;
 
   return (
     <Layout>
@@ -373,6 +391,25 @@ export default function SchedulePage() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Legend for calendar colors */}
+                  <div className="flex flex-wrap gap-4 mb-4 justify-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></div>
+                      <span className="text-xs text-slate-600">Booked</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
+                      <span className="text-xs text-slate-600">Available</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-red-100 border border-red-300"></div>
+                      <span className="text-xs text-slate-600">Unavailable</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+                      <span className="text-xs text-slate-600">Not Booked</span>
+                    </div>
+                  </div>
                   <div className="text-center mb-4">
                     <h3 className="font-black text-slate-900">
                       {format(currentMonth, "MMMM yyyy")}
@@ -391,47 +428,92 @@ export default function SchedulePage() {
                   </div>
 
                   <div className="grid grid-cols-7 gap-1">
-  {getCalendarDays().map((day, index) => {
-    if (!day) {
-      return <div key={index} className="h-10" />;
-    }
+                  {loading ? (
+                    // Show loading placeholders while availability data is loading
+                    Array.from({ length: 42 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
+                      >
+                        <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
+                      </div>
+                    ))
+                  ) : (
+                    getCalendarDays().map((day, index) => {
+      if (!day) {
+        return <div key={index} className="h-10" />;
+      }
 
-    const isToday = isSameDay(day, today);
-    const isSelected = isSameDay(day, selectedDate);
-    const hasSession = getSessionsForDate(day).length > 0;
-    const isPast = day < today && !isToday;
+      const isToday = isSameDay(day, today);
+      const isSelected = isSameDay(day, selectedDate);
+      const hasSession = getSessionsForDate(day).length > 0;
+      const availabilityForDate = getAvailabilityForDate(day);
+      const hasAvailability = availabilityForDate && availabilityForDate.status === 'available' && (!availabilityForDate.availableTimes || availabilityForDate.availableTimes.length > 0);
+      const isPast = day < today && !isToday;
 
-    return isPast ? (
-      <div
-        key={index}
-        className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
-      >
-        {format(day, "d")}
-      </div>
-    ) : (
-      <button
-        key={index}
-        onClick={() => setSelectedDate(day)}
-        className={`h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all ${
-          isToday
-            ? "bg-primary/10 border border-primary/20 text-primary font-black"
-            : isSelected
-            ? "bg-primary text-white font-black shadow-md"
-            : "text-slate-700 hover:bg-slate-100"
-        } ${hasSession ? "relative" : ""}`}
-      >
-        {format(day, "d")}
-
-        {hasSession && (
-          <span
-            className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
-              isSelected ? "bg-white" : "bg-primary"
-            }`}
-          />
-        )}
-      </button>
-    );
-  })}
+      return isPast ? (
+        <div
+          key={index}
+          className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
+        >
+          {format(day, "d")}
+        </div>
+      ) : availabilityForDate ? (
+        <button
+          key={index}
+          onClick={() => {
+            setSelectedDate(day);
+            // Only open booking modal if the date has availability and no session is booked
+            if (hasAvailability && !hasSession) {
+              setIsBookingModalOpen(true);
+            }
+          }}
+          className={`h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center transition-all ${
+            isToday
+              ? "bg-primary/10 border border-primary/20 text-primary font-black"
+              : isSelected
+              ? "bg-primary text-white font-black shadow-md"
+              : hasSession
+              ? "bg-blue-100 text-blue-800 hover:bg-blue-200"  // Blue for booked sessions
+              : availabilityForDate
+              ? (availabilityForDate.status === 'available' ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-red-100 text-red-800 hover:bg-red-200")  // Green for available, Red for unavailable
+              : "bg-gray-100 text-gray-500 hover:bg-gray-200"  // Gray for dates with no availability data (Not Booked)
+          } ${hasSession || availabilityForDate ? "relative" : ""}`}
+        >
+          <span className="text-xs">{format(day, "d")}</span>
+        
+          {(hasSession || availabilityForDate) && (
+            <>
+              {hasSession && (
+                <span
+                  className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
+                    isSelected ? "bg-white" : "bg-blue-500"  // Blue dot for booked
+                  }`}
+                />
+              )}
+              {availabilityForDate?.status === 'available' && !hasSession && (
+                <span
+                  className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${
+                    isSelected ? "bg-white" : "bg-green-500"  // Green dot for available
+                  }`}
+                />
+              )}
+            </>
+          )}
+        </button>
+      ) : (
+        <div
+          key={index}
+          className="h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+        >
+          <span className="text-xs">{format(day, "d")}</span>
+          {/* <span className="text-[0.6rem] font-bold mt-0.5">
+            Not Booked
+          </span> */}
+        </div>
+      );
+    })
+                  )}
 </div>
 
                 </CardContent>
@@ -470,29 +552,29 @@ export default function SchedulePage() {
                             transition={{ duration: 0.3, delay: index * 0.1 }}
                           >
                             <div className="flex items-start gap-4">
-                              <Avatar className="h-14 w-14 rounded-xl border border-slate-200">
+                              {/* <Avatar className="h-14 w-14 rounded-xl border border-slate-200">
                                 <AvatarImage
-                                  src={session.therapist.avatar}
-                                  alt={session.therapist.name}
+                                  src={session.therapistId?.avatar}
+                                  alt={session.therapistId?.name}
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10 text-primary rounded-xl">
-                                  {session.therapist.name
+                                  {session.therapistId?.name
                                     .split(" ")
                                     .map((n) => n[0])
                                     .join("")}
                                 </AvatarFallback>
-                              </Avatar>
+                              </Avatar> */}
 
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between">
                                   <div>
                                     <h3 className="font-black text-slate-900 text-lg">
-                                      {session.therapist.name}
+                                      {session.therapistId?.name || session.bookingId?.therapistName || 'Unknown Therapist'}
                                     </h3>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                       <span className="text-sm text-slate-600 flex items-center gap-1">
                                         <Clock className="h-4 w-4" />{" "}
-                                        {session.startTime} - {session.endTime}
+                                        {session.time || session.startTime} - {session.endTime || 'N/A'}
                                       </span>
                                       <Badge
                                         variant="outline"
@@ -524,16 +606,15 @@ export default function SchedulePage() {
 
                                 <p className="text-sm text-slate-500 mt-3 flex items-start gap-1">
                                   <User className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
-                                  <span className="font-bold">Focus:</span>{" "}
-                                  {session.relatedTo}
+                                  <span className="font-bold">Service:</span>{" "}
+                                  {session.bookingId?.serviceName || 'General Session'}
                                 </p>
 
-                                {session.location && (
-                                  <p className="text-sm text-slate-500 mt-1 flex items-start gap-1">
-                                    <MapPin className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
-                                    {session.location}
-                                  </p>
-                                )}
+                                <p className="text-sm text-slate-500 mt-1 flex items-start gap-1">
+                                  <Calendar className="h-4 w-4 mt-0.5 text-slate-400" />{" "}
+                                  <span className="font-bold">Date:</span>{" "}
+                                  {format(new Date(session.date), 'MMM d, yyyy')}
+                                </p>
                               </div>
                             </div>
 
@@ -554,9 +635,33 @@ export default function SchedulePage() {
                                 <Button
                                   variant="outline"
                                   className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
-                                  onClick={() => {
-                                    // Redirect to booking confirmation page
-                                    navigate("/booking-confirmation");
+                                  onClick={async () => {
+                                    try {
+                                      // Update session status to confirmed
+                                      const sessionUpdateData = {
+                                        status: "confirmed",
+                                        notes: "Session confirmed by user"
+                                      };
+                                      
+                                      const response: any = await updateSession(session._id, sessionUpdateData);
+                                      
+                                      if (response.data?.success) {
+                                        // Update the local session data
+                                        const updatedSessions = sessions.map(sess => 
+                                          sess._id === session._id 
+                                            ? { ...sess, status: "confirmed" } 
+                                            : sess
+                                        );
+                                        setSessions(updatedSessions);
+                                        
+                                        toast.success("Session confirmed successfully!");
+                                      } else {
+                                        toast.error("Failed to confirm session");
+                                      }
+                                    } catch (error) {
+                                      console.error("Error confirming session:", error);
+                                      toast.error("Failed to confirm session");
+                                    }
                                   }}
                                 >
                                   Confirm
@@ -585,7 +690,6 @@ export default function SchedulePage() {
                         className="h-11 rounded-xl bg-primary hover:from-primary/90 hover:to-accent/90 text-white font-bold px-6 mt-4"
                         onClick={() => {
                           setIsBookingModalOpen(true);
-                          setCustomTime(""); // Reset custom time when opening
                         }}
                       >
                         <Plus className="h-4 w-4 mr-2" /> Book Session
@@ -626,72 +730,123 @@ export default function SchedulePage() {
             
             <div className="mb-6">
               <h4 className="font-bold text-slate-800 mb-3">Available Times</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {availableTimes.map((time) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    className="py-2"
-                    onClick={() => setSelectedTime(time)}
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <h4 className="font-bold text-slate-800 mb-3">Or Enter Custom Time</h4>
-              <Input
-                type="time"
-                value={customTime}
-                onChange={(e) => setCustomTime(e.target.value)}
-                className="w-full"
-                placeholder="HH:MM"
-              />
-            </div>
-            
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setIsBookingModalOpen(false)}
-              >
-                Reschedule
-              </Button>
-              <Button 
-                className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                onClick={() => {
-                  // Add the new session to the sessions array
-                  const newSession = {
-                    id: `session_${Date.now()}`,
-                    therapist: {
-                      name: "Dr. Sarah Johnson", // Using a default therapist
-                      avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-                    },
-                    date: new Date(selectedDate),
-                    startTime: customTime || selectedTime,
-                    endTime: customTime ? 
-                      // Calculate end time based on 45 min duration
-                      new Date(new Date(`1970-01-01T${customTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5) : 
-                      new Date(new Date(`1970-01-01T${selectedTime}`).getTime() + 45 * 60000).toTimeString().substring(0, 5),
-                    type: "Video",
-                    status: "Confirmed",
-                    location: "Secure Video Call",
-                    relatedTo: "General consultation",
-                    notes: "Newly booked session",
-                  };
+              {availableTimes.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {availableTimes.map((time) => (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? "default" : "outline"}
+                        className="py-2"
+                        onClick={() => {
+                          setSelectedTime(time);
+                          // When a time is selected, related slots will be calculated automatically
+                        }}
+                      >
+                        {time}
+                      </Button>
+                    ))}
+                  </div>
                   
-                  setSessions([...sessions, newSession]);
-                  setIsBookingModalOpen(false);
-                  toast.success(`Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${customTime || selectedTime}`);
+                  {/* Show related time slots when a time is selected */}
+                  {/* {selectedTime && relatedTimeSlots.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="font-bold text-slate-800 mb-3">Related Time Slots</h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {relatedTimeSlots.map((time) => (
+                          <Button
+                            key={`related-${time}`}
+                            variant={selectedTime === time ? "default" : "outline"}
+                            className="py-2"
+                            onClick={() => setSelectedTime(time)}
+                          >
+                            {time}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )} */}
                   
-                  // Optionally navigate to booking confirmation
-                  // navigate("/booking-confirmation");
-                }}
-              >
-                Confirm
-              </Button>
+                  <div className="flex gap-3 mt-6">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => setIsBookingModalOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                      onClick={async () => {
+                        // Check if a time has been selected
+                        if (!selectedTime) {
+                          toast.error("Please select a time for your session");
+                          return;
+                        }
+                        
+                        // Create session via API
+                        try {
+                          const sessionData = {
+                            bookingId: bookingData?.bookingId || null,  // Include bookingId if available
+                            date: format(selectedDate, 'yyyy-MM-dd'),
+                            time: selectedTime,
+                            type: "1-on-1",  // Changed to match expected format
+                            status: "scheduled",
+                            notes: "Newly booked session",
+                            relatedTo: "General consultation",
+                            location: "Secure Video Call"
+                          };
+                                                  
+                          const response: any = await createSession(sessionData);
+                                                  
+                          if (response.data?.success) {
+                            const newSession = response.data.data.session;
+                                                    
+                            // Update local sessions array
+                            setSessions([...sessions, newSession]);
+                            setIsBookingModalOpen(false);
+                            toast.success(`Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`);
+                          } else {
+                            toast.error('Failed to book session');
+                          }
+                        } catch (error) {
+                          console.error('Error creating session:', error);
+                          toast.error('Failed to book session');
+                        }
+                        
+                        // Optionally navigate to booking confirmation
+                        // navigate("/booking-confirmation");
+                      }}
+                      disabled={!selectedTime}
+                    >
+                      Confirm
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4">
+                    <Calendar className="h-8 w-8 text-primary/60" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-red-500">
+                      Not Available
+                    </h3>
+                    <p className="text-slate-500">
+                      {loading ? "Loading availability..." : `No available times for ${format(selectedDate, "MMM d, yyyy")}`}
+                    </p>
+                  </div>
+                  <div className="mt-6">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setIsBookingModalOpen(false)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
