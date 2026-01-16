@@ -11,7 +11,8 @@ import {
   Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { getBookingById, updateBookingStatus } from "@/lib/api";
+import { getBookingByIdAsync, updateBookingAsync } from '@/store/slices/bookingsSlice';
+import { useAppDispatch, useAppSelector } from '@/store';
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -19,6 +20,8 @@ export default function BookingConfirmationPage() {
   const location = useLocation();
   const bookingData = location.state;
   const [bookingDetails, setBookingDetails] = useState(null);
+  const dispatch = useAppDispatch();
+  const { currentBooking } = useAppSelector(state => state.bookings);
   
   // Extract booking details
   const therapist = bookingData?.therapist || {
@@ -39,14 +42,14 @@ export default function BookingConfirmationPage() {
     if (bookingData?.bookingId) {
       const fetchBookingDetails = async () => {
         try {
-          const response: any = await getBookingById(bookingData.bookingId);
-          if (response.data && response.data.success) {
-            setBookingDetails(response.data.data.booking);
+          const result = await dispatch(getBookingByIdAsync(bookingData.bookingId));
+          if (getBookingByIdAsync.fulfilled.match(result)) {
+            setBookingDetails(result.payload);
             
             // Optionally update booking status to confirmed
-            const booking = response.data.data.booking;
+            const booking = result.payload;
             if (booking && booking.status !== 'confirmed') {
-              await updateBookingStatus(booking._id, 'confirmed');
+              await dispatch(updateBookingAsync({ id: booking._id, bookingData: { status: 'confirmed' } }));
               toast.success('Booking status updated to confirmed');
             }
           }

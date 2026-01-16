@@ -8,6 +8,8 @@ import subscriptionReducer from './slices/subscriptionSlice';
 // import authReducer from './authSlice';
 import serviceReducer from './slices/serviceSlice.ts';
 import bookingsReducer from './slices/bookingsSlice';
+import sessionReducer from './slices/sessionSlice';
+import paymentReducer from './slices/paymentSlice';
 
 // Redux Persist config
 const persistConfig = {
@@ -25,6 +27,8 @@ export const store = configureStore({
     subscriptions: subscriptionReducer,
     services: serviceReducer,
     bookings: bookingsReducer,
+    sessions: sessionReducer,
+    payment: paymentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

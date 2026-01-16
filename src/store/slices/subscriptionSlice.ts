@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getSubscriptionPlans } from '../../lib/api';
+import { getSubscriptionPlans, getUserSubscriptions } from '../../lib/api';
 
 // Define TypeScript interfaces
 export interface SubscriptionPlan {
@@ -18,8 +18,27 @@ export interface SubscriptionPlan {
   popular?: boolean;
 }
 
+// Define User Subscription interface
+export interface UserSubscription {
+  _id?: string;
+  id?: string;
+  userId: string;
+  planId: string;
+  plan: SubscriptionPlan;
+  status: string;
+  purchasedAt: string;
+  end: string;
+  remainingSessions?: number;
+  name?: string;
+  description?: string;
+  price?: number;
+  duration?: string;
+}
+
 interface SubscriptionState {
   plans: SubscriptionPlan[];
+  userSubscriptions: UserSubscription[];
+  activePlan: UserSubscription | null;
   loading: boolean;
   error: string | null;
 }
@@ -37,8 +56,26 @@ export const fetchSubscriptionPlans = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch user subscriptions
+export const fetchUserSubscriptions = createAsyncThunk(
+  'subscriptions/fetchUserSubscriptions',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response: any = await getUserSubscriptions();
+      return response.data.data.subscriptions;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch user subscriptions'
+      );
+    }
+  }
+);
+
+
 const initialState: SubscriptionState = {
   plans: [],
+  userSubscriptions: [],
+  activePlan: null,
   loading: false,
   error: null,
 };
@@ -49,6 +86,25 @@ const subscriptionSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    clearUserSubscriptions: (state) => {
+      state.userSubscriptions = [];
+      state.activePlan = null;
+    },
+    setActivePlan: (state, action) => {
+      state.activePlan = action.payload;
+    },
+    updateUserSubscription: (state, action) => {
+      const updatedSub = action.payload;
+      const existingIndex = state.userSubscriptions.findIndex(sub => sub._id === updatedSub._id);
+      if (existingIndex !== -1) {
+        state.userSubscriptions[existingIndex] = updatedSub;
+        if (updatedSub.status === 'active') {
+          state.activePlan = updatedSub;
+        } else if (state.activePlan?._id === updatedSub._id && updatedSub.status !== 'active') {
+          state.activePlan = null;
+        }
+      }
     },
   },
   extraReducers: (builder) => {
@@ -83,6 +139,22 @@ const subscriptionSlice = createSlice({
         }));
       })
       .addCase(fetchSubscriptionPlans.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch user subscriptions
+      .addCase(fetchUserSubscriptions.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserSubscriptions.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userSubscriptions = action.payload;
+        // Set the active plan if any exists
+        const activeSub = action.payload.find((sub: UserSubscription) => sub.status === 'active');
+        state.activePlan = activeSub || null;
+      })
+      .addCase(fetchUserSubscriptions.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

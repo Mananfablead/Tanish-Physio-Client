@@ -15,7 +15,7 @@ const api = axios.create({
 // Request interceptor to add token to headers
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVlMzNjNWMzYWI2MGI4NmUxMDJjMDAiLCJyb2xlIjoicGF0aWVudCIsImlhdCI6MTc2ODUzNzI3MiwiZXhwIjoxNzY4NjIzNjcyfQ.eSXc25yrKdFnVapjSBDAtQLjDcH8HYtKUW0oVqHTWiM';
+    const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -66,9 +66,8 @@ export const getActiveQuestionnaire = () => {
 };
 
 export const submitQuestionnaireResponse = (data: { questionnaireId: string; responses: { questionId: string; answer: any }[] }) => {
-  return api.post('/questionnaires/submit', data);
-};
-
+  return api.post('/questionnaires/submit', data)
+}
 // Booking API functions
 export const createBooking = (bookingData: any) => {
   return api.post('/bookings', bookingData);
@@ -148,6 +147,16 @@ export const updateSession = (id: string, sessionData: any) => {
 export const deleteSession = (id: string) => {
   return api.delete(`/sessions/${id}`);
 };
+
+// User payment and subscription related functions
+export const getUserPayments = () => {
+  return api.get('/payments/user');
+};
+
+export const getUserSubscriptions = () => {
+  return api.get('/subscriptions/user');
+};
+
 
 // Additional session related functions
 export const getSessionsByUserId = (userId: string) => {
