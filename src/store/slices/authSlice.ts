@@ -219,11 +219,27 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
-        state.error = action.payload as string;
-        state.isAuthenticated = false;
-        // Clear invalid token
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        const errorMessage = action.payload as string;
+        state.error = errorMessage;
+
+        // Check if the error is due to inactive account
+        if (
+          errorMessage &&
+          (errorMessage.includes("Account is not active") ||
+            errorMessage.includes("not active"))
+        ) {
+          // Clear auth data for inactive accounts
+          state.isAuthenticated = false;
+          state.user = null;
+          state.token = null;
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+        } else {
+          state.isAuthenticated = false;
+          // Clear invalid token
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+        }
       })
       // Forgot password cases
       .addCase(forgotPassword.pending, (state) => {
