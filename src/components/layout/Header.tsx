@@ -1,9 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { 
-  Menu, 
-  Activity, 
+import {
+  Menu,
+  Activity,
   Users,
   ArrowRight,
   LayoutDashboard,
@@ -14,7 +14,7 @@ import {
   LogOut
 } from "lucide-react";
 import { useState } from "react";
-import { 
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -36,11 +36,11 @@ const navLinks = [
 ];
 
 export function Header() {
-  
+
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  
+
   // Get user from Redux store
   const user = useSelector(selectCurrentUser);
   const isAuthenticated = !!user;
@@ -54,14 +54,14 @@ export function Header() {
     // Refresh the page to clear any remaining state
     window.location.reload();
   };
-
+  console.log("profile picture", user)
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-5">
-          <img 
-            src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png" 
-            alt="Tanish Physio Logo" 
+          <img
+            src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
+            alt="Tanish Physio Logo"
             className="h-10 w-auto object-contain"
           />
         </Link>
@@ -86,10 +86,10 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="relative h-8 rounded-full flex items-center gap-2">
-                  {user?.image ? (
-                    <img 
-                      src={user.image} 
-                      alt={user.name || 'User'} 
+                  {user?.profilePicture ? (
+                    <img
+                      src={user?.profilePicture || "http://localhost:5000/uploads/profile-pictures/profile-1768805561664-504464305.jpg"}
+                      alt={user.name || "User"}
                       className="h-8 w-8 rounded-full object-cover"
                     />
                   ) : (
@@ -97,6 +97,7 @@ export function Header() {
                       <User className="h-4 w-4" />
                     </div>
                   )}
+
                   <span className="hidden md:inline text-sm font-medium truncate max-w-[100px]">{user?.name || user?.email?.split('@')[0]}</span>
                 </Button>
               </DropdownMenuTrigger>
@@ -111,8 +112,8 @@ export function Header() {
                     <span>Profile</span>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="p-2 cursor-pointer" 
+                <DropdownMenuItem
+                  className="p-2 cursor-pointer"
                   onClick={handleLogout}
                 >
                   <div className="flex items-center gap-2">
@@ -126,9 +127,9 @@ export function Header() {
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="hidden md:flex"
                     onClick={() => navigate('/login')}
                   >
@@ -182,8 +183,8 @@ export function Header() {
                   {isAuthenticated ? (
                     <>
                       <div className="mb-3">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full mb-2"
                           onClick={() => {
                             setOpen(false);
@@ -193,8 +194,8 @@ export function Header() {
                           <User className="h-4 w-4 mr-2" />
                           Profile
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full"
                           onClick={() => {
                             setOpen(false);
@@ -208,8 +209,8 @@ export function Header() {
                     </>
                   ) : (
                     <>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full mb-3"
                         onClick={() => {
                           setOpen(false);

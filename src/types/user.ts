@@ -5,5 +5,6 @@ export interface User {
   role?: string;
   phone?: string;
   image?: string;
+  profilePicture?: string; // Add profilePicture field from backend
   healthProfile?: any;
 }

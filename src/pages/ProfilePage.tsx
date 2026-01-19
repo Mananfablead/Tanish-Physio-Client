@@ -37,7 +37,7 @@ import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
 import { fetchUserPayments } from "@/store/slices/paymentSlice";
 import { fetchUpcomingSessions } from "@/store/slices/sessionSlice";
 import { getUpcomingSessions } from "@/lib/api";
-import { updateProfile, setCredentials } from "@/store/slices/authSlice";
+import { updateProfile, setCredentials, fetchProfile } from '@/store/slices/authSlice';
 import api from "@/lib/api";
 
 // Define types for API responses
@@ -92,6 +92,7 @@ export default function ProfilePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   console.log("previewImage", previewImage)
+  console.log("Current user", user)
   // Get data from Redux store
   const { userSubscriptions, loading: subsLoading, error: subsError } = useSelector((state: any) => state.subscriptions);
   const { userPayments, loading: paymentsLoading, error: paymentsError } = useSelector((state: any) => state.payment);
@@ -116,6 +117,8 @@ export default function ProfilePage() {
     dispatch(fetchUserSubscriptions());
     dispatch(fetchUserPayments());
     dispatch(fetchUpcomingSessions());
+    // Also fetch the user profile to ensure profile picture is loaded
+    dispatch(fetchProfile());
   }, [dispatch]);
 
   // Define sections for sidebar navigation
@@ -185,7 +188,7 @@ export default function ProfilePage() {
     setPreviewImage(localPreview);
 
     const formData = new FormData();
-    formData.append("profileImage", file); // backend field name
+    formData.append("profilePicture", file); // backend field name - matches your backend
 
     try {
       const response: any = await api.put("/auth/profile", formData, {
@@ -193,9 +196,10 @@ export default function ProfilePage() {
       });
 
       const imageUrl =
+        response.data?.data?.profilePicture ||
         response.data?.data?.imageUrl ||
         response.data?.data?.image ||
-        response.data?.imageUrl;
+        response.data?.profilePicture;
 
       const updatedUser = {
         ...user,
@@ -255,7 +259,7 @@ export default function ProfilePage() {
               <div className="relative">
                 <Avatar className="h-40 w-40 rounded-3xl border-4 border-slate-800 shadow-2xl relative overflow-hidden">
                   <AvatarImage
-                    src={previewImage || user?.image}
+                    src={previewImage || user?.profilePicture}
                     alt={user?.name}
                     className="object-cover"
                   />
