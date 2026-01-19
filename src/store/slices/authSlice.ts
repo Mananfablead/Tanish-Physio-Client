@@ -160,6 +160,24 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+// Async thunk for updating user profile
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (profileData: Partial<User>, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/auth/profile', profileData);
+      const apiResponse = response.data as ApiResponse<User>;
+      // Update user in localStorage
+      localStorage.setItem('user', JSON.stringify(apiResponse.data));
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update profile'
+      );
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -279,6 +297,14 @@ const authSlice = createSlice({
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Update profile cases
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },

@@ -37,6 +37,8 @@ import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
 import { fetchUserPayments } from "@/store/slices/paymentSlice";
 import { fetchUpcomingSessions } from "@/store/slices/sessionSlice";
 import { getUpcomingSessions } from "@/lib/api";
+import { updateProfile, setCredentials } from "@/store/slices/authSlice";
+import api from "@/lib/api";
 
 // Define types for API responses
 interface ApiResponse<T> {
@@ -88,7 +90,8 @@ export default function ProfilePage() {
 
   const [selectedSection, setSelectedSection] = useState<string>('personal');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  console.log("previewImage", previewImage)
   // Get data from Redux store
   const { userSubscriptions, loading: subsLoading, error: subsError } = useSelector((state: any) => state.subscriptions);
   const { userPayments, loading: paymentsLoading, error: paymentsError } = useSelector((state: any) => state.payment);
@@ -104,7 +107,7 @@ export default function ProfilePage() {
   const [planHistory, setPlanHistory] = useState<any[]>([]);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const [intake, setIntake] = useState<any | null>(null);
-  
+
   // Get next session from upcoming sessions
   const nextSession = upcomingSessions && upcomingSessions.length > 0 ? upcomingSessions[0] : null;
 
@@ -166,6 +169,74 @@ export default function ProfilePage() {
     // Implement renew plan functionality
   };
 
+  const handleImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      console.error("Please select a valid image");
+      return;
+    }
+
+    // ✅ INSTANT PREVIEW
+    const localPreview = URL.createObjectURL(file);
+    setPreviewImage(localPreview);
+
+    const formData = new FormData();
+    formData.append("profileImage", file); // backend field name
+
+    try {
+      const response: any = await api.put("/auth/profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const imageUrl =
+        response.data?.data?.imageUrl ||
+        response.data?.data?.image ||
+        response.data?.imageUrl;
+
+      const updatedUser = {
+        ...user,
+        image: imageUrl,
+      };
+
+      dispatch(setCredentials({ user: updatedUser, token: user?.id || "" }));
+
+      // optional: preview ko real image se replace
+      setPreviewImage(imageUrl);
+
+      console.log("Profile image updated successfully");
+    } catch (error) {
+      console.error("Failed to update profile image", error);
+    }
+  };
+
+
+  const handleSaveChanges = async () => {
+    try {
+      // Get form data
+      const nameInput = document.querySelector('#name') as HTMLInputElement;
+      const phoneInput = document.querySelector('#phone') as HTMLInputElement;
+      const locationInput = document.querySelector('#location') as HTMLInputElement;
+
+      const profileData = {
+        name: nameInput?.value || user?.name,
+        phone: phoneInput?.value || user?.phone,
+        // Note: location field doesn't exist in User interface, so we'll skip it
+        // If backend supports other fields, add them here
+      };
+
+      await dispatch(updateProfile(profileData));
+
+      // Show success message
+      console.log("Profile updated successfully");
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+    }
+  };
+
 
   return (
     <Layout>
@@ -184,10 +255,11 @@ export default function ProfilePage() {
               <div className="relative">
                 <Avatar className="h-40 w-40 rounded-3xl border-4 border-slate-800 shadow-2xl relative overflow-hidden">
                   <AvatarImage
-                    src={user?.image}
+                    src={previewImage || user?.image}
                     alt={user?.name}
                     className="object-cover"
                   />
+
                   <AvatarFallback className="text-5xl font-black bg-slate-800 text-primary">
                     {user?.name?.[0] || "U"}
                   </AvatarFallback>
@@ -195,9 +267,17 @@ export default function ProfilePage() {
                 <Button
                   size="icon"
                   className="absolute -bottom-2 -right-2 h-12 w-12 rounded-2xl shadow-2xl bg-primary hover:bg-primary/90 text-white border-4 border-slate-900"
+                  onClick={() => document.getElementById('profile-image-upload')?.click()}
                 >
                   <Camera className="h-6 w-6" />
                 </Button>
+                <input
+                  type="file"
+                  id="profile-image-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
               </div>
             </div>
 
@@ -213,15 +293,12 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-white font-bold">
                   <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
-                    <Mail className="h-4 w-4 text-primary" /> {user?.email}
+                    <Mail className="h-4 w-4 text-white" /> {user?.email}
                   </p>
                   <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
-                    <Phone className="h-4 w-4 text-primary" /> +1 (555) 000-0000
+                    <Phone className="h-4 w-4 text-white" /> {user?.phone}
                   </p>
-                  <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
-                    <MapPin className="h-4 w-4 text-primary" /> San Francisco,
-                    CA
-                  </p>
+
                 </div>
               </div>
             </div>
@@ -476,43 +553,43 @@ export default function ProfilePage() {
                 {selectedSection === "upcoming" && (
                   <>
                     {upcomingSessions.length > 0 && (
-  <RightPanelCard title="Assigned Therapist">
-    <div className="space-y-4">
-      {upcomingSessions.map((session) => (
-        <div
-          key={session.id}
-          className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
-        >
-          {/* Avatar */}
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-            <User className="h-6 w-6 text-slate-400" />
-          </div>
+                      <RightPanelCard title="Assigned Therapist">
+                        <div className="space-y-4">
+                          {upcomingSessions.map((session) => (
+                            <div
+                              key={session.id}
+                              className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
+                            >
+                              {/* Avatar */}
+                              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                                <User className="h-6 w-6 text-slate-400" />
+                              </div>
 
-          {/* Therapist + Session Info */}
-          <div className="flex-1">
-            <h4 className="font-black text-slate-900">
-              {session.therapistName}
-            </h4>
-            <p className="text-sm text-slate-500 font-medium">
-              {new Date(session.date).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })} 
-              • {session.startTime} - {session.endTime}
-            </p>
-          </div>
+                              {/* Therapist + Session Info */}
+                              <div className="flex-1">
+                                <h4 className="font-black text-slate-900">
+                                  {session.therapistName}
+                                </h4>
+                                <p className="text-sm text-slate-500 font-medium">
+                                  {new Date(session.date).toLocaleDateString("en-IN", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                  • {session.startTime} - {session.endTime}
+                                </p>
+                              </div>
 
-          {/* Status */}
-          <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
-            {session.status}
-          </span>
-        </div>
-      ))}
-    </div>
-  </RightPanelCard>
-)}
-                    
+                              {/* Status */}
+                              <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
+                                {session.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </RightPanelCard>
+                    )}
+
                     {nextSession ? (
                       <RightPanelCard
                         title="Upcoming Session"
@@ -531,7 +608,7 @@ export default function ProfilePage() {
                             </Button>
                             <Link to="/video-call" className="flex-1">
                               <Button className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black">
-                                <Play className="h-5 w-5 mr-2 fill-white" /> 
+                                <Play className="h-5 w-5 mr-2 fill-white" />
                                 Join Session
                               </Button>
                             </Link>
@@ -586,409 +663,414 @@ export default function ProfilePage() {
                       <RightPanelCard title="Upcoming Session">
                         <div className="py-8 text-center space-y-4">
                           <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                        <Calendar className="h-8 w-8 text-slate-300" />
-                      </div>
-                      <div className="space-y-1">
-                        <h3 className="text-xl font-black text-slate-900">
-                          No Upcoming Sessions
-                        </h3>
-                        <p className="text-slate-500 font-medium max-w-xs mx-auto">
-                          You don't have any sessions scheduled at the
-                          moment.
-                        </p>
-                      </div>
-                      <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
-                        <Link to="/">Book a Session</Link>
-                      </Button>
-                    </div>
-                  </RightPanelCard>
-                )}
+                            <Calendar className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900">
+                              No Upcoming Sessions
+                            </h3>
+                            <p className="text-slate-500 font-medium max-w-xs mx-auto">
+                              You don't have any sessions scheduled at the
+                              moment.
+                            </p>
+                          </div>
+                          <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
+                            <Link to="/">Book a Session</Link>
+                          </Button>
+                        </div>
+                      </RightPanelCard>
+                    )}
                   </>
                 )}
 
                 {selectedSection === "sessionHistory" && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                        Session History
-                      </h2>
-                      <p className="text-slate-500 font-medium text-sm">
-                        Your past consultations and recorded sessions
-                      </p>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                          Session History
+                        </h2>
+                        <p className="text-slate-500 font-medium text-sm">
+                          Your past consultations and recorded sessions
+                        </p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="px-4 py-1.5 rounded-full border-slate-200 text-slate-600 font-bold bg-white"
+                      >
+                        {sessionHistory?.length || 0} Sessions
+                      </Badge>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="px-4 py-1.5 rounded-full border-slate-200 text-slate-600 font-bold bg-white"
-                    >
-                      {sessionHistory?.length || 0} Sessions
-                    </Badge>
-                  </div>
 
-                  {sessionHistory && sessionHistory.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6">
-                      {sessionHistory.map((s, idx) => (
-                        <RightPanelCard
-                          key={idx}
-                          title={s.relatedTo || "General Consultation"}
-                          badge={
-                            <Badge className="bg-success/10 hover:text-white text-success border-none font-bold">
-                              COMPLETED
-                            </Badge>
-                          }
-                          footer={
-                            <div className="flex gap-3">
-                              <Button
-                                variant="ghost"
-                                className="h-11 rounded-xl font-bold text-primary hover:text-primary hover:bg-primary/5"
-                              >
-                                <FileText className="h-4 w-4 mr-2" /> Summary
-                              </Button>
-                              <Button
-                                asChild
-                                className="h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-6"
-                              >
-                                <Link to={s.recordingUrl || "#"}>
-                                  Watch Recording
-                                </Link>
-                              </Button>
-                            </div>
-                          }
-                        >
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <InfoBlock
-                              label="Therapist"
-                              value={s.therapist?.name}
-                              icon={User}
-                              iconColor="text-primary"
-                            />
-                            <InfoBlock
-                              label="Date & Duration"
-                              value={new Date(s.start).toLocaleDateString(
-                                undefined,
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                }
-                              )}
-                              subValue={`${s.duration} session`}
-                              icon={Clock}
-                              iconColor="text-accent"
-                            />
-                            <div className="md:col-span-2">
+                    {sessionHistory && sessionHistory.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-6">
+                        {sessionHistory.map((s, idx) => (
+                          <RightPanelCard
+                            key={idx}
+                            title={s.relatedTo || "General Consultation"}
+                            badge={
+                              <Badge className="bg-success/10 hover:text-white text-success border-none font-bold">
+                                COMPLETED
+                              </Badge>
+                            }
+                            footer={
+                              <div className="flex gap-3">
+                                <Button
+                                  variant="ghost"
+                                  className="h-11 rounded-xl font-bold text-primary hover:text-primary hover:bg-primary/5"
+                                >
+                                  <FileText className="h-4 w-4 mr-2" /> Summary
+                                </Button>
+                                <Button
+                                  asChild
+                                  className="h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-6"
+                                >
+                                  <Link to={s.recordingUrl || "#"}>
+                                    Watch Recording
+                                  </Link>
+                                </Button>
+                              </div>
+                            }
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <InfoBlock
-                                label="Session Notes"
-                                value={s.notes}
-                                icon={FileText}
-                                iconColor="text-slate-400"
+                                label="Therapist"
+                                value={s.therapist?.name}
+                                icon={User}
+                                iconColor="text-primary"
+                              />
+                              <InfoBlock
+                                label="Date & Duration"
+                                value={new Date(s.start).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  }
+                                )}
+                                subValue={`${s.duration} session`}
+                                icon={Clock}
+                                iconColor="text-accent"
+                              />
+                              <div className="md:col-span-2">
+                                <InfoBlock
+                                  label="Session Notes"
+                                  value={s.notes}
+                                  icon={FileText}
+                                  iconColor="text-slate-400"
+                                />
+                              </div>
+                            </div>
+                          </RightPanelCard>
+                        ))}
+                      </div>
+                    ) : (
+                      <RightPanelCard title="Session History">
+                        <div className="py-12 text-center space-y-4">
+                          <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                            <Play className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900">
+                              No Session History
+                            </h3>
+                            <p className="text-slate-500 font-medium">
+                              You haven't completed any sessions yet.
+                            </p>
+                          </div>
+                          <Button
+                            asChild
+                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
+                          >
+                            <Link to="/therapists">Book a Session</Link>
+                          </Button>
+                        </div>
+                      </RightPanelCard>
+                    )}
+                  </div>
+                )}
+
+                {selectedSection === "subscriptionHistory" && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                          Subscription History
+                        </h2>
+                        <p className="text-slate-500 font-medium text-sm">
+                          History of your plan purchases and renewals
+                        </p>
+                      </div>
+                    </div>
+
+                    {userSubscriptions && userSubscriptions.length > 0 ? (
+                      <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Plan Name
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Purchase Date
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
+                                  Amount
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
+                                  Status
+                                </th>
+                              </tr>
+                            </thead>
+
+                            <tbody className="divide-y divide-slate-100">
+                              {userSubscriptions.map((p) => (
+                                <tr
+                                  key={p._id}
+                                  className="hover:bg-slate-50/50 transition-colors"
+                                >
+                                  {/* Plan Name */}
+                                  <td className="px-6 py-4">
+                                    <div className="font-bold text-slate-900">
+                                      {p.planName}
+                                    </div>
+                                    <div className="text-xs text-slate-400">
+                                      via {p.paymentGateway}
+                                    </div>
+                                  </td>
+
+                                  {/* Purchase Date */}
+                                  <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                    {new Date(p.createdAt).toLocaleDateString("en-IN", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                  </td>
+
+                                  {/* Amount */}
+                                  <td className="px-6 py-4 text-right">
+                                    <span className="font-black text-slate-900">
+                                      ₹{p.amount}
+                                    </span>
+                                  </td>
+
+                                  {/* Status */}
+                                  <td className="px-6 py-4 text-center">
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-black uppercase
+                    ${p.status === "verified"
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-yellow-100 text-yellow-700"
+                                        }`}
+                                    >
+                                      {p.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+                    ) : (
+                      <RightPanelCard title="Subscription History">
+                        <div className="py-12 text-center space-y-4">
+                          <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                            <FileText className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900">
+                              No Subscription History
+                            </h3>
+                            <p className="text-slate-500 font-medium">
+                              You haven't purchased any plans yet.
+                            </p>
+                          </div>
+                          <Button
+                            asChild
+                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
+                          >
+                            <Link to="/plans">Explore Our Plans</Link>
+                          </Button>
+                        </div>
+                      </RightPanelCard>
+                    )}
+
+                  </div>
+                )}
+              </div>
+
+              {/* Show only when user selects Personal Info or Medical History */}
+              {selectedSection === "personal" && (
+                <div className="space-y-8">
+                  <Tabs defaultValue="personal" className="w-full">
+                    <TabsList className="grid w-full grid-cols-1 h-14 p-1.5 bg-slate-200/50 backdrop-blur-md rounded-2xl mb-8 border border-slate-200 shadow-sm">
+                      <TabsTrigger
+                        value="personal"
+                        className="rounded-xl font-black text-sm transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md"
+                      >
+                        Personal Info
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="personal">
+                      <RightPanelCard
+                        title="Personal Details"
+                        footer={
+                          <Button
+                            className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black transition-all"
+                            onClick={handleSaveChanges}
+                          >
+                            <Save className="h-5 w-5 mr-2" /> Save Changes
+                          </Button>
+                        }
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Full Name */}
+                          <div className="space-y-2.5">
+                            <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                              Full Name
+                            </Label>
+                            <div className="relative">
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                              <Input
+                                id="name"
+                                defaultValue={user?.name ?? "User"}
+                                className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold"
                               />
                             </div>
                           </div>
-                        </RightPanelCard>
-                      ))}
-                    </div>
-                  ) : (
-                    <RightPanelCard title="Session History">
-                      <div className="py-12 text-center space-y-4">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                          <Play className="h-8 w-8 text-slate-300" />
+
+                          {/* Email */}
+                          <div className="space-y-2.5">
+                            <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                              Email Address
+                            </Label>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                              <Input
+                                defaultValue={user?.email}
+                                disabled
+                                className="h-12 pl-10 rounded-xl bg-slate-50 border-slate-200 font-bold text-slate-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Phone */}
+                          <div className="space-y-2.5">
+                            <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                              Phone Number
+                            </Label>
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                              <Input
+                                id="phone"
+                                defaultValue={user?.phone ?? ""}
+                                className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Location */}
+                          <div className="space-y-2.5">
+                            <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                              Location
+                            </Label>
+                            <div className="relative">
+                              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                              <Input
+                                placeholder="Enter your location"
+                                className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <h3 className="text-xl font-black text-slate-900">
-                            No Session History
-                          </h3>
-                          <p className="text-slate-500 font-medium">
-                            You haven't completed any sessions yet.
-                          </p>
-                        </div>
-                        <Button
-                          asChild
-                          className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                        >
-                          <Link to="/therapists">Book a Session</Link>
-                        </Button>
-                      </div>
-                    </RightPanelCard>
-                  )}
+                      </RightPanelCard>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               )}
 
-              {selectedSection === "subscriptionHistory" && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                        Subscription History
-                      </h2>
-                      <p className="text-slate-500 font-medium text-sm">
-                        History of your plan purchases and renewals
-                      </p>
-                    </div>
-                  </div>
-
-                  {userSubscriptions && userSubscriptions.length > 0 ? (
-                    <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                Plan Name
-                              </th>
-                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                Purchase Date
-                              </th>
-                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
-                                Amount
-                              </th>
-                              <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
-                                Status
-                              </th>
-                            </tr>
-                          </thead>
-
-                          <tbody className="divide-y divide-slate-100">
-                            {userSubscriptions.map((p) => (
-                              <tr
-                                key={p._id}
-                                className="hover:bg-slate-50/50 transition-colors"
-                              >
-                                {/* Plan Name */}
-                                <td className="px-6 py-4">
-                                  <div className="font-bold text-slate-900">
-                                    {p.planName}
-                                  </div>
-                                  <div className="text-xs text-slate-400">
-                                    via {p.paymentGateway}
-                                  </div>
-                                </td>
-
-                                {/* Purchase Date */}
-                                <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                                  {new Date(p.createdAt).toLocaleDateString("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
-                                </td>
-
-                                {/* Amount */}
-                                <td className="px-6 py-4 text-right">
-                                  <span className="font-black text-slate-900">
-                                    ₹{p.amount}
-                                  </span>
-                                </td>
-
-                                {/* Status */}
-                                <td className="px-6 py-4 text-center">
-                                  <span
-                                    className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                    ${p.status === "verified"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-yellow-100 text-yellow-700"
-                                      }`}
-                                  >
-                                    {p.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </Card>
-                  ) : (
-                    <RightPanelCard title="Subscription History">
-                      <div className="py-12 text-center space-y-4">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                          <FileText className="h-8 w-8 text-slate-300" />
-                        </div>
-                        <div className="space-y-1">
-                          <h3 className="text-xl font-black text-slate-900">
-                            No Subscription History
-                          </h3>
-                          <p className="text-slate-500 font-medium">
-                            You haven't purchased any plans yet.
-                          </p>
-                        </div>
-                        <Button
-                          asChild
-                          className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                        >
-                          <Link to="/plans">Explore Our Plans</Link>
-                        </Button>
-                      </div>
-                    </RightPanelCard>
-                  )}
-
-                </div>
-              )}
             </div>
-
-            {/* Show only when user selects Personal Info or Medical History */}
-            {selectedSection === "personal" && (
-              <div className="space-y-8">
-                <Tabs defaultValue="personal" className="w-full">
-                  <TabsList className="grid w-full grid-cols-1 h-14 p-1.5 bg-slate-200/50 backdrop-blur-md rounded-2xl mb-8 border border-slate-200 shadow-sm">
-                    <TabsTrigger
-                      value="personal"
-                      className="rounded-xl font-black text-sm transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md"
-                    >
-                      Personal Info
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="personal">
-                    <RightPanelCard
-                      title="Personal Details"
-                      footer={
-                        <Button className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black transition-all">
-                          <Save className="h-5 w-5 mr-2" /> Save Changes
-                        </Button>
-                      }
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Full Name */}
-                        <div className="space-y-2.5">
-                          <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                            Full Name
-                          </Label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <Input
-                              defaultValue={user?.name ?? "User"}
-                              className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Email */}
-                        <div className="space-y-2.5">
-                          <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                            Email Address
-                          </Label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <Input
-                              defaultValue={user?.email}
-                              disabled
-                              className="h-12 pl-10 rounded-xl bg-slate-50 border-slate-200 font-bold text-slate-500"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Phone */}
-                        <div className="space-y-2.5">
-                          <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                            Phone Number
-                          </Label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <Input
-                              defaultValue={user?.phone ?? ""}
-                              className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Location */}
-                        <div className="space-y-2.5">
-                          <Label className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                            Location
-                          </Label>
-                          <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <Input
-                              placeholder="Enter your location"
-                              className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </RightPanelCard>
-                  </TabsContent>
-                </Tabs>
-              </div>
-            )}
-
           </div>
         </div>
       </div>
-    </div>
 
-      {/* Mobile Menu Overlay */ }
-  {
-    isMobileMenuOpen && (
-      <div className="fixed inset-0 z-[100] lg:hidden">
-        <div
-          className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-        <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl p-6 transition-transform transform animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                Profile Sections
-              </h3>
-              <p className="text-slate-500 font-medium text-xs uppercase tracking-widest mt-1">
-                Navigate your profile
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl bg-slate-100"
+      {/* Mobile Menu Overlay */}
+      {
+        isMobileMenuOpen && (
+          <div className="fixed inset-0 z-[100] lg:hidden">
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
               onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="space-y-3 pb-8">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => {
-                  setSelectedSection(section.id);
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${selectedSection === section.id
-                  ? "bg-primary/10 border-primary/20 shadow-inner"
-                  : "bg-slate-50 border-slate-100 hover:bg-white hover:border-primary/30"
-                  }`}
-              >
-                <div
-                  className={`p-2.5 rounded-xl ${selectedSection === section.id
-                    ? "bg-white shadow-sm"
-                    : "bg-white/50"
-                    }`}
-                >
-                  <section.icon className={`h-5 w-5 ${section.color}`} />
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl p-6 transition-transform transform animate-in slide-in-from-bottom duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    Profile Sections
+                  </h3>
+                  <p className="text-slate-500 font-medium text-xs uppercase tracking-widest mt-1">
+                    Navigate your profile
+                  </p>
                 </div>
-                <div className="text-left flex-1">
-                  <p
-                    className={`font-black text-sm ${selectedSection === section.id
-                      ? "text-primary"
-                      : "text-slate-700"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl bg-slate-100"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="space-y-3 pb-8">
+                {sections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      setSelectedSection(section.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${selectedSection === section.id
+                      ? "bg-primary/10 border-primary/20 shadow-inner"
+                      : "bg-slate-50 border-slate-100 hover:bg-white hover:border-primary/30"
                       }`}
                   >
-                    {section.label}
-                  </p>
-                  <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
-                    {section.sub}
-                  </p>
-                </div>
-                {selectedSection === section.id && (
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
+                    <div
+                      className={`p-2.5 rounded-xl ${selectedSection === section.id
+                        ? "bg-white shadow-sm"
+                        : "bg-white/50"
+                        }`}
+                    >
+                      <section.icon className={`h-5 w-5 ${section.color}`} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p
+                        className={`font-black text-sm ${selectedSection === section.id
+                          ? "text-primary"
+                          : "text-slate-700"
+                          }`}
+                      >
+                        {section.label}
+                      </p>
+                      <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
+                        {section.sub}
+                      </p>
+                    </div>
+                    {selectedSection === section.id && (
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    )
-  }
+        )
+      }
     </Layout >
   );
 }
