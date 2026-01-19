@@ -157,9 +157,9 @@ const questionnaireSlice = createSlice({
 export const { clearError, resetQuestionnaire, setQuestionnaireResponse } = questionnaireSlice.actions;
 
 // Selectors
-export const selectActiveQuestionnaire = (state: { questionnaires: { activeQuestionnaire: any; }; }) => state.questionnaires.activeQuestionnaire;
-export const selectQuestionnaireLoading = (state: { questionnaires: { loading: any; }; }) => state.questionnaires.loading;
-export const selectQuestionnaireError = (state: { questionnaires: { error: any; }; }) => state.questionnaires.error;
-export const selectQuestionnaireSubmitted = (state: { questionnaires: { submitted: any; }; }) => state.questionnaires.submitted;
+export const selectActiveQuestionnaire = (state: { questionnaires: QuestionnaireState }) => state.questionnaires.activeQuestionnaire;
+export const selectQuestionnaireLoading = (state: { questionnaires: QuestionnaireState }) => state.questionnaires.loading;
+export const selectQuestionnaireError = (state: { questionnaires: QuestionnaireState }) => state.questionnaires.error;
+export const selectQuestionnaireSubmitted = (state: { questionnaires: QuestionnaireState }) => state.questionnaires.submitted;
 
 export default questionnaireSlice.reducer;

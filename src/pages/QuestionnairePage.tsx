@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from 'react-redux';
-import { Question, QuestionType } from '@/store/slices/questionnaireSlice';
-import { useToast } from '@/hooks/use-toast';
+import { useDispatch, useSelector } from "react-redux";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { SkalaetonQuestion } from "@/components/SkalaetonQuestion";
 import { 
   CheckCircle, 
   Edit2, 
@@ -19,253 +18,35 @@ import {
   ArrowRight,
   Clock,
   User,
-  Stethoscope,
-  Heart,
-  Brain,
-  Eye,
-  Bone,
-  Syringe,
-  Droplets,
-  Waves,
-  Zap
+  Stethoscope
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  fetchActiveQuestionnaire,
-  submitQuestionnaireResponse,
-  selectActiveQuestionnaire,
-  selectQuestionnaireLoading,
-  selectQuestionnaireError,
-} from '@/store/slices/questionnaireSlice';
+import { fetchActiveQuestionnaire, selectActiveQuestionnaire, selectQuestionnaireLoading, selectQuestionnaireError, QuestionType } from "@/store/slices/questionnaireSlice";
+import { updateProfile } from "@/lib/api";
 
 interface QuestionnaireData {
-  [key: string]: any; // Dynamic response for any question
+  [key: string]: any; // Dynamic keys for question responses
 }
 
 const initialData: QuestionnaireData = {};
 
-// This will be populated from the backend questionnaire
-const bodyAreas = [];
-
-// This will be populated from the backend questionnaire
-const timeSlots = [];
-
-const stepTitles: { [key: number]: string } = {
-  1: "Patient Profile",
-  2: "Area of Concern",
-  3: "Condition History",
-  4: "Pain Severity",
-  5: "Injury Context",
-  6: "Session Format",
-  7: "Availability",
-};
-
-const getStepHelper = (step: number, data: QuestionnaireData) => {
-  return "Answer the question to continue";
-};
-
-interface StepWrapperProps {
-  stepNum: number;
-  title: string;
-  description: string;
-  children: React.ReactNode;
-  activeStep: number;
-  totalSteps: number;
-  onBack?: () => void;
-  onNext?: () => void;
-  isNextDisabled?: boolean;
-  nextLabel?: string;
-  showNext?: boolean;
-}
-
-interface DynamicQuestionComponentProps {
-  question: Question;
-  value: any;
-  onChange: (value: any) => void;
-}
-
-const DynamicQuestionComponent: React.FC<DynamicQuestionComponentProps> = ({ question, value, onChange }: DynamicQuestionComponentProps) => {
-  const renderQuestionField = () => {
-    // Use the type field from API response
-    const questionType = question.type;
-    const questionOptions = question.options || [];
-    
-    switch (questionType) {
-      case 'text':
-        return (
-          <Input
-            type="text"
-            placeholder="Enter your answer"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full p-3 border rounded-lg"
-          />
-        );
-      case 'mcq':
-        return (
-          <div className="space-y-3">
-            {questionOptions?.map((option) => (
-              <div 
-                key={option}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                  value === option
-                    ? 'border-primary bg-primary/5 shadow-sm'
-                    : 'border-slate-200 hover:border-primary/50 hover:bg-slate-50'
-                }`}
-                onClick={() => onChange(option)}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                    value === option
-                      ? 'border-primary bg-primary'
-                      : 'border-slate-300'
-                  }`}>
-                    {value === option && (
-                      <div className="h-2 w-2 rounded-full bg-white"></div>
-                    )}
-                  </div>
-                  <span className="text-base font-medium">{option}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-      case 'slider':
-        return (
-          <div className="space-y-4">
-            <Slider
-              value={[parseInt(value) || 5]}
-              onValueChange={([newValue]) => onChange(newValue)}
-              min={questionOptions && questionOptions.length > 0 ? parseInt(questionOptions[0]) || 1 : 1}
-              max={questionOptions && questionOptions.length > 1 ? parseInt(questionOptions[1]) || 10 : 10}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>{questionOptions?.[0] || '1'}</span>
-              <span className="font-bold">{value || 5}</span>
-              <span>{questionOptions?.[1] || '10'}</span>
-            </div>
-          </div>
-        );
-      case 'skalaeton':
-        return (
-          <div className="space-y-6">
-            <div className="flex flex-wrap gap-3">
-              {questionOptions?.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={`px-4 py-2 rounded-full border transition-all ${
-                    value === option
-                      ? 'bg-primary text-white border-primary shadow-md'
-                      : 'bg-white text-slate-700 border-slate-300 hover:border-primary hover:bg-primary/5'
-                  }`}
-                  onClick={() => onChange(option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <Input
-            type="text"
-            placeholder="Enter your answer"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full p-3 border rounded-lg"
-          />
-        );
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {renderQuestionField()}
-    </div>
-  );
-};
-
-const StepWrapper = ({ 
-  stepNum, 
-  title, 
-  description, 
-  children, 
-  activeStep, 
-  totalSteps,
-  onBack,
-  onNext,
-  isNextDisabled,
-  nextLabel = "Continue",
-  showNext = true
-}: StepWrapperProps) => {
-  if (stepNum !== activeStep) return null;
-
-  return (
-    <div role="region" aria-labelledby={`step-${stepNum}-title`} className="min-h-[50vh] lg:min-h-[65vh] flex lg:items-center items-start justify-center pt-6 lg:pt-0">
-      <Card className="w-full border rounded-2xl border-slate-500 shadow-sm ">
-        <CardContent className="p-4 lg:p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-10 w-10 rounded-lg flex items-center justify-center font-black text-lg bg-primary/10 text-primary">
-              {stepNum}
-            </div>
-            <div>
-              <h3 id={`step-${stepNum}-title`} className="font-black text-2xl text-slate-900 tracking-tight">{title}</h3>
-              <p className="text-sm text-slate-500 mt-1">{description}</p>
-            </div>
-          </div>
-
-          <div className="py-4 md:py-6 space-y-6">
-            {children}
-          </div>
-
-          <div className="mt-8 flex items-center justify-between gap-4">
-            {stepNum > 1 ? (
-              <Button variant="outline" onClick={onBack} className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all">Back</Button>
-            ) : (
-              <div />
-            )}
-
-            {showNext && (
-              <Button onClick={onNext} disabled={isNextDisabled} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
-                {nextLabel}
-                <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
 export default function QuestionnairePage() {
-  const dispatch: any = useDispatch(); // Temporary fix for async dispatch issue
-  const { toast } = useToast();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const pendingPlan = (location.state as any)?.planToActivate || null;
-
-  const { activeQuestionnaire, loading, error } = useSelector((state: any) => ({
-    activeQuestionnaire: selectActiveQuestionnaire(state),
-    loading: selectQuestionnaireLoading(state),
-    error: selectQuestionnaireError(state),
-  }));
+  
+  // Redux selectors
+  const activeQuestionnaire = useSelector(selectActiveQuestionnaire);
+  const isLoading = useSelector(selectQuestionnaireLoading);
+  const error = useSelector(selectQuestionnaireError);
 
   const [data, setData] = useState<QuestionnaireData>(initialData);
-  const [activeStep, setActiveStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [isReviewing, setIsReviewing] = useState(false);
   const [storedIntakeFound, setStoredIntakeFound] = useState(false);
   const [storedIntakeUpdatedAt, setStoredIntakeUpdatedAt] = useState<number | null>(null);
-  const [progressExpanded, setProgressExpanded] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  const filteredQuestions = activeQuestionnaire?.questions?.filter(q => q.active).sort((a, b) => a.order - b.order) || [];
-  const totalSteps = filteredQuestions.length || 1; // Use actual number of active questions from backend sorted by order
 
   const STORAGE_KEY_QUESTIONNAIRE = "qw_questionnaire";
   const STORAGE_KEY_PLAN = "qw_plan";
@@ -282,7 +63,9 @@ export default function QuestionnairePage() {
       const raw = sessionStorage.getItem(STORAGE_KEY_QUESTIONNAIRE);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.data) return parsed;
+      if (parsed && parsed.data) {
+        return parsed;
+      }
     } catch (e) {
       // ignore
     }
@@ -308,23 +91,15 @@ export default function QuestionnairePage() {
   };
 
   useEffect(() => {
+    // Fetch active questionnaire from API
+    dispatch(fetchActiveQuestionnaire() as any);
+    
     // On mount, check for stored intake
     const stored = loadStoredQuestionnaire();
     if (stored) {
       setData(stored.data);
       setStoredIntakeFound(true);
       setStoredIntakeUpdatedAt(stored.updatedAt || now());
-    }
-
-    // If navigated here with a plan to activate, and we have stored intake and it's recent, set review mode
-    if (pendingPlan) {
-      if (stored && isRecent(stored.updatedAt)) {
-        setIsReviewing(true);
-      } else {
-        // older intake or none: force full intake (start from step 1)
-        setActiveStep(1);
-        setIsReviewing(false);
-      }
     }
 
     // Visual viewport listener to detect on-screen keyboard and hide sticky CTA when keyboard is open
@@ -341,58 +116,43 @@ export default function QuestionnairePage() {
     return undefined;
   }, []);
 
-  useEffect(() => {
-    // Fetch active questionnaire from backend
-    dispatch(fetchActiveQuestionnaire());
-  }, [dispatch]);
-
-  // Handle errors
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error,
-        variant: 'destructive',
-      });
-    }
-  }, [error, toast]);
-
-
-  const updateData = (field: keyof QuestionnaireData, value: any) => {
+  const updateAnswer = (questionId: string, value: any) => {
     setData((prev) => {
-      const next = { ...prev, [field]: value } as QuestionnaireData;
+      const next = { ...prev, [questionId]: value };
       // persist
       saveStoredQuestionnaire(next);
-
+      
+      // Auto advance to next question if there is one and it's not a text field
+      const question = activeQuestionnaire?.questions.find((q: any) => q._id === questionId);
+      if (question && question.type !== 'text') {
+        const currentQuestionIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === questionId) ?? -1;
+        if (currentQuestionIndex >= 0 && currentQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1) {
+          setActiveQuestionIndex(currentQuestionIndex + 1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else if (currentQuestionIndex === (activeQuestionnaire?.questions.length || 0) - 1) {
+          // If this is the last question, go to review
+          setIsReviewing(true);
+        }
+      }
+      
       return next;
     });
   };
 
-  const toggleTimeSlot = (slot: string) => {
-    setData((prev) => ({
-      ...prev,
-      preferredTimes: prev.preferredTimes.includes(slot)
-        ? prev.preferredTimes.filter((t) => t !== slot)
-        : [...prev.preferredTimes, slot],
-    }));
-  };
-
   const handleNext = () => {
-    setActiveStep(prev => {
-      if (prev < totalSteps) {
-        if (!completedSteps.includes(prev)) {
-          setCompletedSteps(old => [...old, prev]);
-        }
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return prev + 1;
-      }
-      return prev;
-    });
+    // Skip manual navigation if auto-advance is enabled
+    // This function is kept for backward compatibility and edge cases
+    if (activeQuestionnaire && activeQuestionIndex < activeQuestionnaire.questions.length - 1) {
+      setActiveQuestionIndex(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      setIsReviewing(true);
+    }
   };
 
-  const handleBack = () => {
-    if (activeStep > 1) {
-      setActiveStep(prev => prev - 1);
+  const handlePrevious = () => {
+    if (activeQuestionIndex > 0) {
+      setActiveQuestionIndex(prev => prev - 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -413,48 +173,323 @@ export default function QuestionnairePage() {
     }
   };
 
-  const handleSubmit = () => {
+  // Transform questionnaire data to healthProfile structure
+  const transformQuestionnaireToHealthProfile = (questionnaireData: any, questions: any[]) => {
+    const healthProfile: any = {};
+    
+    // Map questionnaire responses to healthProfile fields
+    Object.entries(questionnaireData).forEach(([questionId, answer]) => {
+      const question = questions.find(q => q._id === questionId);
+      if (!question) return;
+      
+      // Map based on question content or type
+      const questionText = question.question.toLowerCase();
+      
+      if (questionText.includes('name') || questionText.includes('full name')) {
+        // Don't map name to healthProfile
+        return;
+      } else if (questionText.includes('concern') || questionText.includes('problem') || questionText.includes('issue')) {
+        healthProfile.primaryConcern = answer;
+      } else if (questionText.includes('pain') && question.type === 'slider') {
+        healthProfile.painIntensity = parseInt(answer as string) || 0;
+      } else if (questionText.includes('duration') || questionText.includes('how long')) {
+        healthProfile.priorTreatments = answer;
+      } else if (questionText.includes('treatment') || questionText.includes('therapy')) {
+        healthProfile.priorTreatments = healthProfile.priorTreatments 
+          ? `${healthProfile.priorTreatments}, ${answer}` 
+          : answer;
+      } else if (questionText.includes('medical') || questionText.includes('history')) {
+        healthProfile.medicalHistory = answer;
+      } else if (questionText.includes('allerg')) {
+        healthProfile.allergies = answer;
+      } else if (questionText.includes('medication')) {
+        healthProfile.medications = answer;
+      } else if (questionText.includes('emergency') || questionText.includes('contact')) {
+        healthProfile.emergencyContact = answer;
+      } else {
+        // For other questions, add to additional notes
+        if (!healthProfile.additionalNotes) {
+          healthProfile.additionalNotes = '';
+        }
+        healthProfile.additionalNotes += `${question.question}: ${answer}\n`;
+      }
+    });
+    
+    return healthProfile;
+  };
+
+  const handleSubmit = async () => {
     // persist intake
     saveStoredQuestionnaire(data);
 
-    // If we have an active questionnaire, submit responses to backend
-    if (activeQuestionnaire) {
-      const responses = Object.keys(data).map(key => ({
-        questionId: key,
-        answer: data[key]
-      }));
+    try {
+      // Transform questionnaire data to healthProfile structure
+      const healthProfileData = transformQuestionnaireToHealthProfile(
+        data, 
+        activeQuestionnaire?.questions || []
+      );
+      
+      // Update user profile with health data from questionnaire
+      const profileData = {
+        healthProfile: healthProfileData
+      };
+      await updateProfile(profileData);
+      
+      // If we were navigated here to activate a plan, complete activation and send user to booking
+      const pending = pendingPlan || (() => {
+        try {
+          const raw = sessionStorage.getItem("qw_pending_plan");
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+      })();
 
-      dispatch(submitQuestionnaireResponse({
-        questionnaireId: activeQuestionnaire._id,
-        responses: responses
-      }));
+      const assigned = assignTherapist(data);
+
+      if (pending) {
+        // activate plan
+        savePlanToStorage(pending);
+        // clear pending marker
+        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) {}
+
+        // navigate to booking flow with plan and questionnaire
+        navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
+        return;
+      }
+
+      // Default behavior: continue to therapist discovery with intake data
+      navigate("/plans", { state: { questionnaireData: data, assigned } });
+    } catch (error) {
+      console.error("Error updating profile with questionnaire data:", error);
+      // Continue with navigation even if profile update fails
+      
+      // If we were navigated here to activate a plan, complete activation and send user to booking
+      const pending = pendingPlan || (() => {
+        try {
+          const raw = sessionStorage.getItem("qw_pending_plan");
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+      })();
+
+      const assigned = assignTherapist(data);
+
+      if (pending) {
+        // activate plan
+        savePlanToStorage(pending);
+        // clear pending marker
+        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) {}
+
+        // navigate to booking flow with plan and questionnaire
+        navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
+        return;
+      }
+
+      // Default behavior: continue to therapist discovery with intake data
+      navigate("/plans", { state: { questionnaireData: data, assigned } });
     }
-
-    // If we were navigated here to activate a plan, complete activation and send user to booking
-    const pending = pendingPlan || (() => {
-      try {
-        const raw = sessionStorage.getItem("qw_pending_plan");
-        return raw ? JSON.parse(raw) : null;
-      } catch (e) { return null; }
-    })();
-
-    const assigned = assignTherapist(data);
-
-    if (pending) {
-      // activate plan
-      savePlanToStorage(pending);
-      // clear pending marker
-      try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) {}
-
-      // navigate to booking flow with plan and questionnaire
-      navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
-      return;
-    }
-
-    // Default behavior: continue to therapist discovery with intake data
-    navigate("/plans", { state: { questionnaireData: data, assigned } });
   };
 
+  // Define body areas for skeleton type
+  const bodyAreas = [
+    { id: "neck", label: "Neck", position: "top-[15%] left-[50%] -translate-x-1/2" },
+    { id: "shoulder-left", label: "Left Shoulder", position: "top-[22%] left-[35%]" },
+    { id: "shoulder-right", label: "Right Shoulder", position: "top-[22%] right-[35%]" },
+    { id: "upper-back", label: "Upper Back", position: "top-[28%] left-[50%] -translate-x-1/2" },
+    { id: "lower-back", label: "Lower Back", position: "top-[40%] left-[50%] -translate-x-1/2" },
+    { id: "hip", label: "Hip", position: "top-[48%] left-[50%] -translate-x-1/2" },
+    { id: "knee-left", label: "Left Knee", position: "top-[65%] left-[42%]" },
+    { id: "knee-right", label: "Right Knee", position: "top-[65%] right-[42%]" },
+    { id: "ankle-left", label: "Left Ankle", position: "top-[85%] left-[42%]" },
+    { id: "ankle-right", label: "Right Ankle", position: "top-[85%] right-[42%]" },
+    { id: "elbow-left", label: "Left Elbow", position: "top-[35%] left-[28%]" },
+    { id: "elbow-right", label: "Right Elbow", position: "top-[35%] right-[28%]" },
+    { id: "wrist-left", label: "Left Wrist", position: "top-[48%] left-[22%]" },
+    { id: "wrist-right", label: "Right Wrist", position: "top-[48%] right-[22%]" },
+  ];
+
+  // Render question based on type
+  const renderQuestion = (question: any) => {
+    const currentValue = data[question._id] || '';
+    
+    switch (question.type) {
+      case 'text':
+        return (
+          <div className="space-y-4">
+            <Input
+              value={currentValue}
+              onChange={(e) => updateAnswer(question._id, e.target.value)}
+              placeholder="Enter your response"
+              className="min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl border-slate-200 focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm"
+            />
+          </div>
+        );
+      
+      case 'mcq':
+        return (
+          <RadioGroup
+            value={currentValue}
+            onValueChange={(value) => updateAnswer(question._id, value)}
+            className="grid grid-cols-1 gap-4"
+          >
+            {question.options.map((option: string) => (
+              <div key={option}>
+                <RadioGroupItem value={option} id={option} className="peer sr-only" />
+                <Label
+                  htmlFor={option}
+                  className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-6 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-bold shadow-sm group"
+                >
+                  <div className={`w-6 h-6 rounded-full border-2 mr-5 flex items-center justify-center transition-all ${
+                    currentValue === option ? "border-primary bg-primary" : "border-slate-200 group-hover:border-primary/40"
+                  }`}>
+                    {currentValue === option && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                  </div>
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        );
+      
+      case 'slider':
+        const sliderValue = parseInt(currentValue) || 5;
+        return (
+          <div className="bg-gradient-to-br from-primary/5 to-secondary/10 p-10 rounded-3xl border border-primary/20 space-y-12 shadow-inner">
+            <div className="text-center relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 blur-3xl rounded-full" />
+              <span className="text-8xl font-black text-primary tracking-tighter relative tabular-nums">{sliderValue}</span>
+              <span className="text-3xl font-bold text-primary/60 relative">/10</span>
+              <p className="text-sm font-black uppercase tracking-[0.3em] text-primary mt-4 relative">
+                {sliderValue <= 3 ? "Mild" : sliderValue <= 7 ? "Moderate" : "Severe"}
+              </p>
+            </div>
+
+            <div className="px-4">
+              <Slider
+                value={[sliderValue]}
+                onValueChange={([value]) => {
+                  updateAnswer(question._id, value.toString());
+                }}
+                min={1}
+                max={10}
+                step={1}
+                className="w-full py-4 md:py-6"
+              />
+              <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-slate-400 pt-6">
+                <span>Mild</span>
+                <span>Moderate</span>
+                <span>Severe</span>
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'skeleton':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="relative w-full aspect-[3/4] max-w-[260px] md:max-w-[300px] mx-auto bg-slate-50 rounded-3xl p-6 md:p-8 shadow-inner border border-slate-100 flex items-center justify-center">
+              <svg viewBox="0 0 100 200" className="w-full h-full opacity-10 text-slate-900">
+                <ellipse cx="50" cy="18" rx="12" ry="15" fill="currentColor" />
+                <rect x="35" y="35" width="30" height="50" rx="5" fill="currentColor" />
+                <rect x="20" y="35" width="12" height="45" rx="4" fill="currentColor" />
+                <rect x="68" y="35" width="12" height="45" rx="4" fill="currentColor" />
+                <rect x="35" y="88" width="13" height="55" rx="4" fill="currentColor" />
+                <rect x="52" y="88" width="13" height="55" rx="4" fill="currentColor" />
+              </svg>
+
+              {bodyAreas.map((area) => (
+                <button
+                  key={area.id}
+                  className={`absolute ${area.position} w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
+                    currentValue === area.id
+                      ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
+                      : "bg-slate-300 hover:bg-primary/40"
+                  }`}
+                  onClick={() => updateAnswer(question._id, area.id)}
+                />
+              ))}
+            </div>
+
+            <div className="flex flex-wrap justify-start gap-3">
+              {bodyAreas.map((area) => (
+                <Badge
+                  key={area.id}
+                  variant={currentValue === area.id ? "default" : "secondary"}
+                  className={`cursor-pointer transition-all px-6 py-4 text-xs font-black rounded-2xl ${
+                    currentValue === area.id ? "shadow-2xl scale-110" : "bg-white hover:bg-slate-50 border-slate-100"
+                  }`}
+                  onClick={() => updateAnswer(question._id, area.id)}
+                >
+                  {area.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'skalaeton':
+        return (
+          <SkalaetonQuestion 
+            question={question}
+            currentValue={currentValue}
+            updateAnswer={updateAnswer}
+          />
+        );
+      
+      default:
+        return (
+          <div className="space-y-4">
+            <Input
+              value={currentValue}
+              onChange={(e) => updateAnswer(question._id, e.target.value)}
+              placeholder="Enter your response"
+              className="min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl border-slate-200 focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm"
+            />
+          </div>
+        );
+    }
+  };
+
+  // Get current question
+  const currentQuestion = activeQuestionnaire?.questions[activeQuestionIndex];
+  
+  // Calculate progress
+  const totalQuestions = activeQuestionnaire?.questions.length || 0;
+  const progressPercentage = totalQuestions > 0 ? Math.floor((activeQuestionIndex / totalQuestions) * 100) : 0;
+  
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Layout showFooter={false}>
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading questionnaire...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Layout showFooter={false}>
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 flex items-center justify-center">
+          <Card className="max-w-md w-full mx-4">
+            <CardContent className="p-8 text-center">
+              <div className="text-red-500 mb-4">
+                <Activity className="h-12 w-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 mb-2">Unable to Load Questionnaire</h3>
+              <p className="text-slate-600 mb-6">{error}</p>
+              <Button onClick={() => dispatch(fetchActiveQuestionnaire() as any)}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout showFooter={false}>
@@ -467,18 +502,18 @@ export default function QuestionnairePage() {
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                    Step {activeStep} of {totalSteps}
+                    Question {activeQuestionIndex + 1} of {totalQuestions}
                   </span>
                 </div>
                 <Badge variant="secondary" className="hidden sm:flex bg-accent/10 text-accent border border-accent/20 font-black px-3 py-1 rounded-lg">
-                  {Math.floor(((activeStep - 1) / totalSteps) * 100)}% Complete
+                  {progressPercentage}% Complete
                 </Badge>
               </div>
               <div className="h-1 w-full lg:h-1.5 bg-primary/20 rounded-full overflow-hidden">
                 <motion.div 
                   className="h-full bg-gradient-to-r from-primary to-accent"
                   initial={{ width: 0 }}
-                  animate={{ width: `${((activeStep - 1) / totalSteps) * 100}%` }}
+                  animate={{ width: `${progressPercentage}%` }}
                   transition={{ duration: 0.8, ease: "circOut" }}
                 />
               </div>
@@ -487,6 +522,33 @@ export default function QuestionnairePage() {
         )}
 
         <div className="container max-w-6xl mx-auto px-6">
+          {/* Questionnaire Info Banner */}
+          {activeQuestionnaire && (
+            <div className="mb-6">
+              <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Stethoscope className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900">{activeQuestionnaire.title}</h2>
+                      <p className="text-slate-600 mt-1">{activeQuestionnaire.description}</p>
+                      <div className="flex items-center gap-4 mt-3">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800">
+                          {activeQuestionnaire.questions?.length || 0} Questions
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Last updated: {new Date(activeQuestionnaire.updatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
           <div className="flex flex-col lg:flex-row gap-8">
             <aside className="hidden lg:block lg:w-2/5">
               <div className="rounded-2xl
@@ -507,27 +569,25 @@ export default function QuestionnairePage() {
 
                 <div className="mt-4">
                   <ol className="space-y-3">
-                    {Object.keys(stepTitles).map((k) => {
-                      const stepNum = Number(k);
-                      const title = stepTitles[stepNum];
-                      const completed = completedSteps.includes(stepNum);
-                      const current = activeStep === stepNum;
+                    {activeQuestionnaire?.questions.map((question: any, index: number) => {
+                      const answered = data.hasOwnProperty(question._id);
+                      const current = activeQuestionIndex === index;
                       return (
-                        <li key={k} className={`flex items-center gap-3 ${current ? 'text-primary' : 'text-slate-400'}`} aria-current={current ? 'step' : undefined}>
+                        <li key={question._id} className={`flex items-center gap-3 ${current ? 'text-primary' : 'text-slate-400'}`} aria-current={current ? 'step' : undefined}>
                           <div className={`
                             h-9 w-9 rounded-full flex items-center justify-center
                             text-sm font-black transition-all
                             ${current
                               ? "bg-primary text-white shadow-md shadow-primary/20"
-                              : completed
+                              : answered
                                 ? "bg-emerald-100 text-emerald-700"
                                 : "bg-slate-100 text-slate-400"
                             }
                           `}
                           >
-                            {completed ? <CheckCircle className="h-4 w-4" /> : stepNum}
+                            {answered ? <CheckCircle className="h-4 w-4" /> : index + 1}
                           </div>
-                          <div className="text-sm font-black">{title}</div>
+                          <div className="text-sm font-black truncate max-w-[150px]">{question.question}</div>
                         </li>
                       );
                     })}
@@ -544,22 +604,8 @@ export default function QuestionnairePage() {
             <main className="lg:w-3/5 w-full ">
               <div className="pt-8 ">
 
-                {/* Show loading state while fetching questionnaire */}
-                {loading && (
-                  <div className="mb-6">
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <div className="text-sm font-black">Loading questionnaire...</div>
-                          <div className="text-xs text-slate-500">Please wait while we prepare your personalized questions.</div>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                )}
-
                 {/* Stored intake banner */}
-                {storedIntakeFound && !isReviewing && !loading && activeQuestionnaire && (
+                {storedIntakeFound && !isReviewing && (
                   <div className="mb-6">
                     <Card className="p-4">
                       <div className="flex items-center justify-between gap-4">
@@ -569,10 +615,26 @@ export default function QuestionnairePage() {
                         </div>
                         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
                           <Button variant="outline" className="w-full lg:w-auto" onClick={() => { setIsReviewing(true); }}>Review</Button>
-                          <Button className="w-full lg:w-auto" onClick={() => {
+                          <Button className="w-full lg:w-auto" onClick={async () => {
                             // Use stored intake as-is; this will activate any pending plan or continue
                             const stored = loadStoredQuestionnaire();
                             if (stored) {
+                              try {
+                                // Transform stored questionnaire data to healthProfile structure
+                                const healthProfileData = transformQuestionnaireToHealthProfile(
+                                  stored.data,
+                                  activeQuestionnaire?.questions || []
+                                );
+                                
+                                // Update user profile with health data from stored questionnaire
+                                const profileData = {
+                                  healthProfile: healthProfileData
+                                };
+                                await updateProfile(profileData);
+                              } catch (error) {
+                                console.error("Error updating profile with stored questionnaire data:", error);
+                              }
+                              
                               const assigned = assignTherapist(stored.data);
                               const pending = pendingPlan || (() => {
                                 try { const raw = sessionStorage.getItem("qw_pending_plan"); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
@@ -593,46 +655,40 @@ export default function QuestionnairePage() {
                 )}
 
                 <AnimatePresence mode="wait">
-            {!isReviewing ? (
-              <motion.div key={`step-${activeStep}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }} >
-                {loading && (
-                  <div className="flex justify-center items-center h-64">
-                    <p>Loading questionnaire...</p>
-                  </div>
-                )}
-                {!loading && activeQuestionnaire && filteredQuestions && (
-                  <div>
-                    {filteredQuestions.map((question, index) => {
-                      const stepNumber = index + 1;
-                      if (stepNumber !== activeStep) return null;
-          
-                      return (
-                        <StepWrapper 
-                          key={question._id}
-                          stepNum={stepNumber} 
-                          title={question.question || `Question ${stepNumber}`} 
-                          description="Please answer the question below"
-                          activeStep={activeStep}
-                          totalSteps={totalSteps}
-                          onNext={handleNext}
-                          onBack={handleBack}
-                          isNextDisabled={question.required && !data[question._id]}
-                        >
-                          <DynamicQuestionComponent 
-                            question={question} 
-                            value={data[question._id] || ''} 
-                            onChange={(value) => updateData(question._id, value)} 
-                          />
-                        </StepWrapper>
-                      );
-                    })}
-                  </div>
-                )}
-                {!loading && !activeQuestionnaire && (
-                  <div className="flex justify-center items-center h-64">
-                    <p>No questionnaire available</p>
-                  </div>
-                )}
+            {!isReviewing && currentQuestion ? (
+              <motion.div key={`question-${currentQuestion._id}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }} >
+                <div role="region" aria-labelledby={`question-${currentQuestion._id}-title`} className="min-h-[50vh] lg:min-h-[65vh] flex lg:items-center items-start justify-center pt-6 lg:pt-0">
+                  <Card className="w-full border rounded-2xl border-slate-500 shadow-sm ">
+                    <CardContent className="p-4 lg:p-8">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center font-black text-lg bg-primary/10 text-primary">
+                          {activeQuestionIndex + 1}
+                        </div>
+                        <div>
+                          <h3 id={`question-${currentQuestion._id}-title`} className="font-black text-2xl text-slate-900 tracking-tight">{currentQuestion.question}</h3>
+                          <p className="text-sm text-slate-500 mt-1">Answer this question to continue</p>
+                        </div>
+                      </div>
+
+                      <div className="py-4 md:py-6 space-y-6">
+                        {renderQuestion(currentQuestion)}
+                      </div>
+
+                      <div className="mt-8 flex items-center justify-between gap-4">
+                        {activeQuestionIndex > 0 ? (
+                          <Button variant="outline" onClick={handlePrevious} className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all">Back</Button>
+                        ) : (
+                          <div />
+                        )}
+
+                        <Button onClick={handleNext} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
+                          {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
+                          <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </motion.div>
             ) : (
               <motion.div key="review" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
@@ -641,32 +697,40 @@ export default function QuestionnairePage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                       <div>
                         <h3 className="text-lg font-black text-slate-900">Clinical Intake Summary</h3>
-                        <p className="text-sm text-slate-500 mt-2">Confirm the clinical details we’ll use to match you with the right specialists.</p>
-          
+                        <p className="text-sm text-slate-500 mt-2">Confirm the clinical details we'll use to match you with the right specialists.</p>
+
                         <div className="mt-6 space-y-4">
-                          {filteredQuestions.map((question, index) => (
+                          {activeQuestionnaire?.questions.map((question: any, index: number) => (
                             <div key={question._id} className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 border border-slate-100">
                               <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary">
                                 <Edit2 className="h-6 w-6" />
                               </div>
                               <div className="flex-1">
                                 <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">{question.question}</p>
-                                <p className="text-sm font-black text-slate-900">{data[question._id] || 'No response'}</p>
+                                <p className="text-sm font-black text-slate-900">{data[question._id] || 'Not answered'}</p>
                               </div>
-                              <button onClick={() => { setIsReviewing(false); setActiveStep(index + 1); }} className="text-slate-400 hover:text-primary">Edit</button>
+                              <button onClick={() => { 
+                                setIsReviewing(false); 
+                                setActiveQuestionIndex(index); 
+                              }} className="text-slate-400 hover:text-primary">Edit</button>
                             </div>
                           ))}
                         </div>
                       </div>
-          
+
                       <div>
                         <h4 className="text-sm font-black text-slate-900">Next Steps</h4>
-                        <p className="text-sm text-slate-500 mt-2">We’ll use these details to surface clinicians who best match your needs. You will be able to review profiles and choose a specialist.</p>
-          
+                        <p className="text-sm text-slate-500 mt-2">We'll use these details to surface clinicians who best match your needs. You will be able to review profiles and choose a specialist.</p>
+
                         <div className="mt-6">
                           <Button onClick={handleSubmit} className="w-full h-16 rounded-xl font-black bg-primary">Continue to Specialist Matches <ArrowRight className="ml-3 h-5 w-5" /></Button>
                           <p className="text-[12px] text-slate-500 mt-3">Your responses are encrypted and shared only with Clinician-compliant providers.</p>
                         </div>
+
+                        {/* <div className="mt-6 text-[12px] text-slate-500">
+                          <div className="font-black">Trust</div>
+                          <div className="mt-2">HIPAA-compliant • Clinician-reviewed</div>
+                        </div> */}
                       </div>
                     </div>
                   </CardContent>
@@ -680,28 +744,21 @@ export default function QuestionnairePage() {
         </div>
 
         {/* Sticky CTA for mobile & tablet (<lg) */}
-        {!isReviewing && activeStep <= totalSteps && !keyboardVisible && (
+        {!isReviewing && currentQuestion && !keyboardVisible && (
           <div className="lg:hidden fixed inset-x-0 bottom-0 p-4 bg-white border-t shadow z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 1rem)' }}>
-            <button
-              onClick={() => {
-                if (activeStep === 7) return setIsReviewing(true);
-                return handleNext();
-              }}
-              disabled={(function(){
-                switch(activeStep){
-                  case 1: return !data.age || !data.gender;
-                  case 2: return !data.painArea;
-                  case 3: return !data.painDuration;
-                  case 5: return !data.injuryType;
-                  case 6: return !data.sessionType;
-                  case 7: return data.preferredTimes.length === 0;
-                  default: return false;
-                }
-              })()}
-              className="w-full h-12 min-h-[48px] rounded-xl font-black bg-primary text-white disabled:opacity-50"
-            >
-              {activeStep === 7 ? 'View Assessment Summary' : 'Continue'}
-            </button>
+            <div className="flex gap-3">
+              {activeQuestionIndex > 0 && (
+                <Button variant="outline" onClick={handlePrevious} className="flex-1 h-12 min-h-[48px] rounded-xl font-black">
+                  Back
+                </Button>
+              )}
+              <button
+                onClick={handleNext}
+                className="flex-1 h-12 min-h-[48px] rounded-xl font-black bg-primary text-white"
+              >
+                {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
+              </button>
+            </div>
           </div>
         )}
       </div>

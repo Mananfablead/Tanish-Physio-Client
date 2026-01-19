@@ -15,7 +15,7 @@ const api = axios.create({
 // Request interceptor to add token to headers
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVlMzNjNWMzYWI2MGI4NmUxMDJjMDAiLCJyb2xlIjoicGF0aWVudCIsImlhdCI6MTc2ODUzNzI3MiwiZXhwIjoxNzY4NjIzNjcyfQ.eSXc25yrKdFnVapjSBDAtQLjDcH8HYtKUW0oVqHTWiM';
+    const token = localStorage.getItem('token') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVlMzNjNWMzYWI2MGI4NmUxMDJjMDAiLCJyb2xlIjoicGF0aWVudCIsImlhdCI6MTc2ODgwNDU2NCwiZXhwIjoxNzY4ODkwOTY0fQ.ZqRcQd4K3k70iI_8XMZ-7PEDMBEA2KBPTlm-Df4z8hc';
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -67,6 +67,11 @@ export const getActiveQuestionnaire = () => {
 
 export const submitQuestionnaireResponse = (data: { questionnaireId: string; responses: { questionId: string; answer: any }[] }) => {
   return api.post('/questionnaires/submit', data);
+};
+
+// Update user profile with health data
+export const updateProfile = (profileData: any) => {
+  return api.put('/auth/profile', profileData);
 };
 
 // Booking API functions
