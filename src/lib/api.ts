@@ -116,6 +116,57 @@ export const verifySubscriptionPayment = (paymentData: any) => {
   return api.post("/payments/verify-subscription", paymentData);
 };
 
+// Guest API functions
+export const createGuestBooking = (bookingData: {
+  serviceId: string;
+  date: string;
+  time: string;
+  notes?: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+}) => {
+  return api.post("/bookings/guest", bookingData);
+};
+
+export const createGuestPaymentOrder = (paymentData: {
+  bookingId: string;
+  amount: number;
+  currency: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+}) => {
+  return api.post("/payments/create-guest-order", paymentData);
+};
+
+export const createGuestSubscriptionPaymentOrder = (paymentData: {
+  planId: string;
+  amount: number;
+  currency: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+}) => {
+  return api.post("/payments/create-guest-subscription-order", paymentData);
+};
+
+export const verifyGuestPayment = (paymentData: {
+  paymentId: string;
+  orderId: string;
+  signature: string;
+}) => {
+  return api.post("/payments/verify-guest", paymentData);
+};
+
+export const verifyGuestSubscriptionPayment = (paymentData: {
+  paymentId: string;
+  orderId: string;
+  signature: string;
+}) => {
+  return api.post("/payments/verify-guest-subscription", paymentData);
+};
+
 // Additional booking and payment related functions
 export const getBookingsByStatus = (status: string) => {
   return api.get(`/bookings/status/${status}`);
@@ -127,6 +178,19 @@ export const filterBookings = (filters: any) => {
 
 export const updateBookingStatus = (id: string, status: string) => {
   return api.put(`/bookings/${id}/status`, { status });
+};
+
+// Guest booking specific functions
+export const getBookingByIdGuest = (id: string, clientEmail: string) => {
+  return api.get(`/bookings/${id}`, { params: { clientEmail } });
+};
+
+export const updateGuestBookingStatus = (id: string, status: string, clientEmail: string) => {
+  return api.put(`/bookings/${id}/guest-status`, { status, clientEmail });
+};
+
+export const updateGuestBooking = (id: string, bookingData: any, clientEmail: string) => {
+  return api.put(`/bookings/${id}/guest-status`, { ...bookingData, clientEmail });
 };
 
 export const processPaymentWebhook = (webhookData: any) => {

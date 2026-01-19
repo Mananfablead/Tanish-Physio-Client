@@ -4,11 +4,17 @@ import {
   getAllBookings, 
   getBookingById, 
   updateBooking, 
+  updateGuestBooking,
   deleteBooking,
   createPaymentOrder,
   verifyPayment,
   createSubscriptionPaymentOrder,
-  verifySubscriptionPayment
+  verifySubscriptionPayment,
+  createGuestBooking,
+  createGuestPaymentOrder,
+  verifyGuestPayment,
+  createGuestSubscriptionPaymentOrder,
+  verifyGuestSubscriptionPayment
 } from '../../lib/api';
 
 interface Booking {
@@ -135,6 +141,21 @@ export const updateBookingAsync = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to update booking'
+      );
+    }
+  }
+);
+
+export const updateGuestBookingAsync = createAsyncThunk(
+  'bookings/updateGuestBooking',
+  async ({ id, bookingData, clientEmail }: { id: string; bookingData: any; clientEmail: string }, { rejectWithValue }) => {
+    try {
+      const response = await updateGuestBooking(id, bookingData, clientEmail);
+      const apiResponse = response.data as ApiResponse<Booking>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update guest booking'
       );
     }
   }
@@ -323,6 +344,82 @@ const bookingsSlice = createSlice({
       });
   },
 });
+
+// Guest booking async thunks
+export const createGuestBookingAsync = createAsyncThunk(
+  'bookings/createGuestBooking',
+  async (bookingData: any, { rejectWithValue }) => {
+    try {
+      const response = await createGuestBooking(bookingData);
+      const apiResponse = response.data as ApiResponse<Booking>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create guest booking'
+      );
+    }
+  }
+);
+
+export const createGuestPaymentOrderAsync = createAsyncThunk(
+  'bookings/createGuestPaymentOrder',
+  async (paymentData: any, { rejectWithValue }) => {
+    try {
+      const response = await createGuestPaymentOrder(paymentData);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create guest payment order'
+      );
+    }
+  }
+);
+
+export const verifyGuestPaymentAsync = createAsyncThunk(
+  'bookings/verifyGuestPayment',
+  async (paymentData: any, { rejectWithValue }) => {
+    try {
+      const response = await verifyGuestPayment(paymentData);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to verify guest payment'
+      );
+    }
+  }
+);
+
+export const createGuestSubscriptionPaymentOrderAsync = createAsyncThunk(
+  'bookings/createGuestSubscriptionPaymentOrder',
+  async (paymentData: any, { rejectWithValue }) => {
+    try {
+      const response = await createGuestSubscriptionPaymentOrder(paymentData);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create guest subscription payment order'
+      );
+    }
+  }
+);
+
+export const verifyGuestSubscriptionPaymentAsync = createAsyncThunk(
+  'bookings/verifyGuestSubscriptionPayment',
+  async (paymentData: any, { rejectWithValue }) => {
+    try {
+      const response = await verifyGuestSubscriptionPayment(paymentData);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to verify guest subscription payment'
+      );
+    }
+  }
+);
 
 export const { 
   clearCurrentBooking, 

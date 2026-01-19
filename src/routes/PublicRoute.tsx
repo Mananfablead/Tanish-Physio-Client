@@ -13,7 +13,7 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
       return <Navigate to="/" replace />;
     }
     // For other cases where user is already logged in
-    return <Navigate to="/" state={{ from: location }} replace />;
+    // return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return children;

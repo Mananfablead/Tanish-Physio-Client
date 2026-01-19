@@ -39,12 +39,15 @@ import { Input } from "@/components/ui/input";
 import { getAvailability, getAllSessions, getUpcomingSessions, getSessionById, createSession, updateSession, deleteSession, getSessionsByUserId, getSessionsByTherapistId, getCompletedSessions, getScheduledSessions, cancelSession, rescheduleSession, getSessionNotes, addSessionNotes, getPastSessions, getTodaySessions } from "@/lib/api";
 import { fetchAllSessions, fetchUpcomingSessions, fetchPastSessions, fetchCompletedSessions, fetchScheduledSessions, fetchTodaySessions, fetchSessionById, fetchSessionsByUserId, createNewSession, updateExistingSession, deleteExistingSession, cancelSessionById, rescheduleSessionById, fetchSessionNotes, addSessionNote } from '@/store/slices/sessionSlice';
 import { useAppDispatch, useAppSelector } from '@/store';
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
 
 export default function SchedulePage() {
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate = useNavigate()
   const bookingData = location.state;
-
+    const { userSubscriptions, loading: subsLoading, error: subsError } = useSelector((state: any) => state.subscriptions);
+console.log("userSubscriptions", userSubscriptions)
   useEffect(() => {
     if (bookingData?.bookingCompleted) {
       toast.success("Payment successful! Your booking is confirmed.");
@@ -55,14 +58,12 @@ export default function SchedulePage() {
   const hasBookingSummary =
     bookingData?.fromServices || bookingData?.bookingSummary;
 
-  // Extract booking summary data if available
 
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
   const [selectedTime, setSelectedTime] = useState<string>("");
 
-  // State for availability
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -94,9 +95,11 @@ export default function SchedulePage() {
   // State for sessions
   const [sessions, setSessions] = useState<any[]>([]);
   const dispatch = useAppDispatch();
-  const { sessions: storeSessions, upcomingSessions, loading: sessionsLoading, error: sessionsError } = useAppSelector(state => state.sessions);
-  console.log("sessions", sessions)
-  // Fetch availability and sessions data on component mount
+useEffect(() => {
+    dispatch(fetchUserSubscriptions());
+  
+
+  }, [dispatch]);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -510,42 +513,7 @@ export default function SchedulePage() {
                                   </Button>
                                 ) : null}
 
-                                {/* {(session.status === "scheduled" || session.status === "Scheduled") && (
-                                  <Button
-                                    variant="outline"
-                                    className="h-10 rounded-xl text-sm font-bold border-slate-300 text-slate-600 hover:bg-primary/5 hover:text-primary"
-                                    onClick={async () => {
-                                      try {
-                                        // Update session status to confirmed
-                                        const sessionUpdateData = {
-                                          status: "confirmed",
-                                          notes: "Session confirmed by user"
-                                        };
-                                        
-                                        const response: any = await updateSession(session.id, sessionUpdateData);
-                                        
-                                        if (response.data?.success) {
-                                          // Update the local session data
-                                          const updatedSessions = sessions.map(sess => 
-                                            sess.id === session.id 
-                                              ? { ...sess, status: "confirmed" } 
-                                              : sess
-                                          );
-                                          setSessions(updatedSessions);
-                                          
-                                          toast.success("Session confirmed successfully!");
-                                        } else {
-                                          toast.error("Failed to confirm session");
-                                        }
-                                      } catch (error) {
-                                        console.error("Error confirming session:", error);
-                                        toast.error("Failed to confirm session");
-                                      }
-                                    }}
-                                  >
-                                    Confirm
-                                  </Button>
-                                )} */}
+                            
                               </div>
                             </motion.div>
                           )

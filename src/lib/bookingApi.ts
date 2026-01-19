@@ -28,6 +28,17 @@ const bookingApi = {
 
   // Cancel a booking
   cancel: (id: string) => api.delete(`/bookings/${id}`),
+
+  // Guest booking functions
+  createGuest: (bookingData: {
+    serviceId: string;
+    date: string;
+    time: string;
+    notes?: string;
+    clientName: string;
+    clientEmail: string;
+    clientPhone: string;
+  }) => api.post('/bookings/guest', bookingData),
 };
 
 export default bookingApi;

@@ -202,6 +202,32 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+// Async thunk for handling guest user transition after successful payment
+export const handleGuestUserTransition = createAsyncThunk(
+  "auth/handleGuestUserTransition",
+  async (credentials: { email: string; password: string }, { dispatch, rejectWithValue }) => {
+    try {
+      // Attempt to login with the provided credentials
+      const response = await api.post("/auth/login", credentials);
+      const apiResponse = response.data as ApiResponse<LoginResponse>;
+      const { token, user } = apiResponse.data;
+
+      // Save token and user to localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // Dispatch setCredentials to update the state
+      dispatch(setCredentials({ user, token }));
+
+      return { token, user };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to transition guest user to logged-in user"
+      );
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
