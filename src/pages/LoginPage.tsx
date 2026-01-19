@@ -54,9 +54,16 @@ const LoginPage = () => {
     
     // Redirect if already logged in
     if (user) {
-        // Check if there's a redirect location in state
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
+        // Check for redirect after login in sessionStorage
+        const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
+        if (redirectAfterLogin) {
+            sessionStorage.removeItem('redirect_after_login'); // Clean up
+            navigate(redirectAfterLogin, { replace: true });
+        } else {
+            // Check if there's a redirect location in state
+            const from = location.state?.from?.pathname || '/';
+            navigate(from, { replace: true });
+        }
     }
 
     const loginForm = useForm<LoginForm>({
@@ -177,9 +184,16 @@ const LoginPage = () => {
                                                 description: `Welcome back, ${data.email}!`,
                                             });
                                             
-                                            // Redirect to intended location or home
-                                            const from = location.state?.from?.pathname || '/';
-                                            navigate(from, { replace: true });
+                                            // Check for redirect after login in sessionStorage
+                                            const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
+                                            if (redirectAfterLogin) {
+                                                sessionStorage.removeItem('redirect_after_login'); // Clean up
+                                                navigate(redirectAfterLogin, { replace: true });
+                                            } else {
+                                                // Redirect to intended location or home
+                                                const from = location.state?.from?.pathname || '/';
+                                                navigate(from, { replace: true });
+                                            }
                                         } else {
                                             // Handle error
                                             throw result.payload;

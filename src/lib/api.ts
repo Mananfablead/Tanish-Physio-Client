@@ -1,13 +1,14 @@
-import axios from 'axios';
+import axios from "axios";
 
 // Create an axios instance
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: true, // Enable sending cookies with requests
 });
@@ -15,7 +16,7 @@ const api = axios.create({
 // Request interceptor to add token to headers
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTVlMzNjNWMzYWI2MGI4NmUxMDJjMDAiLCJyb2xlIjoicGF0aWVudCIsImlhdCI6MTc2ODgwNDU2NCwiZXhwIjoxNzY4ODkwOTY0fQ.ZqRcQd4K3k70iI_8XMZ-7PEDMBEA2KBPTlm-Df4z8hc';
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -32,12 +33,12 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Don't redirect on login attempts, just reject the promise
-      const isLoginAttempt = error.config.url?.includes('/auth/login');
+      const isLoginAttempt = error.config.url?.includes("/auth/login");
       if (!isLoginAttempt) {
         // Clear auth data if token is invalid
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login'; // Redirect to login
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login"; // Redirect to login
       }
     }
     return Promise.reject(error);
@@ -46,7 +47,7 @@ api.interceptors.response.use(
 
 // Availability API functions
 export const getAvailability = () => {
-  return api.get('/availability');
+  return api.get("/availability");
 };
 
 export const getAvailabilityByTherapist = (therapistId: string) => {
@@ -54,33 +55,36 @@ export const getAvailabilityByTherapist = (therapistId: string) => {
 };
 
 export const confirmSession = (sessionData: any) => {
-  return api.post('/sessions/confirm', sessionData);
+  return api.post("/sessions/confirm", sessionData);
 };
 
 // Subscription API functions
 export const getSubscriptionPlans = () => {
-  return api.get('/subscriptions');
+  return api.get("/subscriptions");
 };
 export const getActiveQuestionnaire = () => {
-  return api.get('/questionnaires/active');
+  return api.get("/questionnaires/active");
 };
 
-export const submitQuestionnaireResponse = (data: { questionnaireId: string; responses: { questionId: string; answer: any }[] }) => {
-  return api.post('/questionnaires/submit', data);
+export const submitQuestionnaireResponse = (data: {
+  questionnaireId: string;
+  responses: { questionId: string; answer: any }[];
+}) => {
+  return api.post("/questionnaires/submit", data);
 };
 
 // Update user profile with health data
-export const updateProfile = (profileData: any) => {
+export const updateProfileQuestion = (profileData: any) => {
   return api.put('/auth/profile', profileData);
 };
 
 // Booking API functions
 export const createBooking = (bookingData: any) => {
-  return api.post('/bookings', bookingData);
+  return api.post("/bookings", bookingData);
 };
 
 export const getAllBookings = () => {
-  return api.get('/bookings');
+  return api.get("/bookings");
 };
 
 export const getBookingById = (id: string) => {
@@ -97,19 +101,19 @@ export const deleteBooking = (id: string) => {
 
 // Payment API functions
 export const createPaymentOrder = (paymentData: any) => {
-  return api.post('/payments/create-order', paymentData);
+  return api.post("/payments/create-order", paymentData);
 };
 
 export const verifyPayment = (paymentData: any) => {
-  return api.post('/payments/verify', paymentData);
+  return api.post("/payments/verify", paymentData);
 };
 
 export const createSubscriptionPaymentOrder = (paymentData: any) => {
-  return api.post('/payments/create-subscription-order', paymentData);
+  return api.post("/payments/create-subscription-order", paymentData);
 };
 
 export const verifySubscriptionPayment = (paymentData: any) => {
-  return api.post('/payments/verify-subscription', paymentData);
+  return api.post("/payments/verify-subscription", paymentData);
 };
 
 // Additional booking and payment related functions
@@ -126,16 +130,16 @@ export const updateBookingStatus = (id: string, status: string) => {
 };
 
 export const processPaymentWebhook = (webhookData: any) => {
-  return api.post('/payments/webhook', webhookData);
+  return api.post("/payments/webhook", webhookData);
 };
 
 // Session API functions
 export const getAllSessions = () => {
-  return api.get('/sessions');
+  return api.get("/sessions");
 };
 
 export const getUpcomingSessions = () => {
-  return api.get('/sessions/upcoming');
+  return api.get("/sessions/upcoming");
 };
 
 export const getSessionById = (id: string) => {
@@ -143,7 +147,7 @@ export const getSessionById = (id: string) => {
 };
 
 export const createSession = (sessionData: any) => {
-  return api.post('/sessions', sessionData);
+  return api.post("/sessions", sessionData);
 };
 
 export const updateSession = (id: string, sessionData: any) => {
@@ -152,6 +156,15 @@ export const updateSession = (id: string, sessionData: any) => {
 
 export const deleteSession = (id: string) => {
   return api.delete(`/sessions/${id}`);
+};
+
+// User payment and subscription related functions
+export const getUserPayments = () => {
+  return api.get("/payments/user");
+};
+
+export const getUserSubscriptions = () => {
+  return api.get("/subscriptions/user");
 };
 
 // Additional session related functions
@@ -164,11 +177,11 @@ export const getSessionsByTherapistId = (therapistId: string) => {
 };
 
 export const getCompletedSessions = () => {
-  return api.get('/sessions/completed');
+  return api.get("/sessions/completed");
 };
 
 export const getScheduledSessions = () => {
-  return api.get('/sessions/scheduled');
+  return api.get("/sessions/scheduled");
 };
 
 export const cancelSession = (id: string) => {
@@ -188,11 +201,48 @@ export const addSessionNotes = (id: string, notes: any) => {
 };
 
 export const getPastSessions = () => {
-  return api.get('/sessions/past');
+  return api.get("/sessions/past");
 };
 
 export const getTodaySessions = () => {
-  return api.get('/sessions/today');
+  return api.get("/sessions/today");
+};
+
+// Profile API functions
+export const updateProfile = (profileData: any) => {
+  // Check if we're uploading an image (which requires multipart/form-data)
+  if (profileData.image instanceof File) {
+    const formData = new FormData();
+    formData.append("image", profileData.image);
+
+    // If there are other fields, add them to formData
+    Object.keys(profileData).forEach((key) => {
+      if (key !== "image" && profileData[key] !== undefined) {
+        formData.append(key, profileData[key]);
+      }
+    });
+
+    return api.put("/auth/profile", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  }
+
+  // For regular profile updates (JSON data)
+  return api.put("/auth/profile", profileData);
+};
+
+// Profile image upload function
+export const uploadProfileImage = (imageFile: File) => {
+  const formData = new FormData();
+  formData.append("image", imageFile);
+
+  return api.put("/auth/profile", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
 
 export default api;

@@ -642,7 +642,7 @@ export default function QuestionnairePage() {
                               if (pending) {
                                 savePlanToStorage(pending);
                                 try { sessionStorage.removeItem("qw_pending_plan"); } catch(e){}
-                                navigate('/booking', { state: { plan: pending, questionnaireData: stored.data, therapist: assigned } });
+                                navigate('/schedule', { state: { plan: pending, questionnaireData: stored.data, therapist: assigned } });
                                 return;
                               }
                               navigate('/plans', { state: { questionnaireData: stored.data, assigned } });

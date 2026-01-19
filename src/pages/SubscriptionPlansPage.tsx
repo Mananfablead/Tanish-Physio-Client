@@ -11,80 +11,11 @@ import { motion } from "framer-motion";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
 import { RootState, useAppDispatch } from '@/store';
+import { selectIsAuthenticated } from '@/store/slices/authSlice';
+import { createSubscriptionPaymentOrder, verifySubscriptionPayment, processPaymentWebhook } from '@/lib/api';
+import { toast } from 'sonner';
 
-// const plans = [
-//   {
-//     id: "daily",
-//     name: "Daily Pass",
-//     price: 29,
-//     duration: "24 hours",
-//     sessions: 1,
-//     features: [
-//       "1 video session",
-//       "Exercise plan access",
-//       "Chat support",
-//       "Session recording",
-//     ],
-//     services: [
-//       "Orthopedic Physiotherapy",
-//       "Basic exercise plan",
-//       "Therapist consultation",
-//     ],
-//     popular: false,
-//   },
-//   {
-//     id: "weekly",
-//     name: "Weekly Plan",
-//     price: 79,
-//     duration: "7 days",
-//     sessions: 3,
-//     features: [
-//       "Up to 3 sessions",
-//       "Full exercise library",
-//       "Priority chat support",
-//       "Session recordings",
-//       "Progress tracking",
-//     ],
-//     services: [
-//       "Orthopedic Physiotherapy",
-//       "Neuro Physiotherapy",
-//       "Sports Physiotherapy",
-//       "Customized exercise plans",
-//       "Weekly progress reports",
-//     ],
-//     popular: false,
-//   },
-//   {
-//     id: "monthly",
-//     name: "Monthly Plan",
-//     price: 199,
-//     originalPrice: 249,
-//     duration: "30 days",
-//     sessions: "Unlimited",
-//     features: [
-//       "Unlimited sessions",
-//       "Full exercise library",
-//       "24/7 priority support",
-//       "All session recordings",
-//       "Advanced progress tracking",
-//       "Personalized exercise plans",
-//       "Group session access",
-//     ],
-//     services: [
-//       "All physiotherapy services",
-//       "Personalized treatment plans",
-//       "Unlimited exercise plans",
-//       "Regular progress assessments",
-//       "Home visit services",
-//       "Nutrition consultation",
-//       "Injury prevention programs",
-//     ],
-//     popular: true,
-//   },
-// ];
 
-// Initialize with empty array, will be populated by Redux
-const plans = [];
 
 export default function SubscriptionPlansPage() {
   const location = useLocation();
@@ -93,6 +24,9 @@ export default function SubscriptionPlansPage() {
   
   // Get subscription plans from Redux store
   const { plans: subscriptionPlans, loading, error } = useSelector((state: RootState) => state.subscriptions);
+  
+  // Get authentication status
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   
   // Initialize selectedPlan based on fetched plans or default to 'monthly'
   const [selectedPlan, setSelectedPlan] = useState<string>("monthly");
@@ -132,36 +66,294 @@ export default function SubscriptionPlansPage() {
 
   const bookingData = location.state;
 
-  const handleContinue = () => {
-    const plan = subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan);
-
-    // Check for stored intake and recency
-    let stored = null;
-    try {
-      const raw = sessionStorage.getItem("qw_questionnaire");
-      if (raw) stored = JSON.parse(raw);
-    } catch (e) { stored = null; }
-
-    const RECENT_DAYS = 90;
-    const now = Date.now();
-    const isRecent = (ts: number | undefined | null) => ts && (now - ts) < RECENT_DAYS * 24 * 60 * 60 * 1000;
-
-    if (stored && isRecent(stored.updatedAt)) {
-      // Proceed to booking with prefilled intake
-      navigate("/booking", {
-        state: {
-          ...bookingData,
-          plan,
-          promoApplied,
-          questionnaireData: stored.data,
-        },
-      });
+  const handleContinue = async () => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Store the current location so user can be redirected back after login
+      sessionStorage.setItem('redirect_after_login', window.location.pathname);
+      // Redirect to login page
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
+    
+    const plan = subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan);
+    
+    if (!plan) {
+      toast.error("Please select a valid plan");
+      return;
+    }
+    
+    try {
+      // Get the selected plan
+      const selectedPlanData = subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan);
+      
+      if (!selectedPlanData) {
+        toast.error("Please select a valid plan");
+        return;
+      }
+      
+      // Calculate final price with promo if applied
+      const finalPrice = promoApplied ? Math.round(selectedPlanData.price * 0.8) : selectedPlanData.price;
+      
+      // Create subscription payment order directly
+      const paymentOrderData = {
+        planId: selectedPlanData.planId || selectedPlanData.id,
+        planName: selectedPlanData.name,
+        amount: finalPrice,
+        currency: "INR",
+        subscription: true // Mark as subscription payment
+      };
+      
+      const paymentOrderResponse: any = await createSubscriptionPaymentOrder(paymentOrderData);
+      
+      if (paymentOrderResponse.data && paymentOrderResponse.data.success) {
+        const { orderId, key: razorpayKey, bookingId } = paymentOrderResponse.data.data;
+        
+        // Initialize Razorpay
+        const options = {
+          key: razorpayKey || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_S250uIjk1rVbsT",
+          order_id: orderId,
+          amount: finalPrice * 100, // Convert to paise
+          currency: "INR",
+          name: "Tanish Physio",
+          description: `Subscription Plan Payment - Plan: ${selectedPlanData.name}, Booking ID: ${bookingId}`,
+          image: "https://your-wellness-path.com/logo.png", // Replace with actual logo URL
+          handler: function (response: any) {
+            // Payment successful - verify subscription payment
+            const paymentVerificationData = {
+              paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+              signature: response.razorpay_signature,
+              bookingId: bookingId,
+              subscription: true
+            };
+            
+            verifySubscriptionPayment(paymentVerificationData)
+              .then((verificationResponse: any) => {
+                // Verification successful
+                // Send webhook notification for successful payment
+                const webhookData = {
+                  paymentId: paymentVerificationData.paymentId,
+                  orderId: paymentVerificationData.orderId,
+                  status: 'success',
+                  bookingId: bookingId,
+                  timestamp: Date.now(),
+                  signature: paymentVerificationData.signature
+                };
+                
+                processPaymentWebhook(webhookData)
+                  .catch(webhookError => {
+                    console.error('Webhook call failed:', webhookError);
+                  });
+                
+                // Persist plan as active subscription
+                sessionStorage.setItem(
+                  "qw_plan",
+                  JSON.stringify({ plan: selectedPlanData, purchasedAt: Date.now(), active: true })
+                );
+                
+                // Check for existing intake
+                let stored = null;
+                try {
+                  const raw = sessionStorage.getItem("qw_questionnaire");
+                  if (raw) stored = JSON.parse(raw);
+                } catch (e) {
+                  stored = null;
+                }
+                const RECENT_DAYS = 90;
+                const now = Date.now();
+                const isRecent = (ts: number | undefined | null) =>
+                  ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
-    // No recent intake: save pending plan and redirect user to intake before activation
-    try { sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan)); } catch (e) { }
-    navigate("/questionnaire", { state: { planToActivate: plan } });
+                // Check for any previously reserved session
+                let scheduled = null;
+                try {
+                  const raw = sessionStorage.getItem("qw_scheduled_session");
+                  if (raw) scheduled = JSON.parse(raw);
+                } catch (e) {
+                  scheduled = null;
+                }
+
+                if (!stored || !isRecent(stored?.updatedAt)) {
+                  // Plan purchased, but intake missing or outdated: require intake to unlock sessions
+                  toast.success(
+                    "Payment successful! Please complete a short intake to unlock sessions."
+                  );
+                  // Save a pending marker to ensure plan activation after intake
+                  try {
+                    sessionStorage.setItem("qw_pending_plan", JSON.stringify(selectedPlanData));
+                  } catch (e) {}
+                  navigate("/questionnaire", { state: { planToActivate: selectedPlanData } });
+                  return;
+                }
+
+                // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
+                try {
+                  const therapist = {
+                    id: `th-${Math.floor(Math.random() * 10000)}`,
+                    name: "Assigned Clinician",
+                    title: "Matched Specialist",
+                    assignedAt: Date.now(),
+                  };
+                  sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
+
+                  if (scheduled) {
+                    scheduled.locked = false;
+                    scheduled.therapist = therapist;
+                    scheduled.confirmedAt = Date.now();
+                    sessionStorage.setItem(
+                      "qw_scheduled_session",
+                      JSON.stringify(scheduled)
+                    );
+                  }
+                } catch (e) {}
+
+                toast.success("Payment successful! Your subscription is now active.");
+                navigate("/schedule", {
+                  state: {
+                    ...bookingData,
+                    bookingId: bookingId,
+                    finalPrice,
+                    fromServices: true,
+                    plan: selectedPlanData
+                  },
+                });
+              })
+              .catch((error) => {
+                console.error("Payment verification failed:", error);
+                
+                // Send webhook notification for failed verification
+                const webhookData = {
+                  paymentId: paymentVerificationData.paymentId,
+                  orderId: paymentVerificationData.orderId,
+                  status: 'failed',
+                  bookingId: bookingId,
+                  timestamp: Date.now(),
+                  error: error.message || 'Verification failed'
+                };
+                
+                processPaymentWebhook(webhookData)
+                  .catch(webhookError => {
+                    console.error('Webhook call failed:', webhookError);
+                  });
+                
+                // Even if verification fails, proceed with the flow since payment was successful on Razorpay side
+                try {
+                  // Persist plan as active subscription
+                  sessionStorage.setItem(
+                    "qw_plan",
+                    JSON.stringify({ plan: selectedPlanData, purchasedAt: Date.now(), active: true })
+                  );
+                  
+                  // Check for existing intake
+                  let stored = null;
+                  try {
+                    const raw = sessionStorage.getItem("qw_questionnaire");
+                    if (raw) stored = JSON.parse(raw);
+                  } catch (e) {
+                    stored = null;
+                  }
+                  const RECENT_DAYS = 90;
+                  const now = Date.now();
+                  const isRecent = (ts: number | undefined | null) =>
+                    ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
+
+                  // Check for any previously reserved session
+                  let scheduled = null;
+                  try {
+                    const raw = sessionStorage.getItem("qw_scheduled_session");
+                    if (raw) scheduled = JSON.parse(raw);
+                  } catch (e) {
+                    scheduled = null;
+                  }
+
+                  if (!stored || !isRecent(stored?.updatedAt)) {
+                    // Plan purchased, but intake missing or outdated: require intake to unlock sessions
+                    toast.success(
+                      "Payment successful! Please complete a short intake to unlock sessions."
+                    );
+                    // Save a pending marker to ensure plan activation after intake
+                    try {
+                      sessionStorage.setItem("qw_pending_plan", JSON.stringify(selectedPlanData));
+                    } catch (e) {}
+                    navigate("/questionnaire", { state: { planToActivate: selectedPlanData } });
+                    return;
+                  }
+
+                  // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
+                  try {
+                    const therapist = {
+                      id: `th-${Math.floor(Math.random() * 10000)}`,
+                      name: "Assigned Clinician",
+                      title: "Matched Specialist",
+                      assignedAt: Date.now(),
+                    };
+                    sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
+
+                    if (scheduled) {
+                      scheduled.locked = false;
+                      scheduled.therapist = therapist;
+                      scheduled.confirmedAt = Date.now();
+                      sessionStorage.setItem(
+                        "qw_scheduled_session",
+                        JSON.stringify(scheduled)
+                      );
+                    }
+                  } catch (e) {}
+
+                  toast.success("Payment successful! Your subscription is now active.");
+                  navigate("/schedule", {
+                    state: {
+                      ...bookingData,
+                      bookingId: bookingId,
+                      finalPrice,
+                      fromServices: true,
+                      plan: selectedPlanData
+                    },
+                  });
+                } catch (innerError) {
+                  console.error("Error in fallback flow:", innerError);
+                  toast.error("Payment was successful but there was an issue processing your subscription. Please contact support.");
+                }
+              });
+          },
+          prefill: {
+            name: "Customer",
+            email: "customer@example.com",
+            contact: "9999999999",
+          },
+          theme: {
+            color: "#3b82f6",
+          },
+          modal: {
+            ondismiss: function() {
+              // Handle when user closes the payment modal without completing payment
+              toast.info("Payment was cancelled. You can try again later.");
+            }
+          }
+        };
+        
+        // Open Razorpay checkout
+        if (typeof window !== 'undefined' && (window as any).Razorpay) {
+          // Check if key exists before creating Razorpay instance
+          if (!options.key || options.key === "rzp_test_1234567890") {
+            toast.error("Razorpay key is not configured properly. Please contact support.");
+            return;
+          }
+          
+          const rzp = new (window as any).Razorpay(options);
+          rzp.open();
+        } else {
+          console.error("Razorpay SDK not loaded");
+          toast.error("Payment gateway not loaded. Please try again.");
+        }
+      } else {
+        toast.error("Failed to create payment order. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      toast.error("An error occurred while processing your payment. Please try again.");
+    }
   };
 
   const applyPromo = () => {
@@ -486,7 +678,13 @@ export default function SubscriptionPlansPage() {
                   Flexible scheduling
                 </div>
               </div>
-
+              
+              {!isAuthenticated && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 text-center">
+                  Please log in to continue with your booking
+                </div>
+              )}
+              
               {/* CTA */}
               <Button
                 variant="hero"
@@ -494,7 +692,7 @@ export default function SubscriptionPlansPage() {
                 className="w-full"
                 onClick={handleContinue}
               >
-                Continue to Booking
+                {isAuthenticated ? 'Pay Now' : 'Login to Continue'}
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
 

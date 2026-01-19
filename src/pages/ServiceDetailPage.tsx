@@ -46,9 +46,9 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => (
   <div className="flex flex-col lg:flex-row gap-8 mb-8">
     <div className="lg:w-1/2">
       <div className="flex items-start gap-4 mb-4">
-        <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+        {/* <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
           {service.icon}
-        </div>
+        </div> */}
         <div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">
             {service.details.title}
@@ -230,14 +230,14 @@ const ServiceSidebar = ({
               {service.details.resultsTimeline}
             </span>
           </div>
-          {service.details.prerequisites && (
+          {/* {service.details.prerequisites && (
             <div className="flex justify-between">
               <span className="text-slate-600">Prerequisites:</span>
               <span className="font-medium text-slate-900">
                 {service.details.prerequisites}
               </span>
             </div>
-          )}
+          )} */}
         </div>
 
         <Button
