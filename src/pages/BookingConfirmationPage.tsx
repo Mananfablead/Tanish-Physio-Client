@@ -11,17 +11,14 @@ import {
   Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { getBookingByIdAsync, updateBookingAsync } from '@/store/slices/bookingsSlice';
-import { useAppDispatch, useAppSelector } from '@/store';
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getBookingByIdGuest, updateGuestBookingStatus } from '@/lib/api';
 
 export default function BookingConfirmationPage() {
   const location = useLocation();
   const bookingData = location.state;
   const [bookingDetails, setBookingDetails] = useState(null);
-  const dispatch = useAppDispatch();
-  const { currentBooking } = useAppSelector(state => state.bookings);
   
   // Extract booking details
   const therapist = bookingData?.therapist || {
@@ -35,31 +32,24 @@ export default function BookingConfirmationPage() {
   const sessionTime = bookingData?.time || "10:00 AM (45 min)";
   const serviceName =
     bookingData?.service?.name || bookingData?.planName || "Therapy Session";
-  const servicePrice = bookingData?.finalPrice || bookingData?.planPrice || 199;
+  const servicePrice = bookingData?.finalPrice || bookingData?.planPrice;
   
-  // Fetch booking details if booking ID is available
+  // Update booking status to confirmed for guest users
   useEffect(() => {
-    if (bookingData?.bookingId) {
-      const fetchBookingDetails = async () => {
+    if (bookingData?.bookingId && bookingData?.clientEmail) {
+      const updateBookingStatus = async () => {
         try {
-          const result = await dispatch(getBookingByIdAsync(bookingData.bookingId));
-          if (getBookingByIdAsync.fulfilled.match(result)) {
-            setBookingDetails(result.payload);
-            
-            // Optionally update booking status to confirmed
-            const booking = result.payload;
-            if (booking && booking.status !== 'confirmed') {
-              await dispatch(updateBookingAsync({ id: booking._id, bookingData: { status: 'confirmed' } }));
-              toast.success('Booking status updated to confirmed');
-            }
-          }
+          // Update booking status to confirmed using guest API
+          await updateGuestBookingStatus(bookingData.bookingId, 'confirmed', bookingData.clientEmail);
+          toast.success('Booking confirmed successfully!');
         } catch (error) {
-          console.error('Error fetching booking details:', error);
-          toast.error('Failed to fetch booking details');
+          console.error('Error updating booking status:', error);
+          // Don't show error toast here as the booking might already be confirmed
+          // or there might be other legitimate reasons for the error
         }
       };
       
-      fetchBookingDetails();
+      updateBookingStatus();
     }
   }, [bookingData]);
 

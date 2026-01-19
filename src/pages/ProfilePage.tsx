@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,7 @@ export default function ProfilePage() {
 
   const user = useSelector(selectCurrentUser);
   const dispatch = useAppDispatch();
-
+  const navigate = useNavigate();
   const [selectedSection, setSelectedSection] = useState<string>('personal');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -679,7 +679,7 @@ export default function ProfilePage() {
                             </p>
                           </div>
                           <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
-                            <Link to="/">Book a Session</Link>
+                            <Link to="/schedule">Book a Session</Link>
                           </Button>
                         </div>
                       </RightPanelCard>
@@ -770,7 +770,17 @@ export default function ProfilePage() {
                         ))}
                       </div>
                     ) : (
-                      <RightPanelCard title="Session History">
+                      <RightPanelCard
+                        title="Session History"
+                        footer={
+                          <Button
+                            asChild
+                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
+                          >
+                            <Link to="/schedule">Book a Session</Link>
+                          </Button>
+                        }
+                      >
                         <div className="py-12 text-center space-y-4">
                           <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
                             <Play className="h-8 w-8 text-slate-300" />
@@ -783,14 +793,9 @@ export default function ProfilePage() {
                               You haven't completed any sessions yet.
                             </p>
                           </div>
-                          <Button
-                            asChild
-                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                          >
-                            <Link to="/therapists">Book a Session</Link>
-                          </Button>
                         </div>
                       </RightPanelCard>
+
                     )}
                   </div>
                 )}

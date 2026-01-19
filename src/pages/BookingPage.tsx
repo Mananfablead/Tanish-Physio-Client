@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { createBookingAsync, updateBookingAsync, createPaymentOrderAsync, verifyPaymentAsync } from '@/store/slices/bookingsSlice';
+import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync } from '@/store/slices/bookingsSlice';
 import { createNewSession } from '@/store/slices/sessionSlice';
 import { useAppDispatch, useAppSelector } from '@/store';
 
@@ -30,7 +30,7 @@ export default function BookingPage() {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
-  const { loading: bookingLoading, error: bookingError, booking: createdBooking } = useAppSelector(state => state.bookings);
+  const { loading: bookingLoading, error: bookingError, currentBooking: createdBooking } = useAppSelector(state => state.bookings);
   console.log("Created Booking", createdBooking)
   const [guestUserData, setGuestUserData] = useState({
     name: "",
@@ -192,25 +192,55 @@ export default function BookingPage() {
         amount: finalPrice,
         bookingId: serviceBooking ? bookingData.service.bookingId : null,
       };
-      // Create the booking
-      const bookingResult = await dispatch(createBookingAsync(bookingPayload));
-      if (!createBookingAsync.fulfilled.match(bookingResult)) {
+      // Create the booking - use guest booking if user is not logged in
+      let bookingResult;
+      if (isGuestUser) {
+        // Prepare guest booking payload
+        const guestBookingPayload = {
+          ...bookingPayload,
+          clientName: guestUserData.name,
+          clientEmail: guestUserData.email,
+          clientPhone: guestUserData.phone,
+        };
+        
+        bookingResult = await dispatch(createGuestBookingAsync(guestBookingPayload));
+      } else {
+        bookingResult = await dispatch(createBookingAsync(bookingPayload));
+      }
+      
+      if (!createBookingAsync.fulfilled.match(bookingResult) && !createGuestBookingAsync.fulfilled.match(bookingResult)) {
         toast.error("Failed to create booking. Please try again.");
         setIsProcessing(false);
         return;
       }
       console.log("Booking Result", bookingResult)
-      const bookingId = bookingResult.payload?.booking._id;
+      const bookingId = bookingResult.payload?._id || (bookingResult.payload as any)?.booking?._id;
 
       // Create payment order with booking ID
-      const paymentOrderData = {
-        bookingId: bookingId,
-        amount: finalPrice,
-        currency: "INR"
-      };
-
-      const paymentOrderResult = await dispatch(createPaymentOrderAsync(paymentOrderData));
-      if (!createPaymentOrderAsync.fulfilled.match(paymentOrderResult)) {
+      let paymentOrderResult;
+      if (isGuestUser) {
+        // Prepare guest payment order payload
+        const guestPaymentOrderData = {
+          bookingId: bookingId,
+          amount: finalPrice,
+          currency: "INR",
+          clientName: guestUserData.name,
+          clientEmail: guestUserData.email,
+          clientPhone: guestUserData.phone,
+        };
+        
+        paymentOrderResult = await dispatch(createGuestPaymentOrderAsync(guestPaymentOrderData));
+      } else {
+        const paymentOrderData = {
+          bookingId: bookingId,
+          amount: finalPrice,
+          currency: "INR"
+        };
+        
+        paymentOrderResult = await dispatch(createPaymentOrderAsync(paymentOrderData));
+      }
+      
+      if (!createPaymentOrderAsync.fulfilled.match(paymentOrderResult) && !createGuestPaymentOrderAsync.fulfilled.match(paymentOrderResult)) {
         toast.error("Failed to create payment order. Please try again.");
         setIsProcessing(false);
         return;
@@ -237,10 +267,26 @@ export default function BookingPage() {
           };
 
           // Dispatch payment verification action
-          const verifyResult = await dispatch(verifyPaymentAsync(paymentVerificationData));
-          if (verifyPaymentAsync.fulfilled.match(verifyResult)) {
+          let verifyResult;
+          if (isGuestUser) {
+            verifyResult = await dispatch(verifyGuestPaymentAsync(paymentVerificationData));
+          } else {
+            verifyResult = await dispatch(verifyPaymentAsync(paymentVerificationData));
+          }
+          if ((isGuestUser && verifyGuestPaymentAsync.fulfilled.match(verifyResult)) || (!isGuestUser && verifyPaymentAsync.fulfilled.match(verifyResult))) {
             // Verification successful - update booking status to confirmed
-            await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
+            if (isGuestUser) {
+              // For guest users, use guest booking update with client email
+              const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
+              await dispatch(updateGuestBookingAsync({ 
+                id: bookingId, 
+                bookingData: { status: 'confirmed' }, 
+                clientEmail: guestUser.email 
+              }));
+            } else {
+              // For authenticated users, use regular booking update
+              await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
+            }
 
             // Process success flow
             try {
@@ -556,7 +602,7 @@ export default function BookingPage() {
                 </CardContent>
               </Card>
             )}
-            <Card variant="elevated">
+            {/* <Card variant="elevated">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Wallet className="h-5 w-5 text-primary" />
@@ -636,7 +682,7 @@ export default function BookingPage() {
                   </motion.div>
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Security Notice */}
             <Card variant="outline">
