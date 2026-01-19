@@ -6,6 +6,20 @@ import { Service } from '../../types/service';
 
 // Helper function to transform API service data to expected format
 const transformServiceFromAPI = (apiService: any): Service => {
+  // Handle images array - use first image as heroImage, second as aboutImage
+  const images = Array.isArray(apiService.images) ? apiService.images : [];
+  const heroImage = images[0] || apiService.heroImage || apiService.image;
+  const aboutImage = images[1] || apiService.aboutImage || heroImage;
+  
+  // Handle videos array - use first video
+  const videos = Array.isArray(apiService.videos) ? apiService.videos : [];
+  const videoUrl = videos[0] || apiService.videoUrl;
+  
+  // Combine additional images with features
+  const additionalImages = images.slice(2); // All images except the first two
+  const existingFeatures = Array.isArray(apiService.features) ? apiService.features : [];
+  const combinedFeatures = [...existingFeatures, ...additionalImages];
+  
   return {
     id: apiService._id || apiService.id || Math.random().toString(36).substr(2, 9),
     icon: apiService.icon || 'default-icon',
@@ -17,20 +31,20 @@ const transformServiceFromAPI = (apiService: any): Service => {
       title: apiService.name || apiService.title || 'Service Title',
       description: apiService.description || 'Service Description',
       benefits: Array.isArray(apiService.benefits) ? apiService.benefits : [],
-      detailedDescription: apiService.detailedDescription || apiService.description || 'Detailed description',
-      conditionsTreated: Array.isArray(apiService.conditionsTreated) ? apiService.conditionsTreated : [],
-      features: Array.isArray(apiService.features) ? apiService.features : [],
+      detailedDescription: apiService.about || apiService.detailedDescription || apiService.description || 'Detailed description',
+      conditionsTreated: Array.isArray(apiService.contraindications) ? apiService.contraindications : [],
+      features: combinedFeatures, // Include additional images in features
       sessionDuration: apiService.duration || apiService.sessionDuration || '30 min',
       price: `₹${apiService.price || 0}`,
       priceRange: `₹${apiService.price || 0}`,
-      prerequisites: apiService.prerequisites || '',
-      whatToExpect: Array.isArray(apiService.whatToExpect) ? apiService.whatToExpect : [],
+      prerequisites: Array.isArray(apiService.prerequisites) ? apiService.prerequisites.join(', ') : (apiService.prerequisites || ''),
+      whatToExpect: Array.isArray(apiService.features) ? apiService.features : [],
       resultsTimeline: apiService.resultsTimeline || '2-4 weeks',
     },
     media: {
-      heroImage: apiService.heroImage || apiService.image,
-      aboutImage: apiService.aboutImage,
-      videoUrl: apiService.videoUrl,
+      heroImage: heroImage,
+      aboutImage: aboutImage,
+      videoUrl: videoUrl,
     }
   };
 };

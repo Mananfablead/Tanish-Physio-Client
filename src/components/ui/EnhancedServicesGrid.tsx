@@ -752,62 +752,63 @@ export function EnhancedServicesGrid({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {currentServices.length > 0 ? (
           currentServices.map((service) => (
-            <div
-              key={service.id}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
-            >
-              {/* Service Image */}
-              {service.media?.heroImage && (
+            <Link to={`/service/${service?.id}`} key={service.id}>
+              <div
+                className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 cursor-pointer"
+              >
+                {/* Service Image */}
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={service.media.heroImage}
+                    src={service.media?.heroImage || `https://placehold.co/400x300/e2e8f0/64748b?text=${encodeURIComponent(service.title)}`}
                     alt={service.title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = `https://placehold.co/400x300/e2e8f0/64748b?text=${encodeURIComponent(service.title)}`;
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 </div>
-              )}
-
-              {/* Service Content */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  {service.title}
-                </h3>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-slate-500">
-                    Session Duration: {service?.details?.sessionDuration}
-                  </span>
-
-                  <span className="text-lg font-bold text-primary">
-                    {service?.details?.price}
-                  </span>
-                </div>
-                <p className="text-slate-600 mb-4">{service.description}</p>
-                <div className="mb-4">
-                  <h4 className="font-semibold text-slate-800 mb-2">
-                    Benefits:
-                  </h4>
-                  <ul className="space-y-1">
-                    {service.benefits.slice(0, 2).map((benefit, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="text-green-500 mr-2">✓</span>
-                        <span className="text-sm text-slate-600">
-                          {benefit}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <Link to={`/service/${service?.id}`}>
+      
+                {/* Service Content */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    {service.title}
+                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-slate-500">
+                      Session Duration: {service?.details?.sessionDuration}
+                    </span>
+      
+                    <span className="text-lg font-bold text-primary">
+                      {service?.details?.price}
+                    </span>
+                  </div>
+                  <p className="text-slate-600 mb-4">{service.description}</p>
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-slate-800 mb-2">
+                      Benefits:
+                    </h4>
+                    <ul className="space-y-1">
+                      {service.benefits.slice(0, 2).map((benefit, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <span className="text-green-500 mr-2">✓</span>
+                          <span className="text-sm text-slate-600">
+                            {benefit}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                   <Button
                     variant="outline"
                     className="mt-auto w-full rounded-xl border-primary text-primary hover:bg-primary hover:text-white font-bold"
                   >
                     Read More
                   </Button>
-                </Link>{" "}
+                </div>
               </div>
-            </div>
+            </Link>
           ))
         ) : (
           <div className="col-span-full text-center py-12">

@@ -17,7 +17,8 @@ import {
   Clock,
   ClipboardList,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  Phone
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,6 +40,7 @@ import {
 const registerSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
+    phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Phone number cannot exceed 15 digits'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -67,7 +69,7 @@ const RegisterPage = () => {
 
     const registerForm = useForm<RegisterForm>({
         resolver: zodResolver(registerSchema),
-        defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+        defaultValues: { name: '', email: '', phone: '', password: '', confirmPassword: '' },
     });
 
     const valuePoints = [
@@ -174,6 +176,7 @@ const RegisterPage = () => {
                                         const result = await dispatch(register({
                                             name: data.name,
                                             email: data.email,
+                                            phone: data.phone,
                                             password: data.password
                                         }));
                                         
@@ -210,6 +213,28 @@ const RegisterPage = () => {
                                                             className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium"
                                                         />
                                                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage className="text-xs font-medium text-red-500" />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={registerForm.control}
+                                        name="phone"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500 ml-1">Phone Number</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <input
+                                                            {...field}
+                                                            type="tel"
+                                                            placeholder="Enter your phone number"
+                                                            className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium"
+                                                        />
+                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
                                                     </div>
                                                 </FormControl>
                                                 <FormMessage className="text-xs font-medium text-red-500" />

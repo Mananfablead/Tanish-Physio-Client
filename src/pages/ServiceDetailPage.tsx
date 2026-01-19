@@ -3,7 +3,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee } from "lucide-react";
+import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee, ChevronLeft } from "lucide-react";
 import { Service } from "@/types/service";
 import { fetchServiceById } from "@/store/slices/serviceSlice";
 import { useEffect, useState, useMemo } from "react";
@@ -42,63 +42,118 @@ interface ExtendedService {
 }
 
 // ServiceHero component
-const ServiceHero = ({ service }: { service: ExtendedService }) => (
-  <div className="flex flex-col lg:flex-row gap-8 mb-8">
-    <div className="lg:w-1/2">
-      <div className="flex items-start gap-4 mb-4">
-        {/* <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-          {service.icon}
-        </div> */}
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            {service.details.title}
-          </h1>
-          <div className="flex flex-wrap gap-3 mb-3">
-            <Badge
-              variant="secondary"
-              className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border-primary/20"
-            >
-              {service.details.sessionDuration}
-            </Badge>
-            <Badge
-              variant="secondary"
-              className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border-primary/20 flex items-center gap-1"
-            >
-              <IndianRupee className="h-4 w-4" />
-              {(() => {
-                const priceRange = service.details.priceRange || service.details.price;
-                const cleanedPriceRange = priceRange.replace("₹", "");
-                // Extract first price from range (e.g., "4000-7500" -> "4000")
-                const fixedPrice = cleanedPriceRange.split("-")[0];
-                return fixedPrice;
-              })()}
-            </Badge>
+const ServiceHero = ({ service }: { service: ExtendedService }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Combine all images (hero, about, and additional images from backend)
+  const allImages = [
+    service.media?.heroImage,
+    service.media?.aboutImage,
+    ...(service.details.features || []) // Assuming features might contain additional images
+  ].filter(img => img); // Remove any undefined/null values
+  
+  // If no images from features, just use hero and about images
+  const validImages = allImages.length > 0 ? allImages : [
+    service.media?.heroImage,
+    service.media?.aboutImage
+  ].filter(img => img);
+  
+  const hasNextImage = currentImageIndex < validImages.length - 1;
+  const hasPrevImage = currentImageIndex > 0;
+  
+  const nextImage = () => {
+    if (hasNextImage) {
+      setCurrentImageIndex(prev => prev + 1);
+    }
+  };
+  
+  const prevImage = () => {
+    if (hasPrevImage) {
+      setCurrentImageIndex(prev => prev - 1);
+    }
+  };
+  
+  return (
+    <div className="flex flex-col lg:flex-row gap-8 mb-8">
+      <div className="lg:w-1/2">
+        <div className="flex items-start gap-4 mb-4">
+          {/* <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+            {service.icon}
+          </div> */}
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              {service.details.title}
+            </h1>
+            <div className="flex flex-wrap gap-3 mb-3">
+              <Badge
+                variant="secondary"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border-primary/20"
+              >
+                {service.details.sessionDuration}
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border-primary/20 flex items-center gap-1"
+              >
+                <IndianRupee className="h-4 w-4" />
+                {(() => {
+                  const priceRange = service.details.priceRange || service.details.price;
+                  const cleanedPriceRange = priceRange.replace("₹", "");
+                  // Extract first price from range (e.g., "4000-7500" -> "4000")
+                  const fixedPrice = cleanedPriceRange.split("-")[0];
+                  return fixedPrice;
+                })()}
+              </Badge>
+            </div>
           </div>
         </div>
+        <p className="text-lg text-slate-600 mb-6">
+          {service.details.description}
+        </p>
+        <p className="text-slate-600 mb-6">
+          {service.details.detailedDescription}
+        </p>
       </div>
-      <p className="text-lg text-slate-600 mb-6">
-        {service.details.description}
-      </p>
-      <p className="text-slate-600 mb-6">
-        {service.details.detailedDescription}
-      </p>
-    </div>
 
-    <div className="lg:w-1/2">
-      {/* Hero Image */}
-      {service.media?.heroImage && (
+      <div className="lg:w-1/2">
+        {/* Hero Image Gallery */}
         <div className="rounded-2xl overflow-hidden shadow-lg">
           <img
-            src={service.media.heroImage}
-            alt={`${service.title} hero`}
+            src={validImages[currentImageIndex] || `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(service.title)}`}
+            alt={`${service.title} image ${currentImageIndex + 1}`}
             className="w-full h-64 md:h-80 object-cover"
             loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(service.title)}`;
+            }}
           />
+          
+          {validImages.length > 1 && (
+            <>
+              <button
+                onClick={prevImage}
+                disabled={!hasPrevImage}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200 ${!hasPrevImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <ChevronLeft className="w-5 h-5 text-slate-800" />
+              </button>
+              
+              <button
+                onClick={nextImage}
+                disabled={!hasNextImage}
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200 ${!hasNextImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <ChevronRight className="w-5 h-5 text-slate-800" />
+              </button>
+              
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ServiceMedia component
 const ServiceMedia = ({ service }: { service: ExtendedService }) => {
@@ -116,9 +171,9 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
           {service.media?.videoUrl && (
             <div className="relative rounded-2xl overflow-hidden bg-slate-100 aspect-video flex items-center justify-center mb-6">
               <img
-                src="https://placehold.co/600x400/e2e8f0/64748b?text=Video+Preview"
+                src={service.media.heroImage || "https://placehold.co/600x400/e2e8f0/64748b?text=Video+Preview"}
                 alt="Video preview"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
               />
               <button
                 onClick={() => setIsVideoOpen(true)}
@@ -133,34 +188,39 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
         </div>
 
         <div className="lg:w-1/2">
-          {/* About Image */}
-          {service.media?.aboutImage && (
-            <div className="rounded-2xl overflow-hidden shadow-lg mb-6">
-              <img
-                src={service.media.aboutImage}
-                alt={`${service.title} about`}
-                className="w-full h-64 object-cover"
-                loading="lazy"
-              />
-            </div>
-          )}
+          {/* About Info */}
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-slate-900 mb-3">About This Service</h3>
+            <p className="text-slate-600">{service.details.detailedDescription}</p>
+          </div>
         </div>
       </div>
 
       {/* Video Modal */}
       {isVideoOpen && service.media?.videoUrl && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="relative w-full max-w-4xl bg-white rounded-2xl p-4">
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setIsVideoOpen(false)}
+        >
+          <div 
+            className="relative w-full max-w-4xl bg-white rounded-2xl p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setIsVideoOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-slate-200 hover:bg-slate-300 transition-colors duration-200"
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-200 hover:bg-slate-300 transition-colors duration-200 z-10"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="aspect-video bg-slate-100 rounded-xl flex items-center justify-center">
-              <p className="text-slate-500">
-                Video Player: {service.media.videoUrl}
-              </p>
+            <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden">
+              <video 
+                src={service.media.videoUrl} 
+                controls 
+                autoPlay
+                className="w-full h-full object-cover"
+                poster={service.media.heroImage}
+                onClick={(e) => e.stopPropagation()}
+              />
             </div>
           </div>
         </div>

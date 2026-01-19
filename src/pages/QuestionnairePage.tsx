@@ -523,7 +523,7 @@ export default function QuestionnairePage() {
 
         <div className="container max-w-6xl mx-auto px-6">
           {/* Questionnaire Info Banner */}
-          {activeQuestionnaire && (
+          {/* {activeQuestionnaire && (
             <div className="mb-6">
               <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
                 <CardContent className="p-6">
@@ -547,9 +547,9 @@ export default function QuestionnairePage() {
                 </CardContent>
               </Card>
             </div>
-          )}
+          )} */}
           
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-8 mt-4">
             <aside className="hidden lg:block lg:w-2/5">
               <div className="rounded-2xl
                   bg-gradient-to-b from-primary/20 via-secondary/30 to-accent/10
@@ -602,7 +602,7 @@ export default function QuestionnairePage() {
             </aside>
 
             <main className="lg:w-3/5 w-full ">
-              <div className="pt-8 ">
+              <div className=" ">
 
                 {/* Stored intake banner */}
                 {storedIntakeFound && !isReviewing && (
