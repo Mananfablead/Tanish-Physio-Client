@@ -32,10 +32,12 @@ export default function SubscriptionPlansPage() {
 
 
   // Fetch subscription plans when component mounts
-  useEffect(() => {
-    dispatch(fetchSubscriptionPlans());
+useEffect(() => {
+  dispatch(fetchSubscriptionPlans());
+  if (localStorage.getItem('token'))
     dispatch(fetchProfile());
-  }, [dispatch]);
+}, [dispatch]);
+
 
 
 
