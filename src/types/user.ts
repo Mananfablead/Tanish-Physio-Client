@@ -7,4 +7,5 @@ export interface User {
   image?: string;
   profilePicture?: string; // Add profilePicture field from backend
   healthProfile?: any;
+  subscriptionData?: any;
 }

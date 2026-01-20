@@ -135,7 +135,7 @@ const subscriptionSlice = createSlice({
               ? 'Unlimited exercise plans' 
               : 'Exercise plan access',
           ],
-          popular: plan.planId === 'monthly',
+          popular: plan.planId === 'yearly',
         }));
       })
       .addCase(fetchSubscriptionPlans.rejected, (state, action) => {

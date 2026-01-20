@@ -1,126 +1,98 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Star, Zap, ArrowRight, Tag, ShieldCheck, Video, Award, Clock } from "lucide-react";
+import {
+  CheckCircle,
+  Star,
+  Zap,
+  ArrowRight,
+  ShieldCheck,
+  Video,
+  Award,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { motion } from "framer-motion";
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
-import { RootState, useAppDispatch } from '@/store';
-import { fetchProfile, selectCurrentUser, selectIsAuthenticated } from '@/store/slices/authSlice';
-import { toast } from 'sonner';
-
-
+import { useSelector } from "react-redux";
+import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
+import { RootState, useAppDispatch } from "@/store";
+import { fetchProfile, selectCurrentUser } from "@/store/slices/authSlice";
+import { toast } from "sonner";
 
 export default function SubscriptionPlansPage() {
-  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  // Get subscription plans from Redux store
-  const { plans: subscriptionPlans, loading, error } = useSelector((state: RootState) => state.subscriptions);
+  const { plans: subscriptionPlans, loading, error } = useSelector(
+    (state: RootState) => state.subscriptions
+  );
+
   const user = useSelector(selectCurrentUser);
-  // Get authentication status
   const activePlan = user?.subscriptionData || null;
   const activePlanId = activePlan?.planId ?? null;
 
-  console.log("activePlaakjsjakjkdasjdksjdksdjsksjldslkdfjdfn", activePlan)
-  // Initialize selectedPlan based on fetched plans or default to 'monthly'
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [promoApplied] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
+  const [expandedFeatures, setExpandedFeatures] = useState<Record<string, boolean>>({});
 
-
-  // Fetch subscription plans when component mounts
-useEffect(() => {
-  dispatch(fetchSubscriptionPlans());
-  if (localStorage.getItem('token'))
-    dispatch(fetchProfile());
-}, [dispatch]);
-
-
-
-
-  const [expandedPlan, setExpandedPlan] = useState<{ [key: string]: { features: boolean, services: boolean } }>({
-    daily: { features: false, services: false },
-    weekly: { features: false, services: false },
-    monthly: { features: false, services: false },
-  });
-  const [promoApplied, setPromoApplied] = useState(false);
-
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlans());
+    if (localStorage.getItem("token")) dispatch(fetchProfile());
+  }, [dispatch]);
 
   return (
     <Layout>
+      {/* HERO */}
       <div className="bg-muted/30 py-14">
-        <div className="container text-center  space-y-5">
-
-          {/* BADGE */}
-          <Badge
-            variant="secondary"
-            className="mx-auto inline-flex items-center gap-2 px-4 py-1"
-          >
+        <div className="container text-center space-y-5">
+          <Badge className="mx-auto inline-flex items-center gap-2 px-4 py-1">
             <Star className="h-4 w-4 fill-primary text-primary" />
             Flexible Therapy Plans
           </Badge>
 
-
-          {/* HEADLINE */}
-          <h1 className="text-3xl lg:text-5xl font-bold leading-tight">
+          <h1 className="text-3xl lg:text-5xl font-bold">
             Start Your Recovery,
             <span className="text-primary"> Guided by Experts</span>
           </h1>
 
-          {/* SUBTEXT */}
-          <p className="text-muted-foreground text-base lg:text-lg max-w-3xl mx-auto">
-            Choose a therapy plan that matches your recovery goals. Every plan includes
-            one-on-one guidance from certified physiotherapists, personalized programs,
-            and continuous progress tracking.
+          <p className="text-muted-foreground max-w-3xl mx-auto">
+            Choose a therapy plan that matches your recovery goals. Every plan
+            includes one-on-one guidance from certified physiotherapists.
           </p>
         </div>
       </div>
 
-
+      {/* PLANS */}
       <div className="container pb-12">
-        {/* Plans Grid */}
         {subscriptionPlans.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-              <Zap className="h-10 w-10 text-primary" />
-            </div>
-
-            <h2 className="text-2xl font-semibold mb-2">
-              No Subscription Plans Found
-            </h2>
-
-            <p className="text-muted-foreground max-w-md mb-6">
-              We’re currently working on new plans for you.
-              Please check back soon or contact support for more details.
-            </p>
-
-            <Button
-              variant="outline"
-              onClick={() => window.location.reload()}
-              className="px-6"
-            >
-              Refresh Page
-            </Button>
+          <div className="text-center py-12">
+            <Zap className="mx-auto h-10 w-10 text-primary mb-4" />
+            <h2 className="text-xl font-semibold">No Plans Found</h2>
           </div>
-
         ) : (
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-12">
             {loading ? (
-              <div className="col-span-full text-center py-8">
-                <p>Loading subscription plans...</p>
-              </div>
+              <p className="col-span-full text-center">Loading plans...</p>
             ) : error ? (
-              <div className="col-span-full text-center py-8">
-                <p className="text-destructive">
-                  Error loading subscription plans: {error}
-                </p>
-              </div>
+              <p className="col-span-full text-center text-destructive">
+                {error}
+              </p>
             ) : (
               subscriptionPlans.map((plan, index) => {
                 const planId = plan.planId || plan.id;
+                const isSelected = selectedPlan === planId;
+                const isActive = activePlanId === planId;
 
                 return (
                   <motion.div
@@ -129,101 +101,169 @@ useEffect(() => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                   >
-
-
                     <Card
-                      variant={plan.popular ? "featured" : "interactive"}
-                      className={`relative h-full cursor-pointer ${selectedPlan === planId ? "ring-2 ring-primary" : ""
-                        }`}
                       onClick={() => setSelectedPlan(planId)}
+                      className={`relative h-full flex flex-col rounded-2xl cursor-pointer border
+                        ${isSelected ? "ring-2 ring-primary" : ""}
+                        ${plan.popular ? "shadow-lg" : "shadow-sm"}
+                      `}
                     >
                       {plan.popular && (
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                          <Badge className="gradient-accent">
+                          <Badge className="bg-orange-500 text-white px-3 py-1">
                             <Zap className="h-3 w-3 mr-1" />
                             Best Value
                           </Badge>
                         </div>
                       )}
-                      {activePlanId === planId && (
+
+                      {isActive && (
                         <div className="absolute top-3 right-3">
-                          <Badge variant="success">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Active
-                          </Badge>
+                          <Badge variant="success">Active</Badge>
                         </div>
                       )}
-                      <CardHeader className="text-center pb-2">
-                        <CardTitle className="text-xl">{plan.name}</CardTitle>
+
+                      <CardHeader className="text-center flex-shrink-0">
+                        <CardTitle className="text-xl">
+                          {plan.name}
+                        </CardTitle>
                         <CardDescription>{plan.duration}</CardDescription>
                       </CardHeader>
 
-                      <CardContent className="text-center">
+                      <CardContent className="text-center space-y-6 flex-grow flex flex-col">
                         {/* PRICE */}
-                        <div className="mb-6">
+                        <div>
                           {plan.originalPrice && (
-                            <span className="text-lg text-muted-foreground line-through mr-2">
+                            <span className="line-through text-muted-foreground mr-2">
                               ₹{plan.originalPrice}
                             </span>
                           )}
-                          <span className="text-4xl font-bold">₹{plan.price}</span>
+                          <span className="text-4xl font-bold">
+                            ₹{plan.price}
+                          </span>
                           <span className="text-muted-foreground">
                             /{plan.duration}
                           </span>
                         </div>
 
                         {/* SESSIONS */}
-                        <div className="text-sm text-muted-foreground mb-6">
+                        <p className="text-sm text-muted-foreground">
                           {typeof plan.sessions === "number"
-                            ? `Up to ${plan.sessions} session${plan.sessions > 1 ? "s" : ""
-                            }`
+                            ? `Up to ${plan.sessions} sessions`
                             : "Unlimited sessions"}
-                        </div>
+                        </p>
+
+                        {/* DESCRIPTION */}
+                        {plan.description && (
+                          <div className="text-left">
+                            <h4 className="text-sm font-medium mb-2">What's Included</h4>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                              {plan.description
+                                .split("\n")
+                                .slice(0, expandedDescriptions[planId] ? undefined : 2)
+                                .map((line, idx) => (
+                                  <li key={idx} className="flex gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span>{line}</span>
+                                  </li>
+                                ))}
+                            </ul>
+                            {plan.description.split("\n").length > 2 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="mt-2 p-0 h-auto text-primary hover:text-primary/80"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedDescriptions(prev => ({
+                                    ...prev,
+                                    [planId]: !prev[planId]
+                                  }));
+                                }}
+                              >
+                                {expandedDescriptions[planId] ? (
+                                  <>
+                                    Show Less <ChevronUp className="h-4 w-4 ml-1" />
+                                  </>
+                                ) : (
+                                  <>
+                                    Show More <ChevronDown className="h-4 w-4 ml-1" />
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        )}
 
                         {/* FEATURES */}
-                        <div className="space-y-4 text-left">
-                          <h4 className="font-medium text-sm mb-2">
+                        <div className="text-left">
+                          <h4 className="text-sm font-medium mb-2">
                             Included Features
                           </h4>
-                          <ul className="space-y-2">
-                            {plan.features.map((feature, idx) => (
-                              <li key={idx} className="flex gap-2 text-sm">
-                                <CheckCircle className="h-4 w-4 text-success" />
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
+                          <div className="space-y-2">
+                            {plan.features
+                              .slice(0, expandedFeatures[planId] ? undefined : 2)
+                              .map((f, i) => (
+                                <div key={i} className="flex gap-2 text-sm">
+                                  <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
+                                  <span>{f}</span>
+                                </div>
+                              ))}
+                          </div>
+                          {plan.features.length > 2 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="mt-2 p-0 h-auto text-primary hover:text-primary/80"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedFeatures(prev => ({
+                                  ...prev,
+                                  [planId]: !prev[planId]
+                                }));
+                              }}
+                            >
+                              {expandedFeatures[planId] ? (
+                                <>
+                                  Show Less <ChevronUp className="h-4 w-4 ml-1" />
+                                </>
+                              ) : (
+                                <>
+                                  Show More <ChevronDown className="h-4 w-4 ml-1" />
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
 
                         {/* BUTTON */}
                         <Button
+                          className="w-full"
                           variant={
-                            activePlanId === planId
+                            isActive
                               ? "secondary"
-                              : selectedPlan === planId
+                              : isSelected
                                 ? "hero"
                                 : "outline"
                           }
-                          className="w-full mt-6"
-                          disabled={!!activePlanId && activePlanId !== planId}
+                          disabled={!!activePlanId && !isActive}
                           onClick={(e) => {
                             e.stopPropagation();
-
                             if (activePlanId) {
-                              toast.info("You already have an active subscription");
+                              toast.info(
+                                "You already have an active subscription"
+                              );
                               return;
                             }
-
                             setSelectedPlan(planId);
                           }}
                         >
-                          {activePlanId === planId
+                          {isActive
                             ? "Active Plan"
-                            : selectedPlan === planId
+                            : isSelected
                               ? "Selected"
                               : "Select Plan"}
                         </Button>
-
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -233,37 +273,11 @@ useEffect(() => {
           </div>
         )}
 
-
-        {selectedPlan && !activePlanId && subscriptionPlans.length > 0 && (
-
+        {/* SUMMARY */}
+        {selectedPlan && !activePlanId && (
           <div className="max-w-6xl mx-auto">
-            <Card className="bg-slate-90 shadow-xl">
+            <Card className="shadow-xl rounded-2xl">
               <CardContent className="p-6 space-y-6">
-                {/* PLAN SUMMARY */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold text-lg mb-1">
-                      {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.name}
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Auto-renews after {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.duration}. Cancel anytime.
-                    </p>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-2xl font-bold">
-                      ₹{promoApplied
-                        ? Math.round(((subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price || 0) * 0.8))
-                        : subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price}
-                    </p>
-                    {promoApplied && (
-                      <p className="text-sm text-success">20% off applied</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* DIVIDER */}
-                <div className="border-t" />
 
                 {/* WHAT YOU GET */}
                 <div>
@@ -288,7 +302,21 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* TRUST / SAFETY */}
+                <div className="flex justify-between">
+                  <h3 className="font-semibold">
+                    {subscriptionPlans.find(
+                      (p) => (p.planId || p.id) === selectedPlan
+                    )?.name}
+                  </h3>
+
+                  <p className="text-muted-foreground text-sm">
+                    Auto-renews after{" "}
+                    {subscriptionPlans.find(
+                      (p) => (p.planId || p.id) === selectedPlan
+                    )?.duration}. Cancel anytime.
+                  </p>
+                </div>
+                {/* TRUST & SAFETY */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-green-500" />
@@ -307,52 +335,37 @@ useEffect(() => {
                     Flexible scheduling
                   </div>
                 </div>
+
                 <Button
-                  variant="hero"
                   size="lg"
+                  variant="hero"
                   className="w-full"
                   onClick={() => {
-                    const selectedPlanData = subscriptionPlans.find(
-                      p => (p.planId || p.id) === selectedPlan
+                    const plan = subscriptionPlans.find(
+                      (p) => (p.planId || p.id) === selectedPlan
                     );
+                    if (!plan) return;
 
-                    console.log("selectedPlanData", selectedPlanData);
-
-                    if (!selectedPlanData) {
-                      toast.error("Please select a plan");
-                      return;
-                    }
-                    if (!selectedPlan) {
-                      toast.error("Please select a plan to continue");
-                      return;
-                    }
-
-                    const bookingData = {
-                      service: {
-                        id: selectedPlanData.planId || selectedPlanData.id,
-                        name: selectedPlanData.name,
-                        price: String(selectedPlanData.price), // service flow jaisa string
-                        duration: selectedPlanData.duration,
+                    navigate("/booking", {
+                      state: {
+                        service: {
+                          id: plan.planId || plan.id,
+                          name: plan.name,
+                          price: String(plan.price),
+                          duration: plan.duration,
+                        },
+                        fromSubscription: true,
                       },
-                      fromSubscription: true, // 🔥 SUBSCRIPTION FLOW
-                    };
-
-                    navigate("/booking", { state: bookingData });
+                    });
                   }}
-
                 >
                   Book Now
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
-
-
-
               </CardContent>
-
             </Card>
           </div>
         )}
-
       </div>
     </Layout>
   );
