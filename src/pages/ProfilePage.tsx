@@ -178,10 +178,7 @@ export default function ProfilePage() {
     // Implement cancel plan functionality
   };
 
-  const handleRenewPlan = () => {
-    console.log("Renew plan clicked");
-    // Implement renew plan functionality
-  };
+
 
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -467,18 +464,18 @@ export default function ProfilePage() {
                     footer={
                       activePlan ? (
                         <>
-                          <Button
+                          {/* <Button
                             variant="outline"
                             className="h-11 rounded-xl border-slate-200 text-slate-600 hover:bg-primary font-bold"
                             onClick={handleCancelPlan}
                           >
                             Cancel Plan
-                          </Button>
+                          </Button> */}
                           <Button
                             className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black"
-                            onClick={handleRenewPlan}
+                            onClick={() => navigate("/schedule")}
                           >
-                            Renew Now
+                            Create Session
                           </Button>
                         </>
                       ) : (
@@ -1019,7 +1016,7 @@ export default function ProfilePage() {
                                   <td className="px-6 py-4 text-center">
                                     <span
                                       className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                    ${p.status === "verified"
+                    ${p.status === "active"
                                           ? "bg-green-100 text-green-700"
                                           : "bg-yellow-100 text-yellow-700"
                                         }`}
