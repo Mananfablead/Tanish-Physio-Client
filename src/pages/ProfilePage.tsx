@@ -104,7 +104,7 @@ export default function ProfilePage() {
   } = useSelector((state: { sessions: any }) => state.sessions);
   const { bookings, loading: bookingsLoading, error: bookingsError } = useSelector((state: any) => state.bookings);
   const bookingList = bookings?.bookings || [];
-  const activePlan = userSubscriptions && userSubscriptions.length > 0 ? userSubscriptions[0] : null;
+  const activePlan = user?.subscriptionData;
   console.log("active plan", activePlan)
   console.log("upcoming sessions", upcomingSessions);
   // Set state based on Redux data

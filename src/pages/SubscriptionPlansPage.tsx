@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
 import { RootState, useAppDispatch } from '@/store';
-import { selectIsAuthenticated } from '@/store/slices/authSlice';
+import { fetchProfile, selectCurrentUser, selectIsAuthenticated } from '@/store/slices/authSlice';
 import { toast } from 'sonner';
 
 
@@ -21,37 +21,23 @@ export default function SubscriptionPlansPage() {
 
   // Get subscription plans from Redux store
   const { plans: subscriptionPlans, loading, error } = useSelector((state: RootState) => state.subscriptions);
-
+  const user = useSelector(selectCurrentUser);
   // Get authentication status
-  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const activePlan = user?.subscriptionData || null;
+  const activePlanId = activePlan?.planId ?? null;
 
+  console.log("activePlaakjsjakjkdasjdksjdksdjsksjldslkdfjdfn", activePlan)
   // Initialize selectedPlan based on fetched plans or default to 'monthly'
-  const [selectedPlan, setSelectedPlan] = useState<string>("monthly");
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
 
   // Fetch subscription plans when component mounts
   useEffect(() => {
     dispatch(fetchSubscriptionPlans());
+    dispatch(fetchProfile());
   }, [dispatch]);
 
-  // Update expandedPlan state when subscriptionPlans change
-  useEffect(() => {
-    if (subscriptionPlans && subscriptionPlans.length > 0) {
-      const initialExpandedState: { [key: string]: { features: boolean, services: boolean } } = {};
-      subscriptionPlans.forEach(plan => {
-        const planId = plan.planId || plan.id;
-        initialExpandedState[planId] = { features: false, services: false };
-      });
-      setExpandedPlan(initialExpandedState);
 
-      // Set default selected plan if available
-      if (subscriptionPlans.length > 0 && !subscriptionPlans.find(p => p.planId === selectedPlan)) {
-        const defaultPlan = subscriptionPlans.find(p => p.popular) || subscriptionPlans[0];
-        if (defaultPlan) {
-          setSelectedPlan(defaultPlan.planId || defaultPlan.id || "monthly");
-        }
-      }
-    }
-  }, [subscriptionPlans]);
 
   const [expandedPlan, setExpandedPlan] = useState<{ [key: string]: { features: boolean, services: boolean } }>({
     daily: { features: false, services: false },
@@ -88,296 +74,283 @@ export default function SubscriptionPlansPage() {
             one-on-one guidance from certified physiotherapists, personalized programs,
             and continuous progress tracking.
           </p>
-
-
-
         </div>
       </div>
 
 
       <div className="container pb-12">
         {/* Plans Grid */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-12">
-          {loading ? (
-            <div className="col-span-full text-center py-8">
-              <p>Loading subscription plans...</p>
+        {subscriptionPlans.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+              <Zap className="h-10 w-10 text-primary" />
             </div>
-          ) : error ? (
-            <div className="col-span-full text-center py-8">
-              <p className="text-destructive">Error loading subscription plans: {error}</p>
-            </div>
-          ) : (
-            subscriptionPlans.map((plan, index) => {
-              const planId = plan.planId || plan.id;
-              return (
-                <motion.div
-                  key={planId}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card
-                    variant={plan.popular ? "featured" : "interactive"}
-                    className={`relative h-full cursor-pointer ₹{
-                  selectedPlan === planId ? "ring-2 ring-primary" : ""
-                }`}
-                    onClick={() => setSelectedPlan(plan.planId || plan.id || "monthly")}
+
+            <h2 className="text-2xl font-semibold mb-2">
+              No Subscription Plans Found
+            </h2>
+
+            <p className="text-muted-foreground max-w-md mb-6">
+              We’re currently working on new plans for you.
+              Please check back soon or contact support for more details.
+            </p>
+
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="px-6"
+            >
+              Refresh Page
+            </Button>
+          </div>
+
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-12">
+            {loading ? (
+              <div className="col-span-full text-center py-8">
+                <p>Loading subscription plans...</p>
+              </div>
+            ) : error ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-destructive">
+                  Error loading subscription plans: {error}
+                </p>
+              </div>
+            ) : (
+              subscriptionPlans.map((plan, index) => {
+                const planId = plan.planId || plan.id;
+
+                return (
+                  <motion.div
+                    key={planId}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
                   >
-                    {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="gradient-accent">
-                          <Zap className="h-3 w-3 mr-1" />
-                          Best Value
-                        </Badge>
-                      </div>
-                    )}
 
-                    <CardHeader className="text-center pb-2">
-                      <CardTitle className="text-xl">{plan.name}</CardTitle>
-                      <CardDescription>{plan.duration}</CardDescription>
-                    </CardHeader>
 
-                    <CardContent className="text-center">
-                      <div className="mb-6">
-                        {plan.originalPrice && (
-                          <span className="text-lg text-muted-foreground line-through mr-2">
-                            ₹{plan.originalPrice}
-                          </span>
-                        )}
-                        <span className="text-4xl font-bold">₹{plan.price}</span>
-                        <span className="text-muted-foreground">/{plan.duration}</span>
-                      </div>
+                    <Card
+                      variant={plan.popular ? "featured" : "interactive"}
+                      className={`relative h-full cursor-pointer ${selectedPlan === planId ? "ring-2 ring-primary" : ""
+                        }`}
+                      onClick={() => setSelectedPlan(planId)}
+                    >
+                      {plan.popular && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <Badge className="gradient-accent">
+                            <Zap className="h-3 w-3 mr-1" />
+                            Best Value
+                          </Badge>
+                        </div>
+                      )}
+                      {activePlanId === planId && (
+                        <div className="absolute top-3 right-3">
+                          <Badge variant="success">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
+                        </div>
+                      )}
+                      <CardHeader className="text-center pb-2">
+                        <CardTitle className="text-xl">{plan.name}</CardTitle>
+                        <CardDescription>{plan.duration}</CardDescription>
+                      </CardHeader>
 
-                      <div className="text-sm text-muted-foreground mb-6">
-                        {typeof plan.sessions === "number"
-                          ? `Up to ${plan.sessions} session${plan.sessions > 1 ? "s" : ""}`
-                          : "Unlimited sessions"
-                        }
-                      </div>
-
-                      <div className="space-y-4 text-left">
-                        <div>
-                          <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
-                            <span className="bg-primary/10 p-1 rounded">
-                              <CheckCircle className="h-3 w-3 text-primary" />
+                      <CardContent className="text-center">
+                        {/* PRICE */}
+                        <div className="mb-6">
+                          {plan.originalPrice && (
+                            <span className="text-lg text-muted-foreground line-through mr-2">
+                              ₹{plan.originalPrice}
                             </span>
+                          )}
+                          <span className="text-4xl font-bold">₹{plan.price}</span>
+                          <span className="text-muted-foreground">
+                            /{plan.duration}
+                          </span>
+                        </div>
+
+                        {/* SESSIONS */}
+                        <div className="text-sm text-muted-foreground mb-6">
+                          {typeof plan.sessions === "number"
+                            ? `Up to ${plan.sessions} session${plan.sessions > 1 ? "s" : ""
+                            }`
+                            : "Unlimited sessions"}
+                        </div>
+
+                        {/* FEATURES */}
+                        <div className="space-y-4 text-left">
+                          <h4 className="font-medium text-sm mb-2">
                             Included Features
                           </h4>
                           <ul className="space-y-2">
-                            {plan.features.slice(0, 2).map((feature, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-sm">
-                                <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                                <span>{feature}</span>
+                            {plan.features.map((feature, idx) => (
+                              <li key={idx} className="flex gap-2 text-sm">
+                                <CheckCircle className="h-4 w-4 text-success" />
+                                {feature}
                               </li>
                             ))}
-                            {(plan.features.length > 2 && expandedPlan[planId]?.features) ? (
-                              plan.features.slice(2).map((feature, idx) => (
-                                <li key={idx + 2} className="flex items-start gap-2 text-sm">
-                                  <CheckCircle className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                                  <span>{feature}</span>
-                                </li>
-                              ))
-                            ) : null}
-                            {plan.features.length > 2 && (
-                              <li className="flex items-start gap-2 text-sm text-primary font-medium cursor-pointer" onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedPlan(prev => ({
-                                  ...prev,
-                                  [planId]: {
-                                    ...prev[planId],
-                                    features: !prev[planId].features
-                                  }
-                                }));
-                              }}>
-                                <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                                <span>
-                                  {expandedPlan[planId]?.features ? 'Show less' : `+${plan.features.length - 2} more features`}
-                                </span>
-                              </li>
-                            )}
                           </ul>
                         </div>
 
-                        <div>
-                          <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
-                            <span className="bg-primary/10 p-1 rounded">
-                              <Star className="h-3 w-3 text-primary" />
-                            </span>
-                            Services Provided
-                          </h4>
-                          <ul className="space-y-2">
-                            {plan.services?.slice(0, 2).map((service, idx) => (
-                              <li key={idx} className="flex items-start gap-2 text-sm">
-                                <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                                <span>{service}</span>
-                              </li>
-                            ))}
-                            {(plan.services && plan.services.length > 2 && expandedPlan[planId]?.services) ? (
-                              plan.services.slice(2).map((service, idx) => (
-                                <li key={idx + 2} className="flex items-start gap-2 text-sm">
-                                  <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                                  <span>{service}</span>
-                                </li>
-                              ))
-                            ) : null}
-                            {plan.services && plan.services.length > 2 && (
-                              <li className="flex items-start gap-2 text-sm text-primary font-medium cursor-pointer" onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedPlan(prev => ({
-                                  ...prev,
-                                  [planId]: {
-                                    ...prev[planId],
-                                    services: !prev[planId].services
-                                  }
-                                }));
-                              }}>
-                                <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                                <span>
-                                  {expandedPlan[planId]?.services ? 'Show less' : `+${plan.services.length - 2} more services`}
-                                </span>
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      </div>
+                        {/* BUTTON */}
+                        <Button
+                          variant={
+                            activePlanId === planId
+                              ? "secondary"
+                              : selectedPlan === planId
+                                ? "hero"
+                                : "outline"
+                          }
+                          className="w-full mt-6"
+                          disabled={!!activePlanId && activePlanId !== planId}
+                          onClick={(e) => {
+                            e.stopPropagation();
 
-                      <Button
-                        variant={selectedPlan === planId ? "hero" : "outline"}
-                        className="w-full mt-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPlan(plan.planId || plan.id);
-                        }}
+                            if (activePlanId) {
+                              toast.info("You already have an active subscription");
+                              return;
+                            }
 
-                      >
-                        {selectedPlan === planId ? "Selected" : "Select Plan"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })
-          )}
-        </div>
+                            setSelectedPlan(planId);
+                          }}
+                        >
+                          {activePlanId === planId
+                            ? "Active Plan"
+                            : selectedPlan === planId
+                              ? "Selected"
+                              : "Select Plan"}
+                        </Button>
 
-        
-        {/* Plan Details */}
-        <div className="max-w-6xl mx-auto">
-          <Card className="bg-slate-90 shadow-xl">
-            <CardContent className="p-6 space-y-6">
-              {/* PLAN SUMMARY */}
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+
+        {selectedPlan && !activePlanId && subscriptionPlans.length > 0 && (
+
+          <div className="max-w-6xl mx-auto">
+            <Card className="bg-slate-90 shadow-xl">
+              <CardContent className="p-6 space-y-6">
+                {/* PLAN SUMMARY */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">
+                      {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.name}
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Auto-renews after {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.duration}. Cancel anytime.
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-2xl font-bold">
+                      ₹{promoApplied
+                        ? Math.round(((subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price || 0) * 0.8))
+                        : subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price}
+                    </p>
+                    {promoApplied && (
+                      <p className="text-sm text-success">20% off applied</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* DIVIDER */}
+                <div className="border-t" />
+
+                {/* WHAT YOU GET */}
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">
-                    {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.name}
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    Auto-renews after {subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.duration}. Cancel anytime.
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-2xl font-bold">
-                    ₹{promoApplied
-                      ? Math.round(((subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price || 0) * 0.8))
-                      : subscriptionPlans.find(p => (p.planId || p.id) === selectedPlan)?.price}
-                  </p>
-                  {promoApplied && (
-                    <p className="text-sm text-success">20% off applied</p>
-                  )}
-                </div>
-              </div>
-
-              {/* DIVIDER */}
-              <div className="border-t" />
-
-              {/* WHAT YOU GET */}
-              <div>
-                <h4 className="font-medium mb-3">What you get with this plan</h4>
-                <div className="grid md:grid-cols-2 gap-3 text-sm">
-                  <div className="flex gap-2">
-                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                    1-on-1 live video sessions
-                  </div>
-                  <div className="flex gap-2">
-                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                    Personal recovery roadmap
-                  </div>
-                  <div className="flex gap-2">
-                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                    Exercise videos & guidance
-                  </div>
-                  <div className="flex gap-2">
-                    <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                    Progress tracking & follow-ups
+                  <h4 className="font-medium mb-3">What you get with this plan</h4>
+                  <div className="grid md:grid-cols-2 gap-3 text-sm">
+                    <div className="flex gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                      1-on-1 live video sessions
+                    </div>
+                    <div className="flex gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                      Personal recovery roadmap
+                    </div>
+                    <div className="flex gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                      Exercise videos & guidance
+                    </div>
+                    <div className="flex gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+                      Progress tracking & follow-ups
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* TRUST / SAFETY */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-green-500" />
-                  Secure & private
+                {/* TRUST / SAFETY */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-green-500" />
+                    Secure & private
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-blue-500" />
+                    HD video calls
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-yellow-500" />
+                    Certified experts
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-purple-500" />
+                    Flexible scheduling
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Video className="h-4 w-4 text-blue-500" />
-                  HD video calls
-                </div>
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-yellow-500" />
-                  Certified experts
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-purple-500" />
-                  Flexible scheduling
-                </div>
-              </div>
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => {
+                    const selectedPlanData = subscriptionPlans.find(
+                      p => (p.planId || p.id) === selectedPlan
+                    );
+
+                    console.log("selectedPlanData", selectedPlanData);
+
+                    if (!selectedPlanData) {
+                      toast.error("Please select a plan");
+                      return;
+                    }
+                    if (!selectedPlan) {
+                      toast.error("Please select a plan to continue");
+                      return;
+                    }
+
+                    const bookingData = {
+                      service: {
+                        id: selectedPlanData.planId || selectedPlanData.id,
+                        name: selectedPlanData.name,
+                        price: String(selectedPlanData.price), // service flow jaisa string
+                        duration: selectedPlanData.duration,
+                      },
+                      fromSubscription: true, // 🔥 SUBSCRIPTION FLOW
+                    };
+
+                    navigate("/booking", { state: bookingData });
+                  }}
+
+                >
+                  Book Now
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
 
 
 
+              </CardContent>
 
-              {/* CTA */}
-              <Button
-                variant="hero"
-                size="lg"
-                className="w-full"
-                onClick={() => {
-                  const selectedPlanData = subscriptionPlans.find(
-                    p => (p.planId || p.id) === selectedPlan
-                  );
+            </Card>
+          </div>
+        )}
 
-                  console.log("selectedPlanData", selectedPlanData);
-
-                  if (!selectedPlanData) {
-                    toast.error("Please select a plan");
-                    return;
-                  }
-
-                  const bookingData = {
-                    service: {
-                      id: selectedPlanData.planId || selectedPlanData.id,
-                      name: selectedPlanData.name,
-                      price: String(selectedPlanData.price), // service flow jaisa string
-                      duration: selectedPlanData.duration,
-                    },
-                    fromSubscription: true, // 🔥 SUBSCRIPTION FLOW
-                  };
-
-                  navigate("/booking", { state: bookingData });
-                }}
-
-              >
-                Book Now
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
-
-
-
-            </CardContent>
-
-          </Card>
-        </div>
       </div>
     </Layout>
   );
