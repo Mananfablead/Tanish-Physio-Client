@@ -31,6 +31,7 @@ interface ProfileResponse {
   healthProfile?: any;
   createdAt: string;
   updatedAt: string;
+  subscriptionData?: any;
 }
 
 interface AuthState {
@@ -300,7 +301,7 @@ const authSlice = createSlice({
           email: action.payload.email,
           role: action.payload.role,
           phone: action.payload.phone,
-          
+          subscriptionData: action.payload.subscriptionData,
           profilePicture: action.payload.profilePicture,
           healthProfile: action.payload.healthProfile,
         };

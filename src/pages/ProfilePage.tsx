@@ -33,9 +33,10 @@ import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "@/store";
 import { selectCurrentUser } from "@/store/slices/authSlice";
-import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
-import { fetchUserPayments } from "@/store/slices/paymentSlice";
-import { fetchUpcomingSessions } from "@/store/slices/sessionSlice";
+import { fetchUserSubscriptions } from '@/store/slices/subscriptionSlice';
+import { fetchUserPayments } from '@/store/slices/paymentSlice';
+import { fetchUpcomingSessions } from '@/store/slices/sessionSlice';
+import { getAllBookingsAsync } from '@/store/slices/bookingsSlice';
 import { getUpcomingSessions } from "@/lib/api";
 import { updateProfile, setCredentials, fetchProfile } from '@/store/slices/authSlice';
 import api from "@/lib/api";
@@ -101,8 +102,10 @@ export default function ProfilePage() {
     loading: sessionsLoading,
     error: sessionsError,
   } = useSelector((state: { sessions: any }) => state.sessions);
-  const activePlan = userSubscriptions?.[0] || null;
-
+  const { bookings, loading: bookingsLoading, error: bookingsError } = useSelector((state: any) => state.bookings);
+  const bookingList = bookings?.bookings || [];
+  const activePlan = userSubscriptions && userSubscriptions.length > 0 ? userSubscriptions[0] : null;
+  console.log("active plan", activePlan)
   console.log("upcoming sessions", upcomingSessions);
   // Set state based on Redux data
   const [planHistory, setPlanHistory] = useState<any[]>([]);
@@ -117,6 +120,7 @@ export default function ProfilePage() {
     dispatch(fetchUserSubscriptions());
     dispatch(fetchUserPayments());
     dispatch(fetchUpcomingSessions());
+    dispatch(getAllBookingsAsync());
     // Also fetch the user profile to ensure profile picture is loaded
     dispatch(fetchProfile());
   }, [dispatch]);
@@ -156,6 +160,13 @@ export default function ProfilePage() {
       label: "Subscription History",
       sub: "Payment history",
       icon: FileText,
+      color: "text-primary",
+    },
+    {
+      id: "bookings",
+      label: "Bookings",
+      sub: "Your appointment bookings",
+      icon: Calendar,
       color: "text-primary",
     },
 
@@ -486,48 +497,66 @@ export default function ProfilePage() {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <h2 className="text-3xl font-black text-slate-900">
-                              {activePlan.planName}
+                              {activePlan?.planName || "Subscription Plan"}
                             </h2>
 
                             <p className="text-slate-500 font-medium mt-1">
-                              Payment via {activePlan.paymentGateway} • Status: {activePlan.status}
+                              Payment via {activePlan?.paymentGateway || "Razorpay"} • Status:{" "}
+                              {activePlan?.status || "inactive"}
                             </p>
                           </div>
 
                           <div className="text-right">
                             <div className="text-3xl font-black text-primary">
-                              ₹{activePlan.amount}
+                              ₹{activePlan?.amount ?? 0}
                             </div>
                             <div className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                              {activePlan.currency}
+                              {activePlan?.currency || "INR"}
                             </div>
                           </div>
                         </div>
 
                         {/* Info blocks */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <InfoBlock
-                            label="Purchase Date"
-                            value={new Date(activePlan.createdAt).toLocaleDateString()}
-                            icon={Calendar}
-                            iconColor="text-primary"
-                          />
+
 
                           <InfoBlock
                             label="Start Date"
-                            value={new Date(activePlan.startDate).toLocaleDateString()}
+                            value={
+                              activePlan?.startDate
+                                ? new Date(activePlan.startDate).toLocaleDateString()
+                                : "-"
+                            }
                             icon={Clock}
                             iconColor="text-warning"
                           />
 
                           <InfoBlock
+                            label="Valid Till"
+                            value={
+                              activePlan?.endDate
+                                ? new Date(activePlan.endDate).toLocaleDateString()
+                                : "-"
+                            }
+                            icon={Calendar}
+                            iconColor="text-destructive"
+                          />
+
+                          <InfoBlock
                             label="Auto Renew"
-                            value={activePlan.autoRenew ? "Enabled" : "Disabled"}
+                            value={
+                              activePlan?.autoRenew !== undefined
+                                ? activePlan.autoRenew
+                                  ? "Enabled"
+                                  : "Disabled"
+                                : "Enabled"
+                            }
                             icon={Activity}
                             iconColor="text-success"
                           />
                         </div>
                       </div>
+
 
                     ) : (
                       <div className="py-8 text-center space-y-4">
@@ -797,6 +826,126 @@ export default function ProfilePage() {
                       </RightPanelCard>
 
                     )}
+                  </div>
+                )}
+
+                {selectedSection === "bookings" && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                          Your Bookings
+                        </h2>
+                        <p className="text-slate-500 font-medium text-sm">
+                          History of your appointment bookings
+                        </p>
+                      </div>
+                    </div>
+
+                    {bookingList.length > 0 ? (
+                      <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Service
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Date & Time
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Therapist
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
+                                  Amount
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
+                                  Status
+                                </th>
+                              </tr>
+                            </thead>
+
+                            <tbody className="divide-y divide-slate-100">
+                              {bookingList.map((booking) => (
+                                <tr
+                                  key={booking._id}
+                                  className="hover:bg-slate-50/50 transition-colors"
+                                >
+                                  <td className="px-6 py-4">
+                                    <div className="font-bold text-slate-900">
+                                      {booking.serviceName || 'N/A'}
+                                    </div>
+                                    <div className="text-xs text-slate-400">
+                                      {booking.serviceId?.name || 'N/A'}
+                                    </div>
+                                  </td>
+
+                                  <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                    {new Date(booking.date).toLocaleDateString("en-IN", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                    <br />
+                                    <span className="text-xs">{booking.time}</span>
+                                  </td>
+
+                                  <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                    {booking.therapistName || 'N/A'}
+                                  </td>
+
+                                  <td className="px-6 py-4 text-right">
+                                    <span className="font-black text-slate-900">
+                                      ₹{booking.amount || '0'}
+                                    </span>
+                                  </td>
+
+                                  <td className="px-6 py-4 text-center">
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-black uppercase
+                    ${booking.status === "confirmed"
+                                          ? "bg-green-100 text-green-700"
+                                          : booking.status === "cancelled"
+                                            ? "bg-red-100 text-red-700"
+                                            : booking.status === "pending"
+                                              ? "bg-yellow-100 text-yellow-700"
+                                              : "bg-blue-100 text-blue-700"
+                                        }`}
+                                    >
+                                      {booking.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+                    ) : (
+                      <RightPanelCard title="Booking History">
+                        <div className="py-12 text-center space-y-4">
+                          <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                            <Calendar className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black text-slate-900">
+                              No Bookings Found
+                            </h3>
+                            <p className="text-slate-500 font-medium">
+                              You haven't made any bookings yet.
+                            </p>
+                          </div>
+                          <Button
+                            asChild
+                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
+                          >
+                            <Link to="/services">Explore Services</Link>
+                          </Button>
+                        </div>
+                      </RightPanelCard>
+                    )}
+
                   </div>
                 )}
 

@@ -240,21 +240,33 @@ const ServiceSidebar = ({
   const { isAuthenticated } = useAuth();
 
   const handleBooking = () => {
-    if (isAuthenticated) {
-      navigate("/booking");
-    } else {
-      // For guest users, pass service data to booking page
-      const bookingData = {
-        service: {
-          id: service.id,
-          name: service.details.title,
-          price: (service.details.priceRange || service.details.price).replace("₹", "").split("-")[0],
-          duration: service.details.sessionDuration,
-        },
-        fromService: true,
-      };
-      navigate("/booking", { state: bookingData });
-    }
+
+    const bookingData = {
+      service: {
+        id: service.id,
+        name: service.details.title,
+        price: (service.details.priceRange || service.details.price).replace("₹", "").split("-")[0],
+        duration: service.details.sessionDuration,
+      },
+      fromService: true,
+      therapist: {
+        id: `th-${Math.floor(Math.random() * 10000)}`,
+        name: "Assigned Clinician",
+        title: "Matched Specialist",
+      },
+      session: {
+        type: "1-on-1",
+        duration: service.details.sessionDuration,
+        price: parseInt((service.details.priceRange || service.details.price).replace("₹", "").split("-")[0]),
+      },
+      plan: {
+        name: `${service.details.title} Plan`,
+        price: parseInt((service.details.priceRange || service.details.price).replace("₹", "").split("-")[0]),
+        duration: service.details.sessionDuration,
+      }
+    };
+    navigate("/booking", { state: bookingData });
+
   };
 
   return (
@@ -383,9 +395,8 @@ const CollapsibleList = ({
         >
           {isOpen ? "Show Less" : "Show All"}
           <ChevronRight
-            className={`w-4 h-4 transition-transform duration-200 ${
-              isOpen ? "rotate-90" : ""
-            }`}
+            className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-90" : ""
+              }`}
           />
         </button>
       </div>
@@ -407,19 +418,19 @@ export default function ServiceDetailPage() {
   const navigate = useNavigate();
   const dispatch: AppDispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-  
+
   // Get service from Redux store
   const { selectedService, loading, error } = useSelector((state: RootState) => state.services);
-  
+
   useEffect(() => {
     if (serviceId) {
       dispatch(fetchServiceById(serviceId));
     }
   }, [dispatch, serviceId]);
-  
+
   // Use the service from Redux store
   const service = selectedService;
-  
+
   if (loading) {
     return (
       <Layout>
@@ -432,7 +443,7 @@ export default function ServiceDetailPage() {
       </Layout>
     );
   }
-  
+
   if (error || !service) {
     return (
       <Layout>
@@ -522,55 +533,7 @@ export default function ServiceDetailPage() {
             )}
           </Card>
 
-          {/* Floating Bottom CTA for Mobile */}
-          {service && (
-          <div className="fixed bottom-6 left-6 right-6 lg:hidden">
-            <div className="flex items-center justify-between bg-white rounded-xl p-3 mb-2 shadow-lg border">
-              <div>
-                <p className="text-sm font-medium text-slate-900">
-                  {(() => {
-                    const priceRange = service.details.priceRange || service.details.price;
-                    const cleanedPriceRange = priceRange.replace("₹", "");
-                    // Extract first price from range (e.g., "4000-7500" -> "4000")
-                    const fixedPrice = cleanedPriceRange.split("-")[0];
-                    return fixedPrice;
-                  })()}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {service.details.sessionDuration}
-                </p>
-              </div>
-              <div className="flex items-center gap-1 text-slate-500 text-xs">
-                <IndianRupee className="h-3 w-3" />
-                <span>INR</span>
-              </div>
-            </div>
-            <Button
-              className="w-full rounded-xl bg-primary hover:bg-primary/90 font-bold h-14 text-base"
-              onClick={() => {
-                if (isAuthenticated) {
-                  navigate("/booking");
-                } else {
-                  // For guest users, pass service data to booking page
-                  const bookingData = {
-                    service: {
-                      id: service.id,
-                      name: service.details.title,
-                      price: (service.details.priceRange || service.details.price)
-                        .replace("₹", "")
-                        .split("-")[0],
-                      duration: service.details.sessionDuration,
-                    },
-                    fromService: true,
-                  };
-                  navigate("/booking", { state: bookingData });
-                }
-              }}
-            >
-              Book Session
-            </Button>
-          </div>
-          )}
+         
         </div>
       </div>
     </Layout>
