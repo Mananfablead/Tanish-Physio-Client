@@ -27,18 +27,20 @@ import {
   VideoIcon,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  CheckCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
+import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch } from "@/store";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { fetchUserSubscriptions } from '@/store/slices/subscriptionSlice';
 import { fetchUserPayments } from '@/store/slices/paymentSlice';
-import { fetchUpcomingSessions } from '@/store/slices/sessionSlice';
+import { fetchUpcomingSessions, fetchAllSessions } from '@/store/slices/sessionSlice';
 import { getAllBookingsAsync } from '@/store/slices/bookingsSlice';
-import { getUpcomingSessions } from "@/lib/api";
 import { updateProfile, setCredentials, fetchProfile } from '@/store/slices/authSlice';
+
 import api from "@/lib/api";
 
 // Define types for API responses
@@ -71,7 +73,7 @@ const RightPanelCard = ({ title, badge, children, footer }: { title: string, bad
 );
 
 const InfoBlock = ({ label, value, subValue, icon: Icon, iconColor = "text-primary" }: { label: string, value: React.ReactNode, subValue?: string, icon: any, iconColor?: string }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-100 p-4 flex gap-3 items-start transition-all hover:bg-slate-200">
+  <div className="rounded-xl border border-slate-100 bg-slate-100 p-2 flex gap-3 items-start transition-all hover:bg-slate-200">
     <div className={`h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0`}>
       <Icon className={`h-5 w-5 ${iconColor}`} />
     </div>
@@ -92,38 +94,36 @@ export default function ProfilePage() {
   const [selectedSection, setSelectedSection] = useState<string>('personal');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  console.log("previewImage", previewImage)
-  console.log("Current user", user)
   // Get data from Redux store
   const { userSubscriptions, loading: subsLoading, error: subsError } = useSelector((state: any) => state.subscriptions);
   const { userPayments, loading: paymentsLoading, error: paymentsError } = useSelector((state: any) => state.payment);
+
+  const { toast } = useToast();
+
   const {
     upcomingSessions,
+    sessions,
     loading: sessionsLoading,
     error: sessionsError,
   } = useSelector((state: { sessions: any }) => state.sessions);
   const { bookings, loading: bookingsLoading, error: bookingsError } = useSelector((state: any) => state.bookings);
   const bookingList = bookings?.bookings || [];
   const activePlan = user?.subscriptionData;
-  console.log("active plan", activePlan)
-  console.log("upcoming sessions", upcomingSessions);
   // Set state based on Redux data
-  const [planHistory, setPlanHistory] = useState<any[]>([]);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
-  const [intake, setIntake] = useState<any | null>(null);
-
-  // Get next session from upcoming sessions
   const nextSession = upcomingSessions && upcomingSessions.length > 0 ? upcomingSessions[0] : null;
-
   // Fetch user data when component mounts
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
     dispatch(fetchUserPayments());
     dispatch(fetchUpcomingSessions());
+    dispatch(fetchAllSessions());
     dispatch(getAllBookingsAsync());
-    // Also fetch the user profile to ensure profile picture is loaded
     dispatch(fetchProfile());
+
   }, [dispatch]);
+
+
 
   // Define sections for sidebar navigation
   const sections = [
@@ -171,15 +171,6 @@ export default function ProfilePage() {
     },
 
   ];
-
-  // Handler functions
-  const handleCancelPlan = () => {
-    console.log("Cancel plan clicked");
-    // Implement cancel plan functionality
-  };
-
-
-
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -728,73 +719,102 @@ export default function ProfilePage() {
                         variant="outline"
                         className="px-4 py-1.5 rounded-full border-slate-200 text-slate-600 font-bold bg-white"
                       >
-                        {sessionHistory?.length || 0} Sessions
+                        {sessions?.length || 0} Sessions
                       </Badge>
                     </div>
 
-                    {sessionHistory && sessionHistory.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-6">
-                        {sessionHistory.map((s, idx) => (
-                          <RightPanelCard
-                            key={idx}
-                            title={s.relatedTo || "General Consultation"}
-                            badge={
-                              <Badge className="bg-success/10 hover:text-white text-success border-none font-bold">
-                                COMPLETED
-                              </Badge>
-                            }
-                            footer={
-                              <div className="flex gap-3">
-                                <Button
-                                  variant="ghost"
-                                  className="h-11 rounded-xl font-bold text-primary hover:text-primary hover:bg-primary/5"
-                                >
-                                  <FileText className="h-4 w-4 mr-2" /> Summary
-                                </Button>
-                                <Button
-                                  asChild
-                                  className="h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-6"
-                                >
-                                  <Link to={s.recordingUrl || "#"}>
-                                    Watch Recording
-                                  </Link>
-                                </Button>
-                              </div>
-                            }
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <InfoBlock
-                                label="Therapist"
-                                value={s.therapist?.name}
-                                icon={User}
-                                iconColor="text-primary"
-                              />
-                              <InfoBlock
-                                label="Date & Duration"
-                                value={new Date(s.start).toLocaleDateString(
-                                  undefined,
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  }
-                                )}
-                                subValue={`${s.duration} session`}
-                                icon={Clock}
-                                iconColor="text-accent"
-                              />
-                              <div className="md:col-span-2">
-                                <InfoBlock
-                                  label="Session Notes"
-                                  value={s.notes}
-                                  icon={FileText}
-                                  iconColor="text-slate-400"
-                                />
-                              </div>
-                            </div>
-                          </RightPanelCard>
-                        ))}
-                      </div>
+                    {sessions && sessions.length > 0 ? (
+                      <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Service
+                                </th>
+
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Date & Time
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Type
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  Duration
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
+                                  Status
+                                </th>
+
+                              </tr>
+                            </thead>
+
+                            <tbody className="divide-y divide-slate-100">
+                              {sessions.map((s) => {
+                                const isCompleted = s.status === "completed";
+
+                                return (
+                                  <tr
+                                    key={s._id}
+                                    className="hover:bg-slate-50/50 transition-colors"
+                                  >
+                                    {/* Service */}
+                                    <td className="px-6 py-4">
+                                      <div className="font-bold text-slate-900">
+                                        {s.bookingId?.serviceName || "Therapy Session"}
+                                      </div>
+                                    </td>
+
+
+
+                                    {/* Date & Time */}
+                                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                      {s.date
+                                        ? new Date(s.date).toLocaleDateString("en-IN", {
+                                          day: "numeric",
+                                          month: "short",
+                                          year: "numeric",
+                                        })
+                                        : "N/A"}
+                                      <br />
+                                      <span className="text-xs">{s.time || "—"}</span>
+                                    </td>
+
+                                    {/* Type */}
+                                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                      {s.type || "1-on-1"}
+                                    </td>
+
+                                    {/* Duration */}
+                                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                      {s.duration ? `${s.duration} min` : "—"}
+                                    </td>
+
+                                    {/* Status */}
+                                    <td className="px-6 py-4 text-center">
+                                      <span
+                                        className={`px-3 py-1 rounded-full text-xs font-black uppercase
+                                        ${s.status === "scheduled"
+                                            ? "bg-blue-100 text-blue-700"
+                                            : s.status === "confirmed"
+                                              ? "bg-primary/10 text-primary"
+                                              : s.status === "completed"
+                                                ? "bg-success/10 text-success"
+                                                : "bg-amber-100 text-amber-700"
+                                          }`}
+                                      >
+                                        {s.status}
+                                      </span>
+                                    </td>
+
+
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
                     ) : (
                       <RightPanelCard
                         title="Session History"
@@ -828,17 +848,57 @@ export default function ProfilePage() {
 
                 {selectedSection === "bookings" && (
                   <div className="space-y-6">
+
+                    {/* HEADER */}
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex items-center gap-3">
                         <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
                           Your Bookings
                         </h2>
-                        <p className="text-slate-500 font-medium text-sm">
-                          History of your appointment bookings
-                        </p>
+
+                        {bookingList.filter(b => b.status === "confirmed").length > 0 && (
+                          <Badge className="bg-green-100 text-green-700 font-black flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            {bookingList.filter(b => b.status === "confirmed").length} Confirmed
+                          </Badge>
+                        )}
                       </div>
+
+                      {/* CREATE SESSION BUTTON */}
+                      <Button
+                        size="sm"
+                        className="rounded-xl font-black"
+                        disabled={
+                          bookingList.filter(
+                            b => b.status === "confirmed" && !b.sessionCreated
+                          ).length === 0
+                        }
+                        onClick={() => {
+                          const confirmedBooking = bookingList.find(
+                            b => b.status === "confirmed" && !b.sessionCreated
+                          );
+
+                          if (!confirmedBooking) {
+                            toast({ title: "No confirmed booking available to create a session", variant: "default" });
+                            return;
+                          }
+
+                          navigate("/schedule", {
+                            state: {
+                              bookingId: confirmedBooking._id,
+                              serviceId: confirmedBooking.serviceId,
+                              therapistId: confirmedBooking.therapistId,
+                              date: confirmedBooking.date,
+                              time: confirmedBooking.time,
+                            },
+                          });
+                        }}
+                      >
+                        Create Session
+                      </Button>
                     </div>
 
+                    {/* TABLE */}
                     {bookingList.length > 0 ? (
                       <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
@@ -869,15 +929,17 @@ export default function ProfilePage() {
                                   key={booking._id}
                                   className="hover:bg-slate-50/50 transition-colors"
                                 >
+                                  {/* SERVICE */}
                                   <td className="px-6 py-4">
                                     <div className="font-bold text-slate-900">
-                                      {booking.serviceName || 'N/A'}
+                                      {booking.serviceName || "N/A"}
                                     </div>
                                     <div className="text-xs text-slate-400">
-                                      {booking.serviceId?.name || 'N/A'}
+                                      {booking.serviceId?.name || "N/A"}
                                     </div>
                                   </td>
 
+                                  {/* DATE & TIME */}
                                   <td className="px-6 py-4 text-sm text-slate-600 font-medium">
                                     {new Date(booking.date).toLocaleDateString("en-IN", {
                                       day: "numeric",
@@ -888,20 +950,23 @@ export default function ProfilePage() {
                                     <span className="text-xs">{booking.time}</span>
                                   </td>
 
+                                  {/* THERAPIST */}
                                   <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                                    {booking.therapistName || 'N/A'}
+                                    {booking.therapistName || "N/A"}
                                   </td>
 
+                                  {/* AMOUNT */}
                                   <td className="px-6 py-4 text-right">
                                     <span className="font-black text-slate-900">
-                                      ₹{booking.amount || '0'}
+                                      ₹{booking.amount || 0}
                                     </span>
                                   </td>
 
+                                  {/* STATUS */}
                                   <td className="px-6 py-4 text-center">
                                     <span
                                       className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                    ${booking.status === "confirmed"
+                        ${booking.status === "confirmed"
                                           ? "bg-green-100 text-green-700"
                                           : booking.status === "cancelled"
                                             ? "bg-red-100 text-red-700"
@@ -922,29 +987,21 @@ export default function ProfilePage() {
                     ) : (
                       <RightPanelCard title="Booking History">
                         <div className="py-12 text-center space-y-4">
-                          <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                            <Calendar className="h-8 w-8 text-slate-300" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="text-xl font-black text-slate-900">
-                              No Bookings Found
-                            </h3>
-                            <p className="text-slate-500 font-medium">
-                              You haven't made any bookings yet.
-                            </p>
-                          </div>
-                          <Button
-                            asChild
-                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                          >
+                          <h3 className="text-xl font-black text-slate-900">
+                            No Bookings Found
+                          </h3>
+                          <p className="text-slate-500 font-medium">
+                            You haven't made any bookings yet.
+                          </p>
+                          <Button asChild className="h-11 rounded-xl px-8 font-black">
                             <Link to="/services">Explore Services</Link>
                           </Button>
                         </div>
                       </RightPanelCard>
                     )}
-
                   </div>
                 )}
+
 
                 {selectedSection === "subscriptionHistory" && (
                   <div className="space-y-6">

@@ -711,7 +711,7 @@ export default function BookingPage() {
                   });
                 } else {
                   // For logged-in users, continue with existing flow
-                  navigate("/schedule", {
+                  navigate("/booking-confirmation", {
                     state: {
                       ...bookingData,
                       bookingId: bookingId,
@@ -727,9 +727,7 @@ export default function BookingPage() {
               }
             } else {
               console.error("Payment verification failed:", verifyResult.payload);
-              // Even if verification fails, proceed with the flow since payment was successful on Razorpay side
-              
-              // Update booking status to confirmed even if verification fails
+             
               if (isGuestUser) {
                 console.log('Updating booking status with guest API (fallback)');
                 const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
