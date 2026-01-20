@@ -20,38 +20,84 @@ export default function BookingConfirmationPage() {
   const bookingData = location.state;
   const [bookingDetails, setBookingDetails] = useState(null);
   
-  // Extract booking details
-  const therapist = bookingData?.therapist || {
-    name: "Dr. Sarah Johnson",
-    title: "Sports Injury Specialist",
-    avatar:
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
-  };
-
-  const sessionDate = bookingData?.date || "Mon, Dec 30, 2024";
-  const sessionTime = bookingData?.time || "10:00 AM (45 min)";
-  const serviceName =
-    bookingData?.service?.name || bookingData?.planName || "Therapy Session";
-  const servicePrice = bookingData?.finalPrice || bookingData?.planPrice;
+  // Determine if this is a subscription or service booking
+  const isSubscription = bookingData?.fromSubscription === true;
+  
+  // Extract booking details based on purchase type
+  let therapist, sessionDate, sessionTime, serviceName, servicePrice, serviceDuration;
+  
+  if (isSubscription) {
+    // For subscription purchases
+    therapist = {
+      name: "Plan Management Team",
+      title: "Subscription Services",
+      avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
+    };
+    sessionDate = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    sessionTime = "Activation Date";
+    serviceName = bookingData?.planName || bookingData?.plan?.name || "Subscription Plan";
+    servicePrice = bookingData?.finalPrice || bookingData?.plan?.price;
+    serviceDuration = bookingData?.plan?.duration || "Duration varies by plan";
+  } else {
+    // For service bookings
+    therapist = bookingData?.therapist || {
+      name: "Dr. Sarah Johnson",
+      title: "Sports Injury Specialist",
+      avatar:
+        "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
+    };
+    sessionDate = bookingData?.date || "Mon, Dec 30, 2024";
+    sessionTime = bookingData?.time || "10:00 AM (45 min)";
+    serviceName =
+      bookingData?.service?.name || bookingData?.planName || "Therapy Session";
+    servicePrice = bookingData?.finalPrice || bookingData?.planPrice;
+    serviceDuration = bookingData?.service?.duration || bookingData?.plan?.duration || "Duration varies";
+  }
   
   // Update booking status to confirmed for guest users
   useEffect(() => {
-    if (bookingData?.bookingId && bookingData?.clientEmail) {
-      const updateBookingStatus = async () => {
-        try {
-          // Update booking status to confirmed using guest API
-          await updateGuestBookingStatus(bookingData.bookingId, 'confirmed', bookingData.clientEmail);
-          toast.success('Booking confirmed successfully!');
-        } catch (error) {
-          console.error('Error updating booking status:', error);
-          // Don't show error toast here as the booking might already be confirmed
-          // or there might be other legitimate reasons for the error
+    const updateBookingStatus = async () => {
+      try {
+        let clientEmail;
+        
+        // Check if clientEmail is directly available in bookingData
+        if (bookingData.clientEmail) {
+          clientEmail = bookingData.clientEmail;
+        } else {
+          // Try to get email from guest user data stored in sessionStorage
+          const storedGuestUser = sessionStorage.getItem('qw_guest_user');
+          if (storedGuestUser) {
+            try {
+              const guestUser = JSON.parse(storedGuestUser);
+              clientEmail = guestUser.email;
+            } catch (e) {
+              console.error('Error parsing guest user data:', e);
+            }
+          }
         }
-      };
-      
-      updateBookingStatus();
-    }
-  }, [bookingData]);
+        
+        if (clientEmail) {
+          if (bookingData?.bookingId && !isSubscription) {
+            // For service bookings, update booking status
+            await updateGuestBookingStatus(bookingData.bookingId, 'confirmed', clientEmail);
+            toast.success('Service booking confirmed successfully!');
+          } else if (isSubscription) {
+            // For subscriptions, we don't need to update a booking status
+            // The subscription is already activated via the payment verification
+            toast.success('Subscription activated successfully!');
+          }
+        } else {
+          console.warn('Could not find client email for confirmation');
+        }
+      } catch (error) {
+        console.error('Error updating booking status:', error);
+        // Don't show error toast here as the booking might already be confirmed
+        // or there might be other legitimate reasons for the error
+      }
+    };
+    
+    updateBookingStatus();
+  }, [bookingData, isSubscription]);
 
   return (
     <Layout>
@@ -73,9 +119,9 @@ export default function BookingConfirmationPage() {
                   <CheckCircle className="h-10 w-10 text-success" />
                 </motion.div>
 
-                <h1 className="text-3xl font-bold mb-2">Booking Confirmed!</h1>
+                <h1 className="text-3xl font-bold mb-2">{isSubscription ? 'Subscription Activated!' : 'Booking Confirmed!'}</h1>
                 <p className="text-muted-foreground mb-8">
-                  Your {serviceName} session has been successfully booked.
+                  Your {serviceName} {isSubscription ? 'has been successfully activated.' : 'session has been successfully booked.'}
                   You'll receive a confirmation email shortly.
                 </p>
 
@@ -110,7 +156,7 @@ export default function BookingConfirmationPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                   {/* Session Details - Left Side */}
                   <div className="bg-muted/50 rounded-xl p-6 text-left space-y-4">
-                    <h3 className="font-semibold text-center mb-4">Session Details</h3>
+                    <h3 className="font-semibold text-center mb-4">{isSubscription ? 'Subscription Details' : 'Session Details'}</h3>
                     
                     <div className="flex items-center gap-3">
                       <img
@@ -128,15 +174,15 @@ export default function BookingConfirmationPage() {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-primary" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Date</p>
+                          <p className="text-sm text-muted-foreground">{isSubscription ? 'Start Date' : 'Date'}</p>
                           <p className="font-medium">{sessionDate}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Video className="h-4 w-4 text-primary" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Time</p>
-                          <p className="font-medium">{sessionTime}</p>
+                          <p className="text-sm text-muted-foreground">{isSubscription ? 'Duration' : 'Time'}</p>
+                          <p className="font-medium">{isSubscription ? serviceDuration : sessionTime}</p>
                         </div>
                       </div>
                     </div>
@@ -145,8 +191,8 @@ export default function BookingConfirmationPage() {
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Session Type</p>
-                          <p className="font-medium">Video Consultation</p>
+                          <p className="text-sm text-muted-foreground">Type</p>
+                          <p className="font-medium">{isSubscription ? 'Subscription Plan' : 'Video Consultation'}</p>
                         </div>
                       </div>
                       
@@ -154,15 +200,15 @@ export default function BookingConfirmationPage() {
                         <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <div>
                           <p className="text-sm text-muted-foreground">Location</p>
-                          <p className="font-medium">Virtual (Video Call)</p>
+                          <p className="font-medium">{isSubscription ? 'Online Access' : 'Virtual (Video Call)'}</p>
                         </div>
                       </div>
                       
                       <div className="flex items-start gap-2">
                         <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Preparation</p>
-                          <p className="font-medium">Please have your previous medical reports ready</p>
+                          <p className="text-sm text-muted-foreground">Access</p>
+                          <p className="font-medium">{isSubscription ? 'Unlimited sessions as per plan' : 'Single session booking'}</p>
                         </div>
                       </div>
                     </div>
@@ -225,20 +271,21 @@ export default function BookingConfirmationPage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link to="/login">
                     <Button variant="hero" size="lg" className="w-full">
-                      Login to Your Account
+                      {isSubscription ? 'Manage Your Subscription' : 'Login to Your Account'}
                       <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
                   </Link>
                   <Link to="/">
                     <Button variant="outline" size="lg" className="w-full">
-                      Continue to Home
+                      Explore More Services
                     </Button>
                   </Link>
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-6">
-                  You can join the video session from your profile 5 minutes
-                  before the scheduled time.
+                  {isSubscription 
+                    ? 'You can access your subscription benefits from your profile.' 
+                    : 'You can join the video session from your profile 5 minutes before the scheduled time.'}
                 </p>
               </CardContent>
             </Card>
