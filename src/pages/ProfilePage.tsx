@@ -240,6 +240,45 @@ export default function ProfilePage() {
     }
   };
 
+const normalizeUpcomingSessions = (sessions: any[]) => {
+  return sessions
+    .map((s) => {
+      const start = new Date(s.startTime);
+      const end =
+        s.duration && s.duration > 0
+          ? new Date(start.getTime() + s.duration * 60000)
+          : null;
+
+      return {
+        id: s._id,
+        sessionId: s.sessionId,
+        therapistName: s.therapistId?.name || "Therapist",
+        serviceName: s.bookingId?.serviceName || "Session",
+        type: s.type,
+        status: s.status,
+        notes: s.notes,
+        dateObj: start,
+        dateFormatted: start.toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
+        startTimeFormatted: start.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        endTimeFormatted: end
+          ? end.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
+      };
+    })
+    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+};
+const normalizedUpcoming = normalizeUpcomingSessions(upcomingSessions);
+const nextSession = normalizedUpcoming[0] || null;
 
   return (
     <Layout>

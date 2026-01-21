@@ -15,7 +15,7 @@ import {
   MoreVertical,
   X
 } from "lucide-react";
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight } from 'lucide-react';
 
@@ -33,46 +33,28 @@ export default function VideoCallPage() {
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isScreenShared, setIsScreenShared] = useState(false);
-  const [therapist, setTherapist] = useState('Dr. Sarah Johnson'); // This could come from props or context
+  const [therapist] = useState('Dr. Sarah Johnson'); // This could come from props or context
   const [user] = useState('John Doe'); // This could come from auth context
-  const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get('sessionId');
-  
-  // Fetch session details if sessionId is present
-  useEffect(() => {
-    if (sessionId) {
-      // In a real app, you would fetch session details from the API
-      // For now, we'll just use a mock implementation
-      console.log(`Session ID: ${sessionId}`);
-      
-      // Mock therapist name based on session - in real app, fetch from API
-      // setTherapist('Dr. Jane Smith'); // fetched from session data
-    }
-  }, [sessionId]);
 
   // Guard: ensure intake + plan active before allowing access
   useEffect(() => {
     try {
-      // If sessionId is provided, we can bypass the normal checks
-      // as the session validity will be handled by the backend
-      if (!sessionId) {
-        const planRaw = sessionStorage.getItem('qw_plan');
-        const intakeRaw = sessionStorage.getItem('qw_questionnaire');
-        const plan = planRaw ? JSON.parse(planRaw) : null;
-        const intake = intakeRaw ? JSON.parse(intakeRaw) : null;
-        const RECENT_DAYS = 90;
-        const now = Date.now();
-        const intakeIsRecent = intake && intake.updatedAt && (now - intake.updatedAt) < RECENT_DAYS * 24 * 60 * 60 * 1000;
+      const planRaw = sessionStorage.getItem('qw_plan');
+      const intakeRaw = sessionStorage.getItem('qw_questionnaire');
+      const plan = planRaw ? JSON.parse(planRaw) : null;
+      const intake = intakeRaw ? JSON.parse(intakeRaw) : null;
+      const RECENT_DAYS = 90;
+      const now = Date.now();
+      const intakeIsRecent = intake && intake.updatedAt && (now - intake.updatedAt) < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
-        if (!plan || !plan.active || !intakeIsRecent) {
-          // redirect to profile (or intake) if not eligible
-          navigate('/profile');
-        }
+      if (!plan || !plan.active || !intakeIsRecent) {
+        // redirect to profile (or intake) if not eligible
+        navigate('/profile');
       }
     } catch (e) {
       navigate('/profile');
     }
-  }, [navigate, sessionId]);
+  }, []);
 
   const handleEndCall = () => {
     navigate('/profile');
