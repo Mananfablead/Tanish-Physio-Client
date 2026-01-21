@@ -261,6 +261,8 @@ export default function BookingPage() {
               orderId: response.razorpay_order_id,
               signature: response.razorpay_signature,
             };
+            // Set processing to false as payment was successful and we're moving to verification
+            setIsProcessing(false);
 
             // Dispatch subscription payment verification action
             let verifyResult;
@@ -478,6 +480,23 @@ export default function BookingPage() {
             ondismiss: function () {
               // Handle when user closes the payment modal without completing payment
               toast.info("Payment was cancelled. You can try again later.");
+              setIsProcessing(false); // Close the loading state
+            },
+            escape: function () {
+              // Handle when user presses escape key to close the modal
+              setIsProcessing(false);
+            },
+            onload: function () {
+              // Ensure processing state is set when modal loads
+              setIsProcessing(true);
+            }
+          },
+          callback: function (error) {
+            // Handle payment failure
+            if (error) {
+              console.error("Payment failed:", error);
+              toast.error("Payment failed. Please try again or contact support.");
+              setIsProcessing(false);
             }
           }
         };
@@ -601,6 +620,8 @@ export default function BookingPage() {
               signature: response.razorpay_signature,
               bookingId: bookingId, // Pass the booking ID for verification
             };
+            // Set processing to false as payment was successful and we're moving to verification
+            setIsProcessing(false);
 
             // Dispatch payment verification action
             let verifyResult;
@@ -852,6 +873,23 @@ export default function BookingPage() {
             ondismiss: function () {
               // Handle when user closes the payment modal without completing payment
               toast.info("Payment was cancelled. You can try again later.");
+              setIsProcessing(false); // Close the loading state
+            },
+            escape: function () {
+              // Handle when user presses escape key to close the modal
+              setIsProcessing(false);
+            },
+            onload: function () {
+              // Ensure processing state is set when modal loads
+              setIsProcessing(true);
+            }
+          },
+          callback: function (error) {
+            // Handle payment failure
+            if (error) {
+              console.error("Payment failed:", error);
+              toast.error("Payment failed. Please try again or contact support.");
+              setIsProcessing(false);
             }
           }
         };

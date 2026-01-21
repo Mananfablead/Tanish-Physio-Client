@@ -256,19 +256,19 @@ export default function SchedulePage() {
                     <div className="flex flex-wrap gap-2 mb-4 justify-center">
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></div>
-                      <span className="text-xs text-slate-600">Booked</span>
+                        <span className="text-xs text-slate-600">Booked</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
-                      <span className="text-xs text-slate-600">Available</span>
+                        <span className="text-xs text-slate-600">Available</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded bg-red-100 border border-red-300"></div>
-                      <span className="text-xs text-slate-600">Unavailable</span>
+                        <span className="text-xs text-slate-600">Unavailable</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
-                      <span className="text-xs text-slate-600">Not Booked</span>
+                        <span className="text-xs text-slate-600">Not Booked</span>
                       </div>
                     </div>
                     <div className="text-center mb-4">
