@@ -9,10 +9,20 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(
+    Boolean
+  ),
+  define: {
+    global: "globalThis",
+    "process.env": JSON.stringify({}),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      process: "process/browser",
+      stream: "stream-browserify",
+      util: "util",
+      buffer: "buffer",
     },
     dedupe: ["react", "react-dom"],
   },

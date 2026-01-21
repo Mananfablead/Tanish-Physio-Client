@@ -24,7 +24,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["node"]
   },
+  "include": ["src"],
+  "files": ["src/shims.d.ts"]
   "include": ["src"]
 }

@@ -7,21 +7,26 @@
     <title>Tanish Physio</title>
     <link rel="icon" type="image/png" href="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png" />
     <meta name="description" content="Connect with certified physiotherapists from home. Get personalized treatment plans and video consultations tailored to your needs." />
-    <meta name="author" content="Lovable" />
-
-    <!-- TODO: Update og:title to match your application name -->
-    <!-- <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" /> -->
+    <meta name="author" content="Tanish Physio" />
   </head>
 
   <body>
     <div id="root"></div>
+    <script>
+      // Define global for browser environment to support simple-peer
+      if (typeof window !== 'undefined') {
+        window.global = window;
+        window.process = {
+          env: {
+            NODE_ENV: 'production'
+          }
+        };
+        // Buffer polyfill
+        if (typeof window.Buffer === 'undefined') {
+          window.Buffer = require('buffer').Buffer;
+        }
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </body>
