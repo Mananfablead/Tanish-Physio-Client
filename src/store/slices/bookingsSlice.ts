@@ -101,12 +101,16 @@ export const createBookingAsync = createAsyncThunk(
   }
 );
 
+interface GetAllBookingsResponse {
+  bookings: Booking[];
+}
+
 export const getAllBookingsAsync = createAsyncThunk(
   'bookings/getAllBookings',
   async (_, { rejectWithValue }) => {
     try {
       const response = await getAllBookings();
-      const apiResponse = response.data as ApiResponse<Booking[]>;
+      const apiResponse = response.data as ApiResponse<GetAllBookingsResponse | Booking[]>;
       return apiResponse.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -273,7 +277,9 @@ const bookingsSlice = createSlice({
       })
       .addCase(getAllBookingsAsync.fulfilled, (state, action) => {
         state.loading = false;
-        state.bookings = action.payload;
+        // API returns { bookings: Booking[] }, so we need to extract the bookings array
+        const payload = action.payload;
+        state.bookings = Array.isArray(payload) ? payload : (payload as any).bookings || [];
       })
       .addCase(getAllBookingsAsync.rejected, (state, action) => {
         state.loading = false;

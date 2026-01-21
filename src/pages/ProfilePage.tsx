@@ -107,7 +107,7 @@ export default function ProfilePage() {
     error: sessionsError,
   } = useSelector((state: { sessions: any }) => state.sessions);
   const { bookings, loading: bookingsLoading, error: bookingsError } = useSelector((state: any) => state.bookings);
-  const bookingList = bookings?.bookings || [];
+  const bookingList = bookings || [];
   const activePlan = user?.subscriptionData;
   // Set state based on Redux data
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
@@ -150,7 +150,7 @@ export default function ProfilePage() {
     },
     {
       id: "sessionHistory",
-      label: "Session History",
+      label: "Session",
       sub: "Past consultations",
       icon: Play,
       color: "text-primary",
@@ -709,7 +709,7 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                          Session History
+                          Session
                         </h2>
                         <p className="text-slate-500 font-medium text-sm">
                           Your past consultations and recorded sessions
@@ -792,20 +792,33 @@ export default function ProfilePage() {
 
                                     {/* Status */}
                                     <td className="px-6 py-4 text-center">
-                                      <span
-                                        className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                                        ${s.status === "scheduled"
-                                            ? "bg-blue-100 text-blue-700"
-                                            : s.status === "confirmed"
-                                              ? "bg-primary/10 text-primary"
-                                              : s.status === "completed"
-                                                ? "bg-success/10 text-success"
-                                                : "bg-amber-100 text-amber-700"
-                                          }`}
-                                      >
-                                        {s.status}
-                                      </span>
+                                      {s.status === "live" ? (
+                                        <Link
+                                          to={`/video-call?sessionId=${s._id}`}
+                                          className="inline-flex items-center justify-center
+                 bg-green-600 hover:bg-green-700
+                 text-white font-bold text-sm
+                 px-4 py-1.5 rounded-full"
+                                        >
+                                          Join Call
+                                        </Link>
+                                      ) : (
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs font-black uppercase
+        ${s.status === "scheduled"
+                                              ? "bg-blue-100 text-blue-700"
+                                              : s.status === "confirmed"
+                                                ? "bg-primary/10 text-primary"
+                                                : s.status === "completed"
+                                                  ? "bg-success/10 text-success"
+                                                  : "bg-amber-100 text-amber-700"
+                                            }`}
+                                        >
+                                          {s.status}
+                                        </span>
+                                      )}
                                     </td>
+
 
 
                                   </tr>

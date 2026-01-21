@@ -226,161 +226,163 @@ export default function SchedulePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Calendar */}
             <div className="lg:col-span-1">
-              <Card className="bg-white/80 backdrop-blur rounded-2xl border border-primary/20 shadow-sm overflow-hidden">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                  <CardTitle className="text-lg font-black text-slate-900">
-                    Calendar
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-xl"
-                      onClick={() => navigateMonth("prev")}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-xl"
-                      onClick={() => navigateMonth("next")}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Legend for calendar colors */}
-                  <div className="flex flex-wrap gap-4 mb-4 justify-center">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></div>
-                      <span className="text-xs text-slate-600">Booked</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
-                      <span className="text-xs text-slate-600">Available</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-red-100 border border-red-300"></div>
-                      <span className="text-xs text-slate-600">Unavailable</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
-                      <span className="text-xs text-slate-600">Not Booked</span>
-                    </div>
-                  </div>
-                  <div className="text-center mb-4">
-                    <h3 className="font-black text-slate-900">
-                      {format(currentMonth, "MMMM yyyy")}
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1 mb-1">
-                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                      <div
-                        key={day}
-                        className="text-center text-xs font-black text-slate-500 py-1"
+              <div className="sticky top-6">
+                <Card className="bg-white/80 backdrop-blur rounded-2xl border border-primary/20 shadow-sm overflow-hidden">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                    <CardTitle className="text-lg font-black text-slate-900">
+                      Calendar
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-xl"
+                        onClick={() => navigateMonth("prev")}
                       >
-                        {day}
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-xl"
+                        onClick={() => navigateMonth("next")}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Legend for calendar colors */}
+                    <div className="flex flex-wrap gap-2 mb-4 justify-center">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></div>
+                      <span className="text-xs text-slate-600">Booked</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
+                      <span className="text-xs text-slate-600">Available</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-red-100 border border-red-300"></div>
+                      <span className="text-xs text-slate-600">Unavailable</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+                      <span className="text-xs text-slate-600">Not Booked</span>
+                      </div>
+                    </div>
+                    <div className="text-center mb-4">
+                      <h3 className="font-black text-slate-900">
+                        {format(currentMonth, "MMMM yyyy")}
+                      </h3>
+                    </div>
 
-                  <div className="grid grid-cols-7 gap-1">
-                    {loading ? (
-                      // Show loading placeholders while availability data is loading
-                      Array.from({ length: 42 }).map((_, index) => (
+                    <div className="grid grid-cols-7 gap-1 mb-1">
+                      {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
                         <div
-                          key={index}
-                          className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
+                          key={day}
+                          className="text-center text-xs font-black text-slate-500 py-1"
                         >
-                          <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
+                          {day}
                         </div>
-                      ))
-                    ) : (
-                      getCalendarDays().map((day, index) => {
-                        if (!day) {
-                          return <div key={index} className="h-10" />;
-                        }
+                      ))}
+                    </div>
 
-                        const isToday = isSameDay(day, today);
-                        const isSelected = isSameDay(day, selectedDate);
-
-                        // Check if there's a session booked for this day
-                        const hasSession = sessions.some(session => {
-                          const sessionDate = parseISO(session.date);
-                          return isSameDay(sessionDate, day);
-                        });
-
-                        const availabilityForDate = getAvailabilityForDate(day);
-                        const hasAvailability = availabilityForDate && availabilityForDate.status === 'available' && (!availabilityForDate.availableTimes || availabilityForDate.availableTimes.length > 0);
-                        const isPast = day < today && !isToday;
-
-                        return isPast ? (
+                    <div className="grid grid-cols-7 gap-1 max-h-[400px] overflow-y-auto">
+                      {loading ? (
+                        // Show loading placeholders while availability data is loading
+                        Array.from({ length: 42 }).map((_, index) => (
                           <div
                             key={index}
-                            className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
+                            className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
                           >
-                            {format(day, "d")}
+                            <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
                           </div>
-                        ) : availabilityForDate ? (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              setSelectedDate(day);
-                              // Only open booking modal if the date has availability and no session is booked
-                              if (hasAvailability && !hasSession) {
-                                setIsBookingModalOpen(true);
-                              }
-                            }}
-                            className={`h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center transition-all ${isToday
-                              ? "bg-primary/10 border border-primary/20 text-primary font-black"
-                              : isSelected
-                                ? "bg-primary text-white font-black shadow-md"
-                                : hasSession
-                                  ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                  : availabilityForDate
-                                    ? (availabilityForDate.status === 'available' ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-red-100 text-red-800 hover:bg-red-200")  // Green for available, Red for unavailable
-                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"  // Gray for dates with no availability data (Not Booked)
-                              } ${hasSession || availabilityForDate ? "relative" : ""}`}
-                          >
-                            <span className="text-xs">{format(day, "d")}</span>
+                        ))
+                      ) : (
+                        getCalendarDays().map((day, index) => {
+                          if (!day) {
+                            return <div key={index} className="h-10" />;
+                          }
 
-                            {(hasSession || availabilityForDate) && (
-                              <>
-                                {hasSession && (
-                                  <span
-                                    className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"  // Blue dot for booked
-                                      }`}
-                                  />
-                                )}
-                                {availabilityForDate?.status === 'available' && !hasSession && (
-                                  <span
-                                    className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-green-500"  // Green dot for available
-                                      }`}
-                                  />
-                                )}
-                              </>
-                            )}
-                          </button>
-                        ) : (
-                          <div
-                            key={index}
-                            className="h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-                          >
-                            <span className="text-xs">{format(day, "d")}</span>
-                            {/* <span className="text-[0.6rem] font-bold mt-0.5">
+                          const isToday = isSameDay(day, today);
+                          const isSelected = isSameDay(day, selectedDate);
+
+                          // Check if there's a session booked for this day
+                          const hasSession = sessions.some(session => {
+                            const sessionDate = parseISO(session.date);
+                            return isSameDay(sessionDate, day);
+                          });
+
+                          const availabilityForDate = getAvailabilityForDate(day);
+                          const hasAvailability = availabilityForDate && availabilityForDate.status === 'available' && (!availabilityForDate.availableTimes || availabilityForDate.availableTimes.length > 0);
+                          const isPast = day < today && !isToday;
+
+                          return isPast ? (
+                            <div
+                              key={index}
+                              className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
+                            >
+                              {format(day, "d")}
+                            </div>
+                          ) : availabilityForDate ? (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSelectedDate(day);
+                                // Only open booking modal if the date has availability and no session is booked
+                                if (hasAvailability && !hasSession) {
+                                  setIsBookingModalOpen(true);
+                                }
+                              }}
+                              className={`h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center transition-all ${isToday
+                                ? "bg-primary/10 border border-primary/20 text-primary font-black"
+                                : isSelected
+                                  ? "bg-primary text-white font-black shadow-md"
+                                  : hasSession
+                                    ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                    : availabilityForDate
+                                      ? (availabilityForDate.status === 'available' ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-red-100 text-red-800 hover:bg-red-200")  // Green for available, Red for unavailable
+                                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"  // Gray for dates with no availability data (Not Booked)
+                                } ${hasSession || availabilityForDate ? "relative" : ""}`}
+                            >
+                              <span className="text-xs">{format(day, "d")}</span>
+
+                              {(hasSession || availabilityForDate) && (
+                                <>
+                                  {hasSession && (
+                                    <span
+                                      className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"  // Blue dot for booked
+                                        }`}
+                                      />
+                                  )}
+                                  {availabilityForDate?.status === 'available' && !hasSession && (
+                                    <span
+                                      className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-green-500"  // Green dot for available
+                                        }`}
+                                      />
+                                  )}
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <div
+                              key={index}
+                              className="h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
+                            >
+                              <span className="text-xs">{format(day, "d")}</span>
+                              {/* <span className="text-[0.6rem] font-bold mt-0.5">
             Not Booked
           </span> */}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
 
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Right Column - Sessions List */}

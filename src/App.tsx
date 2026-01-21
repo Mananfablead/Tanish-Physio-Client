@@ -126,9 +126,9 @@ const App = () => (
                   <Route
                     path="/booking-confirmation"
                     element={
-                      <PublicRoute>
+                      <ProtectedRoute>
                         <BookingConfirmationPage />
-                      </PublicRoute>
+                      </ProtectedRoute>
                     }
                   />
                   <Route
@@ -161,9 +161,9 @@ const App = () => (
                   <Route
                     path="/schedule"
                     element={
-                      <PublicRoute>
+                      <ProtectedRoute>
                         <SchedulePage />
-                      </PublicRoute>
+                      </ProtectedRoute>
                     }
                   />
 

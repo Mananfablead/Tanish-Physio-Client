@@ -10,15 +10,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SkalaetonQuestion } from "@/components/SkalaetonQuestion";
-import { 
-  CheckCircle, 
-  Edit2, 
-  ShieldCheck, 
+import {
+  CheckCircle,
+  Edit2,
+  ShieldCheck,
   Activity,
   ArrowRight,
   Clock,
   User,
-  Stethoscope
+  Stethoscope,
+  FileText,
+  Edit,
+  Shield,
+  Lock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchActiveQuestionnaire, selectActiveQuestionnaire, selectQuestionnaireLoading, selectQuestionnaireError, QuestionType } from "@/store/slices/questionnaireSlice";
@@ -35,7 +39,7 @@ export default function QuestionnairePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const pendingPlan = (location.state as any)?.planToActivate || null;
-  
+
   // Redux selectors
   const activeQuestionnaire = useSelector(selectActiveQuestionnaire);
   const isLoading = useSelector(selectQuestionnaireLoading);
@@ -93,7 +97,7 @@ export default function QuestionnairePage() {
   useEffect(() => {
     // Fetch active questionnaire from API
     dispatch(fetchActiveQuestionnaire() as any);
-    
+
     // On mount, check for stored intake
     const stored = loadStoredQuestionnaire();
     if (stored) {
@@ -121,7 +125,7 @@ export default function QuestionnairePage() {
       const next = { ...prev, [questionId]: value };
       // persist
       saveStoredQuestionnaire(next);
-      
+
       // Auto advance to next question if there is one and it's not a text field
       const question = activeQuestionnaire?.questions.find((q: any) => q._id === questionId);
       if (question && question.type !== 'text') {
@@ -134,7 +138,7 @@ export default function QuestionnairePage() {
           setIsReviewing(true);
         }
       }
-      
+
       return next;
     });
   };
@@ -176,15 +180,15 @@ export default function QuestionnairePage() {
   // Transform questionnaire data to healthProfile structure
   const transformQuestionnaireToHealthProfile = (questionnaireData: any, questions: any[]) => {
     const healthProfile: any = {};
-    
+
     // Map questionnaire responses to healthProfile fields
     Object.entries(questionnaireData).forEach(([questionId, answer]) => {
       const question = questions.find(q => q._id === questionId);
       if (!question) return;
-      
+
       // Map based on question content or type
       const questionText = question.question.toLowerCase();
-      
+
       if (questionText.includes('name') || questionText.includes('full name')) {
         // Don't map name to healthProfile
         return;
@@ -195,8 +199,8 @@ export default function QuestionnairePage() {
       } else if (questionText.includes('duration') || questionText.includes('how long')) {
         healthProfile.priorTreatments = answer;
       } else if (questionText.includes('treatment') || questionText.includes('therapy')) {
-        healthProfile.priorTreatments = healthProfile.priorTreatments 
-          ? `${healthProfile.priorTreatments}, ${answer}` 
+        healthProfile.priorTreatments = healthProfile.priorTreatments
+          ? `${healthProfile.priorTreatments}, ${answer}`
           : answer;
       } else if (questionText.includes('medical') || questionText.includes('history')) {
         healthProfile.medicalHistory = answer;
@@ -214,7 +218,7 @@ export default function QuestionnairePage() {
         healthProfile.additionalNotes += `${question.question}: ${answer}\n`;
       }
     });
-    
+
     return healthProfile;
   };
 
@@ -225,16 +229,16 @@ export default function QuestionnairePage() {
     try {
       // Transform questionnaire data to healthProfile structure
       const healthProfileData = transformQuestionnaireToHealthProfile(
-        data, 
+        data,
         activeQuestionnaire?.questions || []
       );
-      
+
       // Update user profile with health data from questionnaire
       const profileData = {
         healthProfile: healthProfileData
       };
       await updateProfile(profileData);
-      
+
       // If we were navigated here to activate a plan, complete activation and send user to booking
       const pending = pendingPlan || (() => {
         try {
@@ -249,7 +253,7 @@ export default function QuestionnairePage() {
         // activate plan
         savePlanToStorage(pending);
         // clear pending marker
-        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) {}
+        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
 
         // navigate to booking flow with plan and questionnaire
         navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
@@ -261,7 +265,7 @@ export default function QuestionnairePage() {
     } catch (error) {
       console.error("Error updating profile with questionnaire data:", error);
       // Continue with navigation even if profile update fails
-      
+
       // If we were navigated here to activate a plan, complete activation and send user to booking
       const pending = pendingPlan || (() => {
         try {
@@ -276,7 +280,7 @@ export default function QuestionnairePage() {
         // activate plan
         savePlanToStorage(pending);
         // clear pending marker
-        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) {}
+        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
 
         // navigate to booking flow with plan and questionnaire
         navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
@@ -309,7 +313,7 @@ export default function QuestionnairePage() {
   // Render question based on type
   const renderQuestion = (question: any) => {
     const currentValue = data[question._id] || '';
-    
+
     switch (question.type) {
       case 'text':
         return (
@@ -322,7 +326,7 @@ export default function QuestionnairePage() {
             />
           </div>
         );
-      
+
       case 'mcq':
         return (
           <RadioGroup
@@ -335,11 +339,10 @@ export default function QuestionnairePage() {
                 <RadioGroupItem value={option} id={option} className="peer sr-only" />
                 <Label
                   htmlFor={option}
-                  className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-6 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-bold shadow-sm group"
+                  className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-4 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-bold shadow-sm group"
                 >
-                  <div className={`w-6 h-6 rounded-full border-2 mr-5 flex items-center justify-center transition-all ${
-                    currentValue === option ? "border-primary bg-primary" : "border-slate-200 group-hover:border-primary/40"
-                  }`}>
+                  <div className={`w-6 h-6 rounded-full border-2 mr-5 flex items-center justify-center transition-all ${currentValue === option ? "border-primary bg-primary" : "border-slate-200 group-hover:border-primary/40"
+                    }`}>
                     {currentValue === option && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                   </div>
                   {option}
@@ -348,11 +351,11 @@ export default function QuestionnairePage() {
             ))}
           </RadioGroup>
         );
-      
+
       case 'slider':
         const sliderValue = parseInt(currentValue) || 5;
         return (
-          <div className="bg-gradient-to-br from-primary/5 to-secondary/10 p-10 rounded-3xl border border-primary/20 space-y-12 shadow-inner">
+          <div className="bg-gradient-to-br from-primary/5 to-secondary/10 p-2 rounded-3xl border border-primary/20 space-y-12 shadow-inner">
             <div className="text-center relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 blur-3xl rounded-full" />
               <span className="text-8xl font-black text-primary tracking-tighter relative tabular-nums">{sliderValue}</span>
@@ -371,7 +374,7 @@ export default function QuestionnairePage() {
                 min={1}
                 max={10}
                 step={1}
-                className="w-full py-4 md:py-6"
+                className="w-full py-2 md:py-6"
               />
               <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-slate-400 pt-6">
                 <span>Mild</span>
@@ -381,7 +384,7 @@ export default function QuestionnairePage() {
             </div>
           </div>
         );
-      
+
       case 'skeleton':
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -398,11 +401,10 @@ export default function QuestionnairePage() {
               {bodyAreas.map((area) => (
                 <button
                   key={area.id}
-                  className={`absolute ${area.position} w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-                    currentValue === area.id
+                  className={`absolute ${area.position} w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${currentValue === area.id
                       ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                       : "bg-slate-300 hover:bg-primary/40"
-                  }`}
+                    }`}
                   onClick={() => updateAnswer(question._id, area.id)}
                 />
               ))}
@@ -413,9 +415,8 @@ export default function QuestionnairePage() {
                 <Badge
                   key={area.id}
                   variant={currentValue === area.id ? "default" : "secondary"}
-                  className={`cursor-pointer transition-all px-6 py-4 text-xs font-black rounded-2xl ${
-                    currentValue === area.id ? "shadow-2xl scale-110" : "bg-white hover:bg-slate-50 border-slate-100"
-                  }`}
+                  className={`cursor-pointer transition-all px-6 py-4 text-xs font-black rounded-2xl ${currentValue === area.id ? "shadow-2xl scale-110" : "bg-white hover:bg-slate-50 border-slate-100"
+                    }`}
                   onClick={() => updateAnswer(question._id, area.id)}
                 >
                   {area.label}
@@ -424,16 +425,16 @@ export default function QuestionnairePage() {
             </div>
           </div>
         );
-      
+
       case 'skalaeton':
         return (
-          <SkalaetonQuestion 
+          <SkalaetonQuestion
             question={question}
             currentValue={currentValue}
             updateAnswer={updateAnswer}
           />
         );
-      
+
       default:
         return (
           <div className="space-y-4">
@@ -450,11 +451,11 @@ export default function QuestionnairePage() {
 
   // Get current question
   const currentQuestion = activeQuestionnaire?.questions[activeQuestionIndex];
-  
+
   // Calculate progress
   const totalQuestions = activeQuestionnaire?.questions.length || 0;
   const progressPercentage = totalQuestions > 0 ? Math.floor((activeQuestionIndex / totalQuestions) * 100) : 0;
-  
+
   // Show loading state
   if (isLoading) {
     return (
@@ -496,8 +497,8 @@ export default function QuestionnairePage() {
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 pb-20">
         {/* Progress Header */}
         {!isReviewing && (
-          <div className="sticky top-14 md:top-16 z-40 bg-white/80 backdrop-blur-xl border-b border-primary/20 py-4 md:py-5 shadow-sm">
-            <div className="container max-w-5xl px-6">
+          <div className="sticky top-14 md:top-16 z-40 bg-white/80 backdrop-blur-xl border-b border-primary/20 py-2 md:py-3 shadow-sm">
+            <div className="container max-w-6xl px-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
@@ -510,7 +511,7 @@ export default function QuestionnairePage() {
                 </Badge>
               </div>
               <div className="h-1 w-full lg:h-1.5 bg-primary/20 rounded-full overflow-hidden">
-                <motion.div 
+                <motion.div
                   className="h-full bg-gradient-to-r from-primary to-accent"
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercentage}%` }}
@@ -521,88 +522,79 @@ export default function QuestionnairePage() {
           </div>
         )}
 
-        <div className="container max-w-6xl mx-auto px-6">
-          {/* Questionnaire Info Banner */}
-          {/* {activeQuestionnaire && (
-            <div className="mb-6">
-              <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Stethoscope className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-black text-slate-900">{activeQuestionnaire.title}</h2>
-                      <p className="text-slate-600 mt-1">{activeQuestionnaire.description}</p>
-                      <div className="flex items-center gap-4 mt-3">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800">
-                          {activeQuestionnaire.questions?.length || 0} Questions
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          Last updated: {new Date(activeQuestionnaire.updatedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )} */}
-          
+        <div className="container  mx-auto px-6">
+
+
           <div className="flex flex-col lg:flex-row gap-8 mt-4">
-            <aside className="hidden lg:block lg:w-2/5">
+            <aside className="hidden lg:block lg:w-2/5 sticky top-20 self-start">
               <div className="rounded-2xl
-                  bg-gradient-to-b from-primary/20 via-secondary/30 to-accent/10
-                  border border-primary/20
-                  p-8
-                  shadow-lg shadow-primary/10">
+                  bg-gradient-to-br from-slate-50 to-slate-100
+                  border border-slate-200
+                  p-6
+                  shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground flex items-center justify-center shadow-sm">
+                  <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase text-primary tracking-wide">Personalized Care Intake</p>
-                    <h2 className="text-lg font-black text-slate-800">Guided clinical intake</h2>
-                    <p className="text-sm text-slate-600 mt-1">This intake helps clinicians prioritize your needs — ~3 minutes</p>
+                    <p className="text-xs font-black uppercase text-slate-500 tracking-wide">Personalized Care Intake</p>
+                    <h2 className="text-lg font-black text-slate-900">Guided clinical intake</h2>
+                    <p className="text-sm text-slate-500 mt-1">This intake helps clinicians prioritize your needs — ~3 minutes</p>
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <ol className="space-y-3">
+                  <ol className="space-y-2.5 max-h-[400px] overflow-y-auto pr-2">
                     {activeQuestionnaire?.questions.map((question: any, index: number) => {
                       const answered = data.hasOwnProperty(question._id);
                       const current = activeQuestionIndex === index;
                       return (
-                        <li key={question._id} className={`flex items-center gap-3 ${current ? 'text-primary' : 'text-slate-400'}`} aria-current={current ? 'step' : undefined}>
+                        <li 
+                          key={question._id} 
+                          className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${current ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100'} ${answered ? '!text-emerald-700' : ''}`} 
+                          aria-current={current ? 'step' : undefined}
+                        >
                           <div className={`
-                            h-9 w-9 rounded-full flex items-center justify-center
-                            text-sm font-black transition-all
+                            h-8 w-8 rounded-full flex items-center justify-center
+                            text-xs font-bold transition-all
                             ${current
                               ? "bg-primary text-white shadow-md shadow-primary/20"
                               : answered
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-slate-100 text-slate-400"
+                                ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                : "bg-slate-100 text-slate-400 border border-slate-200"
                             }
                           `}
                           >
-                            {answered ? <CheckCircle className="h-4 w-4" /> : index + 1}
+                            {answered ? <CheckCircle className="h-3.5 w-3.5" /> : index + 1}
                           </div>
-                          <div className="text-sm font-black truncate max-w-[150px]">{question.question}</div>
+                          <div className="text-sm font-medium truncate flex-1">{question.question}</div>
                         </li>
                       );
                     })}
                   </ol>
                 </div>
 
-                <div className="mt-6 text-sm text-slate-500">
-                  <div className="font-black">Trust & privacy</div>
-                  <div className="mt-2">• Clinician-reviewed • ~3 minutes</div>
+                <div className="mt-6 pt-4 border-t border-slate-200">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-success" />
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Secure</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Encrypted</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-success" />
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Verified</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </aside>
 
             <main className="lg:w-3/5 w-full ">
-              <div className=" ">
+              <div className="">
 
                 {/* Stored intake banner */}
                 {storedIntakeFound && !isReviewing && (
@@ -625,7 +617,7 @@ export default function QuestionnairePage() {
                                   stored.data,
                                   activeQuestionnaire?.questions || []
                                 );
-                                
+
                                 // Update user profile with health data from stored questionnaire
                                 const profileData = {
                                   healthProfile: healthProfileData
@@ -634,14 +626,14 @@ export default function QuestionnairePage() {
                               } catch (error) {
                                 console.error("Error updating profile with stored questionnaire data:", error);
                               }
-                              
+
                               const assigned = assignTherapist(stored.data);
                               const pending = pendingPlan || (() => {
-                                try { const raw = sessionStorage.getItem("qw_pending_plan"); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
+                                try { const raw = sessionStorage.getItem("qw_pending_plan"); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
                               })();
                               if (pending) {
                                 savePlanToStorage(pending);
-                                try { sessionStorage.removeItem("qw_pending_plan"); } catch(e){}
+                                try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
                                 navigate('/schedule', { state: { plan: pending, questionnaireData: stored.data, therapist: assigned } });
                                 return;
                               }
@@ -655,89 +647,128 @@ export default function QuestionnairePage() {
                 )}
 
                 <AnimatePresence mode="wait">
-            {!isReviewing && currentQuestion ? (
-              <motion.div key={`question-${currentQuestion._id}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }} >
-                <div role="region" aria-labelledby={`question-${currentQuestion._id}-title`} className="min-h-[50vh] lg:min-h-[65vh] flex lg:items-center items-start justify-center pt-6 lg:pt-0">
-                  <Card className="w-full border rounded-2xl border-slate-500 shadow-sm ">
-                    <CardContent className="p-4 lg:p-8">
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="h-10 w-10 rounded-lg flex items-center justify-center font-black text-lg bg-primary/10 text-primary">
-                          {activeQuestionIndex + 1}
-                        </div>
-                        <div>
-                          <h3 id={`question-${currentQuestion._id}-title`} className="font-black text-2xl text-slate-900 tracking-tight">{currentQuestion.question}</h3>
-                          <p className="text-sm text-slate-500 mt-1">Answer this question to continue</p>
-                        </div>
-                      </div>
-
-                      <div className="py-4 md:py-6 space-y-6">
-                        {renderQuestion(currentQuestion)}
-                      </div>
-
-                      <div className="mt-8 flex items-center justify-between gap-4">
-                        {activeQuestionIndex > 0 ? (
-                          <Button variant="outline" onClick={handlePrevious} className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all">Back</Button>
-                        ) : (
-                          <div />
-                        )}
-
-                        <Button onClick={handleNext} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
-                          {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
-                          <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div key="review" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
-                <Card className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                  <CardContent className="p-6 lg:p-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                      <div>
-                        <h3 className="text-lg font-black text-slate-900">Clinical Intake Summary</h3>
-                        <p className="text-sm text-slate-500 mt-2">Confirm the clinical details we'll use to match you with the right specialists.</p>
-
-                        <div className="mt-6 space-y-4">
-                          {activeQuestionnaire?.questions.map((question: any, index: number) => (
-                            <div key={question._id} className="flex items-center gap-4 p-4 rounded-xl bg-slate-100 border border-slate-100">
-                              <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary">
-                                <Edit2 className="h-6 w-6" />
+                  {!isReviewing && currentQuestion ? (
+                    <motion.div key={`question-${currentQuestion._id}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }} >
+                      <div role="region" aria-labelledby={`question-${currentQuestion._id}-title`} className="min-h-[50vh] flex lg:items-center  items-start justify-center pt-6 lg:pt-0">
+                        <Card className="w-full border rounded-2xl border-slate-500 shadow-sm ">
+                          <CardContent className="p-2 lg:p-8">
+                            <div className="flex items-center gap-4 mb-6">
+                              <div className="h-10 w-10 rounded-lg flex items-center justify-center font-black text-lg bg-primary/10 text-primary">
+                                {activeQuestionIndex + 1}
                               </div>
-                              <div className="flex-1">
-                                <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">{question.question}</p>
-                                <p className="text-sm font-black text-slate-900">{data[question._id] || 'Not answered'}</p>
+                              <div>
+                                <h3 id={`question-${currentQuestion._id}-title`} className="font-black text-2xl text-slate-900 tracking-tight">{currentQuestion.question}</h3>
+                                <p className="text-sm text-slate-500 mt-1">Answer this question to continue</p>
                               </div>
-                              <button onClick={() => { 
-                                setIsReviewing(false); 
-                                setActiveQuestionIndex(index); 
-                              }} className="text-slate-400 hover:text-primary">Edit</button>
                             </div>
-                          ))}
-                        </div>
+
+                            <div className="py-4 md:py-6 space-y-6">
+                              {renderQuestion(currentQuestion)}
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-between gap-4">
+                              {activeQuestionIndex > 0 ? (
+                                <Button variant="outline" onClick={handlePrevious} className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all">Back</Button>
+                              ) : (
+                                <div />
+                              )}
+
+                              <Button onClick={handleNext} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
+                                {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
+                                <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div key="review" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
+                      <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-1">
+                          <CardContent className="p-6 lg:p-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 items-start">
+                              <div>
+                                <div className="flex items-center gap-3 mb-6">
+                                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                    <FileText className="h-5 w-5" />
+                                  </div>
+                                  <div>
+                                    <h3 className="text-xl font-black text-slate-900">Clinical Intake Summary</h3>
+                                    <p className="text-sm text-slate-500 mt-1">Confirm the clinical details we'll use to match you with the right specialists.</p>
+                                  </div>
+                                </div>
 
-                      <div>
-                        <h4 className="text-sm font-black text-slate-900">Next Steps</h4>
-                        <p className="text-sm text-slate-500 mt-2">We'll use these details to surface clinicians who best match your needs. You will be able to review profiles and choose a specialist.</p>
+                                <div className="space-y-4">
+                                  {activeQuestionnaire?.questions.map((question: any, index: number) => (
+                                    <div key={question._id} className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
+                                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary flex-shrink-0 mt-1">
+                                        <Edit2 className="h-4 w-4" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs uppercase font-black tracking-[0.15em] text-slate-400 mb-1.5">{question.question}</p>
+                                        <p className="text-base font-medium text-slate-800 break-words">{data[question._id] || 'Not answered'}</p>
+                                      </div>
+                                      <button
+                                        onClick={() => {
+                                          setIsReviewing(false);
+                                          setActiveQuestionIndex(index);
+                                        }}
+                                        className="text-slate-400 hover:text-primary transition-colors self-start mt-1.5"
+                                        aria-label="Edit question"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
 
-                        <div className="mt-6">
-                          <Button onClick={handleSubmit} className="w-full h-16 rounded-xl font-black bg-primary">Continue to Specialist Matches <ArrowRight className="ml-3 h-5 w-5" /></Button>
-                          <p className="text-[12px] text-slate-500 mt-3">Your responses are encrypted and shared only with Clinician-compliant providers.</p>
+                              <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="p-2 rounded-lg bg-success/10 text-success">
+                                    <ArrowRight className="h-5 w-5" />
+                                  </div>
+                                  <h4 className="text-base font-black text-slate-900">Next Steps</h4>
+                                </div>
+                                <p className="text-sm text-slate-600 mb-6">We'll use these details to surface clinicians who best match your needs. You will be able to review profiles and choose a specialist.</p>
+
+                                <div className="space-y-4">
+                                  <Button
+                                    onClick={handleSubmit}
+                                    className="w-full h-14 rounded-xl font-black bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
+                                  >
+                                    Continue to Specialist Matches <ArrowRight className="ml-2 h-4 w-4" />
+                                  </Button>
+                                  <p className="text-xs text-slate-500 text-center pt-2">
+                                    Your responses are encrypted and shared only with HIPAA-compliant providers
+                                  </p>
+                                </div>
+
+                                <div className="mt-6 pt-6 border-t border-slate-200">
+                                  <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <Shield className="h-4 w-4 text-success" />
+                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Secure</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Lock className="h-4 w-4 text-primary" />
+                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Encrypted</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-success" />
+                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Verified</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
                         </div>
-
-                        {/* <div className="mt-6 text-[12px] text-slate-500">
-                          <div className="font-black">Trust</div>
-                          <div className="mt-2">HIPAA-compliant • Clinician-reviewed</div>
-                        </div> */}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                      </Card>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </main>
           </div>
