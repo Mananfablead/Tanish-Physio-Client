@@ -185,12 +185,18 @@ export const getBookingByIdGuest = (id: string, clientEmail: string) => {
   return api.get(`/bookings/${id}`, { params: { clientEmail } });
 };
 
-export const updateGuestBookingStatus = (id: string, status: string, clientEmail: string) => {
-  return api.put(`/bookings/${id}/guest-status`, { status, clientEmail });
+export const updateGuestBookingStatus = (
+  id: string,
+  status: string,
+  clientEmail: string
+) => {
+  return api.put(`/bookings/guest-status/${id}`, { status, clientEmail });
 };
 
-export const updateGuestBooking = (id: string, bookingData: any, clientEmail: string) => {
-  return api.put(`/bookings/${id}/guest-status`, { ...bookingData, clientEmail });
+export const updateGuestBooking = (id: string, bookingData: any) => {
+  return api.put(`/bookings/guest-status/${id}`, {
+    status: bookingData.status,
+  });
 };
 
 export const processPaymentWebhook = (webhookData: any) => {
