@@ -248,7 +248,7 @@ const ServiceSidebar = ({
         price: (service.details.priceRange || service.details.price).replace("₹", "").split("-")[0],
         duration: service.details.sessionDuration,
       },
-      fromService: true,
+      fromServices: true,
       therapist: {
         id: `th-${Math.floor(Math.random() * 10000)}`,
         name: "Assigned Clinician",
@@ -426,7 +426,7 @@ export default function ServiceDetailPage() {
     if (serviceId) {
       dispatch(fetchServiceById(serviceId));
     }
-  }, [dispatch, serviceId]);
+  }, [dispatch]);
 
   // Use the service from Redux store
   const service = selectedService;

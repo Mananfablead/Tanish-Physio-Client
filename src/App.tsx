@@ -77,6 +77,7 @@ const App = () => (
                       </ProtectedRoute>
                     }
                   />
+         
                   <Route path="/plans" element={<SubscriptionPlansPage />} />
 
                   <Route
@@ -134,9 +135,9 @@ const App = () => (
                   <Route
                     path="/profile"
                     element={
-                      <ProtectedRoute>
+                      // <ProtectedRoute>
                         <ProfilePage />
-                      </ProtectedRoute>
+                      // </ProtectedRoute>
                     }
                   />
                   <Route
@@ -161,9 +162,9 @@ const App = () => (
                   <Route
                     path="/schedule"
                     element={
-                      <ProtectedRoute>
+                      // <ProtectedRoute>
                         <SchedulePage />
-                      </ProtectedRoute>
+                      // </ProtectedRoute>
                     }
                   />
 

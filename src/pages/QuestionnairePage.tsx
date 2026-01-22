@@ -39,6 +39,7 @@ export default function QuestionnairePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const pendingPlan = (location.state as any)?.planToActivate || null;
+  const serviceToBook = (location.state as any)?.serviceToBook || null;
 
   // Redux selectors
   const activeQuestionnaire = useSelector(selectActiveQuestionnaire);
@@ -255,13 +256,42 @@ export default function QuestionnairePage() {
         // clear pending marker
         try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
 
-        // navigate to booking flow with plan and questionnaire
-        navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
+        // Get subscription ID from stored plan
+        let subscriptionId = null;
+        try {
+          const storedPlan = sessionStorage.getItem("qw_plan");
+          if (storedPlan) {
+            const planData = JSON.parse(storedPlan);
+            subscriptionId = planData.subscriptionId || null;
+          }
+        } catch (e) {
+          console.error("Error getting subscription ID from storage:", e);
+        }
+        
+        // navigate to schedule page with plan data for session booking
+        navigate("/schedule", { state: { 
+          fromSubscription: true,
+          subscriptionId: subscriptionId,
+          plan: pending, 
+          questionnaireData: data, 
+          therapist: assigned 
+        } });
+        return;
+      }
+
+      if (serviceToBook) {
+        // For service bookings, navigate to schedule page with service data
+        navigate("/schedule", { state: { 
+          fromServices: true,
+          service: serviceToBook, 
+          questionnaireData: data, 
+          therapist: assigned 
+        } });
         return;
       }
 
       // Default behavior: continue to therapist discovery with intake data
-      navigate("/plans", { state: { questionnaireData: data, assigned } });
+      navigate("/profile", { state: { questionnaireData: data, assigned } });
     } catch (error) {
       console.error("Error updating profile with questionnaire data:", error);
       // Continue with navigation even if profile update fails
@@ -282,13 +312,42 @@ export default function QuestionnairePage() {
         // clear pending marker
         try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
 
-        // navigate to booking flow with plan and questionnaire
-        navigate("/schedule", { state: { plan: pending, questionnaireData: data, therapist: assigned } });
+        // Get subscription ID from stored plan
+        let subscriptionId = null;
+        try {
+          const storedPlan = sessionStorage.getItem("qw_plan");
+          if (storedPlan) {
+            const planData = JSON.parse(storedPlan);
+            subscriptionId = planData.subscriptionId || null;
+          }
+        } catch (e) {
+          console.error("Error getting subscription ID from storage:", e);
+        }
+        
+        // navigate to schedule page with plan data for session booking
+        navigate("/schedule", { state: { 
+          fromSubscription: true,
+          subscriptionId: subscriptionId,
+          plan: pending, 
+          questionnaireData: data, 
+          therapist: assigned 
+        } });
+        return;
+      }
+
+      if (serviceToBook) {
+        // For service bookings, navigate to schedule page with service data
+        navigate("/schedule", { state: { 
+          fromServices: true,
+          service: serviceToBook, 
+          questionnaireData: data, 
+          therapist: assigned 
+        } });
         return;
       }
 
       // Default behavior: continue to therapist discovery with intake data
-      navigate("/plans", { state: { questionnaireData: data, assigned } });
+      navigate("/profile", { state: { questionnaireData: data, assigned } });
     }
   };
 
@@ -634,10 +693,28 @@ export default function QuestionnairePage() {
                               if (pending) {
                                 savePlanToStorage(pending);
                                 try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
-                                navigate('/schedule', { state: { plan: pending, questionnaireData: stored.data, therapist: assigned } });
+                                // Get subscription ID from stored plan
+                                let subscriptionId = null;
+                                try {
+                                  const storedPlan = sessionStorage.getItem("qw_plan");
+                                  if (storedPlan) {
+                                    const planData = JSON.parse(storedPlan);
+                                    subscriptionId = planData.subscriptionId || null;
+                                  }
+                                } catch (e) {
+                                  console.error("Error getting subscription ID from storage:", e);
+                                }
+                                
+                                navigate('/schedule', { state: { 
+                                  fromSubscription: true,
+                                  subscriptionId: subscriptionId,
+                                  plan: pending, 
+                                  questionnaireData: stored.data, 
+                                  therapist: assigned 
+                                } });
                                 return;
                               }
-                              navigate('/plans', { state: { questionnaireData: stored.data, assigned } });
+                              navigate('/profile', { state: { questionnaireData: stored.data, assigned } });
                             }
                           }}>Use & Continue</Button>
                         </div>

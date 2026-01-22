@@ -68,7 +68,7 @@ export default function BookingPage() {
   };
 
 
-  const serviceBooking = bookingData?.fromService === true;
+  const serviceBooking = bookingData?.fromServices === true;
   const subscriptionBooking = bookingData?.fromSubscription === true;
 
   const plan = bookingData?.plan ?? {
@@ -177,7 +177,7 @@ export default function BookingPage() {
     console.log('localStorage token:', localStorage.getItem("token"));
     console.log('subscriptionBooking:', subscriptionBooking);
     console.log('serviceBooking:', serviceBooking);
-    
+
     // Validate guest user data if applicable
     if (isGuestUser && (!guestUserData.name || !guestUserData.email)) {
       toast.error("Please fill in your name and email to continue");
@@ -225,7 +225,7 @@ export default function BookingPage() {
             amount: finalPrice,
             currency: "INR"
           };
-
+          console.log("subscriptionPaymentOrderData", subscriptionPaymentOrderData)
           paymentOrderResult = await dispatch(createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData));
         }
 
@@ -272,16 +272,25 @@ export default function BookingPage() {
             } else {
               console.log('Calling regular subscription payment verification API');
               verifyResult = await dispatch(verifySubscriptionPaymentTransaction(paymentVerificationData));
+              console.log("verifyResult-------?", verifyResult)
             }
             if ((isGuestUser && verifyGuestSubscriptionPaymentAsync.fulfilled.match(verifyResult)) || (!isGuestUser && verifySubscriptionPaymentTransaction.fulfilled.match(verifyResult))) {
               // Verification successful - process subscription
               try {
-                // Persist plan as active subscription
+                // Get subscription ID from response
+                const subscriptionId = verifyResult.payload?.subscription?.id || verifyResult.payload?.data?.subscription?.id;
+
+                // Persist plan as active subscription with subscription ID
                 sessionStorage.setItem(
                   "qw_plan",
-                  JSON.stringify({ plan, purchasedAt: Date.now(), active: true })
+                  JSON.stringify({
+                    plan,
+                    subscriptionId, // Store the actual subscription ID
+                    purchasedAt: Date.now(),
+                    active: true
+                  })
                 );
-                              
+
                 // Check for existing intake
                 let stored = null;
                 try {
@@ -294,7 +303,7 @@ export default function BookingPage() {
                 const now = Date.now();
                 const isRecent = (ts: number | undefined | null) =>
                   ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
-                              
+
                 // Check for any previously reserved session (from intake-first scheduling)
                 let scheduled = null;
                 try {
@@ -303,7 +312,7 @@ export default function BookingPage() {
                 } catch (e) {
                   scheduled = null;
                 }
-                              
+
                 if (!stored || !isRecent(stored?.updatedAt)) {
                   // Plan purchased, but intake missing or outdated: require intake to unlock sessions
                   toast.success(
@@ -316,7 +325,7 @@ export default function BookingPage() {
                   navigate("/questionnaire", { state: { planToActivate: plan } });
                   return;
                 }
-                              
+
                 try {
                   const therapist = {
                     id: `th-${Math.floor(Math.random() * 10000)}`,
@@ -325,7 +334,7 @@ export default function BookingPage() {
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
-                              
+
                   if (scheduled) {
                     scheduled.locked = false;
                     scheduled.therapist = therapist;
@@ -336,12 +345,12 @@ export default function BookingPage() {
                     );
                   }
                 } catch (e) { }
-                              
+
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
                   !localStorage.getItem("token")
-                              
+
                 toast.success("Payment successful!.");
                 if (wasGuestUser) {
                   // For guest users, navigate to booking confirmation page
@@ -370,12 +379,23 @@ export default function BookingPage() {
               }
             } else {
               console.error("Subscription payment verification failed:", verifyResult.payload);
-              // Even if verification fails, proceed with the flow since payment was successful on Razorpay side
+
+              // For subscription payments, we don't need to update booking status
+              // The subscription is already activated via the payment verification
+
               try {
-                // Persist plan as active subscription
+                // Get subscription ID from response (even in fallback scenario)
+                const subscriptionId = verifyResult.payload?.subscription?.id || verifyResult.payload?.data?.subscription?.id;
+                console.log("idid")
+                // Persist plan as active subscription with subscription ID
                 sessionStorage.setItem(
                   "qw_plan",
-                  JSON.stringify({ plan, purchasedAt: Date.now(), active: true })
+                  JSON.stringify({
+                    plan,
+                    subscriptionId, // Store the actual subscription ID
+                    purchasedAt: Date.now(),
+                    active: true
+                  })
                 );
 
                 // Check for existing intake
@@ -748,7 +768,7 @@ export default function BookingPage() {
               }
             } else {
               console.error("Payment verification failed:", verifyResult.payload);
-             
+
               if (isGuestUser) {
                 console.log('Updating booking status with guest API (fallback)');
                 const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
@@ -761,7 +781,7 @@ export default function BookingPage() {
                 console.log('Updating booking status with regular API (fallback)');
                 await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
               }
-              
+
               try {
                 // Persist plan as active subscription
                 sessionStorage.setItem(
@@ -958,78 +978,78 @@ export default function BookingPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Guest User Form and Payment Form */}
           <div className="lg:col-span-2 space-y-6">
-           
-              <Card variant="elevated">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
-                    Your Information
-                  </CardTitle>
-                </CardHeader>
 
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Full Name */}
-                    <div>
-                      <Label htmlFor="guestName">Full Name</Label>
-                      <Input
-                        id="guestName"
-                        placeholder="Enter your full name"
-                        value={guestUserData.name}
-                        disabled={!!user}
-                        onChange={(e) =>
-                          setGuestUserData({
-                            ...guestUserData,
-                            name: e.target.value,
-                          })
-                        }
-                        className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+            <Card variant="elevated">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  Your Information
+                </CardTitle>
+              </CardHeader>
 
-                      />
-                    </div>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Full Name */}
+                  <div>
+                    <Label htmlFor="guestName">Full Name</Label>
+                    <Input
+                      id="guestName"
+                      placeholder="Enter your full name"
+                      value={guestUserData.name}
+                      disabled={!!user}
+                      onChange={(e) =>
+                        setGuestUserData({
+                          ...guestUserData,
+                          name: e.target.value,
+                        })
+                      }
+                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
 
-                    {/* Email */}
-                    <div>
-                      <Label htmlFor="guestEmail">Email Address</Label>
-                      <Input
-                        id="guestEmail"
-                        type="email"
-                        placeholder="Enter your email address"
-                        value={guestUserData.email}
-                        disabled={!!user}
-                        onChange={(e) =>
-                          setGuestUserData({
-                            ...guestUserData,
-                            email: e.target.value,
-                          })
-                        }
-                        className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
-
-                      />
-                    </div>
-
-                    {/* Phone */}
-                    <div>
-                      <Label htmlFor="guestPhone">Phone Number</Label>
-                      <Input
-                        id="guestPhone"
-                        placeholder="Enter your phone number"
-                        value={guestUserData.phone}
-                        disabled={!!user}
-                        onChange={(e) =>
-                          setGuestUserData({
-                            ...guestUserData,
-                            phone: e.target.value,
-                          })
-                        }
-                        className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
-
-                      />
-                    </div>
+                    />
                   </div>
-                </CardContent>
-              </Card>
-           
+
+                  {/* Email */}
+                  <div>
+                    <Label htmlFor="guestEmail">Email Address</Label>
+                    <Input
+                      id="guestEmail"
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={guestUserData.email}
+                      disabled={!!user}
+                      onChange={(e) =>
+                        setGuestUserData({
+                          ...guestUserData,
+                          email: e.target.value,
+                        })
+                      }
+                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <Label htmlFor="guestPhone">Phone Number</Label>
+                    <Input
+                      id="guestPhone"
+                      placeholder="Enter your phone number"
+                      value={guestUserData.phone}
+                      disabled={!!user}
+                      onChange={(e) =>
+                        setGuestUserData({
+                          ...guestUserData,
+                          phone: e.target.value,
+                        })
+                      }
+                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
 
             {/* Security Notice */}
             <Card variant="outline">

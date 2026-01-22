@@ -269,9 +269,23 @@ export default function BookingConfirmationPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link to="/login">
+                  <Link to="/questionnaire" state={{ 
+                    planToActivate: isSubscription ? { 
+                      name: serviceName, 
+                      price: servicePrice, 
+                      duration: serviceDuration,
+                      planId: bookingData?.plan?.planId || bookingData?.plan?.id
+                    } : null,
+                    serviceToBook: !isSubscription ? {
+                      name: serviceName,
+                      price: servicePrice,
+                      duration: serviceDuration,
+                      bookingId: bookingData?.bookingId,
+                      serviceId: bookingData?.service?.id
+                    } : null
+                  }}>
                     <Button variant="hero" size="lg" className="w-full">
-                      {isSubscription ? 'Manage Your Subscription' : 'Login to Your Account'}
+                      Complete Questionnaire
                       <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
                   </Link>
