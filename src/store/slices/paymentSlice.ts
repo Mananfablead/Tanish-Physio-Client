@@ -95,16 +95,22 @@ export const createNewSubscriptionPaymentOrder = createAsyncThunk(
 );
 
 export const verifySubscriptionPaymentTransaction = createAsyncThunk(
-  'payment/verifySubscription',
+  "payment/verifySubscription",
   async (verificationData: any, { rejectWithValue }) => {
     try {
       const response: any = await verifySubscriptionPayment(verificationData);
-      return response.data.data.payment;
+
+      // 👇 PURE API DATA RETURN
+      return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to verify subscription payment');
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to verify subscription payment"
+      );
     }
   }
 );
+
 
 // Async thunk to fetch user payments
 export const fetchUserPayments = createAsyncThunk(
@@ -187,9 +193,18 @@ const paymentSlice = createSlice({
         state.error = action.payload as string;
       })
       // verifySubscriptionPaymentTransaction
-      .addCase(verifySubscriptionPaymentTransaction.fulfilled, (state, action) => {
-        state.payment = action.payload;
-      })
+     .addCase(
+  verifySubscriptionPaymentTransaction.fulfilled,
+  (state, action) => {
+    state.payment = {
+      paymentId: action.payload.paymentId,
+      orderId: action.payload.orderId,
+      status: action.payload.status,
+    };
+
+    state.subscription = action.payload.subscription;
+  }
+)
       // fetchUserPayments
       .addCase(fetchUserPayments.pending, (state) => {
         state.loading = true;

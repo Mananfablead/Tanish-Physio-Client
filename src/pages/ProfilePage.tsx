@@ -464,7 +464,16 @@ export default function ProfilePage() {
                           </Button> */}
                           <Button
                             className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black"
-                            onClick={() => navigate("/schedule")}
+                            onClick={() => {
+                              // For active plan, navigate to schedule with subscription data
+                              navigate("/schedule", {
+                                state: {
+                                  fromSubscription: true,
+                                  plan: activePlan,
+                                  subscriptionId: activePlan?._id
+                                }
+                              });
+                            }}
                           >
                             Create Session
                           </Button>
@@ -695,8 +704,14 @@ export default function ProfilePage() {
                               moment.
                             </p>
                           </div>
-                          <Button asChild className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black">
-                            <Link to="/schedule">Book a Session</Link>
+                          <Button 
+                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
+                            onClick={() => {
+                              // For upcoming sessions, navigate to schedule
+                              navigate("/schedule");
+                            }}
+                          >
+                            Book a Session
                           </Button>
                         </div>
                       </RightPanelCard>
@@ -833,10 +848,13 @@ export default function ProfilePage() {
                         title="Session History"
                         footer={
                           <Button
-                            asChild
                             className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
+                            onClick={() => {
+                              // For session history, navigate to schedule
+                              navigate("/schedule");
+                            }}
                           >
-                            <Link to="/schedule">Book a Session</Link>
+                            Book a Session
                           </Button>
                         }
                       >

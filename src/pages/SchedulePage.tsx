@@ -47,17 +47,18 @@ export default function SchedulePage() {
   const location = useLocation();
   const navigate = useNavigate()
   const bookingData = location.state;
-  console.log("userSubscriptions", bookingData)
+  console.log("userSubscriptionsdadadadaddddad--------?", bookingData)
   useEffect(() => {
-    if (bookingData?.bookingCompleted) {
-      toast.success("Payment successful! Your booking is confirmed.");
+    if (bookingData?.fromSubscription) {
+      toast.success("Subscription activated! You can now book your sessions.");
+    } else if (bookingData?.fromServices) {
+      toast.success("Service purchased! You can now book your session.");
     }
   }, [bookingData]);
 
   // Check if there's booking data from services page
   const hasBookingSummary =
-    bookingData?.fromServices || bookingData?.bookingSummary;
-
+    bookingData?.fromServices || bookingData?.fromSubscription || bookingData?.bookingSummary;
 
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -155,20 +156,11 @@ export default function SchedulePage() {
   const getCalendarDays = () => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
-
     const daysInMonth = eachDayOfInterval({ start, end });
-
     const startWeekday = start.getDay(); // 0 = Sunday
-
-    // Empty slots before 1st
     const emptyDays = Array(startWeekday).fill(null);
-
     return [...emptyDays, ...daysInMonth];
   };
-
-
-
-
   // Helper function to get availability for a specific date
   const getAvailabilityForDate = (date: Date) => {
     if (!availability || !Array.isArray(availability)) return null;
@@ -182,21 +174,6 @@ export default function SchedulePage() {
 
   const today = new Date();
 
-  // Helper function to calculate end time based on start time (assuming 1 hour session)
-  const calculateEndTime = (startTime: string) => {
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const startDate = new Date();
-    startDate.setHours(hours, minutes, 0, 0);
-
-    // Add 1 hour to the start time
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 60 minutes * 60 seconds * 1000 milliseconds
-
-    // Format the end time as HH:mm
-    const endHours = endDate.getHours().toString().padStart(2, '0');
-    const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
-
-    return `${endHours}:${endMinutes}`;
-  };
 
   return (
     <Layout>
@@ -212,15 +189,7 @@ export default function SchedulePage() {
                 Manage your upcoming and past appointments
               </p>
             </div>
-            {/* <div className="flex flex-wrap gap-3">
 
-              <Button className="h-12 rounded-xl bg-primary hover:from-primary/90 hover:to-accent/90 text-white font-black px-6 shadow-md shadow-primary/20"
-                onClick={() => setIsBookingModalOpen(true)}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Book New Session
-              </Button>
-            </div> */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -354,13 +323,13 @@ export default function SchedulePage() {
                                     <span
                                       className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-blue-500"  // Blue dot for booked
                                         }`}
-                                      />
+                                    />
                                   )}
                                   {availabilityForDate?.status === 'available' && !hasSession && (
                                     <span
                                       className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-green-500"  // Green dot for available
                                         }`}
-                                      />
+                                    />
                                   )}
                                 </>
                               )}
@@ -652,13 +621,49 @@ export default function SchedulePage() {
                   }
 
                   try {
+
+                    let subscriptionIdValue = null;
+                    if (bookingData?.fromSubscription) {
+                      console.log("1")
+                      // Try to get from bookingData first (could come from Questionnaire page)
+                      subscriptionIdValue = bookingData?.subscriptionId || getSubscriptionIdFromStorage();
+                    } else if (bookingData?.subscriptionId) {
+                      console.log("2")
+                      subscriptionIdValue = bookingData?.subscriptionId;
+                    } else if (bookingData?.fromSubscription && !subscriptionIdValue) {
+                      // Double check from sessionStorage if subscription flow
+                      console.log("3")
+                      subscriptionIdValue = getSubscriptionIdFromStorage();
+                    }
+                    if (bookingData?.plan?.id) {
+                      subscriptionIdValue = bookingData?.plan?.id;
+                    }
+
+
                     const sessionData = {
-                      bookingId: bookingData?.bookingId || null,
+                      bookingId: (bookingData?.fromServices || bookingData?.bookingId && !subscriptionIdValue) ? (bookingData?.bookingId || bookingData?.service?.bookingId) || null : null,
+                      subscriptionId: subscriptionIdValue,
                       date: format(selectedDate, "yyyy-MM-dd"),
                       time: selectedTime,
                       type: sessionTypeValue,
                       status: sessionStatusValue,
                     };
+
+                    // Helper function to get subscription ID from stored plan
+                    function getSubscriptionIdFromStorage() {
+                      try {
+                        const storedPlan = sessionStorage.getItem("qw_plan");
+                        console.log('Stored Plan Data:', storedPlan);
+                        if (storedPlan) {
+                          const planData = JSON.parse(storedPlan);
+                          console.log('Parsed Plan Data:', planData);
+                          return planData.subscriptionId || null;
+                        }
+                      } catch (e) {
+                        console.error("Error getting subscription ID:", e);
+                      }
+                      return null;
+                    }
 
                     const response: any = await createSession(sessionData);
 

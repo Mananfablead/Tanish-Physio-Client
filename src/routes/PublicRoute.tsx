@@ -1,10 +1,18 @@
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
-import { selectCurrentUser } from '@/store/slices/authSlice';
+import { selectCurrentUser, selectAuthLoading } from '@/store/slices/authSlice';
 
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
   const user = useSelector(selectCurrentUser);
+  const isLoading = useSelector(selectAuthLoading);
   const location = useLocation();
+
+  // Show loading state while authentication is being checked
+  // This prevents incorrect redirects when the store is still loading after page refresh
+  if (isLoading && !user) {
+    // Show a loading indicator while auth status is being determined
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   // If user is authenticated, redirect to home (or dashboard)
   if (user) {

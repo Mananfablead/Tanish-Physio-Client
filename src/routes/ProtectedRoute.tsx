@@ -5,11 +5,11 @@ import { selectCurrentUser } from '@/store/slices/authSlice';
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const user = useSelector(selectCurrentUser);
   const location = useLocation();
-
+  console.log("ProtectedRoute", user)
   // If no user is authenticated, redirect to login
   if (!user) {
     // Redirect to login with the current location to redirect back after login
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return children;
