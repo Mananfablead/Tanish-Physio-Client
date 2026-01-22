@@ -121,7 +121,7 @@ export default function ProfilePage() {
     dispatch(getAllBookingsAsync());
     dispatch(fetchProfile());
 
-  }, [dispatch]);
+  }, []);  // Empty dependency array to run only on mount
 
 
 

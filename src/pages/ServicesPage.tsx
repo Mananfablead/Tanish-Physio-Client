@@ -40,7 +40,7 @@ export default function ServicesPage() {
   const { services, loading, error } = useSelector((state: RootState) => state.services);
   useEffect(() => {
     dispatch(fetchAllServices());
-  }, [dispatch]);
+  }, []);
 
   if (loading) {
     return (

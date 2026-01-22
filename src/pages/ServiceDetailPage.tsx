@@ -426,7 +426,7 @@ export default function ServiceDetailPage() {
     if (serviceId) {
       dispatch(fetchServiceById(serviceId));
     }
-  }, [dispatch, serviceId]);
+  }, [dispatch]);
 
   // Use the service from Redux store
   const service = selectedService;
