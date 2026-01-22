@@ -27,7 +27,36 @@ import {
   ShieldCheck,
   AlertCircle,
   MapPin,
-  Calendar
+  Calendar,
+  Check,
+  FileText,
+  User,
+  Phone,
+  Mail,
+  Home,
+  Briefcase,
+  GraduationCap,
+  Heart,
+  Eye,
+  Settings,
+  Search,
+  Filter,
+  Grid,
+  List,
+  Map,
+  Navigation,
+  Package,
+  ShoppingCart,
+  Tag,
+  Truck,
+  Wrench,
+  X,
+  Plus,
+  Minus,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
 } from "lucide-react";
 import { 
   Accordion, 
@@ -57,6 +86,9 @@ import Autoplay from "embla-carousel-autoplay";
 import { useSelector } from 'react-redux';
 import { RootState, useAppDispatch } from '@/store';
 import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
+import { fetchFeaturedTestimonials } from '@/store/slices/testimonialSlice';
+import { selectFeaturedTestimonials, selectTestimonialsLoading, selectTestimonialsError } from '@/store/slices/testimonialSlice';
+import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic } from '@/store/slices/cmsSlice';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -99,17 +131,92 @@ const CountUp = ({ value, duration = 2 }: { value: string; duration?: number }) 
   return <span ref={ref}>{displayValue}</span>;
 };
 
+// Helper function to map icon names to components
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, any> = {
+    ClipboardList: ClipboardList,
+    UserCheck: UserCheck,
+    Video: Video,
+    Star: Star,
+    Shield: Shield,
+    Award: Award,
+    CheckCircle: CheckCircle,
+    Users: Users,
+    Clock: Clock,
+    Activity: Activity,
+    HeartPulse: HeartPulse,
+    Stethoscope: Stethoscope,
+    Bone: Bone,
+    Dumbbell: Dumbbell,
+    Zap: Zap,
+    Quote: Quote,
+    HelpCircle: HelpCircle,
+    Lock: Lock,
+    ShieldCheck: ShieldCheck,
+    AlertCircle: AlertCircle,
+    MapPin: MapPin,
+    Calendar: Calendar,
+    Check: Check,
+    FileText: FileText,
+    User: User,
+    Phone: Phone,
+    Mail: Mail,
+    Home: Home,
+    Briefcase: Briefcase,
+    GraduationCap: GraduationCap,
+    Heart: Heart,
+    Eye: Eye,
+    Settings: Settings,
+    Search: Search,
+    Filter: Filter,
+    Grid: Grid,
+    List: List,
+    Map: Map,
+    Navigation: Navigation,
+    Package: Package,
+    ShoppingCart: ShoppingCart,
+    Tag: Tag,
+    Truck: Truck,
+    Wrench: Wrench,
+    Plus: Plus,
+    Minus: Minus,
+  };
+  
+  return iconMap[iconName] || ClipboardList;
+};
+
 export default function LandingPage() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
   
   // Fetch subscription plans from Redux store
   const dispatch = useAppDispatch();
-  const { plans: subscriptionPlans, loading, error } = useSelector((state: RootState) => state.subscriptions);
+  const { plans: subscriptionPlans, loading: subscriptionLoading, error: subscriptionError } = useSelector((state: RootState) => state.subscriptions);
+  
+  // Fetch testimonials from Redux store
+  const featuredTestimonials = useSelector(selectFeaturedTestimonials);
+  const testimonialsLoading = useSelector(selectTestimonialsLoading);
+  const testimonialsError = useSelector(selectTestimonialsError);
+  
+  // Fetch CMS hero and steps data from Redux store
+  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
   
   // Fetch subscription plans when component mounts
   useEffect(() => {
     dispatch(fetchSubscriptionPlans());
+  }, [dispatch]);
+  
+  // Fetch featured testimonials when component mounts
+  useEffect(() => {
+    dispatch(fetchFeaturedTestimonials());
+  }, [dispatch]);
+  
+  // Fetch CMS hero and steps data when component mounts
+  useEffect(() => {
+    dispatch(fetchHeroPublic());
+    dispatch(fetchStepsPublic());
+    dispatch(fetchWhyUsPublic());
+    dispatch(fetchFaqsPublic());
   }, [dispatch]);
   
   useEffect(() => {
@@ -146,7 +253,9 @@ export default function LandingPage() {
       </motion.div>
       {/* Hero Section */}
       <section className="relative overflow-hidden gradient-hero border-b border-primary/5">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
+        <div className="absolute inset-0 bg-gradient-to-br fr
+        
+        om-primary/10 via-background to-accent/10" />
         <div className="container relative py-16 lg:py-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div 
@@ -162,19 +271,20 @@ export default function LandingPage() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
                     </span>
-                    <span className="text-xs font-medium text-success">Therapists available now</span>
+                    <span className="text-xs font-medium text-success">
+                      {cmsHero?.isTherapistAvailable ? 'Therapists available now' : 'Book your appointment'}
+                    </span>
                   </div>
                   <span className="text-muted-foreground mx-1">|</span>
                   <Star className="h-3 w-3 fill-primary text-primary" />
-                  Trusted by 10,000+ patients
+                  {cmsHero?.trustedBy || 'Trusted by 10,000+ patients'}
                 </Badge>
                 <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-balance">
-                  Start Your{" "}
-                  <span className="text-primary">Recovery</span>{" "}
-                  Journey Today
+                  {cmsHero?.heading || 'Start Your Recovery Journey Today'}
                 </h1>
+                <h3 className="text-xl font-semibold tracking-tight text-balance tracking-wide">{cmsHero?.subHeading || 'Recovery'}</h3>
                 <p className="text-lg text-muted-foreground max-w-lg">
-                  Connect with certified physiotherapists from home. Get personalized treatment plans and video consultations tailored to your needs.
+                  {cmsHero?.description || 'Connect with certified physiotherapists from home. Get personalized treatment plans and video consultations tailored to your needs.'}
                 </p>
               </div>
               
@@ -183,7 +293,7 @@ export default function LandingPage() {
                   <TooltipTrigger asChild>
                     <Link to="/questionnaire">
                       <Button variant="hero" size="xl">
-                        Start Your Recovery
+                        {cmsHero?.ctaText || 'Start Your Recovery'}
                         <ArrowRight className="h-5 w-5 ml-1" />
                       </Button>
                     </Link>
@@ -195,28 +305,38 @@ export default function LandingPage() {
                 
                 {/* <Link to="/therapists">
                   <Button variant="heroOutline" size="xl">
-                    Continue as Guest
+                    {cmsHero?.secondaryCtaText || 'Continue as Guest'}
                   </Button>
                 </Link> */}
               </div>
 
               {/* Trust Indicators */}
-              <div className="flex flex-wrap gap-6 pt-4">
+              <div className="flex flex-wrap gap-6 ">
                 {/* <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Shield className="h-5 w-5 text-primary" />
                   <span>HIPAA Compliant</span>
                 </div> */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Award className="h-5 w-5 text-primary" />
-                  <span>Certified Therapists</span>
-                </div>
+                {cmsHero?.certifiedTherapists && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Award className="h-5 w-5 text-primary" />
+                    <span>Certified Therapists</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="flex -space-x-1">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="h-4 w-4 fill-warning text-warning" />
                     ))}
                   </div>
-                  <span>4.9/5 Rating</span>
+                  <span>{cmsHero?.rating || '4.9/5 Rating'}</span>
+                </div>
+                <div className="space-y-2">
+                  {cmsHero?.features && Array.isArray(cmsHero.features) && cmsHero.features.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </motion.div>
@@ -229,9 +349,9 @@ export default function LandingPage() {
             >
               <div className="relative rounded-2xl overflow-hidden shadow-large border-8 border-white dark:border-white/5">
                 <img 
-                  src={heroImage} 
+                  src={cmsHero?.image || heroImage} 
                   alt="Physiotherapist helping patient with recovery exercises"
-                  className="w-full h-auto object-cover"
+                  className="w-full h-[25rem] object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
               </div>
@@ -281,10 +401,10 @@ export default function LandingPage() {
           >
             <Badge variant="secondary" className="mb-4 border border-primary/20">How It Works</Badge>
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              Three Simple Steps to Recovery
+              {(cmsSteps && cmsSteps.length > 0) ? (cmsSteps[0].heading || "Three Simple Steps to Recovery") : "Three Simple Steps to Recovery"}
             </h2>
             <p className="text-muted-foreground">
-              Our streamlined process ensures you get the right care from the right therapist.
+              {(cmsSteps && cmsSteps.length > 0) ? (cmsSteps[0].subHeading || "Our streamlined process ensures you get the right care from the right therapist.") : "Our streamlined process ensures you get the right care from the right therapist."}
             </p>
           </motion.div>
 
@@ -298,52 +418,64 @@ export default function LandingPage() {
             {/* Connection Lines (Desktop) */}
             <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-y-1/2 z-0" />
             
-            {[
+            {(cmsSteps && cmsSteps.length > 0 ? cmsSteps : [
               {
-                icon: ClipboardList,
-                step: "01",
-                color: "primary",
-                gradient: "gradient-primary",
                 title: "Answer Health Questions",
-                description: "Complete a quick assessment about your condition, pain areas, and recovery goals."
+                description: "Complete a quick assessment about your condition, pain areas, and recovery goals.",
+                image: ""
               },
               {
-                icon: UserCheck,
-                step: "02",
-                color: "accent",
-                gradient: "bg-gradient-to-br from-accent to-accent/80",
                 title: "Choose a Physiotherapist",
-                description: "Browse certified therapists matched to your needs. Review profiles, ratings, and specializations."
+                description: "Browse certified therapists matched to your needs. Review profiles, ratings, and specializations.",
+                image: ""
               },
               {
-                icon: Video,
-                step: "03",
-                color: "success",
-                gradient: "bg-gradient-to-br from-success to-success/80",
                 title: "Start Video Sessions",
-                description: "Connect via secure video calls. Get personalized exercises and track your progress."
+                description: "Connect via secure video calls. Get personalized exercises and track your progress.",
+                image: ""
               }
-            ].map((item, index) => (
-              <motion.div key={index} variants={fadeInUp} className="relative z-10">
-                <Card 
-                  variant="gradient" 
-                  className="h-full p-8 text-center relative overflow-hidden group border-t-4 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                  style={{ borderTopColor: `hsl(var(--${item.color}))` }}
-                >
-                  <div className={`absolute top-4 right-4 text-6xl font-bold opacity-5 group-hover:opacity-10 transition-opacity text-${item.color}`}>
-                    {item.step}
-                  </div>
-                  <div className="relative z-10">
-                    <div className={`h-16 w-16 rounded-2xl ${item.gradient} flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform`}>
-                      <item.icon className="h-8 w-8 text-white" />
+            ]).map((item, index) => {
+              const stepNumber = (index + 1).toString().padStart(2, '0');
+              const colors = ['primary', 'accent', 'success'];
+              const color = colors[index % colors.length];
+              
+              return (
+                <motion.div key={item._id || index} variants={fadeInUp} className="relative z-10">
+                  <Card 
+                    variant="gradient" 
+                    className="h-full p-8 text-center relative overflow-hidden group border-t-4 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                    style={{ borderTopColor: `hsl(var(--${color}))` }}
+                  >
+                    <div className={`absolute top-4 right-4 text-6xl font-bold opacity-5 group-hover:opacity-10 transition-opacity text-${color}`}>
+                      {stepNumber}
                     </div>
-                    <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{item.description}</p>
-                  </div>
-                  <div className={`absolute bottom-0 left-0 h-1 w-0 bg-${item.color} group-hover:w-full transition-all duration-500`} />
-                </Card>
-              </motion.div>
-            ))}
+                    <div className="relative z-10">
+                      {item.image ? (
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-6 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                          <img 
+                            src={item.image} 
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                          <span className="h-8 w-8 text-white flex items-center justify-center">?</span>
+                        </div>
+                      )}
+                      <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">{item.title}</h3>
+                      <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                    </div>
+                    <div className={`absolute bottom-0 left-0 h-1 w-0 bg-${color} group-hover:w-full transition-all duration-500`} />
+                  </Card>
+                </motion.div>
+              )
+            })}
           </motion.div>
         </div>
       </section>
@@ -369,79 +501,84 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          <motion.div 
-            className="grid md:grid-cols-3 gap-8"
-            variants={stagger}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-          >
-            {[
-              {
-                name: "Sarah Johnson",
-                condition: "Knee Pain",
-                quote: "The personalized exercises and video sessions made my recovery from knee surgery so much faster. I'm back to running again!",
-                rating: 5,
-                image: "https://i.pravatar.cc/150?u=sarah",
-                color: "primary"
-              },
-              {
-                name: "Michael Chen",
-                condition: "Back Pain",
-                quote: "I had chronic back pain for years. My therapist identified the root cause and helped me strengthen my core through virtual sessions.",
-                rating: 5,
-                image: "https://i.pravatar.cc/150?u=michael",
-                color: "accent"
-              },
-              {
-                name: "Emma Wilson",
-                condition: "Shoulder Injury",
-                quote: "Incredible convenience! I could do my physiotherapy sessions during my lunch break. My shoulder mobility is finally back.",
-                rating: 4,
-                image: "https://i.pravatar.cc/150?u=emma",
-                color: "success"
-              }
-            ].map((testimonial, index) => (
-              <motion.div key={index} variants={fadeInUp}>
-                <Card className={`h-full p-8 hover:shadow-xl transition-all duration-500 border-l-4 bg-gradient-to-br from-white to-muted/20 dark:from-background dark:to-muted/5 relative group overflow-hidden`}
-                  style={{ borderLeftColor: `hsl(var(--${testimonial.color}))` }}
-                >
-                  <div className={`absolute top-0 right-0 w-24 h-24 bg-${testimonial.color}/5 rounded-bl-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700`} />
-                  
-                  <div className="flex items-center gap-4 mb-6 relative z-10">
-                    <Avatar className={`h-14 w-14 border-2 shadow-md transition-transform duration-500 group-hover:scale-110`}
-                      style={{ borderColor: `hsl(var(--${testimonial.color}/30))` }}
-                    >
-                      <AvatarImage src={testimonial.image} alt={testimonial.name} />
-                      <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-bold text-lg">{testimonial.name}</h4>
-                      <p className={`text-xs font-bold uppercase tracking-widest text-${testimonial.color}`}>{testimonial.condition}</p>
+          <div className="px-4 md:px-12">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 5000,
+                }),
+              ]}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                {testimonialsLoading ? (
+                  <CarouselItem className="pl-4 md:basis-1/3">
+                    <div className="h-full p-8 flex items-center justify-center">
+                      <p className="text-white">Loading testimonials...</p>
                     </div>
-                  </div>
-                  
-                  <div className="flex mb-6 relative z-10">
-                    {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        className={`h-4 w-4 ${i < testimonial.rating ? "fill-warning text-warning" : "text-muted"}`} 
-                      />
-                    ))}
-                  </div>
-                  
-                  <div className="relative z-10">
-                    <Quote className={`h-10 w-10 text-${testimonial.color}/10 absolute -top-4 -left-2 transition-colors duration-500 group-hover:text-${testimonial.color}/20`} />
-                    <p className="text-muted-foreground italic relative z-10 pl-6 leading-relaxed">
-                      "{testimonial.quote}"
-                    </p>
-                  </div>
+                  </CarouselItem>
+                ) : testimonialsError ? (
+                  <CarouselItem className="pl-4 md:basis-1/3">
+                    <div className="h-full p-8 flex items-center justify-center">
+                      <p className="text-destructive text-white">Error loading testimonials: {testimonialsError}</p>
+                    </div>
+                  </CarouselItem>
+                ) : featuredTestimonials.length > 0 ? (
+                  featuredTestimonials.map((testimonial, index) => (
+                    <CarouselItem key={testimonial._id || index} className="pl-4 md:basis-1/3">
+                      <motion.div variants={fadeInUp}>
+                        <Card className={`h-full p-8 hover:shadow-xl transition-all duration-500 border-l-4 bg-gradient-to-br from-white to-muted/20 dark:from-background dark:to-muted/5 relative group overflow-hidden`}>
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+                          
+                          <div className="flex items-center gap-4 mb-6 relative z-10">
+                            <Avatar className="h-14 w-14 border-2 shadow-md transition-transform duration-500 group-hover:scale-110"
+                              style={{ borderColor: 'hsl(var(--primary/30))' }}>
+                              <AvatarImage src={testimonial.userId.profilePicture || `https://i.pravatar.cc/150?u=${testimonial.userId._id}`} alt={testimonial.userId.name} />
+                              <AvatarFallback>{testimonial.userId.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h4 className="font-bold text-lg">{testimonial.userId.name}</h4>
+                              <p className="text-xs font-bold uppercase tracking-widest text-primary">{testimonial.problem}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex mb-6 relative z-10">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`h-4 w-4 ${i < testimonial.rating ? "fill-warning text-warning" : "text-muted"}`} 
+                              />
+                            ))}
+                          </div>
+                          
+                          <div className="relative z-10">
+                            <Quote className="h-10 w-10 text-primary/10 absolute -top-4 -left-2 transition-colors duration-500 group-hover:text-primary/20" />
+                            <p className="text-muted-foreground italic relative z-10 pl-6 leading-relaxed line-clamp-4">
+                              "{testimonial.content}"
+                            </p>
+                          </div>
 
-                  <div className={`absolute bottom-0 right-0 w-1 h-0 bg-${testimonial.color} group-hover:h-full transition-all duration-700`} />
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+                          <div className="absolute bottom-0 right-0 w-1 h-0 bg-primary group-hover:h-full transition-all duration-700" />
+                        </Card>
+                      </motion.div>
+                    </CarouselItem>
+                  ))
+                ) : (
+                  <CarouselItem className="pl-4 md:basis-1/3">
+                    <div className="h-full p-8 flex items-center justify-center">
+                      <p className="text-white">No featured testimonials available.</p>
+                    </div>
+                  </CarouselItem>
+                )}
+              </CarouselContent>
+              <CarouselPrevious className="-left-4 md:-left-12 border-white/30 text-white hover:bg-white/20" />
+              <CarouselNext className="-right-4 md:-right-12 border-white/30 text-white hover:bg-white/20" />
+            </Carousel>
+          </div>
         </div>
       </section>
 
@@ -544,23 +681,22 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <Badge variant="outline" className="border-white/30 text-white bg-white/10">Why Choose Us</Badge>
                 <h2 className="text-3xl lg:text-4xl font-bold text-white">
-                  Professional Care,{" "}
-                  <span className="text-white/90">Personalized</span> for You
+                  {cmsWhyUs?.title || 'Professional Care, Personalized'} 
                 </h2>
                 <p className="text-white/80 text-lg leading-relaxed">
-                  Experience the convenience of virtual physiotherapy without compromising on quality. Our platform connects you with the best care, anytime, anywhere.
+                  {cmsWhyUs?.description || 'Experience the convenience of virtual physiotherapy without compromising on quality. Our platform connects you with the best care, anytime, anywhere.'}
                 </p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
-                {[
+                {(cmsWhyUs?.features && cmsWhyUs.features.length > 0 ? cmsWhyUs.features : [
                   "Certified and experienced physiotherapists",
                   "Personalized treatment plans",
                   "Flexible scheduling - 24/7 availability",
                   "Progress tracking and exercise videos",
                   "Affordable subscription plans",
                   "Secure video consultations"
-                ].map((feature, index) => (
+                ]).map((feature, index) => (
                   <motion.div 
                     key={index}
                     className="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/10 shadow-sm backdrop-blur-sm hover:bg-white/20 transition-colors"
@@ -591,14 +727,14 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              {[
-                { label: "Happy Patients", value: "10K+", description: "Successfully treated worldwide", delay: 0 },
-                { label: "Therapists", value: "500+", description: "Certified medical experts", delay: 0.1, offset: "mt-12" },
-                { label: "Sessions", value: "50K+", description: "Virtual consultations completed", delay: 0.2 },
-                { label: "Avg Rating", value: "4.9", description: "Based on patient reviews", delay: 0.3, offset: "mt-12" }
-              ].map((stat, i) => (
+              {(cmsWhyUs?.stats && cmsWhyUs.stats.length > 0 ? cmsWhyUs.stats : [
+                { label: "Happy Patients", value: "10K+", description: "Successfully treated worldwide", _id: "1" },
+                { label: "Therapists", value: "500+", description: "Certified medical experts", _id: "2", offset: "mt-12" },
+                { label: "Sessions", value: "50K+", description: "Virtual consultations completed", _id: "3" },
+                { label: "Avg Rating", value: "4.9", description: "Based on patient reviews", _id: "4", offset: "mt-12" }
+              ]).map((stat, i) => (
                 <Card 
-                  key={i} 
+                  key={stat._id || i} 
                   className={`p-8 mt-2 text-center border-2 border-primary/10 hover:border-primary/30 transition-all duration-500 hover:scale-105 shadow-xl bg-white/90 group relative overflow-hidden ${stat.offset || ""}`}
                   onMouseEnter={() => setHoveredStat(i)}
                   onMouseLeave={() => setHoveredStat(null)}
@@ -639,13 +775,13 @@ export default function LandingPage() {
             whileInView="animate"
             viewport={{ once: true }}
           >
-            {loading ? (
+            {subscriptionLoading ? (
               <div className="col-span-full text-center py-8">
                 <p>Loading subscription plans...</p>
               </div>
-            ) : error ? (
+            ) : subscriptionError ? (
               <div className="col-span-full text-center py-8">
-                <p className="text-destructive">Error loading subscription plans: {error}</p>
+                <p className="text-destructive">Error loading subscription plans: {subscriptionError}</p>
               </div>
             ) : (
               subscriptionPlans.slice(0, 3).map((plan, index) => {
@@ -832,34 +968,34 @@ export default function LandingPage() {
               viewport={{ once: true }}
             >
               <Accordion type="single" collapsible className="w-full space-y-4">
-                {[
+                {(cmsFaqs && cmsFaqs.length > 0 ? cmsFaqs : [
                   {
-                    q: "Is online physiotherapy effective?",
-                    a: "Yes, research shows that virtual physiotherapy is highly effective for many conditions. It combines professional guidance with home-based exercises that are easy to follow and track."
+                    question: "Is online physiotherapy effective?",
+                    answer: "Yes, research shows that virtual physiotherapy is highly effective for many conditions. It combines professional guidance with home-based exercises that are easy to follow and track."
                   },
                   {
-                    q: "Do I need any special equipment?",
-                    a: "Most sessions can be done with minimal equipment found at home (like towels or chairs). If specific equipment is needed, your therapist will guide you on alternatives or what to purchase."
+                    question: "Do I need any special equipment?",
+                    answer: "Most sessions can be done with minimal equipment found at home (like towels or chairs). If specific equipment is needed, your therapist will guide you on alternatives or what to purchase."
                   },
                   {
-                    q: "Can I cancel my subscription anytime?",
-                    a: "Absolutely! We offer flexible plans with no long-term contracts. You can cancel or pause your subscription at any time through your dashboard."
+                    question: "Can I cancel my subscription anytime?",
+                    answer: "Absolutely! We offer flexible plans with no long-term contracts. You can cancel or pause your subscription at any time through your dashboard."
                   },
                   {
-                    q: "Is my personal and medical data secure?",
-                    a: "We take your privacy seriously. Our platform is fully secure, and all your sessions and medical data are encrypted and stored securely."
+                    question: "Is my personal and medical data secure?",
+                    answer: "We take your privacy seriously. Our platform is fully secure, and all your sessions and medical data are encrypted and stored securely."
                   },
                   {
-                    q: "Are the video sessions recorded?",
-                    a: "No, sessions are not recorded without your explicit consent. Your privacy is our priority, and all consultations are private between you and your therapist."
+                    question: "Are the video sessions recorded?",
+                    answer: "No, sessions are not recorded without your explicit consent. Your privacy is our priority, and all consultations are private between you and your therapist."
                   }
-                ].map((item, i) => (
-                  <AccordionItem key={i} value={`item-${i}`} className="gradient-primary dark:bg-gray-900 rounded-xl px-6 border-none shadow-sm">
+                ]).map((faq, i) => (
+                  <AccordionItem key={faq._id || i} value={`item-${i}`} className="gradient-primary dark:bg-gray-900 rounded-xl px-6 border-none shadow-sm">
                     <AccordionTrigger className="text-left font-semibold py-5 hover:no-underline text-white">
-                      {item.q}
+                      {faq.question}
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground text-white pb-5">
-                      {item.a}
+                      {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
                 ))}

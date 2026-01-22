@@ -5,6 +5,8 @@ import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import authReducer from './slices/authSlice';
 import questionnaireReducer from './slices/questionnaireSlice';
 import subscriptionReducer from './slices/subscriptionSlice';
+import testimonialReducer from './slices/testimonialSlice';
+import cmsReducer from './slices/cmsSlice';
 // import authReducer from './authSlice';
 import serviceReducer from './slices/serviceSlice.ts';
 import bookingsReducer from './slices/bookingsSlice';
@@ -25,6 +27,8 @@ export const store = configureStore({
     auth: persistedAuthReducer,
     questionnaires: questionnaireReducer,
     subscriptions: subscriptionReducer,
+    testimonials: testimonialReducer,
+    cms: cmsReducer,
     services: serviceReducer,
     bookings: bookingsReducer,
     sessions: sessionReducer,

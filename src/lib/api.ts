@@ -203,6 +203,11 @@ export const processPaymentWebhook = (webhookData: any) => {
   return api.post("/payments/webhook", webhookData);
 };
 
+// Testimonial API functions
+export const getFeaturedTestimonials = () => {
+  return api.get("/testimonials/public/featured");
+};
+
 // Session API functions
 export const getAllSessions = () => {
   return api.get("/sessions");
@@ -313,6 +318,23 @@ export const uploadProfileImage = (imageFile: File) => {
       "Content-Type": "multipart/form-data",
     },
   });
+};
+
+// CMS API functions
+export const getHeroPublic = () => {
+  return api.get("/cms/public/hero");
+};
+
+export const getStepsPublic = () => {
+  return api.get("/cms/public/steps");
+};
+
+export const getWhyUsPublic = () => {
+  return api.get("/cms/public/whyUs");
+};
+
+export const getFaqsPublic = () => {
+  return api.get("/cms/public/faqs");
 };
 
 export default api;
