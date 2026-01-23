@@ -225,22 +225,8 @@ export default function LandingPage() {
   const testimonialsError = useSelector(selectTestimonialsError);
   
   // Fetch CMS hero and steps data from Redux store
-  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, conditions: cmsConditions, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
-  
-  // Fetch public admins from Redux store
-  const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
-  
-  // Fetch subscription plans when component mounts
-  useEffect(() => {
-    dispatch(fetchSubscriptionPlans());
-  }, [dispatch]);
-  
-  // Fetch featured testimonials when component mounts
-  useEffect(() => {
-    dispatch(fetchFeaturedTestimonials());
-  }, [dispatch]);
-  
-  // Fetch CMS hero and steps data when component mounts
+  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
+ 
   useEffect(() => {
     dispatch(fetchHeroPublic());
     dispatch(fetchStepsPublic());
@@ -559,8 +545,8 @@ export default function LandingPage() {
                     </div>
                   </CarouselItem>
                 ) : featuredTestimonials.length > 0 ? (
-                  featuredTestimonials.map((testimonial, index) => (
-                    <CarouselItem key={testimonial._id || index} className="pl-4 md:basis-1/3">
+                  featuredTestimonials?.map((testimonial, index) => (
+                    <CarouselItem key={testimonial?._id || index} className="pl-4 md:basis-1/3">
                       <motion.div variants={fadeInUp}>
                         <Card className={`h-full p-8 hover:shadow-xl transition-all duration-500 border-l-4 bg-gradient-to-br from-white to-muted/20 dark:from-background dark:to-muted/5 relative group overflow-hidden`}>
                           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
@@ -568,12 +554,12 @@ export default function LandingPage() {
                           <div className="flex items-center gap-4 mb-6 relative z-10">
                             <Avatar className="h-14 w-14 border-2 shadow-md transition-transform duration-500 group-hover:scale-110"
                               style={{ borderColor: 'hsl(var(--primary/30))' }}>
-                              <AvatarImage src={testimonial.userId.profilePicture || `https://i.pravatar.cc/150?u=${testimonial.userId._id}`} alt={testimonial.userId.name} />
-                              <AvatarFallback>{testimonial.userId.name[0]}</AvatarFallback>
+                              <AvatarImage src={testimonial?.userId?.profilePicture || `https://i.pravatar.cc/150?u=${testimonial?.userId?._id}`} alt={testimonial?.userId?.name} />
+                              <AvatarFallback>{testimonial?.userId?.name[0]}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <h4 className="font-bold text-lg">{testimonial.userId.name}</h4>
-                              <p className="text-xs font-bold uppercase tracking-widest text-primary">{testimonial.problem}</p>
+                              <h4 className="font-bold text-lg">{testimonial.userId?.name}</h4>
+                              <p className="text-xs font-bold uppercase tracking-widest text-primary">{testimonial?.problem}</p>
                             </div>
                           </div>
                           
@@ -581,7 +567,7 @@ export default function LandingPage() {
                             {[...Array(5)].map((_, i) => (
                               <Star 
                                 key={i} 
-                                className={`h-4 w-4 ${i < testimonial.rating ? "fill-warning text-warning" : "text-muted"}`} 
+                                className={`h-4 w-4 ${i < testimonial?.rating ? "fill-warning text-warning" : "text-muted"}`} 
                               />
                             ))}
                           </div>

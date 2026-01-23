@@ -111,7 +111,10 @@ export default function ProfilePage() {
   const activePlan = user?.subscriptionData;
   // Set state based on Redux data
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
-  const nextSession = upcomingSessions && upcomingSessions.length > 0 ? upcomingSessions[0] : null;
+const nextSession =
+  upcomingSessions?.find(
+    (session: any) => session.status === "live"
+  ) || null;
   // Fetch user data when component mounts
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
@@ -121,7 +124,7 @@ export default function ProfilePage() {
     dispatch(getAllBookingsAsync());
     dispatch(fetchProfile());
 
-  }, []);  // Empty dependency array to run only on mount
+  }, []);  
 
 
 
@@ -325,7 +328,7 @@ export default function ProfilePage() {
                 },
                 {
                   label: "Upcoming",
-                  value: nextSession ? "1" : "0",
+                  value: upcomingSessions.length,
                   icon: Clock,
                   color: "text-success",
                   bg: "bg-success/10",
@@ -439,7 +442,7 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className="bg-slate-200/40 backdrop-blur p-6 rounded-2xl space-y-6 border border-slate-200 shadow-sm">
+            <div className="bg-slate-200/40 backdrop-blur p-3 rounded-2xl space-y-4 border border-slate-200 shadow-sm">
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
                 {selectedSection === "activePlan" && (
@@ -583,7 +586,7 @@ export default function ProfilePage() {
                 {selectedSection === "upcoming" && (
                   <>
                     {upcomingSessions.length > 0 && (
-                      <RightPanelCard title="Assigned Therapist">
+                      <RightPanelCard title="Upcoming Sessions  ">
                         <div className="space-y-4">
                           {upcomingSessions.map((session) => (
                             <div
@@ -591,22 +594,17 @@ export default function ProfilePage() {
                               className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
                             >
                               {/* Avatar */}
-                              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                              {/* <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                                 <User className="h-6 w-6 text-slate-400" />
-                              </div>
+                              </div> */}
 
                               {/* Therapist + Session Info */}
                               <div className="flex-1">
                                 <h4 className="font-black text-slate-900">
-                                  {session.therapistName}
+                                  {session?.bookingId?.serviceName}
                                 </h4>
                                 <p className="text-sm text-slate-500 font-medium">
-                                  {new Date(session.date).toLocaleDateString("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
-                                  • {session.startTime} - {session.endTime}
+                                  {session?.date}
                                 </p>
                               </div>
 
@@ -625,7 +623,7 @@ export default function ProfilePage() {
                         title="Upcoming Session"
                         badge={
                           <Badge className="bg-primary/10 text-primary hover:text-white border-none font-bold">
-                            CONFIRMED
+                            {nextSession.status}
                           </Badge>
                         }
                         footer={
