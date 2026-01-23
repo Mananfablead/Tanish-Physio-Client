@@ -12,6 +12,7 @@ import serviceReducer from './slices/serviceSlice.ts';
 import bookingsReducer from './slices/bookingsSlice';
 import sessionReducer from './slices/sessionSlice';
 import paymentReducer from './slices/paymentSlice';
+import adminReducer from './slices/adminSlice';
 
 // Redux Persist config
 const persistConfig = {
@@ -33,6 +34,7 @@ export const store = configureStore({
     bookings: bookingsReducer,
     sessions: sessionReducer,
     payment: paymentReducer,
+    admins: adminReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -20,70 +20,104 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const therapistData = {
-  id: 1,
-  name: "Dr. Sarah Johnson",
-  title: "Sports Injury Specialist",
-  bio: "Dr. Sarah Johnson is a certified physiotherapist with over 12 years of experience specializing in sports injuries and rehabilitation. She has worked with professional athletes and weekend warriors alike, helping them recover from injuries and improve their performance. Her approach combines evidence-based techniques with personalized care plans.",
-  avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face",
-  experience: 12,
-  rating: 4.9,
-  reviews: 156,
-  languages: ["English", "Spanish"],
-  certifications: [
-    "Doctor of Physical Therapy (DPT)",
-    "Board Certified Sports Clinical Specialist",
-    "Certified Strength and Conditioning Specialist",
-    "Dry Needling Certified",
-  ],
-  expertise: [
-    "Knee Rehabilitation",
-    "ACL Recovery",
-    "Sports Performance",
-    "Running Injuries",
-    "Shoulder Rehabilitation",
-    "Post-surgical Care",
-  ],
-  sessionFormats: [
-    { type: "1-on-1", duration: "45 min", description: "Private video consultation" },
-    // { type: "1-on-1", duration: "60 min", description: "Extended private session" },
-    { type: "Group", duration: "60 min", description: "Small group session (max 6)" },
-  ],
-  sampleVideos: [
-    { title: "Knee Strengthening Exercises", duration: "5:30" },
-    { title: "ACL Recovery Week 1-4", duration: "8:15" },
-    { title: "Runner's Warm-up Routine", duration: "4:45" },
-  ],
-  reviewsList: [
-    {
-      id: 1,
-      name: "John D.",
-      rating: 5,
-      date: "2 weeks ago",
-      comment: "Dr. Johnson helped me recover from a knee injury in record time. Her exercises were clear and effective.",
-    },
-    {
-      id: 2,
-      name: "Maria S.",
-      rating: 5,
-      date: "1 month ago",
-      comment: "Very professional and knowledgeable. The video sessions were just as effective as in-person visits.",
-    },
-    {
-      id: 3,
-      name: "David K.",
-      rating: 4,
-      date: "1 month ago",
-      comment: "Great experience overall. Would recommend to anyone dealing with sports injuries.",
-    },
-  ],
-};
-
-
+// Import Redux hooks and admin actions
+import { useSelector } from 'react-redux';
+import { RootState, useAppDispatch } from '@/store';
+import { fetchPublicAdmins } from '@/store/slices/adminSlice';
 
 
 export default function TherapistProfilePage() {
 
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useAppDispatch();
+
+  // Fetch public admins from Redux store
+  const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
+
+  // Find the specific therapist based on the ID from the URL
+  const therapist = publicAdmins.find(admin => admin.id === id) || null;
+
+  // Fetch public admins when component mounts
+  useEffect(() => {
+    dispatch(fetchPublicAdmins());
+  }, [dispatch]);
+
+  // Map the API data to match the expected structure
+  const therapistData = therapist ? {
+    id: therapist.id,
+    name: therapist.name,
+    title: therapist.doctorProfile?.specialization ? therapist.doctorProfile.specialization.substring(0, therapist.doctorProfile.specialization.indexOf(',') !== -1 ? therapist.doctorProfile.specialization.indexOf(',') : therapist.doctorProfile.specialization.length) : "Certified Physiotherapist",
+    bio: therapist.doctorProfile?.bio || "",
+    avatar: therapist.profilePicture || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face",
+    experience: parseInt(therapist.doctorProfile?.experience?.split(' ')[0]) || 0,
+    rating: 4.9, // Using a default rating since it's not in the API response
+    reviews: 156, // Using a default value since it's not in the API response
+    languages: therapist.doctorProfile?.languages || ["English"],
+    certifications: therapist.doctorProfile?.certifications || [],
+    expertise: therapist.doctorProfile?.specialization ? [therapist.doctorProfile.specialization] : [],
+    sessionFormats: [ // Using default values since not in API response
+      { type: "1-on-1", duration: "45 min", description: "Private video consultation" },
+      { type: "Group", duration: "60 min", description: "Small group session (max 6)" },
+    ],
+    sampleVideos: [ // Using default values since not in API response
+      { title: "Knee Strengthening Exercises", duration: "5:30" },
+      { title: "ACL Recovery Week 1-4", duration: "8:15" },
+      { title: "Runner's Warm-up Routine", duration: "4:45" },
+    ],
+    reviewsList: [ // Using default values since not in API response
+      {
+        id: 1,
+        name: "John D.",
+        rating: 5,
+        date: "2 weeks ago",
+        comment: "Great experience with this therapist. Very professional and knowledgeable.",
+      },
+      {
+        id: 2,
+        name: "Maria S.",
+        rating: 5,
+        date: "1 month ago",
+        comment: "Helped me recover from my injury effectively. Highly recommend.",
+      },
+      {
+        id: 3,
+        name: "David K.",
+        rating: 4,
+        date: "1 month ago",
+        comment: "Good therapist with extensive knowledge in their field.",
+      },
+    ],
+  } : null;
+
+  if (adminsLoading && !therapist) {
+    return (
+      <Layout>
+        <div className="container py-12 flex justify-center items-center">
+          <p>Loading therapist profile...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (adminsError && !therapist) {
+    return (
+      <Layout>
+        <div className="container py-12 flex justify-center items-center">
+          <p className="text-destructive">Error loading therapist profile: {adminsError}</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!therapistData) {
+    return (
+      <Layout>
+        <div className="container py-12 flex justify-center items-center">
+          <p>Therapist not found.</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

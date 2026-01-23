@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { getHeroPublic, getStepsPublic, getWhyUsPublic, getFaqsPublic } from '../../lib/api';
+import { getHeroPublic, getStepsPublic, getWhyUsPublic, getFaqsPublic, getConditionsPublic } from '../../lib/api';
 
 // Define types for CMS data
 interface HeroSection {
@@ -54,11 +54,28 @@ interface FaqItem {
   isPublic: boolean;
 }
 
+// Define types for Conditions data
+interface ConditionItem {
+  _id?: string;
+  name: string;
+  image?: string;
+}
+
+interface ConditionsSection {
+  _id?: string;
+  title: string;
+  description: string;
+  conditions: ConditionItem[];
+  image?: string;
+  isPublic: boolean;
+}
+
 interface CmsState {
   hero: HeroSection | null;
   steps: Step[];
   whyUs: WhyUsSection | null;
   faqs: FaqItem[];
+  conditions: ConditionsSection | null;
   loading: boolean;
   error: string | null;
 }
@@ -159,12 +176,37 @@ export const fetchFaqsPublic = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch conditions data
+export const fetchConditionsPublic = createAsyncThunk(
+  'cms/fetchConditionsPublic',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getConditionsPublic();
+      
+      // Validate response structure
+      if (!response.data.success || !response.data.data) {
+        return rejectWithValue('Invalid response structure');
+      }
+
+      // Ensure statusCode validation as per project specification
+      if (response.data.statusCode !== 200 && response.data.statusCode !== undefined) {
+        return rejectWithValue(`API Error: ${response.data.message}`);
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch conditions data');
+    }
+  }
+);
+
 // Initial state
 const initialState: CmsState = {
   hero: null,
   steps: [],
   whyUs: null,
   faqs: [],
+  conditions: null,
   loading: false,
   error: null,
 };
@@ -187,6 +229,9 @@ const cmsSlice = createSlice({
     },
     setCmsFaqs: (state, action: PayloadAction<FaqItem[]>) => {
       state.faqs = action.payload;
+    },
+    setCmsConditions: (state, action: PayloadAction<ConditionsSection>) => {
+      state.conditions = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -242,10 +287,23 @@ const cmsSlice = createSlice({
       .addCase(fetchFaqsPublic.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Handle fetch conditions public
+      .addCase(fetchConditionsPublic.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchConditionsPublic.fulfilled, (state, action: PayloadAction<ConditionsSection>) => {
+        state.loading = false;
+        state.conditions = action.payload;
+      })
+      .addCase(fetchConditionsPublic.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { clearCmsError, setCmsHero, setCmsSteps, setCmsWhyUs, setCmsFaqs } = cmsSlice.actions;
+export const { clearCmsError, setCmsHero, setCmsSteps, setCmsWhyUs, setCmsFaqs, setCmsConditions } = cmsSlice.actions;
 
 export default cmsSlice.reducer;

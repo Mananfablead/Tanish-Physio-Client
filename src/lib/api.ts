@@ -337,4 +337,13 @@ export const getFaqsPublic = () => {
   return api.get("/cms/public/faqs");
 };
 
+export const getConditionsPublic = () => {
+  return api.get("/cms/public/conditions");
+};
+
+// Admin API functions
+export const getPublicAdmins = () => {
+  return api.get("/auth/admins/public");
+};
+
 export default api;

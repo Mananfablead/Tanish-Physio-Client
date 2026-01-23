@@ -88,7 +88,8 @@ import { RootState, useAppDispatch } from '@/store';
 import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
 import { fetchFeaturedTestimonials } from '@/store/slices/testimonialSlice';
 import { selectFeaturedTestimonials, selectTestimonialsLoading, selectTestimonialsError } from '@/store/slices/testimonialSlice';
-import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic } from '@/store/slices/cmsSlice';
+import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic, fetchConditionsPublic } from '@/store/slices/cmsSlice';
+import { fetchPublicAdmins } from '@/store/slices/adminSlice';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -185,6 +186,31 @@ const getIconComponent = (iconName: string) => {
   return iconMap[iconName] || ClipboardList;
 };
 
+// Component to handle image with fallback
+const ConditionDisplay = ({ image, label }: { image: string; label: string }) => {
+  const [imgSrc, setImgSrc] = useState(image);
+  const [useFallback, setUseFallback] = useState(!image);
+
+  useEffect(() => {
+    setImgSrc(image);
+    setUseFallback(!image);
+  }, [image]);
+
+  if (useFallback) {
+    const FallbackIcon = getIconComponent("Activity");
+    return <FallbackIcon className="h-8 w-8" />;
+  }
+
+  return (
+    <img 
+      src={imgSrc} 
+      alt={label}
+      className="h-8 w-8 object-contain"
+      onError={() => setUseFallback(true)}
+    />
+  );
+};
+
 export default function LandingPage() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
@@ -199,7 +225,10 @@ export default function LandingPage() {
   const testimonialsError = useSelector(selectTestimonialsError);
   
   // Fetch CMS hero and steps data from Redux store
-  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
+  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, conditions: cmsConditions, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
+  
+  // Fetch public admins from Redux store
+  const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
   
   // Fetch subscription plans when component mounts
   useEffect(() => {
@@ -217,6 +246,8 @@ export default function LandingPage() {
     dispatch(fetchStepsPublic());
     dispatch(fetchWhyUsPublic());
     dispatch(fetchFaqsPublic());
+    dispatch(fetchConditionsPublic());
+    dispatch(fetchPublicAdmins());
   }, [dispatch]);
   
   useEffect(() => {
@@ -595,10 +626,10 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <Badge variant="secondary" className="mb-4 border border-primary/20">Specialties</Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Conditions We Treat</h2>
+            <Badge variant="secondary" className="mb-4 border border-primary/20">{cmsConditions?.title || 'Specialties'}</Badge>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">{cmsConditions?.title || 'Conditions We Treat'}</h2>
             <p className="text-muted-foreground">
-              Our experts specialize in a wide range of physical conditions to help you get back to your best self.
+              {cmsConditions?.description || 'Our experts specialize in a wide range of physical conditions to help you get back to your best self.'}
             </p>
           </motion.div>
 
@@ -616,36 +647,73 @@ export default function LandingPage() {
               className="w-full"
             >
               <CarouselContent className="-ml-4">
-                {[
-                  { icon: Activity, label: "Neck Pain", color: "primary", borderColor: "hover:border-primary", bgColor: "bg-primary/10", hoverBg: "group-hover:bg-primary", activeLine: "bg-primary" },
-                  { icon: Bone, label: "Back Pain", color: "accent", borderColor: "hover:border-accent", bgColor: "bg-accent/10", hoverBg: "group-hover:bg-accent", activeLine: "bg-accent" },
-                  { icon: HeartPulse, label: "Knee Pain", color: "success", borderColor: "hover:border-success", bgColor: "bg-success/10", hoverBg: "group-hover:bg-success", activeLine: "bg-success" },
-                  { icon: Zap, label: "Shoulder Pain", color: "warning", borderColor: "hover:border-warning", bgColor: "bg-warning/10", hoverBg: "group-hover:bg-warning", activeLine: "bg-warning" },
-                  { icon: Dumbbell, label: "Sports Injury", color: "primary", borderColor: "hover:border-primary", bgColor: "bg-primary/10", hoverBg: "group-hover:bg-primary", activeLine: "bg-primary" },
-                  { icon: Stethoscope, label: "Post-Surgery", color: "accent", borderColor: "hover:border-accent", bgColor: "bg-accent/10", hoverBg: "group-hover:bg-accent", activeLine: "bg-accent" },
-                  { icon: Activity, label: "Sciatica", color: "success", borderColor: "hover:border-success", bgColor: "bg-success/10", hoverBg: "group-hover:bg-success", activeLine: "bg-success" },
-                  { icon: Bone, label: "Arthritis", color: "warning", borderColor: "hover:border-warning", bgColor: "bg-warning/10", hoverBg: "group-hover:bg-warning", activeLine: "bg-warning" },
-                  { icon: Activity, label: "Spinal Cord", color: "primary", borderColor: "hover:border-primary", bgColor: "bg-primary/10", hoverBg: "group-hover:bg-primary", activeLine: "bg-primary" },
-                  { icon: Zap, label: "Hip Pain", color: "accent", borderColor: "hover:border-accent", bgColor: "bg-accent/10", hoverBg: "group-hover:bg-accent", activeLine: "bg-accent" },
-                  { icon: Activity, label: "Muscle Strain", color: "success", borderColor: "hover:border-success", bgColor: "bg-success/10", hoverBg: "group-hover:bg-success", activeLine: "bg-success" },
-                  { icon: HeartPulse, label: "Ligament Tear", color: "warning", borderColor: "hover:border-warning", bgColor: "bg-warning/10", hoverBg: "group-hover:bg-warning", activeLine: "bg-warning" }
-                ].map((item, index) => (
-                  <CarouselItem key={index} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/6">
-                    <motion.div 
-                      variants={fadeInUp}
-                      whileHover={{ y: -8 }}
-                      className="group cursor-pointer py-2"
-                    >
-                      <div className={`bg-background rounded-2xl p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 group-hover:shadow-xl ${item.borderColor}`}>
-                        <div className={`h-16 w-16 rounded-2xl ${item.bgColor} flex items-center justify-center mx-auto mb-6 ${item.hoverBg} group-hover:text-white transition-all duration-500 shadow-sm`}>
-                          <item.icon className="h-8 w-8" />
+                {(cmsConditions?.conditions && cmsConditions.conditions.length > 0 ? cmsConditions.conditions : [
+                  { name: "Neck Pain", image: "", icon: "Activity" },
+                  { name: "Back Pain", image: "", icon: "Bone" },
+                  { name: "Knee Pain", image: "", icon: "HeartPulse" },
+                  { name: "Shoulder Pain", image: "", icon: "Zap" },
+                  { name: "Sports Injury", image: "", icon: "Dumbbell" },
+                  { name: "Post-Surgery", image: "", icon: "Stethoscope" },
+                  { name: "Sciatica", image: "", icon: "Activity" },
+                  { name: "Arthritis", image: "", icon: "Bone" },
+                  { name: "Spinal Cord", image: "", icon: "Activity" },
+                  { name: "Hip Pain", image: "", icon: "Zap" },
+                  { name: "Muscle Strain", image: "", icon: "Activity" },
+                  { name: "Ligament Tear", image: "", icon: "HeartPulse" }
+                ]).map((condition, index) => {
+                  const item = {
+                    label: condition.name,
+                    image: condition.image,
+                    color: ["primary", "accent", "success", "warning"][index % 4],
+                    borderColor: "hover:border-primary",
+                    bgColor: "bg-primary/10",
+                    hoverBg: "group-hover:bg-primary",
+                    activeLine: "bg-primary"
+                  };
+                  
+                  return (
+                    <CarouselItem key={condition._id || index} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/6">
+                      <motion.div 
+                        variants={fadeInUp}
+                        whileHover={{ y: -8 }}
+                        className="group cursor-pointer py-2"
+                      >
+                        <div className={`bg-background rounded-2xl p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 group-hover:shadow-xl ${item.borderColor}`}>
+                          <div className={`h-16 w-16 rounded-2xl ${item.bgColor} flex items-center justify-center mx-auto mb-6 ${item.hoverBg} group-hover:text-white transition-all duration-500 shadow-sm`}>
+                            {item.image ? (
+                              <img 
+                                src={item.image} 
+                                alt={item.label}
+                                className="h-8 w-8 object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null;
+                                  // Hide the broken image and let the fallback render
+                                  target.style.display = "none";
+                                  // Show the parent container again to reveal the fallback
+                                  if (target.parentElement) {
+                                    target.parentElement.innerHTML = '';
+                                    const fallbackIcon = getIconComponent("Activity");
+                                    if (fallbackIcon) {
+                                      const iconElement = document.createElement('div');
+                                      iconElement.innerHTML = `<svg class=\"h-8 w-8\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"></line><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"></line></svg>`;
+                                      target.parentElement.appendChild(iconElement);
+                                    }
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <></>
+                              // getIconComponent("Activity")({ className: "h-8 w-8" })
+                            )}
+                          </div>
+                          <span className="font-bold text-sm tracking-wide">{item.label}</span>
+                          <div className={`mt-4 h-1 w-0 ${item.activeLine} mx-auto rounded-full group-hover:w-12 transition-all duration-500`} />
                         </div>
-                        <span className="font-bold text-sm tracking-wide">{item.label}</span>
-                        <div className={`mt-4 h-1 w-0 ${item.activeLine} mx-auto rounded-full group-hover:w-12 transition-all duration-500`} />
-                      </div>
-                    </motion.div>
-                  </CarouselItem>
-                ))}
+                      </motion.div>
+                    </CarouselItem>
+                  );
+                })}
               </CarouselContent>
               <CarouselPrevious className="-left-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
               <CarouselNext className="-right-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
@@ -848,88 +916,100 @@ export default function LandingPage() {
   </div>
 
   <div className="container relative z-10">
-    <motion.div
-      className="grid lg:grid-cols-2 gap-16 items-center"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-    >
-      {/* Therapist Image */}
+    {adminsLoading ? (
+      <div className="text-center py-12">
+        <p>Loading featured therapist...</p>
+      </div>
+    ) : adminsError ? (
+      <div className="text-center py-12">
+        <p className="text-destructive">Error loading featured therapist: {adminsError}</p>
+      </div>
+    ) : publicAdmins && publicAdmins.length > 0 ? (
       <motion.div
-        initial={{ opacity: 0, x: -30 }}
-        whileInView={{ opacity: 1, x: 0 }}
+        className="grid lg:grid-cols-2 gap-16 items-center"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="relative"
       >
-        <div className="relative overflow-hidden rounded-3xl shadow-2xl">
-          <img
-            src="https://images.unsplash.com/photo-1622253692010-333f2da6031d"
-            alt="Dr. Alex Rivera"
-            className="w-full h-[420px] object-cover rounded-3xl"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          <Badge className="absolute top-6 right-6 bg-success text-success-foreground shadow-lg">
-            Available Today
+        {/* Therapist Image */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="relative"
+        >
+          <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+            <img
+              src={publicAdmins[0].profilePicture || "https://images.unsplash.com/photo-1622253692010-333f2da6031d"}
+              alt={publicAdmins[0].name}
+              className="w-full h-[420px] object-cover rounded-3xl"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <Badge className="absolute top-6 right-6 bg-success text-success-foreground shadow-lg">
+              Available Today
+            </Badge>
+          </div>
+        </motion.div>
+
+        {/* Therapist Details */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="space-y-6"
+        >
+          <Badge variant="secondary" className="border border-primary/20 w-fit">
+            Featured Therapist
           </Badge>
-        </div>
-      </motion.div>
 
-      {/* Therapist Details */}
-      <motion.div
-        initial={{ opacity: 0, x: 30 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        className="space-y-6"
-      >
-        <Badge variant="secondary" className="border border-primary/20 w-fit">
-          Featured Therapist
-        </Badge>
+          <h2 className="text-3xl lg:text-4xl font-bold">
+            {publicAdmins[0].name}
+          </h2>
 
-        <h2 className="text-3xl lg:text-4xl font-bold">
-          Dr. Alex Rivera
-        </h2>
+          <p className="text-primary font-semibold text-lg">
+            {publicAdmins[0].doctorProfile?.specialization ? publicAdmins[0].doctorProfile.specialization.substring(0, publicAdmins[0].doctorProfile.specialization.indexOf(',') !== -1 ? publicAdmins[0].doctorProfile.specialization.indexOf(',') : publicAdmins[0].doctorProfile.specialization.length) : "Certified Physiotherapist"}
+          </p>
 
-        <p className="text-primary font-semibold text-lg">
-          Sports & Orthopedic Physiotherapist
-        </p>
-
-        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            <span>12+ Years Experience</span>
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              <span>{publicAdmins[0].doctorProfile?.experience || 'Experienced Professional'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-warning text-warning" />
+              <span className="font-semibold">4.9 Rating</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Star className="h-4 w-4 fill-warning text-warning" />
-            <span className="font-semibold">4.9 Rating</span>
+
+          <p className="text-muted-foreground leading-relaxed max-w-xl">
+            {publicAdmins[0].doctorProfile?.bio || "Specialized in sports injuries, post-surgery rehabilitation, and chronic pain management. Known for personalized recovery plans and fast results through virtual physiotherapy."}
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <Link to="/questionnaire">
+              <Button size="lg" className="rounded-full">
+                Start Assessment
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+            </Link>
+
+            <Link to={`/therapist/${publicAdmins[0].id}`}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="rounded-full border-primary/30"
+              >
+                View Full Profile
+              </Button>
+            </Link>
           </div>
-        </div>
-
-        <p className="text-muted-foreground leading-relaxed max-w-xl">
-          Specialized in sports injuries, post-surgery rehabilitation, and chronic
-          pain management. Known for personalized recovery plans and fast results
-          through virtual physiotherapy.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 pt-4">
-          <Link to="/questionnaire">
-            <Button size="lg" className="rounded-full">
-              Start Assessment
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </Link>
-
-          <Link to="/therapist/1">
-            <Button
-              variant="outline"
-              size="lg"
-              className="rounded-full border-primary/30"
-            >
-              View Full Profile
-            </Button>
-          </Link>
-        </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    ) : (
+      <div className="text-center py-12">
+        <p>No featured therapist available.</p>
+      </div>
+    )}
   </div>
 </section>
 
