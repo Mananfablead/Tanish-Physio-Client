@@ -44,10 +44,11 @@ import { fetchAllSessions, fetchUpcomingSessions, fetchPastSessions, fetchComple
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
+import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 
 export default function SchedulePage() {
   const location = useLocation();
- 
+   const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
 
   const navigate = useNavigate()
   const bookingData = location.state;
@@ -111,7 +112,7 @@ export default function SchedulePage() {
   const dispatch = useAppDispatch();
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
-
+    dispatch(fetchPublicAdmins());
 
   }, [dispatch]);
   useEffect(() => {
@@ -718,6 +719,7 @@ export default function SchedulePage() {
                       endTime,
                       type: sessionTypeValue,
                       status: sessionStatusValue,
+                      therapistId: bookingData?.therapistId || publicAdmins[0]?.id,
                     };
 
                     // Helper function to get subscription ID from stored plan
