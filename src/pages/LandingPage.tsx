@@ -225,8 +225,22 @@ export default function LandingPage() {
   const testimonialsError = useSelector(selectTestimonialsError);
   
   // Fetch CMS hero and steps data from Redux store
-  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
- 
+  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, conditions: cmsConditions, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
+  
+  // Fetch public admins from Redux store
+  const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
+  
+  // Fetch subscription plans when component mounts
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlans());
+  }, [dispatch]);
+  
+  // Fetch featured testimonials when component mounts
+  useEffect(() => {
+    dispatch(fetchFeaturedTestimonials());
+  }, [dispatch]);
+  
+  // Fetch CMS hero and steps data when component mounts
   useEffect(() => {
     dispatch(fetchHeroPublic());
     dispatch(fetchStepsPublic());
