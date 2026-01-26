@@ -352,27 +352,15 @@ export default function BookingPage() {
                   !localStorage.getItem("token")
 
                 toast.success("Payment successful!.");
-                if (wasGuestUser) {
-                  // For guest users, navigate to booking confirmation page
-                  navigate("/booking-confirmation", {
-                    state: {
-                      ...bookingData,
-                      finalPrice,
-                      guestUser: JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}"),
-                      fromSubscription: true,
-                    },
-                  });
-                } else {
-                  // For logged-in users, continue with existing flow
-                  navigate("/schedule", {
-                    state: {
-                      ...bookingData,
-                      finalPrice,
-                      guestUser: undefined,
-                      fromSubscription: true,
-                    },
-                  });
-                }
+                // Navigate to booking confirmation page for all users
+                navigate("/booking-confirmation", {
+                  state: {
+                    ...bookingData,
+                    finalPrice,
+                    guestUser: wasGuestUser ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}") : undefined,
+                    fromSubscription: true,
+                  },
+                });
               } catch (error) {
                 console.error("Error processing subscription payment success:", error);
                 toast.error("Something went wrong after payment. Please contact support.");
@@ -460,27 +448,15 @@ export default function BookingPage() {
                   !localStorage.getItem("token")
 
                 toast.success("Payment successful!.");
-                if (wasGuestUser) {
-                  // For guest users, navigate to booking confirmation page
-                  navigate("/booking-confirmation", {
-                    state: {
-                      ...bookingData,
-                      finalPrice,
-                      guestUser: JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}"),
-                      fromSubscription: true,
-                    },
-                  });
-                } else {
-                  // For logged-in users, continue with existing flow
-                  navigate("/schedule", {
-                    state: {
-                      ...bookingData,
-                      finalPrice,
-                      guestUser: undefined,
-                      fromSubscription: true,
-                    },
-                  });
-                }
+                // Navigate to booking confirmation page for all users
+                navigate("/booking-confirmation", {
+                  state: {
+                    ...bookingData,
+                    finalPrice,
+                    guestUser: wasGuestUser ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}") : undefined,
+                    fromSubscription: true,
+                  },
+                });
               } catch (innerError) {
                 console.error("Error in subscription fallback flow:", innerError);
                 toast.error("Payment was successful but there was an issue processing your subscription. Please contact support.");
@@ -812,7 +788,7 @@ export default function BookingPage() {
                 }
 
                 if (!stored || !isRecent(stored?.updatedAt)) {
-                  // Plan purchased, but intake missing or outdated: require intake to unlock sessions
+                  
                   toast.success(
                     "Payment successful! Please complete a short intake to unlock sessions."
                   );
@@ -851,29 +827,16 @@ export default function BookingPage() {
                   !localStorage.getItem("token")
 
                 toast.success("Payment successful!.");
-                if (wasGuestUser) {
-                  // For guest users, navigate to booking confirmation page
-                  navigate("/booking-confirmation", {
-                    state: {
-                      ...bookingData,
-                      bookingId: bookingId,
-                      finalPrice,
-                      guestUser: JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}"),
-                      fromServices: true,
-                    },
-                  });
-                } else {
-                  // For logged-in users, continue with existing flow
-                  navigate("/schedule", {
-                    state: {
-                      ...bookingData,
-                      bookingId: bookingId,
-                      finalPrice,
-                      guestUser: undefined,
-                      fromServices: true,
-                    },
-                  });
-                }
+                // Navigate to booking confirmation page for all users
+                navigate("/booking-confirmation", {
+                  state: {
+                    ...bookingData,
+                    bookingId: bookingId,
+                    finalPrice,
+                    guestUser: wasGuestUser ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}") : undefined,
+                    fromServices: true,
+                  },
+                });
               } catch (innerError) {
                 console.error("Error in fallback flow:", innerError);
                 toast.error("Payment was successful but there was an issue processing your booking. Please contact support.");

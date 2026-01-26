@@ -47,6 +47,8 @@ import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
 
 export default function SchedulePage() {
   const location = useLocation();
+ 
+
   const navigate = useNavigate()
   const bookingData = location.state;
   console.log("userSubscriptionsdadadadaddddad--------?", bookingData)
@@ -69,7 +71,7 @@ export default function SchedulePage() {
 
   // UI Control States for Session Creation
   const [sessionTypeValue, setSessionTypeValue] = useState<string>("1-on-1");
-  const [sessionStatusValue, setSessionStatusValue] = useState<string>("scheduled");
+  const [sessionStatusValue, setSessionStatusValue] = useState<string>("pending");
   const [sessionNotesValue, setSessionNotesValue] = useState<string>("");
 
   const [availability, setAvailability] = useState([]);
@@ -742,6 +744,7 @@ export default function SchedulePage() {
                       toast.success(
                         `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`
                       );
+                       navigate("/profile");
                     } else {
                       toast.error("Failed to book session");
                     }
