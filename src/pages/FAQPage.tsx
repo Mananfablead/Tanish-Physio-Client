@@ -1,33 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '../components/layout/Layout';
+import { useAppDispatch, useAppSelector } from '../store';
+import { fetchFaqsPublic } from '../store/slices/cmsSlice';
+import { useAccordion } from '../hooks/useAccordion';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function FAQPage() {
-  const faqs = [
-    {
-      question: "How do I book a session?",
-      answer: "You can book a session by navigating to the 'Find Therapists' page, selecting a therapist that fits your needs, and choosing an available time slot."
-    },
-    {
-      question: "What are the subscription plans?",
-      answer: "We offer multiple subscription plans including monthly and annual options. Visit our 'Subscription Plans' page for detailed information on pricing and features."
-    },
-    {
-      question: "How do I cancel a booking?",
-      answer: "You can cancel your booking from your profile page under 'My Appointments'. Please note that cancellations must be made at least 24 hours before the scheduled session."
-    },
-    {
-      question: "What equipment do I need for video sessions?",
-      answer: "You'll need a device with a camera and microphone, a stable internet connection, and a quiet, well-lit space for your session."
-    },
-    {
-      question: "Can I change my subscription plan?",
-      answer: "Yes, you can upgrade or downgrade your subscription plan at any time from your profile settings."
-    },
-    {
-      question: "How do I contact support?",
-      answer: "You can reach our support team through the 'Contact Us' page or by emailing us at drkhushboo26@gmail.com"
-    }
-  ];
+  const dispatch = useAppDispatch();
+  const { faqs, loading, error } = useAppSelector(state => ({
+    faqs: state.cms.faqs,
+    loading: state.cms.loading,
+    error: state.cms.error
+  }));
+  
+  const { openIndex, toggleAccordion } = useAccordion();
+
+  useEffect(() => {
+    dispatch(fetchFaqsPublic());
+  }, [dispatch]);
 
   return (
     <Layout>
@@ -36,13 +26,44 @@ export default function FAQPage() {
           <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">Frequently Asked Questions</h1>
           <p className="text-center text-muted-foreground mb-12">Find answers to common questions about our services</p>
           
-          <div className="space-y-6">
-            {faqs.map((faq, index) => (
-              <div key={index} className="border rounded-lg p-6 bg-card">
-                <h3 className="text-xl font-semibold mb-2">{faq.question}</h3>
-                <p className="text-muted-foreground">{faq.answer}</p>
+          <div className="space-y-4">
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
               </div>
-            ))}
+            ) : error ? (
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-6 text-center">
+                <p className="text-destructive">Error loading FAQs: {error}</p>
+              </div>
+            ) : faqs.length > 0 ? (
+              faqs.map((faq, index) => (
+                <div key={faq._id || index} className="border border-primary/20 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md">
+                  <button
+                    className="w-full flex justify-between items-center p-6 text-left bg-card hover:bg-primary/5 transition-colors duration-200"
+                    onClick={() => toggleAccordion(index)}
+                    aria-expanded={openIndex === index}
+                    aria-controls={`faq-content-${index}`}
+                  >
+                    <h3 className="text-lg font-semibold text-primary pr-4">{faq.question}</h3>
+                    {openIndex === index ? (
+                      <ChevronUp className="h-5 w-5 text-primary flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-primary flex-shrink-0" />
+                    )}
+                  </button>
+                  <div 
+                    id={`faq-content-${index}`}
+                    className={`${openIndex === index ? 'block' : 'hidden'} p-6 pt-2 border-t bg-background transition-all duration-300`}
+                  >
+                    <p className="text-muted-foreground">{faq.answer}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No FAQs available at the moment.</p>
+              </div>
+            )}
           </div>
           
           <div className="mt-12 text-center">

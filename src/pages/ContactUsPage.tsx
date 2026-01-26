@@ -1,17 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchContactPublic } from '../store/slices/cmsSlice';
+import { RootState } from '../store';
 
 export default function ContactUsPage() {
+  const dispatch = useDispatch();
+  const { contact, loading } = useSelector((state: RootState) => state.cms);
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
     message: ''
   });
+
+  useEffect(() => {
+    dispatch(fetchContactPublic() as any);
+  }, [dispatch]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -30,15 +40,19 @@ export default function ContactUsPage() {
     <Layout>
       <div className="min-h-screen bg-background py-12">
         <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">Contact Us</h1>
-        <p className="text-center text-muted-foreground mb-12">Get in touch with our support team</p>
+        <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">
+          {contact?.title || 'Contact Us'}
+        </h1>
+        <p className="text-center text-muted-foreground mb-12">
+          {contact?.description || 'Get in touch with our support team'}
+        </p>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Information */}
           <div>
             <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
             <p className="text-muted-foreground mb-8">
-              Have questions or need assistance? Our team is here to help you with any inquiries you may have about our services, appointments, or support.
+              {contact?.description || 'Have questions or need assistance? Our team is here to help you with any inquiries you may have about our services, appointments, or support.'}
             </p>
             
             <div className="space-y-6">
@@ -48,7 +62,7 @@ export default function ContactUsPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold">Email</h3>
-                  <p className="text-muted-foreground">drkhushboo26@gmail.com</p>
+                  <p className="text-muted-foreground">{contact?.email || 'drkhushboo26@gmail.com'}</p>
                 </div>
               </div>
               
@@ -58,7 +72,7 @@ export default function ContactUsPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold">Phone</h3>
-                  <p className="text-muted-foreground">+91 9427555696</p>
+                  <p className="text-muted-foreground">{contact?.phone || '+91 9427555696'}</p>
                 </div>
               </div>
               
@@ -69,8 +83,7 @@ export default function ContactUsPage() {
                 <div>
                   <h3 className="font-semibold">Address</h3>
                   <p className="text-muted-foreground">
-                    5, Dhaval Appts, Besides Telephone Exchange, 
-                    Choksiwadi Road, Ajaramar Chowk, Adajan
+                    {contact?.address || '5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan'}
                   </p>
                 </div>
               </div>
@@ -78,20 +91,9 @@ export default function ContactUsPage() {
             
             <div className="mt-10">
               <h3 className="text-xl font-semibold mb-4">Business Hours</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex justify-between border-b pb-2">
-                  <span>Monday - Friday</span>
-                  <span>9:00 AM - 7:00 PM</span>
-                </li>
-                <li className="flex justify-between border-b pb-2">
-                  <span>Saturday</span>
-                  <span>10:00 AM - 4:00 PM</span>
-                </li>
-                <li className="flex justify-between border-b pb-2">
-                  <span>Sunday</span>
-                  <span>Closed</span>
-                </li>
-              </ul>
+              <p className="text-muted-foreground mb-4">
+                {contact?.hours || 'Monday - Friday: 9:00 AM - 7:00 PM, Saturday: 10:00 AM - 4:00 PM, Sunday: Closed'}
+              </p>
             </div>
           </div>
           
@@ -155,6 +157,23 @@ export default function ContactUsPage() {
                 Send Message
               </Button>
             </form>
+          </div>
+        </div>
+        
+        {/* Map Section - Full Width */}
+        <div className="mt-12">
+          <h3 className="text-xl font-semibold mb-4 text-center">Find Us Here</h3>
+          <div className="rounded-lg overflow-hidden border">
+            <iframe
+              width="100%"
+              height="400"
+              frameBorder="0"
+              scrolling="no"
+              marginHeight={0}
+              marginWidth={0}
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(contact?.address || '5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan')}&output=embed`}
+              title="Location Map"
+            ></iframe>
           </div>
         </div>
       </div>

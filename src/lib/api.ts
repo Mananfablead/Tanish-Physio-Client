@@ -341,6 +341,18 @@ export const getConditionsPublic = () => {
   return api.get("/cms/public/conditions");
 };
 
+export const getTermsPublic = () => {
+  return api.get("/cms/public/terms");
+};
+
+export const getContactPublic = () => {
+  return api.get("/cms/public/contact");
+};
+
+export const getAboutPublic = () => {
+  return api.get("/cms/public/about");
+};
+
 // Admin API functions
 export const getPublicAdmins = () => {
   return api.get("/auth/admins/public");
