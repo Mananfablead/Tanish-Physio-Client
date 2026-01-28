@@ -124,13 +124,10 @@ const App = () => (
                       </PublicRoute>
                     }
                   />
+                  {/* Booking confirmation page - accessible to both authenticated and guest users */}
                   <Route
                     path="/booking-confirmation"
-                    element={
-                      <ProtectedRoute>
-                        <BookingConfirmationPage />
-                      </ProtectedRoute>
-                    }
+                    element={<BookingConfirmationPage />}
                   />
                   <Route
                     path="/profile"

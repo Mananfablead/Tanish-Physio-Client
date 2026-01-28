@@ -246,15 +246,15 @@ export default function SubscriptionPlansPage() {
                                 ? "hero"
                                 : "outline"
                           }
-                          disabled={!!activePlanId && !isActive}
+                          // disabled={!!activePlanId && !isActive}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (activePlanId) {
-                              toast.info(
-                                "You already have an active subscription"
-                              );
-                              return;
-                            }
+                            // if (activePlanId) {
+                            //   toast.info(
+                            //     "You already have an active subscription"
+                            //   );
+                            //   return;
+                            // }
                             setSelectedPlan(planId);
                           }}
                         >
@@ -274,7 +274,7 @@ export default function SubscriptionPlansPage() {
         )}
 
         {/* SUMMARY */}
-        {selectedPlan && !activePlanId && (
+        {/* {selectedPlan && !activePlanId && ( */}
           <div className="max-w-6xl mx-auto">
             <Card className="shadow-xl rounded-2xl">
               <CardContent className="p-6 space-y-6">
@@ -365,7 +365,7 @@ export default function SubscriptionPlansPage() {
               </CardContent>
             </Card>
           </div>
-        )}
+        {/* )} */}
       </div>
     </Layout>
   );

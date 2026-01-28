@@ -193,10 +193,14 @@ export const updateGuestBookingStatus = (
   return api.put(`/bookings/guest-status/${id}`, { status, clientEmail });
 };
 
-export const updateGuestBooking = (id: string, bookingData: any) => {
-  return api.put(`/bookings/guest-status/${id}`, {
+export const updateGuestBooking = (id: string, bookingData: any, clientEmail: string) => {
+  console.log('updateGuestBooking called with:', { id, bookingData, clientEmail });
+  const payload = {
     status: bookingData.status,
-  });
+    clientEmail: clientEmail,
+  };
+  console.log('Sending payload:', payload);
+  return api.put(`/bookings/guest-status/${id}`, payload);
 };
 
 export const processPaymentWebhook = (webhookData: any) => {
