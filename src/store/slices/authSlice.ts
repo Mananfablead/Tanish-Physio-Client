@@ -32,6 +32,8 @@ interface ProfileResponse {
   createdAt: string;
   updatedAt: string;
   subscriptionData?: any;
+  purchasedServices?: any[];
+  
 }
 
 interface AuthState {
@@ -304,6 +306,7 @@ const authSlice = createSlice({
           subscriptionData: action.payload.subscriptionData,
           profilePicture: action.payload.profilePicture,
           healthProfile: action.payload.healthProfile,
+          purchasedServices: action.payload.purchasedServices || [] as any[],
         };
         state.isAuthenticated = true;
       })

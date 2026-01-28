@@ -22,7 +22,6 @@ import { toast } from "sonner";
 import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync } from '@/store/slices/bookingsSlice';
 import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
 import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
-import { createNewSession } from '@/store/slices/sessionSlice';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
@@ -34,7 +33,6 @@ export default function BookingPage() {
   const bookingData = location.state;
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
-  const { loading: bookingLoading, error: bookingError, currentBooking: createdBooking } = useAppSelector(state => state.bookings);
 
   const [guestUserData, setGuestUserData] = useState({
     name: "",
@@ -59,12 +57,7 @@ export default function BookingPage() {
   // Handle service-based booking data
   // Handle subscription-based booking data
 
-  const therapist = bookingData?.therapist || {
-    name: "Dr. Sarah Johnson",
-    title: "Sports Injury Specialist",
-    avatar:
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face",
-  };
+  const therapist = bookingData?.therapist 
 
 
   const serviceBooking = bookingData?.fromServices === true;
@@ -85,7 +78,14 @@ export default function BookingPage() {
 
   // Format date to YYYY-MM-DD
   const formatDate = (dateString: string) => {
-    if (!dateString) return "2024-12-30";
+    if (!dateString) {
+      // Return current date if no date provided
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
 
     // If already in YYYY-MM-DD format, return as is
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
@@ -96,7 +96,12 @@ export default function BookingPage() {
     try {
       const dateObj = new Date(dateString);
       if (isNaN(dateObj.getTime())) {
-        return "2024-12-30"; // fallback to default date
+        // Return current date if parsing fails
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       }
 
       const year = dateObj.getFullYear();
@@ -105,14 +110,26 @@ export default function BookingPage() {
 
       return `${year}-${month}-${day}`;
     } catch (e) {
-      return "2024-12-30"; // fallback to default date
+      // Return current date if exception occurs
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
   };
 
-  const date = formatDate(bookingData?.date || "Mon, Dec 30");
+  const date = formatDate(bookingData?.date);
   // Format time to HH:MM
   const formatTime = (timeString: string) => {
-    if (!timeString) return "10:00";
+    if (!timeString) {
+      // Return current time (exact) if no time provided
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
 
     // If already in HH:MM format, return as is
     if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
@@ -145,11 +162,16 @@ export default function BookingPage() {
 
       return timeString;
     } catch (e) {
-      return "10:00"; // fallback to default time
+      // Return current time if parsing fails
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
   };
 
-  const time = formatTime(bookingData?.time || "10:00");
+  const time = formatTime(bookingData?.time);
   const promoApplied = bookingData?.promoApplied || false;
 
   const finalPrice = promoApplied ? Math.round(plan.price * 0.8) : plan.price;
@@ -171,7 +193,7 @@ export default function BookingPage() {
     now - storedIntake.updatedAt < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
   const handlePayment = async () => {
-  
+
     // Validate guest user data if applicable
     if (isGuestUser && (!guestUserData.name || !guestUserData.email)) {
       toast.error("Please fill in your name and email to continue");
@@ -541,13 +563,13 @@ export default function BookingPage() {
           setIsProcessing(false);
           return;
         }
-       
+
         const bookingId = bookingResult.payload?._id || (bookingResult.payload as any)?.booking?._id;
 
         // Create payment order with booking ID
         let paymentOrderResult;
         if (isGuestUser) {
-         
+
           // Prepare guest payment order payload
           const guestPaymentOrderData = {
             bookingId: bookingId,
@@ -560,7 +582,7 @@ export default function BookingPage() {
 
           paymentOrderResult = await dispatch(createGuestPaymentOrderAsync(guestPaymentOrderData));
         } else {
-         
+
           const paymentOrderData = {
             bookingId: bookingId,
             amount: finalPrice,
@@ -609,16 +631,16 @@ export default function BookingPage() {
             // Dispatch payment verification action
             let verifyResult;
             if (isGuestUser) {
-            
+
               verifyResult = await dispatch(verifyGuestPaymentAsync(paymentVerificationData));
             } else {
-           
+
               verifyResult = await dispatch(verifyPaymentAsync(paymentVerificationData));
             }
             if ((isGuestUser && verifyGuestPaymentAsync.fulfilled.match(verifyResult)) || (!isGuestUser && verifyPaymentAsync.fulfilled.match(verifyResult))) {
               // Verification successful - update booking status to confirmed
               if (isGuestUser) {
-               
+
                 // For guest users, use guest booking update with client email
                 const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
                 await dispatch(updateGuestBookingAsync({
@@ -626,10 +648,11 @@ export default function BookingPage() {
                   bookingData: { status: 'confirmed' },
                   clientEmail: guestUser.email
                 }));
+                
               } else {
 
                 // For authenticated users, use regular booking update
-                await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
+                await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'pending' } }));
               }
 
               // Process success flow
@@ -677,14 +700,7 @@ export default function BookingPage() {
 
                 // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
                 try {
-                  const therapist = {
-                    id: `th-${Math.floor(Math.random() * 10000)}`,
-                    name: "Assigned Clinician",
-                    title: "Matched Specialist",
-                    assignedAt: Date.now(),
-                  };
-                  sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
-
+                  
                   if (scheduled) {
                     scheduled.locked = false;
                     scheduled.therapist = therapist;
@@ -695,8 +711,6 @@ export default function BookingPage() {
                     );
                   }
                 } catch (e) { }
-
-                // Check if user is a guest (not logged in)
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
                   !localStorage.getItem("token")
@@ -733,15 +747,25 @@ export default function BookingPage() {
               console.error("Payment verification failed:", verifyResult.payload);
 
               if (isGuestUser) {
-               
+
                 const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
+                console.log("Guest User:", guestUser);
+                console.log("Client Email:", guestUser.email);
+                
+                if (!guestUser.email) {
+                  console.error("Client email is missing from guest user data!");
+                  toast.error("Client email is missing. Please try again.");
+                  setIsProcessing(false);
+                  return;
+                }
+                
                 await dispatch(updateGuestBookingAsync({
                   id: bookingId,
-                  bookingData: { status: 'confirmed' },
+                  bookingData: { status: 'pending' },
                   clientEmail: guestUser.email
                 }));
               } else {
-              
+
                 await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
               }
 
@@ -775,7 +799,7 @@ export default function BookingPage() {
                 }
 
                 if (!stored || !isRecent(stored?.updatedAt)) {
-                  
+
                   toast.success(
                     "Payment successful! Please complete a short intake to unlock sessions."
                   );

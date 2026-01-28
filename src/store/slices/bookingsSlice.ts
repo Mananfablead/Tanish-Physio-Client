@@ -43,6 +43,7 @@ interface Booking {
   amount: number;
   createdAt: string;
   updatedAt: string;
+  clientEmail: string;
 }
 
 interface PaymentOrder {
@@ -141,6 +142,7 @@ export const updateBookingAsync = createAsyncThunk(
     try {
       const response = await updateBooking(id, bookingData);
       const apiResponse = response.data as ApiResponse<Booking>;
+      console.log('Updated Booking:', apiResponse.data);
       return apiResponse.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -154,10 +156,12 @@ export const updateGuestBookingAsync = createAsyncThunk(
   'bookings/updateGuestBooking',
   async ({ id, bookingData, clientEmail }: { id: string; bookingData: any; clientEmail: string }, { rejectWithValue }) => {
     try {
+      console.log('updateGuestBookingAsync called with:', { id, bookingData, clientEmail });
       const response = await updateGuestBooking(id, bookingData, clientEmail);
       const apiResponse = response.data as ApiResponse<Booking>;
       return apiResponse.data;
     } catch (error: any) {
+      console.error('updateGuestBookingAsync error:', error);
       return rejectWithValue(
         error.response?.data?.message || 'Failed to update guest booking'
       );

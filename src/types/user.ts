@@ -8,4 +8,5 @@ export interface User {
   profilePicture?: string; // Add profilePicture field from backend
   healthProfile?: any;
   subscriptionData?: any;
+  purchasedServices?: any[];
 }

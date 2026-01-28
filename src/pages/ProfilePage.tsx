@@ -28,7 +28,8 @@ import {
   Menu,
   X,
   ChevronRight,
-  CheckCircle
+  CheckCircle,
+  PlusCircle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
@@ -111,10 +112,10 @@ export default function ProfilePage() {
   const activePlan = user?.subscriptionData;
   // Set state based on Redux data
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
-const nextSession =
-  upcomingSessions?.find(
-    (session: any) => session.status === "live"
-  ) || null;
+  const nextSession =
+    upcomingSessions?.find(
+      (session: any) => session.status === "live"
+    ) || null;
   // Fetch user data when component mounts
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
@@ -124,7 +125,7 @@ const nextSession =
     dispatch(getAllBookingsAsync());
     dispatch(fetchProfile());
 
-  }, []);  
+  }, []);
 
 
 
@@ -144,36 +145,44 @@ const nextSession =
       icon: Award,
       color: "text-primary",
     },
+
     {
       id: "upcoming",
-      label: "Upcoming",
-      sub: "Your appointments",
+      label: "Upcoming Sessions",
+      sub: "Your scheduled sessions",
       icon: Clock,
       color: "text-primary",
     },
     {
       id: "sessionHistory",
-      label: "Session",
-      sub: "Past consultations",
+      label: "Session History",
+      sub: "Your past sessions",
       icon: Play,
       color: "text-primary",
     },
     {
       id: "subscriptionHistory",
       label: "Subscription History",
-      sub: "Payment history",
+      sub: "Your plan & payment history",
       icon: FileText,
       color: "text-primary",
     },
     {
       id: "bookings",
-      label: "Bookings",
-      sub: "Your appointment bookings",
+      label: "Service Bookings",
+      sub: "All your booked services",
       icon: Calendar,
       color: "text-primary",
     },
-
+    {
+      id: "bookSession",
+      label: "Book Session Now",
+      sub: "Schedule a new session",
+      icon: PlusCircle,
+      isAction: true, // 👈 CTA flag
+    },
   ];
+
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -213,7 +222,7 @@ const nextSession =
       // optional: preview ko real image se replace
       setPreviewImage(imageUrl);
 
-    
+
     } catch (error) {
       console.error("Failed to update profile image", error);
     }
@@ -326,6 +335,7 @@ const nextSession =
                   color: "text-accent",
                   bg: "bg-accent/10",
                 },
+
                 {
                   label: "Upcoming",
                   value: upcomingSessions.length,
@@ -336,20 +346,26 @@ const nextSession =
               ].map((stat, i) => (
                 <div
                   key={i}
-                  className="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200 hover:shadow-md transition-all group shadow-sm"
+                  className="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200 
+             hover:shadow-md transition-all group shadow-sm
+             flex flex-col items-center text-center"
                 >
                   <div
-                    className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+                    className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3
+               group-hover:scale-110 transition-transform`}
                   >
                     <stat.icon className={`h-5 w-5 ${stat.color}`} />
                   </div>
+
                   <p className="text-2xl font-black text-primary leading-none">
                     {stat.value}
                   </p>
+
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">
                     {stat.label}
                   </p>
                 </div>
+
               ))}
             </div>
           </div>
@@ -366,37 +382,61 @@ const nextSession =
                 {sections.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setSelectedSection(item.id)}
-                    className={`w-full text-left p-3.5 rounded-xl transition-all duration-300 group ${selectedSection === item.id
-                      ? "bg-primary/10 shadow-inner"
-                      : "hover:bg-primary/5"
+                    onClick={() => {
+                      if (item.id === "bookSession") {
+                        navigate("/schedule");
+                      } else {
+                        setSelectedSection(item.id);
+                      }
+                    }}
+                    className={`w-full text-left p-3.5 rounded-xl transition-all duration-300 group
+      ${item.isAction
+                        ? "bg-primary text-white hover:bg-primary/90 shadow-lg"
+                        : selectedSection === item.id
+                          ? "bg-primary/10 shadow-inner"
+                          : "hover:bg-primary/5"
                       }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
-                        className={`p-2 rounded-lg transition-colors ${selectedSection === item.id
-                          ? "bg-white shadow-sm"
-                          : "bg-primary/5 group-hover:bg-white"
+                        className={`p-2 rounded-lg transition-colors
+          ${item.isAction
+                            ? "bg-white/20"
+                            : selectedSection === item.id
+                              ? "bg-white shadow-sm"
+                              : "bg-primary/5 group-hover:bg-white"
                           }`}
                       >
-                        <item.icon className={`h-5 w-5 ${item.color}`} />
+                        <item.icon
+                          className={`h-5 w-5 ${item.isAction ? "text-white" : item.color}`}
+                        />
                       </div>
+
                       <div className="flex-1 min-w-0">
                         <div
-                          className={`font-black text-sm transition-colors ${selectedSection === item.id
-                            ? "text-primary"
-                            : "text-slate-700"
+                          className={`font-black text-sm transition-colors
+            ${item.isAction
+                              ? "text-white"
+                              : selectedSection === item.id
+                                ? "text-primary"
+                                : "text-slate-700"
                             }`}
                         >
                           {item.label}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium truncate">
+
+                        <div
+                          className={`text-[11px] font-medium truncate
+            ${item.isAction ? "text-white/80" : "text-slate-500"}
+          `}
+                        >
                           {item.sub}
                         </div>
                       </div>
                     </div>
                   </button>
                 ))}
+
               </div>
             </Card>
 
@@ -456,7 +496,7 @@ const nextSession =
                       )
                     }
                     footer={
-                      activePlan ? (
+                      activePlan && (
                         <>
                           {/* <Button
                             variant="outline"
@@ -465,7 +505,7 @@ const nextSession =
                           >
                             Cancel Plan
                           </Button> */}
-                          <Button
+                          {/* <Button
                             className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black"
                             onClick={() => {
                               // For active plan, navigate to schedule with subscription data
@@ -479,15 +519,8 @@ const nextSession =
                             }}
                           >
                             Create Session
-                          </Button>
+                          </Button> */}
                         </>
-                      ) : (
-                        <Button
-                          asChild
-                          className="h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black"
-                        >
-                          <Link to="/plans">Explore Our Plans</Link>
-                        </Button>
                       )
                     }
                   >
@@ -702,15 +735,7 @@ const nextSession =
                               moment.
                             </p>
                           </div>
-                          <Button 
-                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                            onClick={() => {
-                              // For upcoming sessions, navigate to schedule
-                              navigate("/schedule");
-                            }}
-                          >
-                            Book a Session
-                          </Button>
+
                         </div>
                       </RightPanelCard>
                     )}
@@ -844,17 +869,7 @@ const nextSession =
                     ) : (
                       <RightPanelCard
                         title="Session History"
-                        footer={
-                          <Button
-                            className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
-                            onClick={() => {
-                              // For session history, navigate to schedule
-                              navigate("/schedule");
-                            }}
-                          >
-                            Book a Session
-                          </Button>
-                        }
+
                       >
                         <div className="py-12 text-center space-y-4">
                           <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
@@ -1130,12 +1145,12 @@ const nextSession =
                               You haven't purchased any plans yet.
                             </p>
                           </div>
-                          <Button
+                          {/* <Button
                             asChild
                             className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black"
                           >
                             <Link to="/plans">Explore Our Plans</Link>
-                          </Button>
+                          </Button> */}
                         </div>
                       </RightPanelCard>
                     )}

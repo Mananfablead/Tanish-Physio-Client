@@ -45,23 +45,21 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
+import { selectCurrentUser } from "@/store/slices/authSlice";
+import { RootState } from "@/store";
 
 export default function SchedulePage() {
   const location = useLocation();
-   const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
+  const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
+  const user = useSelector(selectCurrentUser);
 
+  // Use subscriptionData id and purchasedServices bookingIds from user data
+  const subscriptionId = user?.subscriptionData?.id;
+  const purchasedServiceBookingIds = user?.purchasedServices?.map((service: any) => service.bookingId) || [];
+  
   const navigate = useNavigate()
   const bookingData = location.state;
 
-  useEffect(() => {
-    if (bookingData?.fromSubscription) {
-      toast.success("Subscription activated! You can now book your sessions.");
-    } else if (bookingData?.fromServices) {
-      toast.success("Service purchased! You can now book your session.");
-    }
-  }, [bookingData]);
-
-  // Check if there's booking data from services page
   const hasBookingSummary =
     bookingData?.fromServices || bookingData?.fromSubscription || bookingData?.bookingSummary;
 
@@ -123,7 +121,7 @@ export default function SchedulePage() {
 
         const availabilityData: any = availabilityResponse;
         const sessionsData: any = sessionsResponse;
- 
+
         setAvailability(availabilityData.data?.data?.availability || []);
 
         // Update sessions with actual data from API
@@ -479,18 +477,18 @@ export default function SchedulePage() {
                         No sessions scheduled
                       </h3>
 
-                      <p className="text-slate-500 font-medium max-w-xs mx-auto">
+                      {/* <p className="text-slate-500 font-medium max-w-xs mx-auto">
                         You don’t have any sessions scheduled for{" "}
                         {format(selectedDate, "MMMM d, yyyy")}.
-                      </p>
+                      </p> */}
 
-                      <Button
+                      {/* <Button
                         className="h-11 rounded-xl bg-primary text-white font-bold px-6"
                         onClick={() => setIsBookingModalOpen(true)}
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Book Session
-                      </Button>
+                      </Button> */}
                     </div>
                   )}
                 </CardContent>
@@ -677,19 +675,24 @@ export default function SchedulePage() {
 
                     let subscriptionIdValue = null;
                     if (bookingData?.fromSubscription) {
-                   
+
                       // Try to get from bookingData first (could come from Questionnaire page)
                       subscriptionIdValue = bookingData?.subscriptionId || getSubscriptionIdFromStorage();
                     } else if (bookingData?.subscriptionId) {
-                     
+
                       subscriptionIdValue = bookingData?.subscriptionId;
                     } else if (bookingData?.fromSubscription && !subscriptionIdValue) {
                       // Double check from sessionStorage if subscription flow
-                
+
                       subscriptionIdValue = getSubscriptionIdFromStorage();
                     }
                     if (bookingData?.plan?.id) {
                       subscriptionIdValue = bookingData?.plan?.id;
+                    }
+                    
+                    // If no subscriptionId found in bookingData, use from user's subscriptionData
+                    if (!subscriptionIdValue && user?.subscriptionData?.id) {
+                      subscriptionIdValue = user?.subscriptionData?.id;
                     }
 
 
@@ -704,8 +707,17 @@ export default function SchedulePage() {
                       endTime = null; // Backend will calculate endTime based on duration if not provided
                     }
 
+                    // Determine bookingId based on available data
+                    let finalBookingId = null;
+                    if (bookingData?.fromServices || (bookingData?.bookingId && !subscriptionIdValue)) {
+                      finalBookingId = (bookingData?.bookingId || bookingData?.service?.bookingId) || null;
+                    } else if (!subscriptionIdValue && user?.purchasedServices && user.purchasedServices.length > 0) {
+                      // Use the first purchased service bookingId if no specific booking ID and no subscription
+                      finalBookingId = user.purchasedServices[0].bookingId || null;
+                    }
+                    
                     const sessionData = {
-                      bookingId: (bookingData?.fromServices || bookingData?.bookingId && !subscriptionIdValue) ? (bookingData?.bookingId || bookingData?.service?.bookingId) || null : null,
+                      bookingId: finalBookingId,
                       subscriptionId: subscriptionIdValue,
                       date: format(selectedDate, "yyyy-MM-dd"),
                       time: startTime, // Still send time for backward compatibility
@@ -720,10 +732,10 @@ export default function SchedulePage() {
                     function getSubscriptionIdFromStorage() {
                       try {
                         const storedPlan = sessionStorage.getItem("qw_plan");
-                        
+
                         if (storedPlan) {
                           const planData = JSON.parse(storedPlan);
-                        
+
                           return planData.subscriptionId || null;
                         }
                       } catch (e) {
@@ -740,7 +752,7 @@ export default function SchedulePage() {
                       toast.success(
                         `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`
                       );
-                       navigate("/profile");
+                      navigate("/profile");
                     } else {
                       toast.error("Failed to book session");
                     }
