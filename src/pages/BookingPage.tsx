@@ -35,7 +35,6 @@ export default function BookingPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
   const { loading: bookingLoading, error: bookingError, currentBooking: createdBooking } = useAppSelector(state => state.bookings);
-  console.log("bookingData------->>>>>", bookingData)
 
   const [guestUserData, setGuestUserData] = useState({
     name: "",
@@ -172,12 +171,7 @@ export default function BookingPage() {
     now - storedIntake.updatedAt < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
   const handlePayment = async () => {
-    console.log('isGuestUser:', isGuestUser);
-    console.log('sessionStorage qw_user:', sessionStorage.getItem("qw_user"));
-    console.log('localStorage token:', localStorage.getItem("token"));
-    console.log('subscriptionBooking:', subscriptionBooking);
-    console.log('serviceBooking:', serviceBooking);
-
+  
     // Validate guest user data if applicable
     if (isGuestUser && (!guestUserData.name || !guestUserData.email)) {
       toast.error("Please fill in your name and email to continue");
@@ -206,7 +200,6 @@ export default function BookingPage() {
         // Direct subscription payment flow
         let paymentOrderResult;
         if (isGuestUser) {
-          console.log('Calling guest subscription payment API');
           // Prepare guest subscription payment order payload
           const guestSubscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
@@ -219,13 +212,11 @@ export default function BookingPage() {
 
           paymentOrderResult = await dispatch(createGuestSubscriptionPaymentOrderAsync(guestSubscriptionPaymentOrderData));
         } else {
-          console.log('Calling regular subscription payment API');
           const subscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
             currency: "INR"
           };
-          console.log("subscriptionPaymentOrderData", subscriptionPaymentOrderData)
           paymentOrderResult = await dispatch(createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData));
         }
 
@@ -267,12 +258,9 @@ export default function BookingPage() {
             // Dispatch subscription payment verification action
             let verifyResult;
             if (isGuestUser) {
-              console.log('Calling guest subscription payment verification API');
               verifyResult = await dispatch(verifyGuestSubscriptionPaymentAsync(paymentVerificationData));
             } else {
-              console.log('Calling regular subscription payment verification API');
               verifyResult = await dispatch(verifySubscriptionPaymentTransaction(paymentVerificationData));
-              console.log("verifyResult-------?", verifyResult)
             }
             if ((isGuestUser && verifyGuestSubscriptionPaymentAsync.fulfilled.match(verifyResult)) || (!isGuestUser && verifySubscriptionPaymentTransaction.fulfilled.match(verifyResult))) {
               // Verification successful - process subscription
@@ -374,7 +362,6 @@ export default function BookingPage() {
               try {
                 // Get subscription ID from response (even in fallback scenario)
                 const subscriptionId = verifyResult.payload?.subscription?.id || verifyResult.payload?.data?.subscription?.id;
-                console.log("idid")
                 // Persist plan as active subscription with subscription ID
                 sessionStorage.setItem(
                   "qw_plan",
@@ -534,7 +521,7 @@ export default function BookingPage() {
         // Create the booking - use guest booking if user is not logged in
         let bookingResult;
         if (isGuestUser) {
-          console.log('Calling guest booking API');
+
           // Prepare guest booking payload
           const guestBookingPayload = {
             ...bookingPayload,
@@ -545,7 +532,7 @@ export default function BookingPage() {
 
           bookingResult = await dispatch(createGuestBookingAsync(guestBookingPayload));
         } else {
-          console.log('Calling regular booking API');
+
           bookingResult = await dispatch(createBookingAsync(bookingPayload));
         }
 
@@ -554,13 +541,13 @@ export default function BookingPage() {
           setIsProcessing(false);
           return;
         }
-        console.log("Booking Result", bookingResult)
+       
         const bookingId = bookingResult.payload?._id || (bookingResult.payload as any)?.booking?._id;
 
         // Create payment order with booking ID
         let paymentOrderResult;
         if (isGuestUser) {
-          console.log('Calling guest payment order API');
+         
           // Prepare guest payment order payload
           const guestPaymentOrderData = {
             bookingId: bookingId,
@@ -573,7 +560,7 @@ export default function BookingPage() {
 
           paymentOrderResult = await dispatch(createGuestPaymentOrderAsync(guestPaymentOrderData));
         } else {
-          console.log('Calling regular payment order API');
+         
           const paymentOrderData = {
             bookingId: bookingId,
             amount: finalPrice,
@@ -622,16 +609,16 @@ export default function BookingPage() {
             // Dispatch payment verification action
             let verifyResult;
             if (isGuestUser) {
-              console.log('Calling guest payment verification API');
+            
               verifyResult = await dispatch(verifyGuestPaymentAsync(paymentVerificationData));
             } else {
-              console.log('Calling regular payment verification API');
+           
               verifyResult = await dispatch(verifyPaymentAsync(paymentVerificationData));
             }
             if ((isGuestUser && verifyGuestPaymentAsync.fulfilled.match(verifyResult)) || (!isGuestUser && verifyPaymentAsync.fulfilled.match(verifyResult))) {
               // Verification successful - update booking status to confirmed
               if (isGuestUser) {
-                console.log('Updating booking status with guest API');
+               
                 // For guest users, use guest booking update with client email
                 const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
                 await dispatch(updateGuestBookingAsync({
@@ -640,7 +627,7 @@ export default function BookingPage() {
                   clientEmail: guestUser.email
                 }));
               } else {
-                console.log('Updating booking status with regular API');
+
                 // For authenticated users, use regular booking update
                 await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
               }
@@ -746,7 +733,7 @@ export default function BookingPage() {
               console.error("Payment verification failed:", verifyResult.payload);
 
               if (isGuestUser) {
-                console.log('Updating booking status with guest API (fallback)');
+               
                 const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
                 await dispatch(updateGuestBookingAsync({
                   id: bookingId,
@@ -754,7 +741,7 @@ export default function BookingPage() {
                   clientEmail: guestUser.email
                 }));
               } else {
-                console.log('Updating booking status with regular API (fallback)');
+              
                 await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
               }
 
@@ -900,7 +887,6 @@ export default function BookingPage() {
       setIsProcessing(false);
     }
   };
-  console.log("Razorpay Key:", import.meta.env.VITE_RAZORPAY_KEY_ID || "uvPkIj6Wi9gO3WYHqje57gh7");
 
   return (
     <Layout>

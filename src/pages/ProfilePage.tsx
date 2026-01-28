@@ -213,7 +213,7 @@ const nextSession =
       // optional: preview ko real image se replace
       setPreviewImage(imageUrl);
 
-      console.log("Profile image updated successfully");
+    
     } catch (error) {
       console.error("Failed to update profile image", error);
     }
@@ -237,7 +237,7 @@ const nextSession =
       await dispatch(updateProfile(profileData));
 
       // Show success message
-      console.log("Profile updated successfully");
+
     } catch (error) {
       console.error("Failed to update profile:", error);
     }

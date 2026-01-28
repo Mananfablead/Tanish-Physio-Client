@@ -52,7 +52,7 @@ export default function SchedulePage() {
 
   const navigate = useNavigate()
   const bookingData = location.state;
-  console.log("userSubscriptionsdadadadaddddad--------?", bookingData)
+
   useEffect(() => {
     if (bookingData?.fromSubscription) {
       toast.success("Subscription activated! You can now book your sessions.");
@@ -103,11 +103,6 @@ export default function SchedulePage() {
     return getAvailableTimesForDate(selectedDate);
   }, [selectedDate, availability]);
 
-  console.log("availableTimes", availableTimes);
-
-
-
-  // State for sessions
   const [sessions, setSessions] = useState<any[]>([]);
   const dispatch = useAppDispatch();
   useEffect(() => {
@@ -128,7 +123,7 @@ export default function SchedulePage() {
 
         const availabilityData: any = availabilityResponse;
         const sessionsData: any = sessionsResponse;
-        console.log(sessionsData)
+ 
         setAvailability(availabilityData.data?.data?.availability || []);
 
         // Update sessions with actual data from API
@@ -311,7 +306,6 @@ export default function SchedulePage() {
 
                           const availabilityForDate = getAvailabilityForDate(day);
 
-                          // console.log("hasAvailability", hasAvailability)
                           return isPast ? (
                             <div
                               key={index}
@@ -683,15 +677,15 @@ export default function SchedulePage() {
 
                     let subscriptionIdValue = null;
                     if (bookingData?.fromSubscription) {
-                      console.log("1")
+                   
                       // Try to get from bookingData first (could come from Questionnaire page)
                       subscriptionIdValue = bookingData?.subscriptionId || getSubscriptionIdFromStorage();
                     } else if (bookingData?.subscriptionId) {
-                      console.log("2")
+                     
                       subscriptionIdValue = bookingData?.subscriptionId;
                     } else if (bookingData?.fromSubscription && !subscriptionIdValue) {
                       // Double check from sessionStorage if subscription flow
-                      console.log("3")
+                
                       subscriptionIdValue = getSubscriptionIdFromStorage();
                     }
                     if (bookingData?.plan?.id) {
@@ -726,10 +720,10 @@ export default function SchedulePage() {
                     function getSubscriptionIdFromStorage() {
                       try {
                         const storedPlan = sessionStorage.getItem("qw_plan");
-                        console.log('Stored Plan Data:', storedPlan);
+                        
                         if (storedPlan) {
                           const planData = JSON.parse(storedPlan);
-                          console.log('Parsed Plan Data:', planData);
+                        
                           return planData.subscriptionId || null;
                         }
                       } catch (e) {

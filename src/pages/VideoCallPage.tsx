@@ -41,12 +41,6 @@ export default function VideoCallPage() {
   // Fetch session details if sessionId is present
   useEffect(() => {
     if (sessionId) {
-      // In a real app, you would fetch session details from the API
-      // For now, we'll just use a mock implementation
-      console.log(`Session ID: ${sessionId}`);
-      
-      // Mock therapist name based on session - in real app, fetch from API
-      // setTherapist('Dr. Jane Smith'); // fetched from session data
     }
   }, [sessionId]);
 
@@ -94,7 +88,7 @@ export default function VideoCallPage() {
   const handleSendMessage = () => {
     if (chatMessage.trim() !== '') {
       // Here you would typically send the message to your chat system
-      console.log('Sending message:', chatMessage);
+     
       setChatMessage(''); // Clear the input after sending
     }
   };
