@@ -1,5 +1,3 @@
-
-
 import { Layout } from "@/components/layout/Layout";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -56,7 +54,95 @@ export default function SchedulePage() {
   // Use subscriptionData id and purchasedServices bookingIds from user data
   const subscriptionId = user?.subscriptionData?.id;
   const purchasedServiceBookingIds = user?.purchasedServices?.map((service: any) => service.bookingId) || [];
-  
+
+  // Extract start and end time from the selected time format
+  const getSubscriptionIdFromStorage = () => {
+    try {
+      const storedPlan = sessionStorage.getItem("qw_plan");
+      if (storedPlan) {
+        const planData = JSON.parse(storedPlan);
+        return planData.subscriptionId || null;
+      }
+    } catch (e) {
+      console.error("Error getting subscription ID:", e);
+    }
+    return null;
+  };
+
+  // Handle session booking
+  const handleBooking = async () => {
+    try {
+      let subscriptionIdValue = null;
+      if (bookingData?.fromSubscription) {
+        subscriptionIdValue = bookingData?.subscriptionId || getSubscriptionIdFromStorage();
+      } else if (bookingData?.subscriptionId) {
+        subscriptionIdValue = bookingData?.subscriptionId;
+      } else if (bookingData?.fromSubscription && !subscriptionIdValue) {
+        subscriptionIdValue = getSubscriptionIdFromStorage();
+      }
+      if (bookingData?.plan?.id) {
+        subscriptionIdValue = bookingData?.plan?.id;
+      }
+      
+      // If no subscriptionId found in bookingData, use from user's subscriptionData
+      if (!subscriptionIdValue && user?.subscriptionData?.id) {
+        subscriptionIdValue = user?.subscriptionData?.id;
+      }
+
+      // Extract start and end time from the selected time format (e.g., "10:00 - 11:00" -> startTime: "10:00", endTime: "11:00")
+      let startTime, endTime;
+      if (selectedTime.includes(' - ')) {
+        const timeParts = selectedTime.split(' - ');
+        startTime = timeParts[0];
+        endTime = timeParts[1];
+      } else {
+        startTime = selectedTime;
+        endTime = null; // Backend will calculate endTime based on duration if not provided
+      }
+
+      // Determine bookingId based on available data
+      let finalBookingId = null;
+      if (bookingData?.fromServices || (bookingData?.bookingId && !subscriptionIdValue)) {
+        finalBookingId = (bookingData?.bookingId || bookingData?.service?.bookingId) || null;
+      } else if (!subscriptionIdValue && user?.purchasedServices && user.purchasedServices.length > 0) {
+        // Use the first purchased service bookingId if no specific booking ID and no subscription
+        finalBookingId = user.purchasedServices[0].bookingId || null;
+      }
+      
+      const sessionData = {
+        bookingId: finalBookingId,
+        subscriptionId: subscriptionIdValue,
+        date: format(selectedDate, "yyyy-MM-dd"),
+        time: startTime, // Still send time for backward compatibility
+        startTime,
+        endTime,
+        type: sessionTypeValue,
+        status: sessionStatusValue,
+        therapistId: bookingData?.therapistId || publicAdmins[0]?.id,
+      };
+
+      const response: any = await createSession(sessionData);
+
+      if (response.data?.success) {
+        setSessions([...sessions, response.data.data.session]);
+        setIsBookingModalOpen(false); // Close booking modal first
+        setIsSuccessDialogOpen(true); // Then show success dialog
+        toast.success(
+          `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`
+        );
+        // Navigate to profile page after 5 seconds
+        setTimeout(() => {
+          setIsSuccessDialogOpen(false);
+          navigate("/profile");
+        }, 5000);
+      } else {
+        toast.error("Failed to book session");
+      }
+    } catch (err) {
+      toast.error("Failed to book session");
+    }
+  };
+
   const navigate = useNavigate()
   const bookingData = location.state;
 
@@ -67,6 +153,7 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState<boolean>(false);
 
   // UI Control States for Session Creation
   const [sessionTypeValue, setSessionTypeValue] = useState<string>("1-on-1");
@@ -303,50 +390,41 @@ export default function SchedulePage() {
                           const isAvailableDate = hasAvailableSlots(day);
 
                           const availabilityForDate = getAvailabilityForDate(day);
+return isPast ? (
+  /* -------- Past Date (Disabled) -------- */
+  <div
+    key={index}
+    className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center cursor-not-allowed"
+  >
+    {format(day, "d")}
+  </div>
+) : (
+  /* -------- Today & Future -------- */
+  <button
+    key={index}
+    onClick={() => {
+      setSelectedDate(day);
+      setIsBookingModalOpen(true);
+    }}
+    className={`
+      h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all
+      ${
+        isSelected
+          ? "bg-primary text-white font-black shadow-md"
+          : availabilityForDate && !isAvailableDate
+          ? "bg-blue-100 text-blue-700 font-semibold"        /* Booked */
+          : !availabilityForDate
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed"   /* Not Booked */
+          : isToday
+          ? "border border-primary/30 text-primary font-bold"
+          : "bg-green-100 text-green-700 hover:bg-green-200" /* Available */
+      }
+    `}
+  >
+    {format(day, "d")}
+  </button>
+);
 
-                          return isPast ? (
-                            <div
-                              key={index}
-                              className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center"
-                            >
-                              {format(day, "d")}
-                            </div>
-                          ) : availabilityForDate ? (
-                            <button
-                              key={index}
-                              disabled={!isAvailableDate}
-                              onClick={() => {
-                                if (!isAvailableDate) return;
-                                setSelectedDate(day);
-                                setIsBookingModalOpen(true);
-                              }}
-                              className={`
-    h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all
-    ${isSelected
-                                  ? "bg-primary text-white font-black shadow-md"
-                                  : isToday
-                                    ? "border border-primary/30 text-primary font-bold"
-                                    : isAvailableDate
-                                      ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                }
-  `}
-                            >
-                              {format(day, "d")}
-                            </button>
-
-
-                          ) : (
-                            <div
-                              key={index}
-                              className="h-10 rounded-xl text-sm font-medium flex flex-col items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed"
-                            >
-                              <span className="text-xs">{format(day, "d")}</span>
-                              {/* <span className="text-[0.6rem] font-bold mt-0.5">
-            Not Booked
-          </span> */}
-                            </div>
-                          );
                         })
                       )}
                     </div>
@@ -665,101 +743,7 @@ export default function SchedulePage() {
               <Button
                 className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                 disabled={!selectedTime}
-                onClick={async () => {
-                  if (!selectedTime) {
-                    toast.error("Please select a time for your session");
-                    return;
-                  }
-
-                  try {
-
-                    let subscriptionIdValue = null;
-                    if (bookingData?.fromSubscription) {
-
-                      // Try to get from bookingData first (could come from Questionnaire page)
-                      subscriptionIdValue = bookingData?.subscriptionId || getSubscriptionIdFromStorage();
-                    } else if (bookingData?.subscriptionId) {
-
-                      subscriptionIdValue = bookingData?.subscriptionId;
-                    } else if (bookingData?.fromSubscription && !subscriptionIdValue) {
-                      // Double check from sessionStorage if subscription flow
-
-                      subscriptionIdValue = getSubscriptionIdFromStorage();
-                    }
-                    if (bookingData?.plan?.id) {
-                      subscriptionIdValue = bookingData?.plan?.id;
-                    }
-                    
-                    // If no subscriptionId found in bookingData, use from user's subscriptionData
-                    if (!subscriptionIdValue && user?.subscriptionData?.id) {
-                      subscriptionIdValue = user?.subscriptionData?.id;
-                    }
-
-
-                    // Extract start and end time from the selected time format (e.g., "10:00 - 11:00" -> startTime: "10:00", endTime: "11:00")
-                    let startTime, endTime;
-                    if (selectedTime.includes(' - ')) {
-                      const timeParts = selectedTime.split(' - ');
-                      startTime = timeParts[0];
-                      endTime = timeParts[1];
-                    } else {
-                      startTime = selectedTime;
-                      endTime = null; // Backend will calculate endTime based on duration if not provided
-                    }
-
-                    // Determine bookingId based on available data
-                    let finalBookingId = null;
-                    if (bookingData?.fromServices || (bookingData?.bookingId && !subscriptionIdValue)) {
-                      finalBookingId = (bookingData?.bookingId || bookingData?.service?.bookingId) || null;
-                    } else if (!subscriptionIdValue && user?.purchasedServices && user.purchasedServices.length > 0) {
-                      // Use the first purchased service bookingId if no specific booking ID and no subscription
-                      finalBookingId = user.purchasedServices[0].bookingId || null;
-                    }
-                    
-                    const sessionData = {
-                      bookingId: finalBookingId,
-                      subscriptionId: subscriptionIdValue,
-                      date: format(selectedDate, "yyyy-MM-dd"),
-                      time: startTime, // Still send time for backward compatibility
-                      startTime,
-                      endTime,
-                      type: sessionTypeValue,
-                      status: sessionStatusValue,
-                      therapistId: bookingData?.therapistId || publicAdmins[0]?.id,
-                    };
-
-                    // Helper function to get subscription ID from stored plan
-                    function getSubscriptionIdFromStorage() {
-                      try {
-                        const storedPlan = sessionStorage.getItem("qw_plan");
-
-                        if (storedPlan) {
-                          const planData = JSON.parse(storedPlan);
-
-                          return planData.subscriptionId || null;
-                        }
-                      } catch (e) {
-                        console.error("Error getting subscription ID:", e);
-                      }
-                      return null;
-                    }
-
-                    const response: any = await createSession(sessionData);
-
-                    if (response.data?.success) {
-                      setSessions([...sessions, response.data.data.session]);
-                      setIsBookingModalOpen(false);
-                      toast.success(
-                        `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`
-                      );
-                      navigate("/profile");
-                    } else {
-                      toast.error("Failed to book session");
-                    }
-                  } catch (err) {
-                    toast.error("Failed to book session");
-                  }
-                }}
+                onClick={handleBooking}
               >
                 Confirm
               </Button>
@@ -769,6 +753,38 @@ export default function SchedulePage() {
         </div>
       )}
 
+      {/* Success Dialog */}
+      {isSuccessDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                Booking Successful!
+              </h3>
+              <p className="text-slate-600 mb-6">
+                Your session for {format(selectedDate, "MMMM d, yyyy")} at {selectedTime} has been successfully booked.
+              </p>
+              <p className="text-sm text-slate-500">
+                You will be redirected to your profile page in a moment...
+              </p>
+              <div className="mt-6">
+                <Button
+                  className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                  onClick={() => {
+                    setIsSuccessDialogOpen(false);
+                    navigate("/profile");
+                  }}
+                >
+                  Go to Profile Now
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
