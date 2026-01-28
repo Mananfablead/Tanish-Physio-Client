@@ -28,5 +28,5 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "files": ["src/shims.d.ts"] 
+  "files": ["src/shims.d.ts"]
 }

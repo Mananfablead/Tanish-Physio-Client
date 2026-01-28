@@ -22,12 +22,15 @@ import {
 } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
 import useWebRTC from "../../hooks/useWebRTC";
+import { videoCallApi } from "../../lib/videoCallApi";
+import { chatApi } from "../../lib/chatApi";
 
 const VideoCall = ({
   roomId,
   roomType = "session",
   isTherapist = false,
   onEndCall,
+  sessionId, // Add sessionId prop for API calls
 }) => {
   const { socket, connected, error, emit, on } = useSocket(roomId, roomType);
   const {
@@ -66,6 +69,10 @@ const VideoCall = ({
   const [incomingCall, setIncomingCall] = useState(false);
   const [callStartTime, setCallStartTime] = useState(null);
   const [callDuration, setCallDuration] = useState(0);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
 
   // Initialize media when socket connects
   useEffect(() => {
@@ -91,6 +98,56 @@ const VideoCall = ({
       if (interval) clearInterval(interval);
     };
   }, [callActive, callStartTime]);
+
+  // Load chat messages
+  useEffect(() => {
+    if (sessionId) {
+      loadChatMessages();
+    }
+  }, [sessionId]);
+
+  const loadChatMessages = async () => {
+    try {
+      const response = await chatApi.getMessages(sessionId);
+      if (response.success) {
+        setChatMessages(response.data.messages || []);
+      }
+    } catch (error) {
+      console.error("Error loading chat messages:", error);
+    }
+  };
+
+  const sendChatMessage = async () => {
+    if (!newMessage.trim() || !sessionId) return;
+
+    try {
+      await chatApi.sendMessage(sessionId, newMessage.trim());
+      setNewMessage("");
+      await loadChatMessages(); // Refresh messages
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  const handleTyping = async () => {
+    if (sessionId) {
+      try {
+        await chatApi.sendTyping();
+      } catch (error) {
+        console.error("Error sending typing indicator:", error);
+      }
+    }
+  };
+
+  const handleStopTyping = async () => {
+    if (sessionId) {
+      try {
+        await chatApi.sendStopTyping();
+      } catch (error) {
+        console.error("Error sending stop typing indicator:", error);
+      }
+    }
+  };
 
   // Set up socket listeners
   useEffect(() => {
@@ -188,6 +245,26 @@ const VideoCall = ({
       }
     };
 
+    // Handle chat message
+    const chatMessageListener = (data) => {
+      setChatMessages((prev) => [...prev, data.message]);
+    };
+
+    // Handle typing indicator
+    const typingListener = (data) => {
+      setTypingUsers((prev) => {
+        if (!prev.includes(data.userId)) {
+          return [...prev, data.userId];
+        }
+        return prev;
+      });
+    };
+
+    // Handle stop typing indicator
+    const stopTypingListener = (data) => {
+      setTypingUsers((prev) => prev.filter((id) => id !== data.userId));
+    };
+
     // Add listeners
     on("offer", offerListener);
     on("answer", answerListener);
@@ -202,6 +279,9 @@ const VideoCall = ({
     on("video-toggle", videoToggleListener);
     on("screen-share-toggle", screenShareToggleListener);
     on("user-muted", userMutedListener);
+    on("new-message", chatMessageListener);
+    on("typing", typingListener);
+    on("stop-typing", stopTypingListener);
 
     // Cleanup listeners
     return () => {
@@ -218,6 +298,9 @@ const VideoCall = ({
       socket.off("video-toggle", videoToggleListener);
       socket.off("screen-share-toggle", screenShareToggleListener);
       socket.off("user-muted", userMutedListener);
+      socket.off("new-message", chatMessageListener);
+      socket.off("typing", typingListener);
+      socket.off("stop-typing", stopTypingListener);
     };
   }, [
     socket,
@@ -508,18 +591,50 @@ const VideoCall = ({
                 </Button>
               </div>
               <div className="h-64 overflow-y-auto mb-4">
-                <div className="text-center text-gray-500 py-8">
-                  <MessageCircle className="mx-auto h-8 w-8 mb-2" />
-                  <p>No messages yet</p>
-                </div>
+                {chatMessages.length > 0 ? (
+                  <div className="space-y-2">
+                    {chatMessages.map((msg, index) => (
+                      <div key={index} className="text-sm">
+                        <span className="font-medium text-blue-400">
+                          {msg.senderId?.name || "Unknown"}:
+                        </span>
+                        <span className="text-gray-300 ml-2">
+                          {msg.message}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    <MessageCircle className="mx-auto h-8 w-8 mb-2" />
+                    <p>No messages yet</p>
+                  </div>
+                )}
+                {typingUsers.length > 0 && (
+                  <div className="text-xs text-gray-400 italic">
+                    {typingUsers.length} user{typingUsers.length > 1 ? "s" : ""}{" "}
+                    typing...
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <input
                   type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      sendChatMessage();
+                    }
+                  }}
+                  onFocus={handleTyping}
+                  onBlur={handleStopTyping}
                   placeholder="Type a message..."
                   className="flex-1 bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
-                <Button size="sm">Send</Button>
+                <Button size="sm" onClick={sendChatMessage}>
+                  Send
+                </Button>
               </div>
             </div>
           )}
