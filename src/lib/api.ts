@@ -358,4 +358,54 @@ export const getPublicAdmins = () => {
   return api.get("/auth/admins/public");
 };
 
+// Video Call API functions
+export const videoCallAPI = {
+  // Generate secure JWT token for joining call
+  generateJoinLink: (sessionId, userId, role) =>
+    api.post('/video-call/generate-join-link', { sessionId, userId, role }),
+
+  // Verify call token
+  verifyJoinLink: (token) =>
+    api.post('/video-call/verify-join-link', { token }),
+
+  // Get call details for a session
+  getCallDetails: (sessionId) =>
+    api.get(`/video-call/info/${sessionId}`),
+
+  // Get user's call history
+  getCallHistory: (params = {}) =>
+    api.get('/video-call/history', { params }),
+
+  // Report call issue
+  reportCallIssue: (sessionId, issue, description) =>
+    api.post('/video-call/report-issue', { sessionId, issue, description }),
+};
+
+// Chat API functions
+export const chatAPI = {
+  // Join a chat room
+  joinRoom: () =>
+    api.post('/chat/join'),
+
+  // Leave a chat room
+  leaveRoom: () =>
+    api.post('/chat/leave'),
+
+  // Send a chat message
+  sendMessage: (sessionId, message) =>
+    api.post('/chat/send', { sessionId, message }),
+
+  // Get chat messages for a session
+  getMessages: (sessionId) =>
+    api.get(`/chat/${sessionId}`),
+
+  // Send typing indicator
+  sendTyping: () =>
+    api.post('/chat/typing'),
+
+  // Send stop typing indicator
+  sendStopTyping: () =>
+    api.post('/chat/stop-typing'),
+};
+
 export default api;
