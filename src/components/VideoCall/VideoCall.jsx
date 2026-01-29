@@ -31,6 +31,7 @@ const VideoCall = ({
   isTherapist = false,
   onEndCall,
   sessionId, // Add sessionId prop for API calls
+  connected: externalConnected = false, // Add connected prop from parent
 }) => {
   const { socket, connected, error, emit, on } = useSocket(roomId, roomType);
   const {
@@ -73,15 +74,75 @@ const VideoCall = ({
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [mediaError, setMediaError] = useState(null);
+  const [callError, setCallError] = useState(null);
 
   // Initialize media when socket connects
   useEffect(() => {
-    if (connected && !localStream) {
-      initLocalMedia().catch((err) =>
-        console.error("Error initializing media:", err)
-      );
+    if ((externalConnected || connected) && !localStream) {
+      initLocalMedia()
+        .then(() => {
+          // Clear any previous media error on success
+          setMediaError(null);
+        })
+        .catch((err) => {
+          console.error("Error initializing media:", err);
+          // Set a user-friendly message for media errors
+          if (err.name === "NotFoundError") {
+            setMediaError(
+              "No camera or microphone found. The call will continue with limited functionality."
+            );
+            console.warn(
+              "No camera or microphone found. The call will continue with limited functionality."
+            );
+          } else if (err.name === "NotAllowedError") {
+            setMediaError(
+              "Camera and/or microphone access denied. Please allow access in your browser settings."
+            );
+            console.warn(
+              "Camera and/or microphone access was denied. Please allow access to use video/audio features."
+            );
+          } else {
+            setMediaError(
+              "There was an issue accessing media devices: " + err.message
+            );
+            console.warn(
+              "There was an issue accessing media devices:",
+              err.message
+            );
+          }
+        });
     }
-  }, [connected, localStream, initLocalMedia]);
+  }, [externalConnected, connected, localStream, initLocalMedia]);
+
+  // Handle socket errors
+  useEffect(() => {
+    if (socket) {
+      const handleError = (data) => {
+        console.error("Video call error:", data);
+
+        // Handle specific session not active error
+        if (
+          data.message &&
+          data.message.includes("Session is not active at this time")
+        ) {
+          setCallError(
+            "This session is not currently active. Please check the scheduled time and try again later."
+          );
+        } else {
+          setCallError(
+            data.message || "An error occurred during the video call"
+          );
+        }
+      };
+
+      socket.on("error", handleError);
+
+      return () => {
+        socket.off("error", handleError);
+      };
+    }
+  }, [socket]);
 
   // Timer for call duration
   useEffect(() => {
@@ -101,10 +162,10 @@ const VideoCall = ({
 
   // Load chat messages
   useEffect(() => {
-    if (sessionId) {
+    if (sessionId && externalConnected && connected) {
       loadChatMessages();
     }
-  }, [sessionId]);
+  }, [sessionId, externalConnected, connected]);
 
   const loadChatMessages = async () => {
     try {
@@ -118,7 +179,8 @@ const VideoCall = ({
   };
 
   const sendChatMessage = async () => {
-    if (!newMessage.trim() || !sessionId) return;
+    if (!newMessage.trim() || !sessionId || !externalConnected || !connected)
+      return;
 
     try {
       await chatApi.sendMessage(sessionId, newMessage.trim());
@@ -130,7 +192,7 @@ const VideoCall = ({
   };
 
   const handleTyping = async () => {
-    if (sessionId) {
+    if (sessionId && externalConnected && connected) {
       try {
         await chatApi.sendTyping();
       } catch (error) {
@@ -140,7 +202,7 @@ const VideoCall = ({
   };
 
   const handleStopTyping = async () => {
-    if (sessionId) {
+    if (sessionId && externalConnected && connected) {
       try {
         await chatApi.sendStopTyping();
       } catch (error) {
@@ -151,7 +213,7 @@ const VideoCall = ({
 
   // Set up socket listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !(externalConnected || connected)) return;
 
     // Handle incoming offer
     const offerListener = (data) => {
@@ -285,25 +347,33 @@ const VideoCall = ({
 
     // Cleanup listeners
     return () => {
-      socket.off("offer", offerListener);
-      socket.off("answer", answerListener);
-      socket.off("ice-candidate", iceCandidateListener);
-      socket.off("participant-joined", participantJoinedListener);
-      socket.off("participant-left", participantLeftListener);
-      socket.off("call-started", callStartedListener);
-      socket.off("call-accepted", callAcceptedListener);
-      socket.off("call-rejected", callRejectedListener);
-      socket.off("call-ended", callEndedListener);
-      socket.off("audio-toggle", audioToggleListener);
-      socket.off("video-toggle", videoToggleListener);
-      socket.off("screen-share-toggle", screenShareToggleListener);
-      socket.off("user-muted", userMutedListener);
-      socket.off("new-message", chatMessageListener);
-      socket.off("typing", typingListener);
-      socket.off("stop-typing", stopTypingListener);
+      if (socket) {
+        try {
+          socket.off("offer", offerListener);
+          socket.off("answer", answerListener);
+          socket.off("ice-candidate", iceCandidateListener);
+          socket.off("participant-joined", participantJoinedListener);
+          socket.off("participant-left", participantLeftListener);
+          socket.off("call-started", callStartedListener);
+          socket.off("call-accepted", callAcceptedListener);
+          socket.off("call-rejected", callRejectedListener);
+          socket.off("call-ended", callEndedListener);
+          socket.off("audio-toggle", audioToggleListener);
+          socket.off("video-toggle", videoToggleListener);
+          socket.off("screen-share-toggle", screenShareToggleListener);
+          socket.off("user-muted", userMutedListener);
+          socket.off("new-message", chatMessageListener);
+          socket.off("typing", typingListener);
+          socket.off("stop-typing", stopTypingListener);
+        } catch (err) {
+          console.error("Error removing socket listeners:", err);
+        }
+      }
     };
   }, [
     socket,
+    externalConnected,
+    connected,
     on,
     handleOffer,
     handleAnswer,
@@ -434,6 +504,7 @@ const VideoCall = ({
               size="lg"
               className="rounded-full h-14 w-14"
               onClick={rejectCall}
+              disabled={!externalConnected || !connected}
             >
               <Phone className="h-6 w-6" />
             </Button>
@@ -442,6 +513,7 @@ const VideoCall = ({
               size="lg"
               className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600"
               onClick={acceptCall}
+              disabled={!externalConnected || !connected}
             >
               <Phone className="h-6 w-6 rotate-180" />
             </Button>
@@ -464,7 +536,7 @@ const VideoCall = ({
               {roomType === "group" ? "Group Session" : "Video Call"}
             </h1>
             <p className="text-xs text-gray-400">
-              {connected ? "Connected" : "Connecting..."}
+              {externalConnected && connected ? "Connected" : "Connecting..."}
               {callActive && callDuration > 0 && (
                 <span className="ml-2">
                   • {Math.floor(callDuration / 60)}:
@@ -480,6 +552,7 @@ const VideoCall = ({
             size="sm"
             className="text-gray-400 hover:text-white"
             onClick={() => setShowParticipants(!showParticipants)}
+            disabled={!externalConnected || !connected}
           >
             <Users className="h-4 w-4" />
             <span className="ml-1">{participants.length}</span>
@@ -489,6 +562,7 @@ const VideoCall = ({
             size="sm"
             className="text-gray-400 hover:text-white"
             onClick={() => setShowChat(!showChat)}
+            disabled={!externalConnected || !connected}
           >
             <MessageCircle className="h-4 w-4" />
           </Button>
@@ -514,7 +588,25 @@ const VideoCall = ({
             } h-48 lg:h-full`}
           >
             <div className="relative w-full h-full bg-black rounded-xl overflow-hidden">
-              {localStream ? (
+              {callError ? (
+                <div className="flex items-center justify-center w-full h-full">
+                  <div className="text-center text-red-400 p-4">
+                    <div className="mb-2">
+                      <Phone className="mx-auto h-8 w-8" />
+                    </div>
+                    <p className="text-sm">{callError}</p>
+                  </div>
+                </div>
+              ) : mediaError ? (
+                <div className="flex items-center justify-center w-full h-full">
+                  <div className="text-center text-yellow-400 p-4">
+                    <div className="mb-2">
+                      <Mic className="mx-auto h-8 w-8" />
+                    </div>
+                    <p className="text-sm">{mediaError}</p>
+                  </div>
+                </div>
+              ) : localStream ? (
                 <video
                   ref={localVideoRef}
                   autoPlay
@@ -551,6 +643,7 @@ const VideoCall = ({
                   size="sm"
                   className="text-gray-400 hover:text-white"
                   onClick={() => setShowParticipants(false)}
+                  disabled={!externalConnected || !connected}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -586,6 +679,7 @@ const VideoCall = ({
                   size="sm"
                   className="text-gray-400 hover:text-white"
                   onClick={() => setShowChat(false)}
+                  disabled={!externalConnected || !connected}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -623,16 +717,25 @@ const VideoCall = ({
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === "Enter" && externalConnected && connected) {
                       sendChatMessage();
                     }
                   }}
-                  onFocus={handleTyping}
-                  onBlur={handleStopTyping}
+                  onFocus={() =>
+                    externalConnected && connected && handleTyping()
+                  }
+                  onBlur={() =>
+                    externalConnected && connected && handleStopTyping()
+                  }
                   placeholder="Type a message..."
+                  disabled={!externalConnected || !connected}
                   className="flex-1 bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
-                <Button size="sm" onClick={sendChatMessage}>
+                <Button
+                  size="sm"
+                  onClick={sendChatMessage}
+                  disabled={!externalConnected || !connected}
+                >
                   Send
                 </Button>
               </div>
@@ -649,6 +752,7 @@ const VideoCall = ({
             size="icon"
             className="rounded-full h-12 w-12"
             onClick={toggleAudioHandler}
+            disabled={!externalConnected || !connected}
           >
             {audioEnabled ? (
               <Mic className="h-5 w-5" />
@@ -662,6 +766,7 @@ const VideoCall = ({
             size="icon"
             className="rounded-full h-12 w-12"
             onClick={toggleVideoHandler}
+            disabled={!externalConnected || !connected}
           >
             {videoEnabled ? (
               <Video className="h-5 w-5" />
@@ -675,6 +780,7 @@ const VideoCall = ({
             size="icon"
             className="rounded-full h-12 w-12"
             onClick={toggleScreenShareHandler}
+            disabled={!externalConnected || !connected}
           >
             {screenSharing ? (
               <MonitorOff className="h-5 w-5" />
@@ -689,7 +795,7 @@ const VideoCall = ({
               size="icon"
               className="rounded-full h-12 w-12 bg-purple-600 hover:bg-purple-700"
               onClick={startCall}
-              disabled={callStarted}
+              disabled={!externalConnected || !connected || callStarted}
             >
               <Volume2 className="h-5 w-5" />
             </Button>
@@ -702,8 +808,14 @@ const VideoCall = ({
             onClick={
               isTherapist
                 ? endCall
-                : () => emit("leave-room", { roomId, roomType })
+                : () => {
+                    if (socket) {
+                      socket.emit("leave-room", { roomId, roomType });
+                    }
+                    if (onEndCall) onEndCall();
+                  }
             }
+            disabled={!externalConnected || !connected}
           >
             <Phone className="h-6 w-6" />
           </Button>
@@ -713,6 +825,7 @@ const VideoCall = ({
             size="icon"
             className="rounded-full h-12 w-12"
             onClick={() => setShowSettings(!showSettings)}
+            disabled={!externalConnected || !connected}
           >
             <Settings className="h-5 w-5" />
           </Button>
@@ -730,6 +843,7 @@ const VideoCall = ({
                 size="sm"
                 className="text-gray-400 hover:text-white"
                 onClick={() => setShowSettings(false)}
+                disabled={!externalConnected || !connected}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -768,9 +882,9 @@ const VideoCall = ({
         </div>
       )}
 
-      {error && (
+      {(callError || !externalConnected || !connected) && (
         <div className="fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg z-50">
-          {error}
+          {callError || "Not connected to video call server"}
         </div>
       )}
     </div>

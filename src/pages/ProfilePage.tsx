@@ -44,6 +44,34 @@ import { updateProfile, setCredentials, fetchProfile } from '@/store/slices/auth
 
 import api from "@/lib/api";
 
+// Helper function to format session dates and times
+const formatSessionDateTime = (startTime?: string, endTime?: string) => {
+  if (!startTime) return "-";
+  
+  const startDate = new Date(startTime);
+  const endDate = endTime ? new Date(endTime) : null;
+  
+  const dateStr = startDate.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+  
+  const startTimeStr = startDate.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit', 
+    hour12: true 
+  });
+  
+  const endTimeStr = endDate ? endDate.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit', 
+    hour12: true 
+  }) : "-";
+  
+  return `${dateStr} - ${startTimeStr} to ${endTimeStr}`;
+};
+
 // Define types for API responses
 interface ApiResponse<T> {
   success: boolean;
@@ -637,7 +665,7 @@ export default function ProfilePage() {
                                   {session?.bookingId?.serviceName}
                                 </h4>
                                 <p className="text-sm text-slate-500 font-medium">
-                                  {session?.date}
+                                  {formatSessionDateTime(session?.startTime, session?.endTime)}
                                 </p>
                               </div>
 

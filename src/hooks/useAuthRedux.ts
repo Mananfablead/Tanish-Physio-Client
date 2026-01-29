@@ -9,24 +9,24 @@ export const useAuthRedux = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { user, isAuthenticated, loading, error } = useSelector(
+  const { user, token, isAuthenticated, loading, error } = useSelector(
     (state: RootState) => state.auth
   );
 
   const handleLogin = async (email: string, password: string) => {
     try {
       const result = await dispatch(login({ email, password }));
-      
+
       // Check if the login was successful
       if (login.fulfilled.match(result)) {
         toast({
           title: "Login Successful",
           description: "You have been successfully logged in.",
         });
-        navigate('/');
+        navigate("/");
       } else if (login.rejected.match(result)) {
         // Handle the rejected case with the error from the API
-        const errorMessage = result.payload as string || 'Login failed';
+        const errorMessage = (result.payload as string) || "Login failed";
         toast({
           title: "Login Failed",
           description: errorMessage,
@@ -45,7 +45,12 @@ export const useAuthRedux = () => {
     }
   };
 
-  const handleRegister = async (name: string, email: string, password: string, phone?: string) => {
+  const handleRegister = async (
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+  ) => {
     try {
       const result = await dispatch(register({ name, email, password, phone }));
       if (register.fulfilled.match(result)) {
@@ -53,7 +58,7 @@ export const useAuthRedux = () => {
           title: "Registration Successful",
           description: "Your account has been created successfully.",
         });
-        navigate('/');
+        navigate("/");
       } else if (register.rejected.match(result)) {
         toast({
           title: "Registration Failed",
@@ -77,7 +82,7 @@ export const useAuthRedux = () => {
         title: "Logout Successful",
         description: "You have been successfully logged out.",
       });
-      navigate('/login');
+      navigate("/login");
     } catch (err) {
       toast({
         title: "Logout Failed",
@@ -97,9 +102,10 @@ export const useAuthRedux = () => {
       if (forgotPassword.fulfilled.match(result)) {
         toast({
           title: "Password Reset Email Sent",
-          description: "We've sent a password reset link to your email address.",
+          description:
+            "We've sent a password reset link to your email address.",
         });
-        navigate('/login');
+        navigate("/login");
       } else if (forgotPassword.rejected.match(result)) {
         toast({
           title: "Password Reset Request Failed",
@@ -124,7 +130,7 @@ export const useAuthRedux = () => {
           title: "Password Reset Successful",
           description: "Your password has been reset successfully.",
         });
-        navigate('/login');
+        navigate("/login");
       } else if (resetPassword.rejected.match(result)) {
         toast({
           title: "Password Reset Failed",
@@ -143,6 +149,7 @@ export const useAuthRedux = () => {
 
   return {
     user,
+    token,
     isAuthenticated,
     loading,
     error,
