@@ -268,8 +268,8 @@ export default function QuestionnairePage() {
           console.error("Error getting subscription ID from storage:", e);
         }
         
-        // navigate to schedule page with plan data for session booking
-        navigate("/schedule", { state: { 
+        // navigate to booking-confirmation page with plan data for session booking
+        navigate("/booking-confirmation", { state: { 
           fromSubscription: true,
           subscriptionId: subscriptionId,
           plan: pending, 
@@ -280,8 +280,8 @@ export default function QuestionnairePage() {
       }
 
       if (serviceToBook) {
-        // For service bookings, navigate to schedule page with service data
-        navigate("/schedule", { state: { 
+        // For service bookings, navigate to booking-confirmation page with service data
+        navigate("/booking-confirmation", { state: { 
           fromServices: true,
           service: serviceToBook, 
           questionnaireData: data, 
@@ -324,8 +324,8 @@ export default function QuestionnairePage() {
           console.error("Error getting subscription ID from storage:", e);
         }
         
-        // navigate to schedule page with plan data for session booking
-        navigate("/schedule", { state: { 
+        // navigate to booking-confirmation page with plan data for session booking
+        navigate("/booking-confirmation", { state: { 
           fromSubscription: true,
           subscriptionId: subscriptionId,
           plan: pending, 
@@ -336,8 +336,8 @@ export default function QuestionnairePage() {
       }
 
       if (serviceToBook) {
-        // For service bookings, navigate to schedule page with service data
-        navigate("/schedule", { state: { 
+        // For service bookings, navigate to booking-confirmation page with service data
+        navigate("/booking-confirmation", { state: { 
           fromServices: true,
           service: serviceToBook, 
           questionnaireData: data, 
@@ -705,7 +705,7 @@ export default function QuestionnairePage() {
                                   console.error("Error getting subscription ID from storage:", e);
                                 }
                                 
-                                navigate('/schedule', { state: { 
+                                navigate('/booking-confirmation', { state: { 
                                   fromSubscription: true,
                                   subscriptionId: subscriptionId,
                                   plan: pending, 

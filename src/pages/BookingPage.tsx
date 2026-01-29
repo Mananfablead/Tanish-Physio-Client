@@ -44,7 +44,7 @@ export default function BookingPage() {
       setGuestUserData({
         name: user.name || "",
         email: user.email || "",
-        phone: user.phone || "9876543210",
+        phone: user.phone || "",
       });
     }
   }, [user]);
