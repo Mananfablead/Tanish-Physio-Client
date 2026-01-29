@@ -14,10 +14,11 @@ import {
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { updateGuestBookingStatus } from "@/lib/api";
+import { updateGuestBookingStatus, getBookingDetails } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
 
 export default function BookingConfirmationPage() {
   const location = useLocation();
@@ -28,10 +29,14 @@ export default function BookingConfirmationPage() {
 
   const bookingData = location.state;
   console.log("booking data", bookingData)
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const guestUser = bookingData?.guestUser;
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const [isQuestionnaireFilled, setIsQuestionnaireFilled] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState<any>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
   useEffect(() => {
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
@@ -52,42 +57,101 @@ export default function BookingConfirmationPage() {
     }
   }, []);
 
+  /* ---------------- Fetch Booking Details ---------------- */
+  useEffect(() => {
+    const fetchBookingDetails = async () => {
+      if (!bookingData?.bookingId) return;
+      
+      try {
+        setLoadingDetails(true);
+        let clientEmail = null;
+        
+        // Determine email based on user type
+        if (guestUser?.email) {
+          clientEmail = guestUser.email;
+        } else if (user?.email) {
+          clientEmail = user.email;
+        }
+        
+        if (!clientEmail) {
+          console.warn("No email found for booking details request");
+          return;
+        }
+        
+        const response = await getBookingDetails(bookingData.bookingId, clientEmail);
+        if (response.data?.success) {
+          setBookingDetails(response.data.data.booking);
+        }
+      } catch (error) {
+        console.error("Failed to fetch booking details:", error);
+        // Don't show error toast as this is supplementary information
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+
+    fetchBookingDetails();
+  }, [bookingData?.bookingId, guestUser?.email, user?.email]);
+
   /* ---------------- Extract Booking Data ---------------- */
+  // Use bookingDetails if available, fallback to bookingData
   const serviceName =
-    bookingData?.service?.name || bookingData?.plan?.name || "Physiotherapy";
+    bookingDetails?.serviceName ||
+    bookingData?.service?.name || 
+    bookingData?.plan?.name || 
+    "Physiotherapy";
 
   const serviceDuration =
+    bookingDetails?.serviceId?.duration ||
     bookingData?.session?.duration ||
     bookingData?.service?.duration ||
     bookingData?.plan?.duration;
 
   const servicePrice =
+    bookingDetails?.amount ||
     bookingData?.finalPrice ||
     bookingData?.service?.price ||
     bookingData?.plan?.price;
 
+  const sessionDate = bookingDetails?.date 
+    ? new Date(bookingDetails.date).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : new Date().toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+  const sessionTime = bookingDetails?.time || "Scheduled";
+
   const therapist = {
-    name: primaryDoctor?.name || "Physiotherapy Specialist",
-
-    title:
-      primaryDoctor?.doctorProfile?.specialization ||
-      bookingData?.session?.type ||
-      "Senior Physiotherapist",
-
-    avatar:
-      primaryDoctor?.profilePicture ||
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
-
-    experience: primaryDoctor?.doctorProfile?.experience
+    name: bookingDetails?.therapistName || 
+          primaryDoctor?.name || 
+          "Physiotherapy Specialist",
+    title: bookingDetails?.therapistId?.doctorProfile?.specialization ||
+           primaryDoctor?.doctorProfile?.specialization ||
+           bookingData?.session?.type ||
+           "Senior Physiotherapist",
+    avatar: bookingDetails?.therapistId?.profilePicture ||
+            primaryDoctor?.profilePicture ||
+            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
+    experience: bookingDetails?.therapistId?.doctorProfile?.experience
+      ? `${bookingDetails.therapistId.doctorProfile.experience}+ Years`
+      : primaryDoctor?.doctorProfile?.experience
       ? `${primaryDoctor.doctorProfile.experience}+ Years`
       : "Experienced",
-
-    qualification:
-      primaryDoctor?.doctorProfile?.education || "MPT (Physiotherapy)",
-
+    qualification: bookingDetails?.therapistId?.doctorProfile?.education ||
+                   primaryDoctor?.doctorProfile?.education || 
+                   "MPT (Physiotherapy)",
     languages: (() => {
       try {
-        const langs = primaryDoctor?.doctorProfile?.languages?.[0];
+        const langs = bookingDetails?.therapistId?.doctorProfile?.languages?.[0] ||
+                      primaryDoctor?.doctorProfile?.languages?.[0];
         return langs ? JSON.parse(langs).join(", ") : "";
       } catch {
         return "";
@@ -95,13 +159,8 @@ export default function BookingConfirmationPage() {
     })(),
   };
 
-
-  const sessionDate = new Date().toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const isSubscription = bookingData?.fromSubscription === true;
+  const isServiceBooking = !isSubscription;
 
   /* ---------------- Confirm Guest Booking ---------------- */
   useEffect(() => {
@@ -187,8 +246,6 @@ export default function BookingConfirmationPage() {
       </div>
     );
   };
-const isSubscription = bookingData?.fromSubscription === true;
-const isServiceBooking = !isSubscription;
 
   /* ---------------- UI ---------------- */
   return (
@@ -215,7 +272,13 @@ const isServiceBooking = !isSubscription;
                   successfully.
                 </p>
 
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {loadingDetails && (
+                  <div className="text-center mb-4">
+                    <p className="text-muted-foreground">Loading booking details...</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
   
   {/* ================= LEFT : SESSION DETAILS ================= */}
   {isServiceBooking && (
@@ -246,12 +309,21 @@ const isServiceBooking = !isSubscription;
             <p className="font-medium">{sessionDate}</p>
           </div>
         </div>
-
-      
+        
+        <div className="flex items-center gap-2">
+          <Video className="h-4 w-4 text-primary" />
+          <div>
+            <p className="text-sm text-muted-foreground">Time</p>
+            <p className="font-medium">{sessionTime}</p>
+          </div>
+        </div>
       </div>
 
       <div className="pt-4 space-y-2">
-    
+        <p>
+          <span className="text-muted-foreground">Duration:</span>{" "}
+          <span className="font-medium">{serviceDuration || "60 mins"}</span>
+        </p>
 
         <p>
           <span className="text-muted-foreground">Price:</span>{" "}
@@ -261,6 +333,18 @@ const isServiceBooking = !isSubscription;
         <p className="text-xs text-muted-foreground">
           Booking ID: {bookingData?.bookingId}
         </p>
+        
+        {bookingDetails?.status && (
+          <p className="text-xs">
+            Status: <span className="font-medium capitalize">{bookingDetails.status}</span>
+          </p>
+        )}
+        
+        {bookingDetails?.paymentStatus && (
+          <p className="text-xs">
+            Payment: <span className="font-medium capitalize">{bookingDetails.paymentStatus}</span>
+          </p>
+        )}
       </div>
     </div>
   )}
@@ -297,6 +381,13 @@ const isServiceBooking = !isSubscription;
             Sessions can be booked from your profile
           </p>
         </div>
+        
+        {bookingDetails?.status && (
+          <div>
+            <p className="text-sm text-muted-foreground">Status</p>
+            <p className="font-medium capitalize">{bookingDetails.status}</p>
+          </div>
+        )}
       </div>
 
       <p className="text-xs text-muted-foreground pt-3">

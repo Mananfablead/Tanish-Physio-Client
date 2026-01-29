@@ -173,7 +173,14 @@ export default function ProfilePage() {
       icon: Award,
       color: "text-primary",
     },
-
+    {
+      id: "bookSession",
+      label: "Book Session Now",
+      sub: "Schedule a new session",
+       color: "text-primary",
+      icon: PlusCircle,
+      isAction: true, // 👈 CTA flag
+    },
     {
       id: "upcoming",
       label: "Upcoming Sessions",
@@ -202,13 +209,7 @@ export default function ProfilePage() {
       icon: Calendar,
       color: "text-primary",
     },
-    {
-      id: "bookSession",
-      label: "Book Session Now",
-      sub: "Schedule a new session",
-      icon: PlusCircle,
-      isAction: true, // 👈 CTA flag
-    },
+
   ];
 
   const handleImageChange = async (
@@ -418,51 +419,40 @@ export default function ProfilePage() {
                       }
                     }}
                     className={`w-full text-left p-3.5 rounded-xl transition-all duration-300 group
-      ${item.isAction
-                        ? "bg-primary text-white hover:bg-primary/90 shadow-lg"
-                        : selectedSection === item.id
-                          ? "bg-primary/10 shadow-inner"
-                          : "hover:bg-primary/5"
+    ${selectedSection === item.id
+                        ? "bg-primary/10 shadow-inner"
+                        : "hover:bg-primary/10"
                       }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
                         className={`p-2 rounded-lg transition-colors
-          ${item.isAction
-                            ? "bg-white/20"
-                            : selectedSection === item.id
-                              ? "bg-white shadow-sm"
-                              : "bg-primary/5 group-hover:bg-white"
+        ${selectedSection === item.id
+                            ? "bg-white shadow-sm"
+                            : "bg-primary/5 group-hover:bg-white"
                           }`}
                       >
-                        <item.icon
-                          className={`h-5 w-5 ${item.isAction ? "text-white" : item.color}`}
-                        />
+                        <item.icon className={`h-5 w-5  ${item.color}`} />
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div
                           className={`font-black text-sm transition-colors
-            ${item.isAction
-                              ? "text-white"
-                              : selectedSection === item.id
-                                ? "text-primary"
-                                : "text-slate-700"
+          ${selectedSection === item.id
+                              ? "text-primary"
+                              : "text-slate-700"
                             }`}
                         >
                           {item.label}
                         </div>
 
-                        <div
-                          className={`text-[11px] font-medium truncate
-            ${item.isAction ? "text-white/80" : "text-slate-500"}
-          `}
-                        >
+                        <div className="text-[11px] font-medium truncate text-slate-500">
                           {item.sub}
                         </div>
                       </div>
                     </div>
                   </button>
+
                 ))}
 
               </div>
@@ -1311,46 +1301,66 @@ export default function ProfilePage() {
                 </Button>
               </div>
 
-              <div className="space-y-3 pb-8">
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      setSelectedSection(section.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${selectedSection === section.id
-                      ? "bg-primary/10 border-primary/20 shadow-inner"
-                      : "bg-slate-50 border-slate-100 hover:bg-white hover:border-primary/30"
-                      }`}
-                  >
-                    <div
-                      className={`p-2.5 rounded-xl ${selectedSection === section.id
-                        ? "bg-white shadow-sm"
-                        : "bg-white/50"
-                        }`}
-                    >
-                      <section.icon className={`h-5 w-5 ${section.color}`} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <p
-                        className={`font-black text-sm ${selectedSection === section.id
-                          ? "text-primary"
-                          : "text-slate-700"
-                          }`}
-                      >
-                        {section.label}
-                      </p>
-                      <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
-                        {section.sub}
-                      </p>
-                    </div>
-                    {selectedSection === section.id && (
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-3 pb-8">
+  {sections.map((section) => {
+    const isSelected =
+      selectedSection === section.id && !section.isAction;
+
+    return (
+      <button
+        key={section.id}
+        onClick={() => {
+          if (section.isAction) {
+            navigate("/schedule"); // 👈 action
+          } else {
+            setSelectedSection(section.id);
+          }
+          setIsMobileMenuOpen(false);
+        }}
+        className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all
+          ${
+            isSelected
+              ? "bg-primary/10 border-primary/20 shadow-inner"
+              : "bg-slate-50 border-slate-100 hover:bg-white hover:border-primary/30"
+          }`}
+      >
+        <div
+          className={`p-2.5 rounded-xl
+            ${
+              isSelected
+                ? "bg-white shadow-sm"
+                : "bg-white/50"
+            }`}
+        >
+          <section.icon className={`h-5 w-5 ${section.color}`} />
+        </div>
+
+        <div className="text-left flex-1">
+          <p
+            className={`font-black text-sm
+              ${
+                isSelected
+                  ? "text-primary"
+                  : "text-slate-700"
+              }`}
+          >
+            {section.label}
+          </p>
+
+          <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
+            {section.sub}
+          </p>
+        </div>
+
+        {/* Active dot only for real sections */}
+        {isSelected && (
+          <div className="h-2 w-2 rounded-full bg-primary" />
+        )}
+      </button>
+    );
+  })}
+</div>
+
             </div>
           </div>
         )

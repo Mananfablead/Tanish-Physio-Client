@@ -523,15 +523,14 @@ export default function BookingPage() {
           setIsProcessing(false);
         }
       } else {
-        // Regular booking flow (from ServiceDetailPage)
-        // Prepare booking data
+        console.log(bookingData)
         const bookingPayload = {
           serviceId: serviceBooking ? bookingData.service.id : null,
           serviceName: serviceBooking ? bookingData.service.name : plan.name,
           therapistId: therapist.id || null,
           therapistName: therapist.name,
-          userId: isGuestUser ? null : localStorage.getItem('user'), // Will be set by backend if logged in
-          clientName: isGuestUser ? guestUserData.name : "Logged-in User",
+          userId: isGuestUser ? null : localStorage.getItem('user'),
+          clientName: isGuestUser ? guestUserData.name : guestUserData.name,
           date: date,
           time: time,
           status: "pending",

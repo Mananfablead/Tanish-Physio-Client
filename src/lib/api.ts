@@ -362,6 +362,11 @@ export const getPublicAdmins = () => {
   return api.get("/auth/admins/public");
 };
 
+// Booking details API function
+export const getBookingDetails = (id: string, clientEmail: string) => {
+  return api.post(`/bookings/details/${id}`, { clientEmail });
+};
+
 // Video Call API functions
 export const videoCallAPI = {
   // Generate secure JWT token for joining call

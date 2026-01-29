@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee, ChevronLeft } from "lucide-react";
 import { Service } from "@/types/service";
 import { fetchServiceById } from "@/store/slices/serviceSlice";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from "@/store";
 import type { AppDispatch } from "@/store";
@@ -44,35 +44,65 @@ interface ExtendedService {
 // ServiceHero component
 const ServiceHero = ({ service }: { service: ExtendedService }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
+  const [isAutoSliding, setIsAutoSliding] = useState(true); // Auto slide state
+  const autoSlideInterval = useRef<NodeJS.Timeout | null>(null);
+
   // Combine all images (hero, about, and additional images from backend)
   const allImages = [
     service.media?.heroImage,
     service.media?.aboutImage,
     ...(service.details.features || []) // Assuming features might contain additional images
   ].filter(img => img); // Remove any undefined/null values
-  
+
   // If no images from features, just use hero and about images
   const validImages = allImages.length > 0 ? allImages : [
     service.media?.heroImage,
     service.media?.aboutImage
   ].filter(img => img);
-  
+
   const hasNextImage = currentImageIndex < validImages.length - 1;
   const hasPrevImage = currentImageIndex > 0;
-  
+
+  // Auto slide effect
+  useEffect(() => {
+    if (validImages.length > 1 && isAutoSliding) {
+      autoSlideInterval.current = setInterval(() => {
+        setCurrentImageIndex(prev => (prev + 1) % validImages.length);
+      }, 3000); // 3 seconds interval
+    }
+
+    return () => {
+      if (autoSlideInterval.current) {
+        clearInterval(autoSlideInterval.current);
+      }
+    };
+  }, [validImages.length, isAutoSliding]);
+
   const nextImage = () => {
-    if (hasNextImage) {
-      setCurrentImageIndex(prev => prev + 1);
-    }
+    setIsAutoSliding(false); // Pause auto slide on manual navigation
+    setCurrentImageIndex(prev => (prev + 1) % validImages.length);
   };
-  
+
   const prevImage = () => {
-    if (hasPrevImage) {
-      setCurrentImageIndex(prev => prev - 1);
-    }
+    setIsAutoSliding(false); // Pause auto slide on manual navigation
+    setCurrentImageIndex(prev => (prev - 1 + validImages.length) % validImages.length);
   };
-  
+
+  const goToImage = (index: number) => {
+    setIsAutoSliding(false); // Pause auto slide on manual navigation
+    setCurrentImageIndex(index);
+  };
+
+  // Resume auto slide after 5 seconds of inactivity
+  useEffect(() => {
+    if (!isAutoSliding && validImages.length > 1) {
+      const resumeTimer = setTimeout(() => {
+        setIsAutoSliding(true);
+      }, 5000);
+      return () => clearTimeout(resumeTimer);
+    }
+  }, [currentImageIndex, validImages.length]);
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 mb-8">
       <div className="lg:w-1/2">
@@ -117,9 +147,9 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
 
       <div className="lg:w-1/2">
         {/* Hero Image Gallery */}
-        <div className="rounded-2xl overflow-hidden shadow-lg">
+        <div className="rounded-2xl overflow-hidden shadow-lg relative">
           <img
-            src={validImages[currentImageIndex] || `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(service.title)}`}
+            src={validImages[currentImageIndex]}
             alt={`${service.title} image ${currentImageIndex + 1}`}
             className="w-full h-64 md:h-80 object-cover"
             loading="lazy"
@@ -128,9 +158,10 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
               target.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(service.title)}`;
             }}
           />
-          
+
           {validImages.length > 1 && (
             <>
+              {/* Navigation Arrows */}
               <button
                 onClick={prevImage}
                 disabled={!hasPrevImage}
@@ -138,7 +169,7 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
               >
                 <ChevronLeft className="w-5 h-5 text-slate-800" />
               </button>
-              
+
               <button
                 onClick={nextImage}
                 disabled={!hasNextImage}
@@ -146,7 +177,8 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
               >
                 <ChevronRight className="w-5 h-5 text-slate-800" />
               </button>
-              
+
+
             </>
           )}
         </div>
@@ -198,11 +230,11 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
 
       {/* Video Modal */}
       {isVideoOpen && service.media?.videoUrl && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => setIsVideoOpen(false)}
         >
-          <div 
+          <div
             className="relative w-full max-w-4xl bg-white rounded-2xl p-4"
             onClick={(e) => e.stopPropagation()}
           >
@@ -213,9 +245,9 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
               <X className="w-5 h-5" />
             </button>
             <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden">
-              <video 
-                src={service.media.videoUrl} 
-                controls 
+              <video
+                src={service.media.videoUrl}
+                controls
                 autoPlay
                 className="w-full h-full object-cover"
                 poster={service.media.heroImage}
@@ -265,6 +297,7 @@ const ServiceSidebar = ({
         duration: service.details.sessionDuration,
       }
     };
+    console.log("Booking Data:", bookingData);
     navigate("/booking", { state: bookingData });
 
   };
@@ -302,14 +335,14 @@ const ServiceSidebar = ({
               {service.details.resultsTimeline}
             </span>
           </div>
-          {/* {service.details.prerequisites && (
-            <div className="flex justify-between">
+          
+            {/* <div className="flex justify-between">
               <span className="text-slate-600">Prerequisites:</span>
               <span className="font-medium text-slate-900">
                 {service.details.prerequisites}
               </span>
             </div>
-          )} */}
+         */}
         </div>
 
         <Button
@@ -339,7 +372,7 @@ const ServiceSidebar = ({
       </div>
 
       {/* Testimonial */}
-      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+      {/* <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
         <div className="flex items-center gap-1 mb-3">
           {[...Array(5)].map((_, i) => (
             <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
@@ -352,7 +385,7 @@ const ServiceSidebar = ({
         <p className="text-sm text-slate-500">
           - Sarah J., Orthopedic Physiotherapy
         </p>
-      </div>
+      </div> */}
     </div>
   );
 };
@@ -370,6 +403,7 @@ const CollapsibleList = ({
   const [isOpen, setIsOpen] = useState(false);
 
   if (items.length <= 4) {
+    console.log(items)
     return (
       <div>
         <h2 className="text-xl font-bold text-slate-900 mb-4">{title}</h2>
@@ -430,7 +464,7 @@ export default function ServiceDetailPage() {
 
   // Use the service from Redux store
   const service = selectedService;
-
+  console.log(service)
   if (loading) {
     return (
       <Layout>
@@ -493,16 +527,20 @@ export default function ServiceDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2 space-y-8">
                     <ServiceMedia service={service as ExtendedService} />
+                    {
+                      service.details.conditionsTreated.length > 0 && (
+                        <div className="border-t border-slate-200 pt-8">
+                          <CollapsibleList
+                            title="Conditions We Treat"
+                            items={service.details.conditionsTreated}
+                            icon={
+                              <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                            }
+                          />
+                        </div>
+                      )
+                    }
 
-                    <div className="border-t border-slate-200 pt-8">
-                      <CollapsibleList
-                        title="Conditions We Treat"
-                        items={service.details.features}
-                        icon={
-                          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                        }
-                      />
-                    </div>
 
                     <div className="border-t border-slate-200 pt-8">
                       <CollapsibleList
@@ -533,7 +571,7 @@ export default function ServiceDetailPage() {
             )}
           </Card>
 
-         
+
         </div>
       </div>
     </Layout>
