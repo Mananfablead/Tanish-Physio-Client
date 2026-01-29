@@ -184,6 +184,7 @@ const VideoCallPage = () => {
     <VideoCall
       roomId={sessionId}
       roomType="session"
+      user={user}
       isTherapist={user.role === "therapist"}
       onEndCall={handleEndCall}
       sessionId={sessionId}
