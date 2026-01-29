@@ -263,6 +263,24 @@ export default function SchedulePage() {
 
   const today = new Date();
 
+  const getStatusBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case "scheduled":
+        return "bg-blue-500 text-white";
+      case "confirmed":
+        return "bg-indigo-600 text-white";
+      case "live":
+        return "bg-green-600 text-white animate-pulse";
+      case "completed":
+        return "bg-emerald-600 text-white";
+      case "cancelled":
+        return "bg-red-600 text-white";
+      case "rescheduled":
+        return "bg-yellow-500 text-black";
+      default:
+        return "bg-gray-400 text-white";
+    }
+  };
 
   return (
     <Layout>
@@ -475,23 +493,13 @@ export default function SchedulePage() {
                                     </span>
 
                                     <Badge variant="outline" className="text-xs font-bold">
-                                      {session.type || "Session"}
+                                      {session.type}
                                     </Badge>
 
-                                    <Badge
-                                      className={`text-xs font-bold ${session.status === "Completed"
-                                        ? "bg-emerald-500 text-white"
-                                        : session.status === "Confirmed" ||
-                                          session.status === "confirmed"
-                                          ? "bg-primary text-white"
-                                          : session.status === "Scheduled" ||
-                                            session.status === "scheduled"
-                                            ? "bg-blue-500 text-white"
-                                            : "bg-amber-500 text-white"
-                                        }`}
-                                    >
+                                    <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
                                       {session.status}
                                     </Badge>
+
                                   </div>
                                 </div>
 
@@ -517,13 +525,14 @@ export default function SchedulePage() {
                           </div>
 
                           {/* ACTIONS */}
+                          {/* ACTIONS */}
                           <div className="flex gap-3 mt-5 justify-end">
                             {session.status === "Completed" ? (
                               <Button variant="outline" className="font-bold">
                                 <FileText className="h-4 w-4 mr-2" />
                                 Session Summary
                               </Button>
-                            ) : session.date && isSameDay(new Date(session.date), today) ? (
+                            ) : session.status === "live" ? (
                               <Button
                                 className="bg-green-600 hover:bg-green-700 font-bold"
                                 onClick={() =>
@@ -540,6 +549,7 @@ export default function SchedulePage() {
                               </Button>
                             ) : null}
                           </div>
+
                         </motion.div>
                       ))}
                     </div>

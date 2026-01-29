@@ -180,6 +180,7 @@ export default function ProfilePage() {
        color: "text-primary",
       icon: PlusCircle,
       isAction: true, // 👈 CTA flag
+      
     },
     {
       id: "upcoming",
