@@ -734,15 +734,7 @@ export default function SchedulePage() {
                       <span className="text-slate-600">Available</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-green-100 border border-green-500"></span>
-                      <span className="text-slate-600">Suitable for service</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-yellow-100 border border-yellow-500"></span>
-                      <span className="text-slate-600">Too small for service</span>
-                    </div>
+                 
 
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-gray-400"></span>
@@ -760,10 +752,7 @@ export default function SchedulePage() {
 
                 {availableTimes.length > 0 ? (
                   <div>
-                  <div className="mb-4 text-sm text-slate-600">
-                    <p>Select a time slot that can accommodate your service duration.</p>
-                    <p className="text-xs mt-1">Green-bordered slots are suitable for your service, yellow-bordered slots are too small.</p>
-                  </div>
+                 
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                     {availableTimes.map((slot: any) => {
                       const timeValue = `${slot.start} - ${slot.end}`;
@@ -838,7 +827,12 @@ export default function SchedulePage() {
                     </p>
                   </div>
                 )}
-
+    {bookingError && (
+                  <div className="mb-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm font-medium">{bookingError}</p>
+                    <p className="text-red-600 text-xs mt-1 font-semibold">💡 Tip: Select a time slot that matches or exceeds your service duration.</p>
+                  </div>
+                )}
               </div>
 
               {/* SESSION NOTES */}
@@ -871,12 +865,7 @@ export default function SchedulePage() {
               </Button>
 
               <div className="flex-1">
-                {bookingError && (
-                  <div className="mb-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm font-medium">{bookingError}</p>
-                    <p className="text-red-600 text-xs mt-1 font-semibold">💡 Tip: Select a time slot that matches or exceeds your service duration.</p>
-                  </div>
-                )}
+            
                 <Button
                   className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                   disabled={!selectedTime}
