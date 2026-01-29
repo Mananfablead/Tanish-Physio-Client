@@ -55,6 +55,50 @@ export default function SchedulePage() {
   const subscriptionId = user?.subscriptionData?.id;
   const purchasedServiceBookingIds = user?.purchasedServices?.map((service: any) => service.bookingId) || [];
 
+  // Helper function to get service duration from booking data
+  const getServiceDuration = () => {
+    // Try multiple sources for service duration
+    if (bookingData?.service?.duration) {
+      // Parse duration string like "45 minutes" to get numeric value
+      const durationMatch = bookingData.service.duration.match(/(\d+)/);
+      if (durationMatch) return parseInt(durationMatch[1]);
+    }
+    
+    if (bookingData?.bookingId && user?.purchasedServices) {
+      const service = user.purchasedServices.find((s: any) => s.bookingId === bookingData.bookingId);
+      if (service && service.duration) {
+        const durationMatch = service.duration.match(/(\d+)/);
+        if (durationMatch) return parseInt(durationMatch[1]);
+      }
+    }
+    
+    if (bookingData?.fromServices && bookingData?.serviceId?.duration) {
+      const durationMatch = bookingData.serviceId.duration.match(/(\d+)/);
+      if (durationMatch) return parseInt(durationMatch[1]);
+    }
+    
+    if (bookingData?.bookingSummary?.duration) {
+      const durationMatch = bookingData.bookingSummary.duration.match(/(\d+)/);
+      if (durationMatch) return parseInt(durationMatch[1]);
+    }
+    
+    // Fallback: try to get from session storage or other sources
+    try {
+      const storedPlan = sessionStorage.getItem("qw_plan");
+      if (storedPlan) {
+        const planData = JSON.parse(storedPlan);
+        if (planData.service?.duration) {
+          const durationMatch = planData.service.duration.match(/(\d+)/);
+          if (durationMatch) return parseInt(durationMatch[1]);
+        }
+      }
+    } catch (e) {
+      console.error('Error getting service duration from storage:', e);
+    }
+    
+    return null;
+  };
+
   // Extract start and end time from the selected time format
   const getSubscriptionIdFromStorage = () => {
     try {
@@ -126,6 +170,7 @@ export default function SchedulePage() {
       if (response.data?.success) {
         setSessions([...sessions, response.data.data.session]);
         setIsBookingModalOpen(false); // Close booking modal first
+        setBookingError(null); // Clear any previous errors
         setIsSuccessDialogOpen(true); // Then show success dialog
         toast.success(
           `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`
@@ -136,10 +181,29 @@ export default function SchedulePage() {
           navigate("/profile");
         }, 5000);
       } else {
-        toast.error("Failed to book session");
+        const errorMessage = response.data?.message || "Failed to book session";
+        setBookingError(errorMessage);
+        // If it's a slot duration error, don't clear selected time so user can pick a different slot
+        if (!errorMessage.includes("selected slot is only") && !errorMessage.includes("larger time slot")) {
+          // Clear the error after 5 seconds
+          setTimeout(() => setBookingError(null), 5000);
+        }
       }
     } catch (err) {
-      toast.error("Failed to book session");
+      // Check if it's an API error with specific message
+      if (err?.response?.data?.message) {
+        const errorMessage = err.response.data.message;
+        setBookingError(errorMessage);
+        // If it's a slot duration error, don't clear selected time so user can pick a different slot
+        if (!errorMessage.includes("selected slot is only") && !errorMessage.includes("larger time slot")) {
+          // Clear the error after 5 seconds
+          setTimeout(() => setBookingError(null), 5000);
+        }
+      } else {
+        setBookingError("Failed to book session");
+        // Clear the error after 5 seconds
+        setTimeout(() => setBookingError(null), 5000);
+      }
     }
   };
 
@@ -163,6 +227,9 @@ export default function SchedulePage() {
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // State for displaying error messages in the booking dialog
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   // Get available times for selected date from availability API
   const getAvailableTimesForDate = (date: Date | null) => {
@@ -195,6 +262,15 @@ export default function SchedulePage() {
     dispatch(fetchPublicAdmins());
 
   }, [dispatch]);
+  
+  // Debug effect to see what booking data is available
+  useEffect(() => {
+    if (bookingData) {
+      // console.log('Booking data:', bookingData);
+      const serviceDuration = getServiceDuration();
+      // console.log('Detected service duration:', serviceDuration);
+    }
+  }, [bookingData]);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -263,6 +339,24 @@ export default function SchedulePage() {
 
   const today = new Date();
 
+  const getStatusBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case "scheduled":
+        return "bg-blue-500 text-white";
+      case "confirmed":
+        return "bg-indigo-600 text-white";
+      case "live":
+        return "bg-green-600 text-white animate-pulse";
+      case "completed":
+        return "bg-emerald-600 text-white";
+      case "cancelled":
+        return "bg-red-600 text-white";
+      case "rescheduled":
+        return "bg-yellow-500 text-black";
+      default:
+        return "bg-gray-400 text-white";
+    }
+  };
 
   return (
     <Layout>
@@ -405,6 +499,7 @@ export default function SchedulePage() {
                               onClick={() => {
                                 setSelectedDate(day);
                                 setIsBookingModalOpen(true);
+                                setBookingError(null); // Clear any previous error when opening modal
                               }}
                               className={`
       h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all
@@ -475,23 +570,13 @@ export default function SchedulePage() {
                                     </span>
 
                                     <Badge variant="outline" className="text-xs font-bold">
-                                      {session.type || "Session"}
+                                      {session.type}
                                     </Badge>
 
-                                    <Badge
-                                      className={`text-xs font-bold ${session.status === "Completed"
-                                        ? "bg-emerald-500 text-white"
-                                        : session.status === "Confirmed" ||
-                                          session.status === "confirmed"
-                                          ? "bg-primary text-white"
-                                          : session.status === "Scheduled" ||
-                                            session.status === "scheduled"
-                                            ? "bg-blue-500 text-white"
-                                            : "bg-amber-500 text-white"
-                                        }`}
-                                    >
+                                    <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
                                       {session.status}
                                     </Badge>
+
                                   </div>
                                 </div>
 
@@ -517,13 +602,14 @@ export default function SchedulePage() {
                           </div>
 
                           {/* ACTIONS */}
+                          {/* ACTIONS */}
                           <div className="flex gap-3 mt-5 justify-end">
                             {session.status === "Completed" ? (
                               <Button variant="outline" className="font-bold">
                                 <FileText className="h-4 w-4 mr-2" />
                                 Session Summary
                               </Button>
-                            ) : session.date && isSameDay(new Date(session.date), today) ? (
+                            ) : session.status === "live" ? (
                               <Button
                                 className="bg-green-600 hover:bg-green-700 font-bold"
                                 onClick={() =>
@@ -540,6 +626,7 @@ export default function SchedulePage() {
                               </Button>
                             ) : null}
                           </div>
+
                         </motion.div>
                       ))}
                     </div>
@@ -591,7 +678,10 @@ export default function SchedulePage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsBookingModalOpen(false)}
+                onClick={() => {
+                  setIsBookingModalOpen(false);
+                  setBookingError(null); // Clear error when closing modal
+                }}
                 className="h-8 w-8"
               >
                 <X className="h-4 w-4" />
@@ -645,6 +735,16 @@ export default function SchedulePage() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-green-100 border border-green-500"></span>
+                      <span className="text-slate-600">Suitable for service</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-yellow-100 border border-yellow-500"></span>
+                      <span className="text-slate-600">Too small for service</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-gray-400"></span>
                       <span className="text-slate-600">Unavailable</span>
                     </div>
@@ -659,6 +759,11 @@ export default function SchedulePage() {
 
 
                 {availableTimes.length > 0 ? (
+                  <div>
+                  <div className="mb-4 text-sm text-slate-600">
+                    <p>Select a time slot that can accommodate your service duration.</p>
+                    <p className="text-xs mt-1">Green-bordered slots are suitable for your service, yellow-bordered slots are too small.</p>
+                  </div>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                     {availableTimes.map((slot: any) => {
                       const timeValue = `${slot.start} - ${slot.end}`;
@@ -669,18 +774,41 @@ export default function SchedulePage() {
 
                       const isSelected = selectedTime === timeValue;
 
+                      // Calculate slot duration in minutes
+                      const [startHour, startMinute] = slot.start.split(':').map(Number);
+                      const [endHour, endMinute] = slot.end.split(':').map(Number);
+                      const slotStart = new Date();
+                      slotStart.setHours(startHour, startMinute, 0, 0);
+                      const slotEnd = new Date();
+                      slotEnd.setHours(endHour, endMinute, 0, 0);
+                      const slotDurationMinutes = Math.round((slotEnd.getTime() - slotStart.getTime()) / (1000 * 60));
+
+                      // Check if this slot can accommodate the service duration
+                      const serviceDuration = getServiceDuration();
+                      const isSuitableForService = serviceDuration ? slotDurationMinutes >= serviceDuration : true;
+                      
+                      // Debug logging to see what's happening
+                      // console.log('Slot:', slot, 'Duration:', slotDurationMinutes, 'Service Duration:', serviceDuration, 'Suitable:', isSuitableForService);
+
                       return (
                         <Button
                           key={slot._id}
                           size="sm"
                           disabled={!isAvailable}
-                          onClick={() => isAvailable && setSelectedTime(timeValue)}
+                          onClick={() => {
+                            if (isAvailable) {
+                              setSelectedTime(timeValue);
+                              setBookingError(null); // Clear any previous error when selecting a new time
+                            }
+                          }}
                           className={`
           py-2 text-sm font-medium transition-all 
           ${isSelected
                               ? "bg-green-600 text-white hover:bg-green-600"
                               : isAvailable
-                                ? "border border-green-500 text-green-600"
+                                ? isSuitableForService
+                                  ? "border border-green-500 text-green-600 bg-green-50"
+                                  : "border border-yellow-500 text-yellow-600 bg-yellow-50"
                                 : isBooked
                                   ? " text-red-500 cursor-not-allowed border border-red-500"
                                   : " text-gray-400 cursor-not-allowed border border-gray-400"
@@ -693,6 +821,7 @@ export default function SchedulePage() {
                       );
                     })}
                   </div>
+                </div>
 
                 ) : (
                   <div className="text-center py-10">
@@ -709,7 +838,6 @@ export default function SchedulePage() {
                     </p>
                   </div>
                 )}
-
 
               </div>
 
@@ -734,18 +862,29 @@ export default function SchedulePage() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setIsBookingModalOpen(false)}
+                onClick={() => {
+                  setIsBookingModalOpen(false);
+                  setBookingError(null); // Clear error when closing modal
+                }}
               >
                 Cancel
               </Button>
 
-              <Button
-                className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                disabled={!selectedTime}
-                onClick={handleBooking}
-              >
-                Confirm
-              </Button>
+              <div className="flex-1">
+                {bookingError && (
+                  <div className="mb-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm font-medium">{bookingError}</p>
+                    <p className="text-red-600 text-xs mt-1 font-semibold">💡 Tip: Select a time slot that matches or exceeds your service duration.</p>
+                  </div>
+                )}
+                <Button
+                  className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                  disabled={!selectedTime}
+                  onClick={handleBooking}
+                >
+                  Confirm
+                </Button>
+              </div>
             </div>
 
           </div>
