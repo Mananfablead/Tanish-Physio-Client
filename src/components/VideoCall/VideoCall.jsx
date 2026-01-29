@@ -82,21 +82,19 @@ const VideoCall = ({
 
   // Initialize media when socket connects
   useEffect(() => {
-    console.log('Client: External connected status:', externalConnected);
-    console.log('Client: Socket connected status:', connected);
-    console.log('Client: Joined call status:', joinedCall);
-    console.log('Client: Local stream status:', !!localStream);
-    
-    if ((externalConnected || connected) && !localStream && initLocalMedia) {
-      console.log('Client: Initializing local media...');
+    if (
+      socket &&
+      (externalConnected || connected) &&
+      !localStream &&
+      initLocalMedia
+    ) {
       initLocalMedia()
         .then(() => {
-          console.log("Client: Local media initialized successfully");
           // Clear any previous media error on success
           setMediaError(null);
         })
         .catch((err) => {
-          console.error("Client: Error initializing media:", err);
+          console.error("Error initializing media:", err);
           // Set a user-friendly message for media errors
           if (err.name === "NotFoundError") {
             setMediaError(
@@ -123,7 +121,7 @@ const VideoCall = ({
           }
         });
     }
-  }, [externalConnected, connected, joinedCall, localStream, initLocalMedia]);
+  }, [socket, externalConnected, connected, localStream, initLocalMedia]);
 
   // Handle socket errors and join events
   const handleError = useCallback(
@@ -260,10 +258,12 @@ const VideoCall = ({
     const participantJoinedListener = (data) => {
       console.log("Participant joined (client component):", data);
       setParticipants((prev) => {
-        // Avoid duplicates
-        const exists = prev.some((p) => p.userId === data.userId);
+        // Avoid duplicates by checking both userId and socketId
+        const exists = prev.some(
+          (p) => p.userId === data.userId && p.socketId === data.socketId
+        );
         if (exists) return prev;
-        return [...prev, data];
+        return [...prev, { ...data, isSelf: data.socketId === socket.id }];
       });
       if (
         data.isTherapist &&
@@ -276,7 +276,12 @@ const VideoCall = ({
 
     // Handle participant left
     const participantLeftListener = (data) => {
-      setParticipants((prev) => prev.filter((p) => p.userId !== data.userId));
+      console.log("Participant left (client component):", data);
+      setParticipants((prev) =>
+        prev.filter(
+          (p) => p.userId !== data.userId && p.socketId !== data.socketId
+        )
+      );
     };
 
     // Handle call started
@@ -528,34 +533,28 @@ const VideoCall = ({
     );
   }
 
+  useEffect(() => {
+    if (incomingCall && !callStarted && acceptCall) {
+      // Automatically accept the call from therapist after a small delay to ensure everything is ready
+      const timer = setTimeout(() => {
+        acceptCall();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [incomingCall, callStarted, acceptCall]);
+
   if (incomingCall && !callStarted) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-900">
         <div className="text-center text-white">
-          <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
             <Users className="h-12 w-12" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Incoming Call</h2>
-          <p className="text-gray-400">From your therapist</p>
-          <div className="flex justify-center gap-4 mt-6">
-            <Button
-              variant="destructive"
-              size="lg"
-              className="rounded-full h-14 w-14"
-              onClick={rejectCall}
-              disabled={!externalConnected || !connected}
-            >
-              <Phone className="h-6 w-6" />
-            </Button>
-            <Button
-              variant="default"
-              size="lg"
-              className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600"
-              onClick={acceptCall}
-              disabled={!externalConnected || !connected}
-            >
-              <Phone className="h-6 w-6 rotate-180" />
-            </Button>
+          <h2 className="text-2xl font-bold mb-2">Connecting to Call</h2>
+          <p className="text-gray-400">Accepting call from your therapist...</p>
+          <div className="mt-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
           </div>
         </div>
       </div>

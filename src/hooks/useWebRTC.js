@@ -323,14 +323,17 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
     // Handle socket events for participants
     useEffect(() => {
-        if (!socket || initialized) return;
+        if (!socket) return;
+
+        // Prevent duplicate initialization
+        if (initialized) return;
 
         const handleParticipantJoined = (data) => {
             console.log('CLIENT: Participant joined:', data);
             setParticipants(prev => {
                 // Avoid duplicates by checking both userId and socketId
                 const exists = prev.some(p =>
-                    p.userId === data.userId || p.socketId === data.socketId
+                    p.userId === data.userId && p.socketId === data.socketId
                 );
                 if (exists) {
                     console.log('CLIENT: Participant already exists, skipping');
@@ -342,7 +345,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                     role: data.role || (data.isTherapist ? 'therapist' : 'patient'),
                     isTherapist: data.isTherapist,
                     isUser: data.isUser,
-                    joinedAt: new Date()
+                    joinedAt: new Date(),
+                    isSelf: data.socketId === socket.id
                 };
                 console.log('CLIENT: Adding new participant:', newParticipant);
                 return [...prev, newParticipant];

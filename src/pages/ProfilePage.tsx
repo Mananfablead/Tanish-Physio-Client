@@ -2,7 +2,13 @@ import { Layout } from "@/components/layout/Layout";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,46 +35,55 @@ import {
   X,
   ChevronRight,
   CheckCircle,
-  PlusCircle
+  PlusCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
 import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch } from "@/store";
 import { selectCurrentUser } from "@/store/slices/authSlice";
-import { fetchUserSubscriptions } from '@/store/slices/subscriptionSlice';
-import { fetchUserPayments } from '@/store/slices/paymentSlice';
-import { fetchUpcomingSessions, fetchAllSessions } from '@/store/slices/sessionSlice';
-import { getAllBookingsAsync } from '@/store/slices/bookingsSlice';
-import { updateProfile, setCredentials, fetchProfile } from '@/store/slices/authSlice';
+import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
+import { fetchUserPayments } from "@/store/slices/paymentSlice";
+import {
+  fetchUpcomingSessions,
+  fetchAllSessions,
+} from "@/store/slices/sessionSlice";
+import { getAllBookingsAsync } from "@/store/slices/bookingsSlice";
+import {
+  updateProfile,
+  setCredentials,
+  fetchProfile,
+} from "@/store/slices/authSlice";
 
 import api from "@/lib/api";
 
 // Helper function to format session dates and times
 const formatSessionDateTime = (startTime?: string, endTime?: string) => {
   if (!startTime) return "-";
-  
+
   const startDate = new Date(startTime);
   const endDate = endTime ? new Date(endTime) : null;
-  
-  const dateStr = startDate.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+
+  const dateStr = startDate.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
-  
-  const startTimeStr = startDate.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
-    minute: '2-digit', 
-    hour12: true 
+
+  const startTimeStr = startDate.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
-  
-  const endTimeStr = endDate ? endDate.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
-    minute: '2-digit', 
-    hour12: true 
-  }) : "-";
-  
+
+  const endTimeStr = endDate
+    ? endDate.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "-";
+
   return `${dateStr} - ${startTimeStr} to ${endTimeStr}`;
 };
 
@@ -82,16 +97,26 @@ interface ApiResponse<T> {
 
 // --- Sub-components for Right Panel consistency ---
 
-const RightPanelCard = ({ title, badge, children, footer }: { title: string, badge?: React.ReactNode, children: React.ReactNode, footer?: React.ReactNode }) => (
+const RightPanelCard = ({
+  title,
+  badge,
+  children,
+  footer,
+}: {
+  title: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) => (
   <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{title}</h3>
+        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+          {title}
+        </h3>
         {badge}
       </div>
-      <div className="space-y-4">
-        {children}
-      </div>
+      <div className="space-y-4">{children}</div>
     </div>
     {footer && (
       <div className="flex justify-end items-center gap-3 pt-6 border-t border-slate-50 mt-auto">
@@ -101,31 +126,55 @@ const RightPanelCard = ({ title, badge, children, footer }: { title: string, bad
   </Card>
 );
 
-const InfoBlock = ({ label, value, subValue, icon: Icon, iconColor = "text-primary" }: { label: string, value: React.ReactNode, subValue?: string, icon: any, iconColor?: string }) => (
+const InfoBlock = ({
+  label,
+  value,
+  subValue,
+  icon: Icon,
+  iconColor = "text-primary",
+}: {
+  label: string;
+  value: React.ReactNode;
+  subValue?: string;
+  icon: any;
+  iconColor?: string;
+}) => (
   <div className="rounded-xl border border-slate-100 bg-slate-100 p-2 flex gap-3 items-start transition-all hover:bg-slate-200">
-    <div className={`h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0`}>
+    <div
+      className={`h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0`}
+    >
       <Icon className={`h-5 w-5 ${iconColor}`} />
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">
+        {label}
+      </p>
       <div className="font-black text-slate-900 truncate">{value}</div>
-      {subValue && <p className="text-xs font-bold text-primary mt-0.5">{subValue}</p>}
+      {subValue && (
+        <p className="text-xs font-bold text-primary mt-0.5">{subValue}</p>
+      )}
     </div>
   </div>
 );
 
-
 export default function ProfilePage() {
-
   const user = useSelector(selectCurrentUser);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [selectedSection, setSelectedSection] = useState<string>('personal');
+  const [selectedSection, setSelectedSection] = useState<string>("personal");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   // Get data from Redux store
-  const { userSubscriptions, loading: subsLoading, error: subsError } = useSelector((state: any) => state.subscriptions);
-  const { userPayments, loading: paymentsLoading, error: paymentsError } = useSelector((state: any) => state.payment);
+  const {
+    userSubscriptions,
+    loading: subsLoading,
+    error: subsError,
+  } = useSelector((state: any) => state.subscriptions);
+  const {
+    userPayments,
+    loading: paymentsLoading,
+    error: paymentsError,
+  } = useSelector((state: any) => state.payment);
 
   const { toast } = useToast();
 
@@ -135,15 +184,17 @@ export default function ProfilePage() {
     loading: sessionsLoading,
     error: sessionsError,
   } = useSelector((state: { sessions: any }) => state.sessions);
-  const { bookings, loading: bookingsLoading, error: bookingsError } = useSelector((state: any) => state.bookings);
+  const {
+    bookings,
+    loading: bookingsLoading,
+    error: bookingsError,
+  } = useSelector((state: any) => state.bookings);
   const bookingList = bookings || [];
   const activePlan = user?.subscriptionData;
   // Set state based on Redux data
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const nextSession =
-    upcomingSessions?.find(
-      (session: any) => session.status === "live"
-    ) || null;
+    upcomingSessions?.find((session: any) => session.status === "live") || null;
   // Fetch user data when component mounts
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
@@ -152,10 +203,7 @@ export default function ProfilePage() {
     dispatch(fetchAllSessions());
     dispatch(getAllBookingsAsync());
     dispatch(fetchProfile());
-
   }, []);
-
-
 
   // Define sections for sidebar navigation
   const sections = [
@@ -177,7 +225,7 @@ export default function ProfilePage() {
       id: "bookSession",
       label: "Book Session Now",
       sub: "Schedule a new session",
-       color: "text-primary",
+      color: "text-primary",
       icon: PlusCircle,
       isAction: true, // 👈 CTA flag
     },
@@ -209,12 +257,9 @@ export default function ProfilePage() {
       icon: Calendar,
       color: "text-primary",
     },
-
   ];
 
-  const handleImageChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -250,20 +295,19 @@ export default function ProfilePage() {
 
       // optional: preview ko real image se replace
       setPreviewImage(imageUrl);
-
-
     } catch (error) {
       console.error("Failed to update profile image", error);
     }
   };
 
-
   const handleSaveChanges = async () => {
     try {
       // Get form data
-      const nameInput = document.querySelector('#name') as HTMLInputElement;
-      const phoneInput = document.querySelector('#phone') as HTMLInputElement;
-      const locationInput = document.querySelector('#location') as HTMLInputElement;
+      const nameInput = document.querySelector("#name") as HTMLInputElement;
+      const phoneInput = document.querySelector("#phone") as HTMLInputElement;
+      const locationInput = document.querySelector(
+        "#location"
+      ) as HTMLInputElement;
 
       const profileData = {
         name: nameInput?.value || user?.name,
@@ -275,12 +319,10 @@ export default function ProfilePage() {
       await dispatch(updateProfile(profileData));
 
       // Show success message
-
     } catch (error) {
       console.error("Failed to update profile:", error);
     }
   };
-
 
   return (
     <Layout>
@@ -311,7 +353,9 @@ export default function ProfilePage() {
                 <Button
                   size="icon"
                   className="absolute -bottom-2 -right-2 h-12 w-12 rounded-2xl shadow-2xl bg-primary hover:bg-primary/90 text-white border-4 border-slate-900"
-                  onClick={() => document.getElementById('profile-image-upload')?.click()}
+                  onClick={() =>
+                    document.getElementById("profile-image-upload")?.click()
+                  }
                 >
                   <Camera className="h-6 w-6" />
                 </Button>
@@ -342,7 +386,6 @@ export default function ProfilePage() {
                   <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
                     <Phone className="h-4 w-4 text-white" /> {user?.phone}
                   </p>
-
                 </div>
               </div>
             </div>
@@ -394,7 +437,6 @@ export default function ProfilePage() {
                     {stat.label}
                   </p>
                 </div>
-
               ))}
             </div>
           </div>
@@ -419,18 +461,20 @@ export default function ProfilePage() {
                       }
                     }}
                     className={`w-full text-left p-3.5 rounded-xl transition-all duration-300 group
-    ${selectedSection === item.id
-                        ? "bg-primary/10 shadow-inner"
-                        : "hover:bg-primary/10"
-                      }`}
+    ${
+      selectedSection === item.id
+        ? "bg-primary/10 shadow-inner"
+        : "hover:bg-primary/10"
+    }`}
                   >
                     <div className="flex items-center gap-4">
                       <div
                         className={`p-2 rounded-lg transition-colors
-        ${selectedSection === item.id
-                            ? "bg-white shadow-sm"
-                            : "bg-primary/5 group-hover:bg-white"
-                          }`}
+        ${
+          selectedSection === item.id
+            ? "bg-white shadow-sm"
+            : "bg-primary/5 group-hover:bg-white"
+        }`}
                       >
                         <item.icon className={`h-5 w-5  ${item.color}`} />
                       </div>
@@ -438,10 +482,7 @@ export default function ProfilePage() {
                       <div className="flex-1 min-w-0">
                         <div
                           className={`font-black text-sm transition-colors
-          ${selectedSection === item.id
-                              ? "text-primary"
-                              : "text-slate-700"
-                            }`}
+          ${selectedSection === item.id ? "text-primary" : "text-slate-700"}`}
                         >
                           {item.label}
                         </div>
@@ -452,9 +493,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </button>
-
                 ))}
-
               </div>
             </Card>
 
@@ -552,8 +591,9 @@ export default function ProfilePage() {
                             </h2>
 
                             <p className="text-slate-500 font-medium mt-1">
-                              Payment via {activePlan?.paymentGateway || "Razorpay"} • Status:{" "}
-                              {activePlan?.status || "inactive"}
+                              Payment via{" "}
+                              {activePlan?.paymentGateway || "Razorpay"} •
+                              Status: {activePlan?.status || "inactive"}
                             </p>
                           </div>
 
@@ -569,13 +609,13 @@ export default function ProfilePage() {
 
                         {/* Info blocks */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-
                           <InfoBlock
                             label="Start Date"
                             value={
                               activePlan?.startDate
-                                ? new Date(activePlan.startDate).toLocaleDateString()
+                                ? new Date(
+                                    activePlan.startDate
+                                  ).toLocaleDateString()
                                 : "-"
                             }
                             icon={Clock}
@@ -586,7 +626,9 @@ export default function ProfilePage() {
                             label="Valid Till"
                             value={
                               activePlan?.endDate
-                                ? new Date(activePlan.endDate).toLocaleDateString()
+                                ? new Date(
+                                    activePlan.endDate
+                                  ).toLocaleDateString()
                                 : "-"
                             }
                             icon={Calendar}
@@ -607,8 +649,6 @@ export default function ProfilePage() {
                           />
                         </div>
                       </div>
-
-
                     ) : (
                       <div className="py-8 text-center space-y-4">
                         <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
@@ -655,7 +695,10 @@ export default function ProfilePage() {
                                   {session?.bookingId?.serviceName}
                                 </h4>
                                 <p className="text-sm text-slate-500 font-medium">
-                                  {formatSessionDateTime(session?.startTime, session?.endTime)}
+                                  {formatSessionDateTime(
+                                    session?.startTime,
+                                    session?.endTime
+                                  )}
                                 </p>
                               </div>
 
@@ -685,7 +728,10 @@ export default function ProfilePage() {
                             >
                               <Users className="h-5 w-5 mr-2" /> Message
                             </Button>
-                            <Link to="/video-call" className="flex-1">
+                            <Link
+                              to={`/video-call?sessionId=${nextSession._id}`}
+                              className="flex-1"
+                            >
                               <Button className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black">
                                 <Play className="h-5 w-5 mr-2 fill-white" />
                                 Join Session
@@ -698,19 +744,19 @@ export default function ProfilePage() {
                           <InfoBlock
                             label="Date & Time"
                             value={new Date(
-                              nextSession.start
+                              nextSession.startTime || nextSession.date
                             ).toLocaleDateString(undefined, {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
                             })}
                             subValue={`${new Date(
-                              nextSession.start
+                              nextSession.startTime || nextSession.date
                             ).toLocaleTimeString(undefined, {
                               hour: "2-digit",
                               minute: "2-digit",
                             })} — ${new Date(
-                              nextSession.end
+                              nextSession.endTime || nextSession.date
                             ).toLocaleTimeString(undefined, {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -720,7 +766,11 @@ export default function ProfilePage() {
                           />
                           <InfoBlock
                             label="Session Type"
-                            value={nextSession.location}
+                            value={
+                              nextSession.location ||
+                              nextSession.type ||
+                              "Online"
+                            }
                             subValue="1 on 1 Consultation"
                             icon={VideoIcon}
                             iconColor="text-accent"
@@ -729,9 +779,15 @@ export default function ProfilePage() {
                             <InfoBlock
                               label="Session Focus"
                               value={
-                                nextSession.relatedTo || "General Consultation"
+                                nextSession.relatedTo ||
+                                nextSession.serviceName ||
+                                "General Consultation"
                               }
-                              subValue={nextSession.notes}
+                              subValue={
+                                nextSession.notes ||
+                                nextSession.description ||
+                                "Status updated to live"
+                              }
                               icon={Activity}
                               iconColor="text-success"
                             />
@@ -753,7 +809,6 @@ export default function ProfilePage() {
                               moment.
                             </p>
                           </div>
-
                         </div>
                       </RightPanelCard>
                     )}
@@ -801,7 +856,6 @@ export default function ProfilePage() {
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
                                   Status
                                 </th>
-
                               </tr>
                             </thead>
 
@@ -817,23 +871,27 @@ export default function ProfilePage() {
                                     {/* Service */}
                                     <td className="px-6 py-4">
                                       <div className="font-bold text-slate-900">
-                                        {s.bookingId?.serviceName || "Therapy Session"}
+                                        {s.bookingId?.serviceName ||
+                                          "Therapy Session"}
                                       </div>
                                     </td>
-
-
 
                                     {/* Date & Time */}
                                     <td className="px-6 py-4 text-sm text-slate-600 font-medium">
                                       {s.date
-                                        ? new Date(s.date).toLocaleDateString("en-IN", {
-                                          day: "numeric",
-                                          month: "short",
-                                          year: "numeric",
-                                        })
+                                        ? new Date(s.date).toLocaleDateString(
+                                            "en-IN",
+                                            {
+                                              day: "numeric",
+                                              month: "short",
+                                              year: "numeric",
+                                            }
+                                          )
                                         : "N/A"}
                                       <br />
-                                      <span className="text-xs">{s.time || "—"}</span>
+                                      <span className="text-xs">
+                                        {s.time || "—"}
+                                      </span>
                                     </td>
 
                                     {/* Type */}
@@ -861,22 +919,20 @@ export default function ProfilePage() {
                                       ) : (
                                         <span
                                           className={`px-3 py-1 rounded-full text-xs font-black uppercase
-        ${s.status === "scheduled"
-                                              ? "bg-blue-100 text-blue-700"
-                                              : s.status === "confirmed"
-                                                ? "bg-primary/10 text-primary"
-                                                : s.status === "completed"
-                                                  ? "bg-success/10 text-success"
-                                                  : "bg-amber-100 text-amber-700"
-                                            }`}
+        ${
+          s.status === "scheduled"
+            ? "bg-blue-100 text-blue-700"
+            : s.status === "confirmed"
+            ? "bg-primary/10 text-primary"
+            : s.status === "completed"
+            ? "bg-success/10 text-success"
+            : "bg-amber-100 text-amber-700"
+        }`}
                                         >
                                           {s.status}
                                         </span>
                                       )}
                                     </td>
-
-
-
                                   </tr>
                                 );
                               })}
@@ -885,10 +941,7 @@ export default function ProfilePage() {
                         </div>
                       </Card>
                     ) : (
-                      <RightPanelCard
-                        title="Session History"
-
-                      >
+                      <RightPanelCard title="Session History">
                         <div className="py-12 text-center space-y-4">
                           <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
                             <Play className="h-8 w-8 text-slate-300" />
@@ -903,14 +956,12 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       </RightPanelCard>
-
                     )}
                   </div>
                 )}
 
                 {selectedSection === "bookings" && (
                   <div className="space-y-6">
-
                     {/* HEADER */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -918,10 +969,16 @@ export default function ProfilePage() {
                           Your Bookings
                         </h2>
 
-                        {bookingList.filter(b => b.status === "confirmed").length > 0 && (
+                        {bookingList.filter((b) => b.status === "confirmed")
+                          .length > 0 && (
                           <Badge className="bg-green-100 text-green-700 font-black flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" />
-                            {bookingList.filter(b => b.status === "confirmed").length} Confirmed
+                            {
+                              bookingList.filter(
+                                (b) => b.status === "confirmed"
+                              ).length
+                            }{" "}
+                            Confirmed
                           </Badge>
                         )}
                       </div>
@@ -932,16 +989,20 @@ export default function ProfilePage() {
                         className="rounded-xl font-black"
                         disabled={
                           bookingList.filter(
-                            b => b.status === "confirmed" && !b.sessionCreated
+                            (b) => b.status === "confirmed" && !b.sessionCreated
                           ).length === 0
                         }
                         onClick={() => {
                           const confirmedBooking = bookingList.find(
-                            b => b.status === "confirmed" && !b.sessionCreated
+                            (b) => b.status === "confirmed" && !b.sessionCreated
                           );
 
                           if (!confirmedBooking) {
-                            toast({ title: "No confirmed booking available to create a session", variant: "default" });
+                            toast({
+                              title:
+                                "No confirmed booking available to create a session",
+                              variant: "default",
+                            });
                             return;
                           }
 
@@ -1003,13 +1064,18 @@ export default function ProfilePage() {
 
                                   {/* DATE & TIME */}
                                   <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                                    {new Date(booking.date).toLocaleDateString("en-IN", {
-                                      day: "numeric",
-                                      month: "short",
-                                      year: "numeric",
-                                    })}
+                                    {new Date(booking.date).toLocaleDateString(
+                                      "en-IN",
+                                      {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      }
+                                    )}
                                     <br />
-                                    <span className="text-xs">{booking.time}</span>
+                                    <span className="text-xs">
+                                      {booking.time}
+                                    </span>
                                   </td>
 
                                   {/* THERAPIST */}
@@ -1028,14 +1094,15 @@ export default function ProfilePage() {
                                   <td className="px-6 py-4 text-center">
                                     <span
                                       className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                        ${booking.status === "confirmed"
-                                          ? "bg-green-100 text-green-700"
-                                          : booking.status === "cancelled"
-                                            ? "bg-red-100 text-red-700"
-                                            : booking.status === "pending"
-                                              ? "bg-yellow-100 text-yellow-700"
-                                              : "bg-blue-100 text-blue-700"
-                                        }`}
+                        ${
+                          booking.status === "confirmed"
+                            ? "bg-green-100 text-green-700"
+                            : booking.status === "cancelled"
+                            ? "bg-red-100 text-red-700"
+                            : booking.status === "pending"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
                                     >
                                       {booking.status}
                                     </span>
@@ -1055,7 +1122,10 @@ export default function ProfilePage() {
                           <p className="text-slate-500 font-medium">
                             You haven't made any bookings yet.
                           </p>
-                          <Button asChild className="h-11 rounded-xl px-8 font-black">
+                          <Button
+                            asChild
+                            className="h-11 rounded-xl px-8 font-black"
+                          >
                             <Link to="/services">Explore Services</Link>
                           </Button>
                         </div>
@@ -1063,7 +1133,6 @@ export default function ProfilePage() {
                     )}
                   </div>
                 )}
-
 
                 {selectedSection === "subscriptionHistory" && (
                   <div className="space-y-6">
@@ -1117,11 +1186,14 @@ export default function ProfilePage() {
 
                                   {/* Purchase Date */}
                                   <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                                    {new Date(p.createdAt).toLocaleDateString("en-IN", {
-                                      day: "numeric",
-                                      month: "short",
-                                      year: "numeric",
-                                    })}
+                                    {new Date(p.createdAt).toLocaleDateString(
+                                      "en-IN",
+                                      {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      }
+                                    )}
                                   </td>
 
                                   {/* Amount */}
@@ -1135,10 +1207,11 @@ export default function ProfilePage() {
                                   <td className="px-6 py-4 text-center">
                                     <span
                                       className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                    ${p.status === "active"
-                                          ? "bg-green-100 text-green-700"
-                                          : "bg-yellow-100 text-yellow-700"
-                                        }`}
+                    ${
+                      p.status === "active"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
                                     >
                                       {p.status}
                                     </span>
@@ -1172,7 +1245,6 @@ export default function ProfilePage() {
                         </div>
                       </RightPanelCard>
                     )}
-
                   </div>
                 )}
               </div>
@@ -1267,104 +1339,92 @@ export default function ProfilePage() {
                   </Tabs>
                 </div>
               )}
-
             </div>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu Overlay */}
-      {
-        isMobileMenuOpen && (
-          <div className="fixed inset-0 z-[100] lg:hidden">
-            <div
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl p-6 transition-transform transform animate-in slide-in-from-bottom duration-300">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    Profile Sections
-                  </h3>
-                  <p className="text-slate-500 font-medium text-xs uppercase tracking-widest mt-1">
-                    Navigate your profile
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-xl bg-slate-100"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <X className="h-5 w-5" />
-                </Button>
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] lg:hidden">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl p-6 transition-transform transform animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                  Profile Sections
+                </h3>
+                <p className="text-slate-500 font-medium text-xs uppercase tracking-widest mt-1">
+                  Navigate your profile
+                </p>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-slate-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
 
             <div className="space-y-3 pb-8">
-  {sections.map((section) => {
-    const isSelected =
-      selectedSection === section.id && !section.isAction;
+              {sections.map((section) => {
+                const isSelected =
+                  selectedSection === section.id && !section.isAction;
 
-    return (
-      <button
-        key={section.id}
-        onClick={() => {
-          if (section.isAction) {
-            navigate("/schedule"); // 👈 action
-          } else {
-            setSelectedSection(section.id);
-          }
-          setIsMobileMenuOpen(false);
-        }}
-        className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      if (section.isAction) {
+                        navigate("/schedule"); // 👈 action
+                      } else {
+                        setSelectedSection(section.id);
+                      }
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all
           ${
             isSelected
               ? "bg-primary/10 border-primary/20 shadow-inner"
               : "bg-slate-50 border-slate-100 hover:bg-white hover:border-primary/30"
           }`}
-      >
-        <div
-          className={`p-2.5 rounded-xl
-            ${
-              isSelected
-                ? "bg-white shadow-sm"
-                : "bg-white/50"
-            }`}
-        >
-          <section.icon className={`h-5 w-5 ${section.color}`} />
-        </div>
+                  >
+                    <div
+                      className={`p-2.5 rounded-xl
+            ${isSelected ? "bg-white shadow-sm" : "bg-white/50"}`}
+                    >
+                      <section.icon className={`h-5 w-5 ${section.color}`} />
+                    </div>
 
-        <div className="text-left flex-1">
-          <p
-            className={`font-black text-sm
-              ${
-                isSelected
-                  ? "text-primary"
-                  : "text-slate-700"
-              }`}
-          >
-            {section.label}
-          </p>
+                    <div className="text-left flex-1">
+                      <p
+                        className={`font-black text-sm
+              ${isSelected ? "text-primary" : "text-slate-700"}`}
+                      >
+                        {section.label}
+                      </p>
 
-          <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
-            {section.sub}
-          </p>
-        </div>
+                      <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
+                        {section.sub}
+                      </p>
+                    </div>
 
-        {/* Active dot only for real sections */}
-        {isSelected && (
-          <div className="h-2 w-2 rounded-full bg-primary" />
-        )}
-      </button>
-    );
-  })}
-</div>
-
+                    {/* Active dot only for real sections */}
+                    {isSelected && (
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )
-      }
-    </Layout >
+        </div>
+      )}
+    </Layout>
   );
 }
