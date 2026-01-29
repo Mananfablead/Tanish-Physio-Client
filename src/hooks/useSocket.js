@@ -37,7 +37,7 @@ const useSocket = (roomId, roomType) => {
             // Always add auth token since we checked it exists above
             socketOptions.auth = { token: token };
 
-            const newSocket = io(process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000', socketOptions);
+            const newSocket = io(process.env.VITE_API_BASE_URL || 'http://localhost:5000', socketOptions);
 
             newSocket.on('connect', () => {
                 console.log('Connected to video call server');
@@ -167,7 +167,8 @@ const useSocket = (roomId, roomType) => {
         error,
         emit,
         on,
-        reconnect
+        reconnect,
+        setError
     };
 };
 

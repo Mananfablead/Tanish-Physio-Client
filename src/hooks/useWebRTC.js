@@ -3,10 +3,10 @@ if (typeof window !== 'undefined' && typeof window.global === 'undefined') {
     window.global = window;
 }
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Peer from 'simple-peer';
 
-const useWebRTC = (roomId, socket, isTherapist = false) => {
+const useWebRTC = (roomId, socket, userRole = 'patient') => {
     const [peers, setPeers] = useState({});
     const [localStream, setLocalStream] = useState(null);
     const [remoteStreams, setRemoteStreams] = useState({});
@@ -14,13 +14,15 @@ const useWebRTC = (roomId, socket, isTherapist = false) => {
     const [callStarted, setCallStarted] = useState(false);
     const [callLogId, setCallLogId] = useState(null);
     const [participants, setParticipants] = useState([]);
+    const [userIdentity, setUserIdentity] = useState(null);
+    const [initialized, setInitialized] = useState(false);
 
     const peerRefs = useRef({});
     const localVideoRef = useRef(null);
     const remoteVideoRefs = useRef({});
 
     // Initialize local media
-    const initLocalMedia = async () => {
+    const initLocalMedia = useCallback(async () => {
         if (!socket) {
             throw new Error('Socket not connected');
         }
@@ -75,14 +77,22 @@ const useWebRTC = (roomId, socket, isTherapist = false) => {
                 throw error;
             }
         }
-    };
+    }, [socket]);
 
     // Create peer connection
-    const createPeer = (userId, initiator, stream) => {
+    const createPeer = useCallback((userId, initiator, stream) => {
         const peer = new Peer({
             initiator,
-            trickle: false,
-            stream: stream || localStream
+            trickle: true, // Changed to true for better ICE candidate handling
+            stream: stream || localStream,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun.stunprotocol.org:3478' },
+                    { urls: 'stun:stun.voiparound.com:3478' }
+                ]
+            }
         });
 
         peer.on('signal', (data) => {
@@ -130,14 +140,20 @@ const useWebRTC = (roomId, socket, isTherapist = false) => {
 
         peer.on('error', (err) => {
             console.error('Peer connection error:', err);
+            // Add more detailed error logging
+            if (err.code === 'ERR_CONNECTION_FAILURE') {
+                console.error('Connection failure - check network/firewall');
+            } else if (err.code === 'ERR_DATA_CHANNEL') {
+                console.error('Data channel error');
+            }
         });
 
         peerRefs.current[userId] = peer;
         return peer;
-    };
+    }, [localStream, socket, roomId, remoteVideoRefs, setRemoteStreams]);
 
     // Handle incoming offer
-    const handleOffer = async (offer, senderId) => {
+    const handleOffer = useCallback(async (offer, senderId) => {
         if (!socket) return;
 
         if (!localStream) {
@@ -146,28 +162,28 @@ const useWebRTC = (roomId, socket, isTherapist = false) => {
 
         const peer = createPeer(senderId, false);
         await peer.signal(offer);
-    };
+    }, [socket, localStream, initLocalMedia, createPeer]);
 
     // Handle incoming answer
-    const handleAnswer = async (answer, senderId) => {
+    const handleAnswer = useCallback(async (answer, senderId) => {
         if (!socket) return;
 
         if (peerRefs.current[senderId]) {
             await peerRefs.current[senderId].signal(answer);
         }
-    };
+    }, [socket]);
 
     // Handle ICE candidate
-    const handleIceCandidate = async (candidate, senderId) => {
+    const handleIceCandidate = useCallback(async (candidate, senderId) => {
         if (!socket) return;
 
         if (peerRefs.current[senderId]) {
             await peerRefs.current[senderId].signal(candidate);
         }
-    };
+    }, [socket]);
 
     // Toggle audio
-    const toggleAudio = () => {
+    const toggleAudio = useCallback(() => {
         if (localStream) {
             const audioTrack = localStream.getAudioTracks()[0];
             if (audioTrack) {
@@ -182,10 +198,10 @@ const useWebRTC = (roomId, socket, isTherapist = false) => {
             }
         }
         return false;
-    };
+    }, [localStream, socket, roomId]);
 
     // Toggle video
-    const toggleVideo = () => {
+    const toggleVideo = useCallback(() => {
         if (localStream) {
             const videoTrack = localStream.getVideoTracks()[0];
             if (videoTrack) {
@@ -200,10 +216,10 @@ const useWebRTC = (roomId, socket, isTherapist = false) => {
             }
         }
         return false;
-    };
+    }, [localStream, socket, roomId]);
 
     // Toggle screen sharing
-    const toggleScreenShare = async () => {
+    const toggleScreenShare = useCallback(async () => {
         if (!localStream) return;
 
         const screenTrack = localStream.getVideoTracks().find(track => track.label.includes('Screen'));
@@ -251,59 +267,146 @@ const useWebRTC = (roomId, socket, isTherapist = false) => {
                 console.error('Error sharing screen:', error);
             }
         }
-    };
+    }, [localStream, socket, roomId, localVideoRef]);
 
     // Mute a specific user (therapist only)
-    const muteUser = (userId) => {
-        if (isTherapist && socket) {
+    const muteUser = useCallback((userId) => {
+        if ((userRole === 'therapist' || userRole === 'admin') && socket) {
             socket.emit('mute-user', {
                 roomId,
                 userIdToMute: userId,
                 roomType: roomId.startsWith('group') ? 'group' : 'session'
             });
         }
-    };
+    }, [userRole, socket, roomId]);
 
     // End call (therapist only)
-    const endCall = () => {
-        if (isTherapist && socket) {
+    const endCall = useCallback(() => {
+        if ((userRole === 'therapist' || userRole === 'admin') && socket) {
             socket.emit('end-call', {
                 roomId,
                 roomType: roomId.startsWith('group') ? 'group' : 'session'
             });
         }
-    };
+    }, [userRole, socket, roomId]);
 
     // Start call (therapist only)
-    const startCall = () => {
-        if (isTherapist && socket) {
+    const startCall = useCallback(() => {
+        if ((userRole === 'therapist' || userRole === 'admin') && socket) {
             socket.emit('call-start', {
                 roomId,
                 roomType: roomId.startsWith('group') ? 'group' : 'session'
             });
             setCallStarted(true);
         }
-    };
+    }, [userRole, socket, roomId, setCallStarted]);
 
     // Accept call
-    const acceptCall = () => {
+    const acceptCall = useCallback(() => {
         if (socket) {
             socket.emit('call-accept', {
                 roomId,
                 roomType: roomId.startsWith('group') ? 'group' : 'session'
             });
         }
-    };
+    }, [socket, roomId]);
 
     // Reject call
-    const rejectCall = () => {
+    const rejectCall = useCallback(() => {
         if (socket) {
             socket.emit('call-reject', {
                 roomId,
                 roomType: roomId.startsWith('group') ? 'group' : 'session'
             });
         }
-    };
+    }, [socket, roomId]);
+
+    // Handle socket events for participants
+    useEffect(() => {
+        if (!socket || initialized) return;
+
+        const handleParticipantJoined = (data) => {
+            console.log('CLIENT: Participant joined:', data);
+            setParticipants(prev => {
+                // Avoid duplicates by checking both userId and socketId
+                const exists = prev.some(p =>
+                    p.userId === data.userId || p.socketId === data.socketId
+                );
+                if (exists) {
+                    console.log('CLIENT: Participant already exists, skipping');
+                    return prev;
+                }
+                const newParticipant = {
+                    userId: data.userId,
+                    socketId: data.socketId,
+                    role: data.role || (data.isTherapist ? 'therapist' : 'patient'),
+                    isTherapist: data.isTherapist,
+                    isUser: data.isUser,
+                    joinedAt: new Date()
+                };
+                console.log('CLIENT: Adding new participant:', newParticipant);
+                return [...prev, newParticipant];
+            });
+        };
+
+        const handleParticipantLeft = (data) => {
+            console.log('CLIENT: Participant left:', data);
+            setParticipants(prev => {
+                const filtered = prev.filter(p =>
+                    p.userId !== data.userId && p.socketId !== data.socketId
+                );
+                console.log('CLIENT: Participants after removal:', filtered);
+                return filtered;
+            });
+        };
+
+        const handleJoinedCall = (data) => {
+            console.log('CLIENT: Joined call successful:', data);
+            // Set current user identity
+            const identity = {
+                userId: socket.user?.userId,
+                socketId: socket.id,
+                role: userRole,
+                isTherapist: userRole === 'therapist' || userRole === 'admin',
+                isUser: userRole === 'patient'
+            };
+            setUserIdentity(identity);
+            console.log('CLIENT: User identity set:', identity);
+
+            // Add self to participants list
+            setParticipants(prev => {
+                const selfExists = prev.some(p => p.socketId === socket.id);
+                if (!selfExists) {
+                    const selfParticipant = {
+                        userId: socket.user?.userId,
+                        socketId: socket.id,
+                        role: userRole,
+                        isTherapist: userRole === 'therapist' || userRole === 'admin',
+                        isUser: userRole === 'patient',
+                        joinedAt: new Date(),
+                        isSelf: true
+                    };
+                    console.log('CLIENT: Adding self to participants:', selfParticipant);
+                    return [...prev, selfParticipant];
+                }
+                return prev;
+            });
+        };
+
+        // Add listeners
+        socket.on('participant-joined', handleParticipantJoined);
+        socket.on('participant-left', handleParticipantLeft);
+        socket.on('joined-call', handleJoinedCall);
+
+        setInitialized(true);
+
+        // Cleanup
+        return () => {
+            socket.off('participant-joined', handleParticipantJoined);
+            socket.off('participant-left', handleParticipantLeft);
+            socket.off('joined-call', handleJoinedCall);
+        };
+    }, [socket, userRole, initialized]);
 
     // Cleanup on unmount
     useEffect(() => {

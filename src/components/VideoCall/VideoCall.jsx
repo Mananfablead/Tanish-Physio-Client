@@ -28,12 +28,15 @@ import { chatApi } from "../../lib/chatApi";
 const VideoCall = ({
   roomId,
   roomType = "session",
-  isTherapist = false,
+  userRole = "patient",
   onEndCall,
   sessionId, // Add sessionId prop for API calls
   connected: externalConnected = false, // Add connected prop from parent
 }) => {
-  const { socket, connected, error, emit, on } = useSocket(roomId, roomType);
+  const { socket, connected, error, emit, on, setError } = useSocket(roomId, roomType);
+  
+  // Track joined call status separately from socket connection
+  const [joinedCall, setJoinedCall] = useState(false);
   const {
     localStream,
     remoteStreams,
@@ -58,7 +61,7 @@ const VideoCall = ({
     setCallActive,
     setParticipants,
     setCallLogId,
-  } = useWebRTC(roomId, socket, isTherapist);
+  } = useWebRTC(roomId, socket, userRole);
 
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
@@ -79,14 +82,21 @@ const VideoCall = ({
 
   // Initialize media when socket connects
   useEffect(() => {
-    if ((externalConnected || connected) && !localStream) {
+    console.log('Client: External connected status:', externalConnected);
+    console.log('Client: Socket connected status:', connected);
+    console.log('Client: Joined call status:', joinedCall);
+    console.log('Client: Local stream status:', !!localStream);
+    
+    if ((externalConnected || connected) && !localStream && initLocalMedia) {
+      console.log('Client: Initializing local media...');
       initLocalMedia()
         .then(() => {
+          console.log("Client: Local media initialized successfully");
           // Clear any previous media error on success
           setMediaError(null);
         })
         .catch((err) => {
-          console.error("Error initializing media:", err);
+          console.error("Client: Error initializing media:", err);
           // Set a user-friendly message for media errors
           if (err.name === "NotFoundError") {
             setMediaError(
@@ -113,36 +123,46 @@ const VideoCall = ({
           }
         });
     }
-  }, [externalConnected, connected, localStream, initLocalMedia]);
+  }, [externalConnected, connected, joinedCall, localStream, initLocalMedia]);
 
-  // Handle socket errors
+  // Handle socket errors and join events
+  const handleError = useCallback(
+    (data) => {
+      console.error("Video call error:", data);
+
+      // Handle specific session not active error
+      if (
+        data.message &&
+        data.message.includes("Session is not active at this time")
+      ) {
+        setCallError(
+          "This session is not currently active. Please check the scheduled time and try again later."
+        );
+      } else {
+        setCallError(data.message || "An error occurred during the video call");
+      }
+    },
+    [setCallError]
+  );
+
   useEffect(() => {
     if (socket) {
-      const handleError = (data) => {
-        console.error("Video call error:", data);
-
-        // Handle specific session not active error
-        if (
-          data.message &&
-          data.message.includes("Session is not active at this time")
-        ) {
-          setCallError(
-            "This session is not currently active. Please check the scheduled time and try again later."
-          );
-        } else {
-          setCallError(
-            data.message || "An error occurred during the video call"
-          );
-        }
+      const handleJoinedCall = (data) => {
+        console.log("Client: Successfully joined call:", data);
+        setJoinedCall(true);
+        setCallStatus("connected");
+        setCallError(null); // Clear any previous errors
       };
 
       socket.on("error", handleError);
+      socket.on("joined-call", handleJoinedCall);
 
       return () => {
         socket.off("error", handleError);
+        socket.off("joined-call", handleJoinedCall);
       };
     }
-  }, [socket]);
+  }, [socket, handleError]);
 
   // Timer for call duration
   useEffect(() => {
@@ -238,8 +258,18 @@ const VideoCall = ({
 
     // Handle participant joined
     const participantJoinedListener = (data) => {
-      setParticipants((prev) => [...prev, data]);
-      if (data.isTherapist && !isTherapist) {
+      console.log("Participant joined (client component):", data);
+      setParticipants((prev) => {
+        // Avoid duplicates
+        const exists = prev.some((p) => p.userId === data.userId);
+        if (exists) return prev;
+        return [...prev, data];
+      });
+      if (
+        data.isTherapist &&
+        userRole !== "therapist" &&
+        userRole !== "admin"
+      ) {
         setIncomingCall(true);
       }
     };
@@ -378,27 +408,36 @@ const VideoCall = ({
     handleOffer,
     handleAnswer,
     handleIceCandidate,
-    isTherapist,
+    userRole,
     onEndCall,
+    setParticipants,
+    setIncomingCall,
+    setCallStatus,
+    setCallActive,
+    setCallStartTime,
+    setCallLogId,
+    setAudioEnabled,
+    setChatMessages,
+    setTypingUsers,
   ]);
 
   // Toggle audio
-  const toggleAudioHandler = () => {
+  const toggleAudioHandler = useCallback(() => {
     const enabled = toggleAudio();
     setAudioEnabled(enabled);
-  };
+  }, [toggleAudio]);
 
   // Toggle video
-  const toggleVideoHandler = () => {
+  const toggleVideoHandler = useCallback(() => {
     const enabled = toggleVideo();
     setVideoEnabled(enabled);
-  };
+  }, [toggleVideo]);
 
   // Toggle screen sharing
-  const toggleScreenShareHandler = () => {
+  const toggleScreenShareHandler = useCallback(() => {
     toggleScreenShare();
     setScreenSharing(!screenSharing);
-  };
+  }, [toggleScreenShare, screenSharing]);
 
   // Render remote videos based on room type
   const renderRemoteVideos = () => {
@@ -536,7 +575,7 @@ const VideoCall = ({
               {roomType === "group" ? "Group Session" : "Video Call"}
             </h1>
             <p className="text-xs text-gray-400">
-              {externalConnected && connected ? "Connected" : "Connecting..."}
+              {joinedCall ? "Connected" : connected ? "Joining call..." : "Connecting..."}
               {callActive && callDuration > 0 && (
                 <span className="ml-2">
                   • {Math.floor(callDuration / 60)}:
@@ -651,17 +690,26 @@ const VideoCall = ({
               <div className="space-y-2">
                 {participants.map((participant, index) => (
                   <div
-                    key={participant.userId}
+                    key={`${participant.userId}-${participant.socketId}`}
                     className="flex items-center gap-3 p-2 bg-gray-700 rounded"
                   >
                     <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs">
-                      {participant.isUser ? "P" : "T"}
+                      {participant.isTherapist ? "T" : "P"}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-white">
-                        {participant.isTherapist
+                        {participant.isSelf
+                          ? "You (Me)"
+                          : participant.isTherapist
                           ? "Therapist"
-                          : `Participant ${index}`}
+                          : `Patient`}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {participant.joinedAt
+                          ? `Joined: ${new Date(
+                              participant.joinedAt
+                            ).toLocaleTimeString()}`
+                          : ""}
                       </p>
                     </div>
                   </div>
@@ -789,7 +837,7 @@ const VideoCall = ({
             )}
           </Button>
 
-          {isTherapist && (
+          {(userRole === "therapist" || userRole === "admin") && (
             <Button
               variant="secondary"
               size="icon"
@@ -806,7 +854,7 @@ const VideoCall = ({
             size="icon"
             className="rounded-full h-14 w-14 bg-red-500 hover:bg-red-600"
             onClick={
-              isTherapist
+              userRole === "therapist" || userRole === "admin"
                 ? endCall
                 : () => {
                     if (socket) {

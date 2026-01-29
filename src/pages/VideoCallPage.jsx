@@ -57,12 +57,23 @@ const VideoCallPage = () => {
           // Continue anyway as the token generation will validate access
         }
 
+        console.log(
+          "DEBUG: Generating call token for session:",
+          sessionId,
+          "user:",
+          user.id,
+          "role:",
+          user.role
+        );
+
         // Generate call token
         const response = await videoCallApi.generateJoinLink(
           sessionId,
           user.id, // Use user.id instead of user.userId
           user.role
         );
+
+        console.log("DEBUG: Token generation response:", response);
 
         if (response.success) {
           // The actual call token is returned by generateJoinLink and used internally
