@@ -362,4 +362,9 @@ export const getPublicAdmins = () => {
   return api.get("/auth/admins/public");
 };
 
+// Booking details API function
+export const getBookingDetails = (id: string, clientEmail: string) => {
+  return api.post(`/bookings/details/${id}`, { clientEmail });
+};
+
 export default api;

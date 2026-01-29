@@ -83,7 +83,7 @@ export default function SchedulePage() {
       if (bookingData?.plan?.id) {
         subscriptionIdValue = bookingData?.plan?.id;
       }
-      
+
       // If no subscriptionId found in bookingData, use from user's subscriptionData
       if (!subscriptionIdValue && user?.subscriptionData?.id) {
         subscriptionIdValue = user?.subscriptionData?.id;
@@ -108,7 +108,7 @@ export default function SchedulePage() {
         // Use the first purchased service bookingId if no specific booking ID and no subscription
         finalBookingId = user.purchasedServices[0].bookingId || null;
       }
-      
+
       const sessionData = {
         bookingId: finalBookingId,
         subscriptionId: subscriptionIdValue,
@@ -390,40 +390,39 @@ export default function SchedulePage() {
                           const isAvailableDate = hasAvailableSlots(day);
 
                           const availabilityForDate = getAvailabilityForDate(day);
-return isPast ? (
-  /* -------- Past Date (Disabled) -------- */
-  <div
-    key={index}
-    className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center cursor-not-allowed"
-  >
-    {format(day, "d")}
-  </div>
-) : (
-  /* -------- Today & Future -------- */
-  <button
-    key={index}
-    onClick={() => {
-      setSelectedDate(day);
-      setIsBookingModalOpen(true);
-    }}
-    className={`
+                          return isPast ? (
+                            /* -------- Past Date (Disabled) -------- */
+                            <div
+                              key={index}
+                              className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center cursor-not-allowed"
+                            >
+                              {format(day, "d")}
+                            </div>
+                          ) : (
+                            /* -------- Today & Future -------- */
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSelectedDate(day);
+                                setIsBookingModalOpen(true);
+                              }}
+                              className={`
       h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all
-      ${
-        isSelected
-          ? "bg-primary text-white font-black shadow-md"
-          : availabilityForDate && !isAvailableDate
-          ? "bg-blue-100 text-blue-700 font-semibold"        /* Booked */
-          : !availabilityForDate
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed"   /* Not Booked */
-          : isToday
-          ? "border border-primary/30 text-primary font-bold"
-          : "bg-green-100 text-green-700 hover:bg-green-200" /* Available */
-      }
+      ${isSelected
+                                  ? "bg-primary text-white font-black shadow-md"
+                                  : availabilityForDate && !isAvailableDate
+                                    ? "bg-blue-100 text-blue-700 font-semibold"        /* Booked */
+                                    : !availabilityForDate
+                                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"   /* Not Booked */
+                                      : isToday
+                                        ? "border border-primary/30 text-primary font-bold"
+                                        : "bg-green-100 text-green-700 hover:bg-green-200" /* Available */
+                                }
     `}
-  >
-    {format(day, "d")}
-  </button>
-);
+                            >
+                              {format(day, "d")}
+                            </button>
+                          );
 
                         })
                       )}
