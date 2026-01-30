@@ -41,6 +41,17 @@ api.interceptors.response.use(
         window.location.href = "/login"; // Redirect to login
       }
     }
+
+    // Handle specific session not active error globally
+    if (
+      error?.response?.data?.message?.includes(
+        "Session is not active at this time"
+      )
+    ) {
+      error.response.data.message =
+        "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.";
+    }
+
     return Promise.reject(error);
   }
 );

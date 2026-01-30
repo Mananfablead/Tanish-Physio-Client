@@ -74,7 +74,13 @@ const useSocket = (roomId, roomType) => {
 
             newSocket.on('error', (err) => {
                 console.error('Socket error:', err);
-                setError(err.message);
+
+                // Handle specific session not active error
+                if (err.message && err.message.includes('Session is not active at this time')) {
+                    setError('⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.');
+                } else {
+                    setError(err.message);
+                }
             });
 
             setSocket(newSocket);

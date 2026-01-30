@@ -81,21 +81,25 @@ const VideoCallPage = () => {
           setConnected(true);
         } else {
           console.error("Token generation failed:", response);
-          setError(response.message || "Failed to generate call token");
+
+          // Handle specific session not active error
+          if (
+            response.message &&
+            response.message.includes("Session is not active at this time")
+          ) {
+            setError(
+              "⏰ Session Not Active\n\nThis session is not currently active. Please check:\n• Your scheduled appointment time\n• That you're joining at the correct time\n\nIf you believe this is an error, please contact support."
+            );
+          } else {
+            setError(response.message || "Failed to generate call token");
+          }
         }
       } catch (err) {
         console.error("Error initializing call:", err);
         const errorMessage =
           err.response?.data?.message || "Failed to initialize call";
 
-        // Handle specific session not active error
-        if (errorMessage.includes("Session is not active at this time")) {
-          setError(
-            "This session is not currently active. Please check the scheduled time and try again later."
-          );
-        } else {
-          setError(errorMessage);
-        }
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -119,43 +123,27 @@ const VideoCallPage = () => {
   const localStorageToken = localStorage.getItem("token");
   const effectiveToken = token || localStorageToken;
 
-  if (loading || !sessionId || !user || !effectiveToken || !connected) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>
-            {loading
-              ? "Loading..."
-              : !sessionId
-              ? "Session ID missing"
-              : !user
-              ? "User not authenticated"
-              : !effectiveToken
-              ? "Authentication required"
-              : !connected
-              ? "Connecting to call..."
-              : "Loading video call..."}
-          </p>
+          <p>Loading...</p>
         </div>
       </div>
     );
   }
 
+  // Show error screen if there's an error
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center text-white max-w-md">
+        <div className="text-center text-white max-w-md p-6">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold mb-2">Error</h2>
-          <p className="text-gray-400 mb-6">{error}</p>
+          <p className="text-gray-400 mb-6 whitespace-pre-line">{error}</p>
           <div className="flex gap-4 justify-center">
-            <button
-              onClick={handleRetry}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-            >
-              Retry
-            </button>
+           
             <button
               onClick={() => navigate("/")}
               className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
@@ -163,6 +151,26 @@ const VideoCallPage = () => {
               Back to Dashboard
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading states for other conditions
+  if (!sessionId || !user || !effectiveToken || !connected) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>
+            {!sessionId
+              ? "Session ID missing"
+              : !user
+              ? "User not authenticated"
+              : !effectiveToken
+              ? "Authentication required"
+              : "Connecting to call..."}
+          </p>
         </div>
       </div>
     );

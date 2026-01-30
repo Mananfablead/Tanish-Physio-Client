@@ -136,7 +136,7 @@ const VideoCall = ({
         data.message.includes("Session is not active at this time")
       ) {
         setCallError(
-          "This session is not currently active. Please check the scheduled time and try again later."
+          "⏰ Session Not Active\n\nThis session is not currently active. Please check:\n• Your scheduled appointment time\n• That you're joining at the correct time\n\nIf you believe this is an error, please contact support."
         );
         // Set appropriate call status for inactive session
         setCallStatus("inactive");
