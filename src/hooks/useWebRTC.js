@@ -419,6 +419,53 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         }
     }, [socket, roomId]);
 
+    // Group call specific functions
+    const startGroupCall = useCallback(() => {
+        if (socket && roomId.startsWith('group')) {
+            socket.emit('group-call-start', {
+                groupSessionId: roomId
+            });
+        }
+    }, [socket, roomId]);
+
+    const endGroupCall = useCallback(() => {
+        if (socket && roomId.startsWith('group')) {
+            socket.emit('group-call-end', {
+                groupSessionId: roomId
+            });
+        }
+    }, [socket, roomId]);
+
+    const muteParticipant = useCallback((userId, isMuted = true) => {
+        if (socket && roomId.startsWith('group')) {
+            socket.emit('participant-muted', {
+                groupSessionId: roomId,
+                userId,
+                isMuted
+            });
+        }
+    }, [socket, roomId]);
+
+    const startScreenShare = useCallback(() => {
+        if (socket && roomId.startsWith('group')) {
+            socket.emit('screen-share-start', {
+                groupSessionId: roomId,
+                userId: socket.user?.userId
+            });
+        }
+        return toggleScreenShare();
+    }, [socket, roomId, toggleScreenShare]);
+
+    const stopScreenShare = useCallback(() => {
+        if (socket && roomId.startsWith('group')) {
+            socket.emit('screen-share-stop', {
+                groupSessionId: roomId,
+                userId: socket.user?.userId
+            });
+        }
+        return toggleScreenShare();
+    }, [socket, roomId, toggleScreenShare]);
+
     // Handle socket events for participants
     useEffect(() => {
         if (!socket) return;
@@ -566,6 +613,12 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         startCall,
         acceptCall,
         rejectCall,
+        // Group call functions
+        startGroupCall,
+        endGroupCall,
+        muteParticipant,
+        startScreenShare,
+        stopScreenShare,
         localVideoRef,
         remoteVideoRefs,
         setCallActive,

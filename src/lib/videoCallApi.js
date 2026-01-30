@@ -60,6 +60,26 @@ export const videoCallApi = {
         return response.data;
     },
 
+    // Group session specific APIs
+    getGroupSessionDetails: async (groupSessionId) => {
+        const response = await apiClient.get(`/group-sessions/${groupSessionId}`);
+        return response.data;
+    },
+
+    getGroupSessionParticipants: async (groupSessionId) => {
+        const response = await apiClient.get(`/group-sessions/${groupSessionId}/participants-status`);
+        return response.data;
+    },
+
+    generateGroupJoinLink: async (groupSessionId, userId, role) => {
+        const response = await apiClient.post('/generate-join-link', {
+            groupSessionId,
+            userId,
+            role,
+        });
+        return response.data;
+    },
+
     // Get user's call history
     getCallHistory: async (params = {}) => {
         const response = await apiClient.get('/history', { params });

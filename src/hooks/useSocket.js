@@ -72,6 +72,27 @@ const useSocket = (roomId, roomType) => {
                 }
             });
 
+            // Group call specific event handlers
+            newSocket.on('group-call-started', (data) => {
+                console.log('Group call started:', data);
+                // Handle group call started event
+            });
+
+            newSocket.on('group-call-ended', (data) => {
+                console.log('Group call ended:', data);
+                // Handle group call ended event
+            });
+
+            newSocket.on('participant-status-changed', (data) => {
+                console.log('Participant status changed:', data);
+                // Handle participant mute/unmute events
+            });
+
+            newSocket.on('participant-screen-sharing', (data) => {
+                console.log('Participant screen sharing:', data);
+                // Handle screen sharing events
+            });
+
             newSocket.on('error', (err) => {
                 console.error('Socket error:', err);
 
@@ -99,6 +120,13 @@ const useSocket = (roomId, roomType) => {
                     } catch (err) {
                         console.error('Error leaving room:', err);
                     }
+
+                    // Remove group event listeners
+                    newSocket.off('group-call-started');
+                    newSocket.off('group-call-ended');
+                    newSocket.off('participant-status-changed');
+                    newSocket.off('participant-screen-sharing');
+
                     try {
                         newSocket.close();
                     } catch (err) {
