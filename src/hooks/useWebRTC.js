@@ -440,9 +440,13 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 const newParticipant = {
                     userId: data.userId,
                     socketId: data.socketId,
+                    name: data.name || data.userName || data.firstName + ' ' + data.lastName || data.displayName || `User ${data.userId || data.socketId?.slice(0, 5) || 'Unknown'}`,
                     role: data.role || (data.isTherapist ? 'therapist' : 'patient'),
                     isTherapist: data.isTherapist,
                     isUser: data.isUser,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    displayName: data.displayName,
                     joinedAt: new Date(),
                     isSelf: data.socketId === socket.id
                 };
@@ -482,9 +486,13 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                     const selfParticipant = {
                         userId: socket.user?.userId,
                         socketId: socket.id,
+                        name: socket.user?.name || socket.user?.firstName + ' ' + socket.user?.lastName || socket.user?.displayName || `You (${userRole})`,
                         role: userRole,
                         isTherapist: userRole === 'therapist' || userRole === 'admin',
                         isUser: userRole === 'patient',
+                        firstName: socket.user?.firstName,
+                        lastName: socket.user?.lastName,
+                        displayName: socket.user?.displayName,
                         joinedAt: new Date(),
                         isSelf: true
                     };

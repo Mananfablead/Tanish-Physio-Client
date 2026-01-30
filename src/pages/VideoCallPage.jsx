@@ -57,6 +57,26 @@ const VideoCallPage = () => {
           // Continue anyway as the token generation will validate access
         }
 
+        // Then, get participant details for the session
+        try {
+          const participantsResponse =
+            await videoCallApi.getSessionParticipants(sessionId);
+          console.log("Session participants:", participantsResponse);
+          if (participantsResponse.success) {
+            // Add participants data to sessionDetails
+            setSessionDetails((prev) => ({
+              ...prev,
+              participants: participantsResponse.data.participants,
+            }));
+          }
+        } catch (participantsErr) {
+          console.warn(
+            "Could not fetch session participants:",
+            participantsErr
+          );
+          // Continue anyway as the basic session validation already passed
+        }
+
         console.log(
           "DEBUG: Generating call token for session:",
           sessionId,
@@ -117,11 +137,11 @@ const VideoCallPage = () => {
     if (!sessionDetails || !sessionDetails.session) {
       return { therapistName: "", userName: "" };
     }
-    
+
     const sessionData = sessionDetails.session;
     return {
       therapistName: sessionData.therapist?.name || "",
-      userName: sessionData.user?.name || ""
+      userName: sessionData.user?.name || "",
     };
   };
 
@@ -158,7 +178,6 @@ const VideoCallPage = () => {
           <h2 className="text-2xl font-bold mb-2">Error</h2>
           <p className="text-gray-400 mb-6 whitespace-pre-line">{error}</p>
           <div className="flex gap-4 justify-center">
-           
             <button
               onClick={() => navigate("/")}
               className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
@@ -205,11 +224,11 @@ const VideoCallPage = () => {
 
   return (
     <VideoCall
-      key={sessionDetails ? sessionDetails.session?.id : 'initial'}
+      key={sessionDetails ? sessionDetails.session?.id : "initial"}
       roomId={sessionId}
       roomType="session"
       user={user}
-      isTherapist={user.role === "therapist"}
+      isTherapist={user?.role === "therapist"}
       onEndCall={handleEndCall}
       sessionId={sessionId}
       sessionDetails={sessionDetails}

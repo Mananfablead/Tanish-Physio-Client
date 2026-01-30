@@ -54,6 +54,12 @@ export const videoCallApi = {
         return response.data;
     },
 
+    // Get participants for a session
+    getSessionParticipants: async (sessionId) => {
+        const response = await apiClient.get(`/session/${sessionId}/participants`);
+        return response.data;
+    },
+
     // Get user's call history
     getCallHistory: async (params = {}) => {
         const response = await apiClient.get('/history', { params });
@@ -106,6 +112,12 @@ export const adminVideoCallApi = {
             sessionId,
             userId,
         });
+        return response.data;
+    },
+
+    // Get participants for a session
+    getSessionParticipants: async (sessionId) => {
+        const response = await apiClient.get(`/session/${sessionId}/participants`);
         return response.data;
     },
 };

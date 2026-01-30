@@ -74,7 +74,7 @@ const VideoCall = ({
   const [typingUsers, setTypingUsers] = useState([]);
   const [mediaError, setMediaError] = useState(null);
   const [therapistPresent, setTherapistPresent] = useState(false);
-  const [waitingForTherapist, setWaitingForTherapist] = useState(true);
+  const [waitingForTherapist, setWaitingForTherapist] = useState(false); // Add missing waitingForTherapist state
   const [userRole, setUserRole] = useState("patient"); // Add missing userRole state
   const [user, setUser] = useState(null); // Add missing user state
   const [joinedCall, setJoinedCall] = useState(false); // Add missing joinedCall state
@@ -90,7 +90,7 @@ const VideoCall = ({
     console.log("localStream:", !!localStream);
     console.log("connected:", connected);
     console.log("userRole:", userRole);
-  }, [therapistPresent, waitingForTherapist, localStream, connected, userRole]);
+  }, [therapistPresent, localStream, connected, userRole]);
 
   // Wrapped acceptCall function that enforces therapist presence restriction
   const acceptCall = useCallback(() => {
@@ -170,6 +170,14 @@ const VideoCall = ({
         );
         // Set appropriate call status for inactive session
         setCallStatus("inactive");
+      } else if (
+        data.message &&
+        data.message.includes("Unauthorized to join this session")
+      ) {
+        setCallError(
+          "🔒 Access Denied\n\nYou are not authorized to join this session.\n\nIf you believe this is an error, please contact your administrator."
+        );
+        setCallStatus("unauthorized");
       } else {
         setCallError(data.message || "An error occurred during the video call");
       }
@@ -288,7 +296,44 @@ const VideoCall = ({
 
     // Handle participant joined
     const participantJoinedListener = (data) => {
-      setParticipants((prev) => [...prev, data]);
+      // Validate that this participant belongs to the session
+      let isValidParticipant = false;
+      let enhancedData = { ...data };
+
+      // Check if participant exists in session details
+      if (sessionDetails && sessionDetails.participants) {
+        const matchingParticipant = sessionDetails.participants.find(
+          (p) => p.userId === data.userId
+        );
+
+        if (matchingParticipant) {
+          isValidParticipant = true;
+          enhancedData.name = matchingParticipant.name;
+          enhancedData.role = matchingParticipant.role;
+          enhancedData.isSelf = matchingParticipant.isSelf;
+          enhancedData.isTherapist = matchingParticipant.isTherapist;
+          console.log("Valid participant joined:", enhancedData.name);
+        }
+      }
+
+      // Only add valid participants to the list (avoid duplicates)
+      if (isValidParticipant) {
+        setParticipants((prev) => {
+          // Check if participant already exists
+          const exists = prev.some((p) => p.userId === enhancedData.userId);
+          if (exists) {
+            console.log(
+              "Participant already exists, skipping:",
+              enhancedData.userId
+            );
+            return prev;
+          }
+          return [...prev, enhancedData];
+        });
+      } else {
+        console.log("⚠️ Invalid participant attempt blocked:", data.userId);
+        return; // Don't process invalid participants
+      }
       if (data.isTherapist && !isTherapist) {
         setIncomingCall(true);
       }
@@ -318,24 +363,58 @@ const VideoCall = ({
       // Enhance participant data with name if available
       let participantData = { ...data, isSelf: data.socketId === socket.id };
 
-      // If the participant doesn't have a name, try to get it from the user prop
+      // If the participant doesn't have a name, try to get it from various sources
       if (!participantData.name) {
-        // If this is the current user, use the name from the user prop
-        if (participantData.isSelf && user) {
-          participantData.name =
-            user.name ||
-            (user.firstName && user.lastName
-              ? user.firstName + " " + user.lastName
-              : "You");
-        } else {
-          // For other participants, if we have user data and it matches, use it
-          // This might happen if the socket event didn't include the name
-          if (user && data.userId && data.userId === user.id) {
+        // First try to get name from session details if available
+        if (sessionDetails && sessionDetails.participants) {
+          // Look for matching participant in session details
+          const matchingParticipant = sessionDetails.participants.find(
+            (p) => p.userId === data.userId
+          );
+
+          if (matchingParticipant && matchingParticipant.name) {
+            participantData.name = matchingParticipant.name;
+            console.log(
+              "Participant name found from session details:",
+              matchingParticipant.name
+            );
+          }
+        } else if (sessionDetails && sessionDetails.session) {
+          // Fallback to old session structure
+          const sessionData = sessionDetails.session;
+
+          // Look for therapist name in session data
+          if (data.isTherapist && sessionData.therapist?.name) {
+            participantData.name = sessionData.therapist.name;
+          }
+          // Look for user name in session data
+          else if (
+            data.userId === sessionData.userId &&
+            sessionData.user?.name
+          ) {
+            participantData.name = sessionData.user.name;
+          }
+        }
+
+        // If still no name, try to get it from the user prop
+        if (!participantData.name) {
+          // If this is the current user, use the name from the user prop
+          if (participantData.isSelf && user) {
             participantData.name =
               user.name ||
               (user.firstName && user.lastName
                 ? user.firstName + " " + user.lastName
-                : "User");
+                : "You");
+          } else {
+            // For other participants, if we have user data and it matches, use it
+            // This might happen if the socket event didn't include the name
+            if (user && data.userId && data.userId === user.id) {
+              participantData.name =
+                user.name ||
+                (user.firstName && user.lastName
+                  ? user.firstName + " " + user.lastName
+                  : "User");
+            }
           }
         }
       }
@@ -364,50 +443,186 @@ const VideoCall = ({
         console.log("Local stream available:", !!localStream);
         console.log("Socket connected:", connected);
 
-        // Wait for WebRTC to be fully ready
-        setTimeout(() => {
-          console.log("=== AUTO-JOIN EXECUTION ===");
-          console.log("Final validation:");
-          console.log("- User role is patient:", userRole === "patient");
-          console.log("- Therapist just joined:", isTherapistJoining);
-          console.log("- Has local stream:", !!localStream);
-          console.log("- Socket connected:", connected);
-          console.log("- acceptCall function available:", !!acceptCall);
+        // If local stream is not ready, initialize it first
+        if (!localStream) {
+          console.log("⚠️ Local stream not ready, initializing media...");
 
-          // Final validation before auto-joining
-          if (
-            userRole === "patient" &&
-            isTherapistJoining &&
-            localStream &&
-            connected &&
-            acceptCall
-          ) {
-            console.log("✅ ALL CONDITIONS MET - EXECUTING AUTO-JOIN");
-            const success = acceptCall();
-            console.log("acceptCall returned:", success);
+          // Add timeout to prevent indefinite waiting
+          const mediaTimeout = setTimeout(() => {
+            console.log("❌ Media initialization timeout after 10 seconds");
+            setMediaError(
+              "Media initialization timed out. Please check camera/microphone permissions and refresh."
+            );
+          }, 10000);
 
-            if (success) {
-              console.log("🎉 AUTO-JOIN SUCCESSFUL - Call should start now!");
-            } else {
-              console.log("❌ AUTO-JOIN FAILED - acceptCall returned false");
-              console.log("Retrying in 1 second...");
-              // Retry once more after a longer delay
-              setTimeout(() => {
-                const retrySuccess = acceptCall();
-                console.log("Retry attempt result:", retrySuccess);
-              }, 1000);
-            }
-          } else {
-            console.log("❌ AUTO-JOIN CONDITIONS NOT MET:");
-            console.log({
-              userRoleCheck: userRole === "patient",
-              therapistJoining: isTherapistJoining,
-              hasLocalStream: !!localStream,
-              socketConnected: connected,
-              acceptCallAvailable: !!acceptCall,
+          initLocalMedia()
+            .then(() => {
+              clearTimeout(mediaTimeout); // Clear timeout on success
+              console.log(
+                "✅ Media initialized, but waiting for localStream state to update..."
+              );
+
+              // Poll for the localStream to become available
+              let pollCount = 0;
+              const maxPolls = 50; // 5 seconds max wait
+
+              const waitForStream = () => {
+                pollCount++;
+
+                // Access current localStream value from the hook
+                const currentLocalStream = localStream;
+
+                if (currentLocalStream) {
+                  console.log(
+                    "✅ LocalStream state is now available, proceeding with auto-join"
+                  );
+                  console.log("=== AUTO-JOIN EXECUTION ===");
+                  console.log("Final validation after media init:");
+                  console.log(
+                    "- User role is patient:",
+                    userRole === "patient"
+                  );
+                  console.log("- Therapist just joined:", isTherapistJoining);
+                  console.log("- Has local stream:", !!currentLocalStream);
+                  console.log("- Socket connected:", connected);
+                  console.log("- acceptCall function available:", !!acceptCall);
+
+                  // Final validation before auto-joining
+                  if (
+                    userRole === "patient" &&
+                    isTherapistJoining &&
+                    currentLocalStream &&
+                    connected &&
+                    acceptCall
+                  ) {
+                    console.log("✅ ALL CONDITIONS MET - EXECUTING AUTO-JOIN");
+                    const success = acceptCall();
+                    console.log("acceptCall returned:", success);
+
+                    if (success) {
+                      console.log(
+                        "🎉 AUTO-JOIN SUCCESSFUL - Call should start now!"
+                      );
+                    } else {
+                      console.log(
+                        "❌ AUTO-JOIN FAILED - acceptCall returned false"
+                      );
+                      console.log("Retrying with progressive delays...");
+                      // Retry with progressive delays
+                      setTimeout(() => {
+                        const retry1 = acceptCall();
+                        console.log("Retry 1 result:", retry1);
+                        if (!retry1) {
+                          setTimeout(() => {
+                            const retry2 = acceptCall();
+                            console.log("Retry 2 result:", retry2);
+                            if (!retry2) {
+                              setTimeout(() => {
+                                const retry3 = acceptCall();
+                                console.log("Retry 3 result:", retry3);
+                              }, 2000);
+                            }
+                          }, 1500);
+                        }
+                      }, 1000);
+                    }
+                  } else {
+                    console.log(
+                      "❌ AUTO-JOIN CONDITIONS NOT MET after media init:"
+                    );
+                    console.log({
+                      userRoleCheck: userRole === "patient",
+                      therapistJoining: isTherapistJoining,
+                      hasLocalStream: !!currentLocalStream,
+                      socketConnected: connected,
+                      acceptCallAvailable: !!acceptCall,
+                    });
+                  }
+                } else if (pollCount < maxPolls) {
+                  console.log(
+                    `⏳ Waiting for localStream state to update... (Attempt ${pollCount}/${maxPolls})`
+                  );
+                  setTimeout(waitForStream, 100); // Check again in 100ms
+                } else {
+                  console.log(
+                    "❌ TIMEOUT: Local stream failed to initialize after 5 seconds"
+                  );
+                  setMediaError(
+                    "Media initialization timed out. Please refresh and try again."
+                  );
+                }
+              };
+
+              waitForStream(); // Start polling
+            })
+            .catch((err) => {
+              clearTimeout(mediaTimeout); // Clear timeout on error
+              console.error("Error initializing media for auto-join:", err);
+              setMediaError(
+                "Failed to initialize media. Auto-join cannot proceed."
+              );
             });
-          }
-        }, 1000); // Longer delay to ensure everything is ready
+        } else {
+          // Local stream is already available, proceed with auto-join
+          console.log("✅ Local stream available, proceeding with auto-join");
+
+          // Wait for WebRTC to be fully ready
+          setTimeout(() => {
+            console.log("=== AUTO-JOIN EXECUTION ===");
+            console.log("Final validation:");
+            console.log("- User role is patient:", userRole === "patient");
+            console.log("- Therapist just joined:", isTherapistJoining);
+            console.log("- Has local stream:", !!localStream);
+            console.log("- Socket connected:", connected);
+            console.log("- acceptCall function available:", !!acceptCall);
+
+            // Final validation before auto-joining
+            if (
+              userRole === "patient" &&
+              isTherapistJoining &&
+              localStream &&
+              connected &&
+              acceptCall
+            ) {
+              console.log("✅ ALL CONDITIONS MET - EXECUTING AUTO-JOIN");
+              const success = acceptCall();
+              console.log("acceptCall returned:", success);
+
+              if (success) {
+                console.log("🎉 AUTO-JOIN SUCCESSFUL - Call should start now!");
+              } else {
+                console.log("❌ AUTO-JOIN FAILED - acceptCall returned false");
+                console.log("Retrying with progressive delays...");
+                // Retry with progressive delays
+                setTimeout(() => {
+                  const retry1 = acceptCall();
+                  console.log("Retry 1 result:", retry1);
+                  if (!retry1) {
+                    setTimeout(() => {
+                      const retry2 = acceptCall();
+                      console.log("Retry 2 result:", retry2);
+                      if (!retry2) {
+                        setTimeout(() => {
+                          const retry3 = acceptCall();
+                          console.log("Retry 3 result:", retry3);
+                        }, 2000);
+                      }
+                    }, 1500);
+                  }
+                }, 1000);
+              }
+            } else {
+              console.log("❌ AUTO-JOIN CONDITIONS NOT MET:");
+              console.log({
+                userRoleCheck: userRole === "patient",
+                therapistJoining: isTherapistJoining,
+                hasLocalStream: !!localStream,
+                socketConnected: connected,
+                acceptCallAvailable: !!acceptCall,
+              });
+            }
+          }, 500); // Reduced delay since stream is already available
+        }
       } else if (
         (data.isTherapist ||
           data.role === "admin" ||
@@ -630,28 +845,10 @@ const VideoCall = ({
       return (
         <div className="flex items-center justify-center w-full h-full bg-slate-900 rounded-xl">
           <div className="text-center text-slate-500 max-w-md p-6">
-            {waitingForTherapist && userRole === "patient" ? (
-              <>
-                <Clock className="mx-auto h-12 w-12 mb-4 text-blue-500" />
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Waiting for Clinician
-                </h3>
-                <p className="mb-4">
-                  Please wait while your clinician joins the session. The call
-                  will start automatically once they connect.
-                </p>
-                <div className="animate-pulse flex space-x-2 justify-center">
-                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                </div>
-              </>
-            ) : (
-              <>
-                <Users className="mx-auto h-12 w-12 mb-2" />
-                <p>Waiting for clinician...</p>
-              </>
-            )}
+            <>
+              <Users className="mx-auto h-12 w-12 mb-2" />
+              <p>Waiting for clinician...</p>
+            </>
           </div>
         </div>
       );
@@ -687,7 +884,7 @@ const VideoCall = ({
           <div className="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
             {streamKeys.map((userId, index) => (
               <div
-                key={userId}
+                key={`${userId}-${index}`}
                 className="relative bg-black rounded-lg overflow-hidden"
               >
                 <video
@@ -706,18 +903,6 @@ const VideoCall = ({
       }
     }
   };
-
-  if (callStatus === "ended") {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-black">
-        <div className="text-center text-white">
-          <PhoneOff className="mx-auto h-16 w-16 mb-4 text-rose-500" />
-          <h2 className="text-2xl font-bold mb-2">Call Ended</h2>
-          <p className="text-slate-500">The session has been completed.</p>
-        </div>
-      </div>
-    );
-  }
 
   // Update participants with user names when user data is available
   useEffect(() => {
@@ -777,29 +962,104 @@ const VideoCall = ({
     }
   }, [participants, user, setParticipants]);
 
-  // Handle incoming call UI with therapist presence restriction
-  if (incomingCall && !callStarted) {
-    // For patients, show waiting screen instead of accept/reject options
-    if (userRole === "patient") {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-black">
-          <div className="text-center text-white max-w-md p-6">
-            <Clock className="mx-auto h-16 w-16 mb-4 text-blue-500" />
-            <h2 className="text-2xl font-bold mb-2">Waiting for Clinician</h2>
-            <p className="text-slate-500 mb-6">
-              Please wait while your clinician joins the session. The call will
-              start automatically once they connect.
-            </p>
-            <div className="animate-pulse flex space-x-2 justify-center">
-              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-            </div>
-          </div>
-        </div>
+  // Initialize participants from session details if available
+  useEffect(() => {
+    if (
+      sessionDetails &&
+      sessionDetails.participants &&
+      sessionDetails.participants.length > 0
+    ) {
+      console.log("Session details received:", sessionDetails);
+      console.log("Session participants:", sessionDetails.participants);
+
+      // Map session participants to the format expected by the component
+      const mappedParticipants = sessionDetails.participants.map(
+        (participant) => ({
+          userId: participant.userId,
+          name: participant.name,
+          email: participant.email,
+          role: participant.role,
+          isSelf: participant.isSelf,
+          isTherapist:
+            participant.isTherapist || participant.role === "therapist",
+          joinedAt: new Date().toISOString(), // Set current time as joinedAt
+        })
+      );
+
+      setParticipants(mappedParticipants);
+      console.log(
+        "Participants initialized from session details:",
+        mappedParticipants
       );
     }
+  }, [sessionDetails]);
 
+  // Prevent socket events from overriding session data
+  useEffect(() => {
+    if (participants.length > 0 && sessionDetails?.participants?.length > 0) {
+      // Check if we have all participants from session details
+      const sessionParticipantIds = sessionDetails.participants.map(
+        (p) => p.userId
+      );
+      const currentParticipantIds = participants.map((p) => p.userId);
+
+      // Remove any participants not in the session
+      const invalidParticipants = participants.filter(
+        (p) => !sessionParticipantIds.includes(p.userId)
+      );
+
+      if (invalidParticipants.length > 0) {
+        console.log("Removing invalid participants:", invalidParticipants);
+        setParticipants((prev) =>
+          prev.filter((p) => sessionParticipantIds.includes(p.userId))
+        );
+      }
+
+      // If we're missing any session participants, add them
+      const missingParticipants = sessionDetails.participants.filter(
+        (sp) => !currentParticipantIds.includes(sp.userId)
+      );
+
+      if (missingParticipants.length > 0) {
+        console.log(
+          "Adding missing participants from session:",
+          missingParticipants
+        );
+        setParticipants((prev) => {
+          // Filter out participants that already exist
+          const newParticipants = missingParticipants.filter(
+            (sp) => !prev.some((p) => p.userId === sp.userId)
+          );
+
+          if (newParticipants.length === 0) {
+            console.log("All missing participants already exist");
+            return prev;
+          }
+
+          console.log("Actually adding new participants:", newParticipants);
+          return [
+            ...prev,
+            ...newParticipants.map((participant) => ({
+              userId: participant.userId,
+              name: participant.name,
+              email: participant.email,
+              role: participant.role,
+              isSelf: participant.isSelf,
+              isTherapist:
+                participant.isTherapist || participant.role === "therapist",
+              joinedAt: new Date().toISOString(),
+            })),
+          ];
+        });
+      }
+    }
+  }, [participants, sessionDetails]); // Re-enabled cleanup useEffect
+
+  // Handle incoming call UI - patients see direct session screen
+  if (incomingCall && !callStarted && userRole === "patient") {
+    // Patients see normal session UI - auto-join handles therapist connection
+    // No special waiting screen needed
+  } else if (incomingCall && !callStarted) {
     // For other roles (non-patients), show normal incoming call UI
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-black">
@@ -836,8 +1096,115 @@ const VideoCall = ({
     );
   }
 
+  // Show error screen for ended sessions
+  if (callStatus === "ended") {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black">
+        <div className="text-center text-white max-w-md p-6">
+          <PhoneOff className="mx-auto h-16 w-16 mb-4 text-rose-500" />
+          <h2 className="text-2xl font-bold mb-2">Session Terminated</h2>
+          <p className="text-slate-500 mb-6">The session has ended.</p>
+          <div className="flex gap-4 justify-center">
+            <Button
+              variant="default"
+              className="bg-slate-800 hover:bg-slate-900 rounded-lg"
+              onClick={() => {
+                if (onEndCall) onEndCall();
+                // Navigate to sessions page
+                window.location.href = "/sessions";
+              }}
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error screen for inactive sessions
+  if (callStatus === "inactive" || callError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black">
+        <div className="text-center text-white max-w-md p-6">
+          <PhoneOff className="mx-auto h-16 w-16 mb-4 text-rose-500" />
+          <h2 className="text-2xl font-bold mb-2">Session Unavailable</h2>
+          <div className="text-slate-300 font-medium text-sm whitespace-pre-line mb-6">
+            {callError}
+          </div>
+          <div className="flex gap-4 justify-center">
+            <Button
+              variant="default"
+              className="bg-slate-800 hover:bg-slate-900 rounded-lg"
+              onClick={() => {
+                setCallError(null);
+                setCallStatus("connecting");
+                if (onEndCall) onEndCall();
+              }}
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error screen for unauthorized access
+  if (callStatus === "unauthorized") {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black">
+        <div className="text-center text-white max-w-md p-6">
+          <PhoneOff className="mx-auto h-16 w-16 mb-4 text-amber-500" />
+          <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+          <div className="text-slate-300 font-medium text-sm whitespace-pre-line mb-6">
+            {callError}
+          </div>
+          <div className="flex gap-4 justify-center">
+            <Button
+              variant="default"
+              className="bg-slate-800 hover:bg-slate-900 rounded-lg"
+              onClick={() => {
+                setCallError(null);
+                setCallStatus("connecting");
+                if (onEndCall) onEndCall();
+              }}
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-black flex flex-col">
+      {/* Media Error Display */}
+      {mediaError && (
+        <div className="bg-rose-500/20 border-b border-rose-500/30 p-4">
+          <div className="max-w-4xl mx-auto flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <X className="h-5 w-5 text-rose-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-rose-300 font-medium text-sm">{mediaError}</p>
+              <p className="text-rose-400 text-xs mt-1">
+                Please check your camera and microphone permissions, then
+                refresh the page.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-rose-400 hover:text-white hover:bg-rose-500/20"
+              onClick={() => setMediaError(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-4 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center gap-6">
@@ -925,7 +1292,9 @@ const VideoCall = ({
         {showParticipants && (
           <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50">
             <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-white font-semibold">Participants</h3>
+              <h3 className="text-white font-semibold">
+                Participants ({participants.length})
+              </h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -936,33 +1305,66 @@ const VideoCall = ({
               </Button>
             </div>
             <div className="flex-1 p-6 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
-                  {(localTherapistName && localTherapistName.charAt(0)) || "C"}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-white font-medium text-sm">
-                      {localTherapistName || "Clinician"}
-                    </p>
-                    <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4">
-                      Host
-                    </Badge>
+              {participants.length > 0 ? (
+                participants.map((participant, index) => (
+                  <div
+                    key={`${participant.userId}-${participant.socketId}-${index}`}
+                    className="flex items-center gap-4"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
+                      {(participant.name &&
+                        participant.name.charAt(0).toUpperCase()) ||
+                        (participant.firstName &&
+                          participant.firstName.charAt(0).toUpperCase()) ||
+                        (participant.displayName &&
+                          participant.displayName.charAt(0).toUpperCase()) ||
+                        (participant.role &&
+                          participant.role.charAt(0).toUpperCase()) ||
+                        "U"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-white font-medium text-sm">
+                          {participant.name ||
+                            participant.displayName ||
+                            (participant.firstName && participant.lastName
+                              ? `${participant.firstName} ${participant.lastName}`
+                              : null) ||
+                            participant.role ||
+                            `User ${
+                              participant.userId?.substring(0, 5) || "Unknown"
+                            }`}
+                        </p>
+                        {participant.isSelf && (
+                          <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4">
+                            You
+                          </Badge>
+                        )}
+                        {(participant.isTherapist ||
+                          participant.role === "therapist" ||
+                          participant.role === "admin") &&
+                          !participant.isSelf && (
+                            <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4">
+                              {participant.role === "admin" ? "Admin" : "Host"}
+                            </Badge>
+                          )}
+                      </div>
+                      <p className="text-slate-500 text-xs">
+                        {participant.joinedAt
+                          ? `Joined: ${new Date(
+                              participant.joinedAt
+                            ).toLocaleTimeString()}`
+                          : "Active"}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-slate-500 text-xs">Active</p>
+                ))
+              ) : (
+                <div className="text-center text-slate-500 py-8">
+                  <Users className="mx-auto h-8 w-8 mb-2" />
+                  <p>No participants yet</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
-                  {(userName && userName.charAt(0)) || "P"}
-                </div>
-                <div className="flex-1">
-                  <p className="text-white font-medium text-sm">
-                    {userName || "Patient"}
-                  </p>
-                  <p className="text-slate-500 text-xs">You</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
