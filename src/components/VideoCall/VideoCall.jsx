@@ -118,27 +118,37 @@ const VideoCall = ({
           }
         });
     }
-  }, [externalConnected, connected, localStream, initLocalMedia, canInitializeMedia]);
+  }, [socket, externalConnected, connected, localStream, initLocalMedia]);
 
-  // Handle socket errors
+  // Handle socket errors and join events
+  const handleError = useCallback(
+    (data) => {
+      console.error("Video call error:", data);
+
+      // Handle specific session not active error
+      if (
+        data.message &&
+        data.message.includes("Session is not active at this time")
+      ) {
+        setCallError(
+          "⏰ Session Not Active\n\nThis session is not currently active. Please check:\n• Your scheduled appointment time\n• That you're joining at the correct time\n\nIf you believe this is an error, please contact support."
+        );
+        // Set appropriate call status for inactive session
+        setCallStatus("inactive");
+      } else {
+        setCallError(data.message || "An error occurred during the video call");
+      }
+    },
+    [setCallError]
+  );
+
   useEffect(() => {
     if (socket) {
-      const handleError = (data) => {
-        console.error("Video call error:", data);
-
-        // Handle specific session not active error
-        if (
-          data.message &&
-          data.message.includes("Session is not active at this time")
-        ) {
-          setCallError(
-            "This session is not currently active. Please check the scheduled time and try again later."
-          );
-        } else {
-          setCallError(
-            data.message || "An error occurred during the video call"
-          );
-        }
+      const handleJoinedCall = (data) => {
+        console.log("Client: Successfully joined call:", data);
+        setJoinedCall(true);
+        setCallStatus("connected");
+        setCallError(null); // Clear any previous errors
       };
 
       socket.on("error", handleError);

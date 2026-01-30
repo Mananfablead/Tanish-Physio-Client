@@ -193,9 +193,20 @@ export default function SchedulePage() {
       // Check if it's an API error with specific message
       if (err?.response?.data?.message) {
         const errorMessage = err.response.data.message;
-        setBookingError(errorMessage);
+
+        // Handle specific session not active error
+        if (errorMessage.includes("Session is not active at this time")) {
+          setBookingError(
+            "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later."
+          );
+        } else {
+          setBookingError(errorMessage);
+        }
         // If it's a slot duration error, don't clear selected time so user can pick a different slot
-        if (!errorMessage.includes("selected slot is only") && !errorMessage.includes("larger time slot")) {
+        if (
+          !errorMessage.includes("selected slot is only") &&
+          !errorMessage.includes("larger time slot")
+        ) {
           // Clear the error after 5 seconds
           setTimeout(() => setBookingError(null), 5000);
         }
