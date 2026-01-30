@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout/Layout";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,8 +34,10 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronLeft,
   CheckCircle,
   PlusCircle,
+  CalendarDays
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
@@ -56,6 +58,7 @@ import {
 } from "@/store/slices/authSlice";
 
 import api from "@/lib/api";
+import { rescheduleSession, getAvailability } from "@/lib/api";
 
 // Helper function to format session dates and times
 const formatSessionDateTime = (startTime?: string, endTime?: string) => {
@@ -164,6 +167,20 @@ export default function ProfilePage() {
   const [selectedSection, setSelectedSection] = useState<string>("personal");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
+  // Reschedule states
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState<boolean>(false);
+  const [sessionToReschedule, setSessionToReschedule] = useState<any>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<string>("");
+  const [rescheduleTime, setRescheduleTime] = useState<string>("");
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  
+  // Calendar states
+  const [availability, setAvailability] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   // Get data from Redux store
   const {
     userSubscriptions,
@@ -204,6 +221,191 @@ export default function ProfilePage() {
     dispatch(getAllBookingsAsync());
     dispatch(fetchProfile());
   }, []);
+
+  // Handle session rescheduling
+  const handleReschedule = async () => {
+    if (!sessionToReschedule || !rescheduleDate || !rescheduleTime) {
+      setRescheduleError("Please select both date and time");
+      return;
+    }
+
+    try {
+      const rescheduleData = {
+        date: rescheduleDate,
+        time: rescheduleTime,
+        startTime: `${rescheduleDate}T${rescheduleTime}:00`,
+        status: "scheduled"
+      };
+
+      const response: any = await rescheduleSession(sessionToReschedule._id, rescheduleData);
+      
+      if (response.data?.success) {
+        // Refresh sessions data
+        dispatch(fetchAllSessions());
+        dispatch(fetchUpcomingSessions());
+        
+        setIsRescheduleModalOpen(false);
+        setSessionToReschedule(null);
+        setRescheduleDate("");
+        setRescheduleTime("");
+        setRescheduleError(null);
+        toast({ title: "Session rescheduled successfully", variant: "default" });
+      } else {
+        setRescheduleError(response.data?.message || "Failed to reschedule session");
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || "Failed to reschedule session";
+      setRescheduleError(errorMessage);
+      setTimeout(() => setRescheduleError(null), 5000);
+    }
+  };
+
+  // Get status badge class
+  const getStatusBadgeClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "scheduled":
+        return "bg-blue-100 text-blue-700";
+      case "confirmed":
+        return "bg-primary/10 text-primary";
+      case "live":
+        return "bg-green-600 text-white animate-pulse";
+      case "completed":
+        return "bg-success/10 text-success";
+      case "cancelled":
+        return "bg-red-100 text-red-700";
+      case "rescheduled":
+        return "bg-yellow-100 text-yellow-700";
+      default:
+        return "bg-amber-100 text-amber-700";
+    }
+  };
+
+  // Calendar utility functions
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const isToday = (dateStr: string) => dateStr === todayStr;
+  const isSelected = (dateStr: string) => dateStr === selectedDate;
+
+  const isPastDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
+  const formatTime = (time: string) => {
+    const [hour, minute] = time.split(":");
+    const h = Number(hour);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const formattedHour = h % 12 || 12;
+    return `${formattedHour}:${minute} ${ampm}`;
+  };
+
+  const handleTimeSlotClick = (date: string, timeSlot: any) => {
+    if (timeSlot.status === 'available') {
+      setSelectedDate(date);
+      setRescheduleDate(date);
+      setRescheduleTime(timeSlot.start);
+    }
+  };
+
+  // Get today's date for highlighting
+  const todayDate = new Date();
+  
+  // Calendar weeks memoization
+  const calendarWeeks = useMemo(() => {
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+
+    const calendarDays = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      const availabilityForDate = availability.find((item: any) => item.date === dateStr);
+
+      let status = 0;
+      if (availabilityForDate && availabilityForDate.timeSlots) {
+        const slots = availabilityForDate.timeSlots;
+        const bookedSlots = slots.filter((slot: any) => slot.status === 'booked');
+        const unavailableSlots = slots.filter((slot: any) => slot.status === 'unavailable');
+        const availableSlots = slots.filter((slot: any) => slot.status === 'available');
+
+        if (bookedSlots.length > 0) {
+          status = 1;
+        } else if (unavailableSlots.length > 0 && availableSlots.length === 0) {
+          status = 2;
+        } else if (availableSlots.length > 0) {
+          status = 0;
+        }
+      }
+
+      return {
+        date: dateStr,
+        day,
+        status,
+        availability: availabilityForDate
+      };
+    });
+
+    const weeks = [];
+    const paddingStart = firstDayOfMonth;
+    const paddingEnd = (7 - (paddingStart + daysInMonth) % 7) % 7;
+
+    const paddedDays = [
+      ...Array(paddingStart).fill(null),
+      ...calendarDays,
+      ...Array(paddingEnd).fill(null)
+    ];
+
+    for (let i = 0; i < paddedDays.length; i += 7) {
+      weeks.push(paddedDays.slice(i, i + 7));
+    }
+
+    return weeks;
+  }, [currentYear, currentMonth, availability]);
+
+  const getStatusColor = (status: number) => {
+    switch (status) {
+      case 0: return ''; 
+      case 1: return 'bg-green-100 text-green-700 hover:bg-green-200';
+      case 2: return 'bg-muted text-muted-foreground'; 
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const getDateStatus = (date: string) => {
+    const dayAvailability = availability.find((item: any) => item.date === date);
+
+    if (!dayAvailability || !dayAvailability.timeSlots?.length) {
+      return "unavailable";
+    }
+
+    const hasAvailable = dayAvailability.timeSlots.some(
+      (slot: any) => slot.status === "available"
+    );
+
+    return hasAvailable ? "available" : "booked";
+  };
+
+  // Fetch availability when reschedule modal opens
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (isRescheduleModalOpen) {
+        setAvailabilityLoading(true);
+        try {
+          const response: any = await getAvailability();
+          setAvailability(response.data?.data?.availability || []);
+        } catch (error) {
+          console.error("Failed to fetch availability:", error);
+        } finally {
+          setAvailabilityLoading(false);
+        }
+      }
+    };
+
+    fetchAvailability();
+  }, [isRescheduleModalOpen]);
 
   // Define sections for sidebar navigation
   const sections = [
@@ -857,6 +1059,10 @@ export default function ProfilePage() {
                                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
                                   Status
                                 </th>
+                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
+                                  Actions
+                                </th>
+
                               </tr>
                             </thead>
 
@@ -920,20 +1126,43 @@ export default function ProfilePage() {
                                       ) : (
                                         <span
                                           className={`px-3 py-1 rounded-full text-xs font-black uppercase
-        ${
-          s.status === "scheduled"
-            ? "bg-blue-100 text-blue-700"
-            : s.status === "confirmed"
-            ? "bg-primary/10 text-primary"
-            : s.status === "completed"
-            ? "bg-success/10 text-success"
-            : "bg-amber-100 text-amber-700"
-        }`}
+        ${s.status === "scheduled"
+                                              ? "bg-blue-100 text-blue-700"
+                                              : s.status === "confirmed"
+                                                ? "bg-primary/10 text-primary"
+                                                : s.status === "completed"
+                                                  ? "bg-success/10 text-success"
+                                                  : "bg-amber-100 text-amber-700"
+                                            }`}
                                         >
                                           {s.status}
                                         </span>
                                       )}
                                     </td>
+
+                                    {/* Actions */}
+                                    <td className="px-6 py-4 text-center">
+                                      {(s.status === "scheduled" || s.status === "pending") && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
+                                          onClick={() => {
+                                            setSessionToReschedule(s);
+                                            setRescheduleDate("");
+                                            setRescheduleTime("");
+                                            setRescheduleError(null);
+                                            setIsRescheduleModalOpen(true);
+                                          }}
+                                        >
+                                          <CalendarDays className="h-3 w-3 mr-1" />
+                                          Reschedule
+                                        </Button>
+                                      )}
+                                    </td>
+
+
+
                                   </tr>
                                 );
                               })}
@@ -1415,17 +1644,257 @@ export default function ProfilePage() {
                       </p>
                     </div>
 
-                    {/* Active dot only for real sections */}
-                    {isSelected && (
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    )}
-                  </button>
-                );
-              })}
+        {/* Active dot only for real sections */}
+        {isSelected && (
+          <div className="h-2 w-2 rounded-full bg-primary" />
+        )}
+      </button>
+    );
+  })}
+</div>
+
             </div>
           </div>
+        )
+      }
+      
+      {/* Reschedule Modal */}
+  {isRescheduleModalOpen && sessionToReschedule && (
+  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
+    <div
+      className="
+        bg-white w-full max-w-4xl rounded-2xl shadow-xl
+        max-h-[95vh] flex flex-col
+      "
+    >
+      {/* ================= HEADER ================= */}
+      <div className="flex items-start justify-between gap-3 px-4 sm:px-6 py-4 border-b">
+        <div>
+          <h3 className="text-lg sm:text-xl font-black text-slate-900">
+            Reschedule Session
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-500">
+            Select a new date and time for this session.
+          </p>
         </div>
-      )}
-    </Layout>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => {
+            setIsRescheduleModalOpen(false);
+            setSessionToReschedule(null);
+            setRescheduleError(null);
+            setRescheduleDate("");
+            setRescheduleTime("");
+            setSelectedDate(null);
+          }}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* ================= BODY (SCROLLABLE) ================= */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        {/* CURRENT SESSION INFO */}
+        <div className="p-4 rounded-lg bg-slate-50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <p className="text-sm">
+              <span className="text-slate-500">Current Date:</span>{" "}
+              <span className="font-medium">
+                {sessionToReschedule.date
+                  ? new Date(sessionToReschedule.date).toLocaleDateString(
+                      "en-US",
+                      {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )
+                  : "N/A"}
+              </span>
+            </p>
+
+            <p className="text-sm">
+              <span className="text-slate-500">Current Time:</span>{" "}
+              <span className="font-medium">
+                {sessionToReschedule.startTime
+                  ? new Date(
+                      sessionToReschedule.startTime
+                    ).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : sessionToReschedule.time || "N/A"}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        {/* CALENDAR + SLOTS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* CALENDAR */}
+          <div className="border rounded-lg p-3 bg-slate-50">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-bold text-slate-800 text-sm">
+                Select Date
+              </h4>
+
+              <div className="flex items-center gap-1">
+                <button
+                  className="h-8 w-8 rounded-md border bg-white hover:bg-slate-100 flex items-center justify-center"
+                  onClick={() => {
+                    if (currentMonth === 0) {
+                      setCurrentMonth(11);
+                      setCurrentYear(currentYear - 1);
+                    } else {
+                      setCurrentMonth(currentMonth - 1);
+                    }
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <span className="text-xs font-semibold px-2">
+                  {new Date(currentYear, currentMonth).toLocaleString(
+                    "default",
+                    { month: "short", year: "numeric" }
+                  )}
+                </span>
+
+                <button
+                  className="h-8 w-8 rounded-md border bg-white hover:bg-slate-100 flex items-center justify-center"
+                  onClick={() => {
+                    if (currentMonth === 11) {
+                      setCurrentMonth(0);
+                      setCurrentYear(currentYear + 1);
+                    } else {
+                      setCurrentMonth(currentMonth + 1);
+                    }
+                  }}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-slate-500 mb-2">
+              {"Su Mo Tu We Th Fr Sa".split(" ").map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {calendarWeeks.flat().map((day, i) =>
+                day ? (
+                  <button
+                    key={i}
+                    disabled={isPastDate(day.date) }
+                    onClick={() => {
+                      setSelectedDate(day.date);
+                      setRescheduleDate(day.date);
+                    }}
+                    className={`
+                      h-8 w-8 rounded-full text-xs flex items-center justify-center
+                      ${isPastDate(day.date)
+                        ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                        : getStatusColor(day.status)}
+                      ${rescheduleDate === day.date
+                        ? "ring-2 ring-primary bg-primary text-white"
+                        : ""}
+                    `}
+                  >
+                    {day.day}
+                  </button>
+                ) : (
+                  <div key={i} />
+                )
+              )}
+            </div>
+          </div>
+
+          {/* TIME SLOTS */}
+          <div className="border rounded-lg p-3 bg-slate-50">
+            <h4 className="font-bold text-slate-800 mb-3 text-sm">
+              Available Time Slots
+            </h4>
+
+            {rescheduleDate ? (
+              <div className="space-y-2 max-h-48 md:max-h-80 overflow-y-auto">
+                {availability
+                  .find((a: any) => a.date === rescheduleDate)
+                  ?.timeSlots?.map((slot: any, i: number) => (
+                    <button
+                      key={i}
+                      disabled={slot.status !== "available"}
+                      onClick={() =>
+                        slot.status === "available" &&
+                        handleTimeSlotClick(rescheduleDate, slot)
+                      }
+                      className={`
+                        w-full p-2 rounded-lg border text-left text-sm
+                        ${slot.status === "available"
+                          ? "border-green-300 hover:bg-green-50"
+                          : slot.status === "booked"
+                          ? "border-red-300 opacity-50"
+                          : "border-gray-300 opacity-50"}
+                        ${rescheduleTime === slot.start
+                          ? "ring-2 ring-primary bg-primary/10"
+                          : ""}
+                      `}
+                    >
+                      {formatTime(slot.start)} – {formatTime(slot.end)}
+                    </button>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">
+                Select a date to see time slots
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ERROR */}
+        {rescheduleError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm font-medium">
+              {rescheduleError}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ================= FOOTER ================= */}
+      <div className="px-4 sm:px-6 py-4 border-t bg-slate-50 flex gap-3">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => {
+            setIsRescheduleModalOpen(false);
+            setSessionToReschedule(null);
+            setRescheduleError(null);
+            setRescheduleDate("");
+            setRescheduleTime("");
+            setSelectedDate(null);
+          }}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          className="flex-1 bg-gradient-to-r from-primary to-accent"
+          disabled={!rescheduleDate || !rescheduleTime}
+          onClick={handleReschedule}
+        >
+          Confirm
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
+
+    </Layout >
   );
 }

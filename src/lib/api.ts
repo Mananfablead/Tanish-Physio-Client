@@ -279,7 +279,7 @@ export const cancelSession = (id: string) => {
 };
 
 export const rescheduleSession = (id: string, newDateTime: any) => {
-  return api.patch(`/sessions/${id}/reschedule`, newDateTime);
+  return api.put(`/sessions/${id}/reschedule`, newDateTime);
 };
 
 export const getSessionNotes = (id: string) => {
