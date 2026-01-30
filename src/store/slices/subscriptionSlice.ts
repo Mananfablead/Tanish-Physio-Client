@@ -16,6 +16,7 @@ export interface SubscriptionPlan {
   sessions?: number | string;
   services?: string[];
   popular?: boolean;
+  subscriberCount?: number;
 }
 
 // Define User Subscription interface
