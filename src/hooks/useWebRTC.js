@@ -44,10 +44,42 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
     // Initialize local media
     const initLocalMedia = useCallback(async () => {
+        // Wait for socket to be connected if it's not already
         if (!socket) {
-            throw new Error('Socket not connected');
+            throw new Error('Socket not initialized');
+        }
+        
+        if (!socket.connected) {
+            console.warn('Socket not connected, waiting before attempting to access media');
+            // Wait for socket to connect with a timeout
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    clearTimeout(timeout);
+                    reject(new Error('Socket connection timeout')); 
+                }, 10000); // 10 second timeout
+                
+                const checkInterval = setInterval(() => {
+                    if (socket?.connected) {
+                        clearInterval(checkInterval);
+                        clearTimeout(timeout);
+                        resolve();
+                    }
+                }, 100);
+                
+                // Also listen for connect event
+                socket.on('connect', () => {
+                    clearInterval(checkInterval);
+                    clearTimeout(timeout);
+                    resolve();
+                });
+            });
         }
 
+        return initLocalMediaInternal();
+    }, [socket]);
+    
+    // Internal function to handle the actual media initialization
+    const initLocalMediaInternal = async () => {
         try {
             // First try to get both video and audio
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -98,7 +130,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 throw error;
             }
         }
-    }, [socket]);
+    };
 
     // Create peer connection
     const createPeer = useCallback((userId, initiator, stream) => {

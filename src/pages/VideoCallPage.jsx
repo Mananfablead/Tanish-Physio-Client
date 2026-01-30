@@ -112,6 +112,21 @@ const VideoCallPage = () => {
     navigate("/");
   };
 
+  // Extract participant names from session details
+  const getParticipantNames = () => {
+    if (!sessionDetails || !sessionDetails.session) {
+      return { therapistName: "", userName: "" };
+    }
+    
+    const sessionData = sessionDetails.session;
+    return {
+      therapistName: sessionData.therapist?.name || "",
+      userName: sessionData.user?.name || ""
+    };
+  };
+
+  const { therapistName, userName } = getParticipantNames();
+
   const handleRetry = () => {
     // Reset error and try again
     setError(null);
@@ -190,6 +205,7 @@ const VideoCallPage = () => {
 
   return (
     <VideoCall
+      key={sessionDetails ? sessionDetails.session?.id : 'initial'}
       roomId={sessionId}
       roomType="session"
       user={user}
@@ -198,6 +214,8 @@ const VideoCallPage = () => {
       sessionId={sessionId}
       sessionDetails={sessionDetails}
       connected={connected}
+      therapistName={therapistName}
+      userName={userName}
     />
   );
 };
