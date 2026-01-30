@@ -23,10 +23,42 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
     // Initialize local media
     const initLocalMedia = useCallback(async () => {
+        // Wait for socket to be connected if it's not already
         if (!socket) {
-            throw new Error('Socket not connected');
+            throw new Error('Socket not initialized');
+        }
+        
+        if (!socket.connected) {
+            console.warn('Socket not connected, waiting before attempting to access media');
+            // Wait for socket to connect with a timeout
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    clearTimeout(timeout);
+                    reject(new Error('Socket connection timeout')); 
+                }, 10000); // 10 second timeout
+                
+                const checkInterval = setInterval(() => {
+                    if (socket?.connected) {
+                        clearInterval(checkInterval);
+                        clearTimeout(timeout);
+                        resolve();
+                    }
+                }, 100);
+                
+                // Also listen for connect event
+                socket.on('connect', () => {
+                    clearInterval(checkInterval);
+                    clearTimeout(timeout);
+                    resolve();
+                });
+            });
         }
 
+        return initLocalMediaInternal();
+    }, [socket]);
+    
+    // Internal function to handle the actual media initialization
+    const initLocalMediaInternal = async () => {
         try {
             // First try to get both video and audio
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -77,7 +109,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 throw error;
             }
         }
-    }, [socket]);
+    };
 
     // Create peer connection
     const createPeer = useCallback((userId, initiator, stream) => {
@@ -157,12 +189,19 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         if (!socket) return;
 
         if (!localStream) {
-            await initLocalMedia();
+            try {
+                await initLocalMedia();
+            } catch (error) {
+                console.error('Failed to initialize media for incoming offer:', error);
+                // Continue anyway with dummy stream
+                const dummyStream = new MediaStream();
+                setLocalStream(dummyStream);
+            }
         }
 
         const peer = createPeer(senderId, false);
         await peer.signal(offer);
-    }, [socket, localStream, initLocalMedia, createPeer]);
+    }, [socket, localStream, initLocalMedia, createPeer, setLocalStream]);
 
     // Handle incoming answer
     const handleAnswer = useCallback(async (answer, senderId) => {
@@ -427,6 +466,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             if (socket) {
                 try {
                     socket.removeAllListeners();
+                    socket.off('connect'); // Remove connect listener
                 } catch (err) {
                     console.error('Error removing socket listeners:', err);
                 }
