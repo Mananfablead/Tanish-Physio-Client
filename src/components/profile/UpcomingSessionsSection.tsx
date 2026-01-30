@@ -72,16 +72,19 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
 
   return (
     <>
-      {upcomingSessions.length > 0 && (
+      {/* Live Sessions Section - Show only sessions with "live" status */}
+      {upcomingSessions.filter(session => session.status === "live").length > 0 && (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                Upcoming Sessions
+                Live Sessions
               </h3>
             </div>
             <div className="space-y-4">
-              {upcomingSessions.map((session) => (
+              {upcomingSessions
+                .filter(session => session.status === "live")
+                .map((session) => (
                 <div
                   key={session.id}
                   className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
@@ -89,7 +92,7 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
                   {/* Therapist + Session Info */}
                   <div className="flex-1">
                     <h4 className="font-black text-slate-900">
-                      {session?.bookingId?.serviceName}
+                      {session?.subscriptionId?.planName || "Session"}
                     </h4>
                     <p className="text-sm text-slate-500 font-medium">
                       {formatSessionDateTime(
@@ -110,12 +113,54 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
         </Card>
       )}
 
-      {nextSession ? (
+      {/* Upcoming Sessions Section - Show sessions that are not "live" or "completed" */}
+      {upcomingSessions.filter(session => session.status !== "live" && session.status !== "completed").length > 0 && (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                Upcoming Session
+                Upcoming Sessions
+              </h3>
+            </div>
+            <div className="space-y-4">
+              {upcomingSessions
+                .filter(session => session.status !== "live" && session.status !== "completed")
+                .map((session) => (
+                <div
+                  key={session.id}
+                  className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
+                >
+                  {/* Therapist + Session Info */}
+                  <div className="flex-1">
+                    <h4 className="font-black text-slate-900">
+                      {session?.subscriptionId?.planName || "Session"}
+                    </h4>
+                    <p className="text-sm text-slate-500 font-medium">
+                      {formatSessionDateTime(
+                        session?.startTime,
+                        session?.endTime
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Status */}
+                  <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
+                    {session.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Next Session Detail View - Only show if there's a next session and no other upcoming sessions */}
+      {nextSession && upcomingSessions.filter(session => session.status !== "live" && session.status !== "completed").length === 0 ? (
+        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                Next Session
               </h3>
               <Badge className="bg-primary/10 text-primary hover:text-white border-none font-bold">
                 {nextSession.status}
@@ -161,8 +206,7 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
                 <InfoBlock
                   label="Session Focus"
                   value={
-                    nextSession.relatedTo ||
-                    nextSession.serviceName ||
+                    nextSession.subscriptionId?.planName ||
                     "General Consultation"
                   }
                   subValue={
@@ -195,12 +239,12 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
             </div>
           </div>
         </Card>
-      ) : (
+      ) : upcomingSessions.filter(session => session.status !== "live" && session.status !== "completed").length === 0 && (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                Upcoming Session
+                Upcoming Sessions
               </h3>
             </div>
             <div className="py-8 text-center space-y-4">
