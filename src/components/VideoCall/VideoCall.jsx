@@ -13,6 +13,7 @@ import {
   Share,
   ArrowRight,
   X,
+  Clock,
 } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
 import useWebRTC from "../../hooks/useWebRTC";
@@ -54,7 +55,7 @@ const VideoCall = ({
     muteUser,
     endCall,
     startCall,
-    acceptCall,
+    acceptCall: originalAcceptCall,
     rejectCall,
     localVideoRef,
     remoteVideoRefs,
@@ -78,6 +79,29 @@ const VideoCall = ({
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [mediaError, setMediaError] = useState(null);
+  const [therapistPresent, setTherapistPresent] = useState(false);
+  const [waitingForTherapist, setWaitingForTherapist] = useState(true);
+
+  // Debug effect to monitor state changes
+  useEffect(() => {
+    console.log("=== STATE CHANGE DEBUG ===");
+    console.log("therapistPresent:", therapistPresent);
+    console.log("waitingForTherapist:", waitingForTherapist);
+    console.log("localStream:", !!localStream);
+    console.log("connected:", connected);
+    console.log("userRole:", userRole);
+  }, [therapistPresent, waitingForTherapist, localStream, connected, userRole]);
+
+  // Wrapped acceptCall function that enforces therapist presence restriction
+  const acceptCall = useCallback(() => {
+    // Only enforce restriction for patients
+    if (userRole === "patient") {
+      return originalAcceptCall(true, therapistPresent);
+    } else {
+      // For other roles, no restriction
+      return originalAcceptCall(false, false);
+    }
+  }, [originalAcceptCall, userRole, therapistPresent]);
   const [canReconnect, setCanReconnect] = useState(false);
   const [callError, setCallError] = useState(null);
   const [therapistName, setTherapistName] = useState("Clinician");
@@ -260,7 +284,28 @@ const VideoCall = ({
 
     // Handle participant joined
     const participantJoinedListener = (data) => {
-      console.log("Participant joined (client component):", data);
+      console.log("=== PARTICIPANT JOINED EVENT ===");
+      console.log("Participant data:", data);
+      console.log("Current user role:", userRole);
+      console.log("Current therapistPresent state:", therapistPresent);
+      console.log("Current localStream state:", !!localStream);
+      console.log("Current socket connected:", connected);
+
+      // Check if this is a therapist or admin joining
+      let isTherapistJoining = false;
+      if (
+        data.isTherapist ||
+        data.role === "admin" ||
+        data.role === "therapist"
+      ) {
+        console.log("✅ THERAPIST/ADMIN DETECTED - enabling auto-join");
+        isTherapistJoining = true;
+        setTherapistPresent(true);
+        setWaitingForTherapist(false);
+        console.log("TherapistPresent state set to TRUE");
+      } else {
+        console.log("Participant is not therapist/admin");
+      }
 
       // Enhance participant data with name if available
       let participantData = { ...data, isSelf: data.socketId === socket.id };
@@ -296,22 +341,74 @@ const VideoCall = ({
         return [...prev, participantData];
       });
 
-      if (
-        data.isTherapist &&
+      // AUTO-JOIN LOGIC - Patient auto-joins when therapist joins
+      console.log("=== AUTO-JOIN CHECK ===");
+      console.log("isTherapistJoining:", isTherapistJoining);
+      console.log("userRole:", userRole);
+      console.log("therapistPresent:", therapistPresent);
+      console.log("localStream:", !!localStream);
+      console.log("connected:", connected);
+
+      if (isTherapistJoining && userRole === "patient") {
+        console.log(
+          "✅ AUTO-JOIN TRIGGERED - Therapist joined, patient auto-accepting"
+        );
+        console.log("Local stream available:", !!localStream);
+        console.log("Socket connected:", connected);
+
+        // Wait for WebRTC to be fully ready
+        setTimeout(() => {
+          console.log("=== AUTO-JOIN EXECUTION ===");
+          console.log("Final validation:");
+          console.log("- User role is patient:", userRole === "patient");
+          console.log("- Therapist just joined:", isTherapistJoining);
+          console.log("- Has local stream:", !!localStream);
+          console.log("- Socket connected:", connected);
+          console.log("- acceptCall function available:", !!acceptCall);
+
+          // Final validation before auto-joining
+          if (
+            userRole === "patient" &&
+            isTherapistJoining &&
+            localStream &&
+            connected &&
+            acceptCall
+          ) {
+            console.log("✅ ALL CONDITIONS MET - EXECUTING AUTO-JOIN");
+            const success = acceptCall();
+            console.log("acceptCall returned:", success);
+
+            if (success) {
+              console.log("🎉 AUTO-JOIN SUCCESSFUL - Call should start now!");
+            } else {
+              console.log("❌ AUTO-JOIN FAILED - acceptCall returned false");
+              console.log("Retrying in 1 second...");
+              // Retry once more after a longer delay
+              setTimeout(() => {
+                const retrySuccess = acceptCall();
+                console.log("Retry attempt result:", retrySuccess);
+              }, 1000);
+            }
+          } else {
+            console.log("❌ AUTO-JOIN CONDITIONS NOT MET:");
+            console.log({
+              userRoleCheck: userRole === "patient",
+              therapistJoining: isTherapistJoining,
+              hasLocalStream: !!localStream,
+              socketConnected: connected,
+              acceptCallAvailable: !!acceptCall,
+            });
+          }
+        }, 1000); // Longer delay to ensure everything is ready
+      } else if (
+        (data.isTherapist ||
+          data.role === "admin" ||
+          data.role === "therapist") &&
         userRole !== "therapist" &&
         userRole !== "admin"
       ) {
-        if (userRole === "patient") {
-          // For patients, immediately accept the call
-          if (acceptCall) {
-            setTimeout(() => {
-              acceptCall();
-            }, 500); // Small delay to ensure everything is ready
-          }
-        } else {
-          // For other roles (non-patients), show incoming call UI
-          setIncomingCall(true);
-        }
+        // For other roles (non-patients), show incoming call UI
+        setIncomingCall(true);
       }
     };
 
@@ -340,9 +437,17 @@ const VideoCall = ({
 
     // Handle call accepted
     const callAcceptedListener = (data) => {
+      console.log("=== CALL ACCEPTED EVENT RECEIVED ===");
+      console.log("call-accepted data:", data);
+      console.log("Setting call status to connected");
+      console.log("Current callActive:", callActive);
+      console.log("Current callStatus:", callStatus);
+      
       setCallStatus("connected");
       setCallActive(true);
       setIncomingCall(false);
+      
+      console.log("✅ Call accepted - UI should now show connected state");
     };
 
     // Handle call rejected
@@ -353,14 +458,32 @@ const VideoCall = ({
 
     // Handle call ended
     const callEndedListener = (data) => {
-      // For client sessions, keep the UI active but update relevant states
-      setCallActive(false);
-      setCallStartTime(null);
-      setIncomingCall(false);
-      setCanReconnect(true); // Enable reconnection option
-      // Don't call onEndCall to keep session UI active
-      // Don't set callStatus to "ended" to avoid termination screen
-      console.log("Call ended, but keeping session UI active. Reconnection available.");
+      console.log("Call ended by:", data.endedBy);
+      console.log("Initiator role:", data.initiatorRole);
+
+      // Check if this was initiated by admin/therapist
+      const isAdminTermination =
+        data.initiatorRole === "admin" || data.initiatorRole === "therapist";
+
+      if (isAdminTermination) {
+        // Admin/therapist ended the call - client call should end completely
+        console.log("Admin/therapist terminated call - ending client session");
+        setCallStatus("ended");
+        setCallActive(false);
+        setCallStartTime(null);
+        setIncomingCall(false);
+        setCanReconnect(false); // Disable reconnection for admin-terminated calls
+        if (onEndCall) onEndCall();
+      } else {
+        // Regular participant ended the call - keep UI active for reconnection
+        console.log("Participant ended call - keeping session UI active");
+        setCallActive(false);
+        setCallStartTime(null);
+        setIncomingCall(false);
+        setCanReconnect(true); // Enable reconnection option
+        // Don't call onEndCall to keep session UI active
+        // Don't set callStatus to "ended" to avoid termination screen
+      }
     };
 
     // Handle audio toggle
@@ -507,9 +630,29 @@ const VideoCall = ({
       }
       return (
         <div className="flex items-center justify-center w-full h-full bg-slate-900 rounded-xl">
-          <div className="text-center text-slate-500">
-            <Users className="mx-auto h-12 w-12 mb-2" />
-            <p>Waiting for clinician...</p>
+          <div className="text-center text-slate-500 max-w-md p-6">
+            {waitingForTherapist && userRole === "patient" ? (
+              <>
+                <Clock className="mx-auto h-12 w-12 mb-4 text-blue-500" />
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Waiting for Clinician
+                </h3>
+                <p className="mb-4">
+                  Please wait while your clinician joins the session. The call
+                  will start automatically once they connect.
+                </p>
+                <div className="animate-pulse flex space-x-2 justify-center">
+                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <Users className="mx-auto h-12 w-12 mb-2" />
+                <p>Waiting for clinician...</p>
+              </>
+            )}
           </div>
         </div>
       );
@@ -623,9 +766,30 @@ const VideoCall = ({
     }
   }, [participants, user, setParticipants]);
 
+  // Handle incoming call UI with therapist presence restriction
+  if (incomingCall && !callStarted) {
+    // For patients, show waiting screen instead of accept/reject options
+    if (userRole === "patient") {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-black">
+          <div className="text-center text-white max-w-md p-6">
+            <Clock className="mx-auto h-16 w-16 mb-4 text-blue-500" />
+            <h2 className="text-2xl font-bold mb-2">Waiting for Clinician</h2>
+            <p className="text-slate-500 mb-6">
+              Please wait while your clinician joins the session. The call will
+              start automatically once they connect.
+            </p>
+            <div className="animate-pulse flex space-x-2 justify-center">
+              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-
-  if (incomingCall && !callStarted && userRole !== 'patient') {
+    // For other roles (non-patients), show normal incoming call UI
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-black">
         <div className="text-center text-white">

@@ -85,9 +85,12 @@ const useSocket = (roomId, roomType) => {
 
             setSocket(newSocket);
 
-            // Cleanup on unmount
+            // Cleanup on unmount - but preserve call on page refresh
             return () => {
-                if (newSocket) {
+                // Check if this is a page refresh/unload vs component unmount
+                const isPageUnload = !window.location.hash.includes('#') || document.hidden;
+
+                if (newSocket && !isPageUnload) {
                     try {
                         newSocket.emit('leave-room', {
                             roomId,
@@ -102,6 +105,7 @@ const useSocket = (roomId, roomType) => {
                         console.error('Error closing socket:', err);
                     }
                 }
+                // If it's a page refresh, keep the connection alive
             };
         } catch (err) {
             setError(err.message);

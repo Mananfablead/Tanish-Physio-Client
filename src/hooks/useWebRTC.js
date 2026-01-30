@@ -17,6 +17,27 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     const [userIdentity, setUserIdentity] = useState(null);
     const [initialized, setInitialized] = useState(false);
 
+    // Prevent cleanup on page refresh
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            // Store call state in sessionStorage to preserve it
+            if (callActive) {
+                sessionStorage.setItem('callState', JSON.stringify({
+                    roomId,
+                    callActive: true,
+                    callStarted: callStarted,
+                    timestamp: Date.now()
+                }));
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [roomId, callActive, callStarted]);
+
     const peerRefs = useRef({});
     const localVideoRef = useRef(null);
     const remoteVideoRefs = useRef({});
@@ -81,6 +102,13 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
     // Create peer connection
     const createPeer = useCallback((userId, initiator, stream) => {
+        console.log("=== CREATING PEER CONNECTION ===");
+        console.log("User ID:", userId);
+        console.log("Initiator:", initiator);
+        console.log("Local stream available:", !!localStream);
+        console.log("Provided stream:", !!stream);
+        console.log("Socket ID:", socket?.id);
+        
         const peer = new Peer({
             initiator,
             trickle: true, // Changed to true for better ICE candidate handling
@@ -94,6 +122,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 ]
             }
         });
+        
+        console.log("✅ Peer object created successfully");
 
         peer.on('signal', (data) => {
             if (!socket) return;
@@ -116,6 +146,10 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         });
 
         peer.on('stream', (remoteStream) => {
+            console.log("=== REMOTE STREAM RECEIVED ===");
+            console.log("From user:", userId);
+            console.log("Stream tracks:", remoteStream.getTracks());
+            
             setRemoteStreams(prev => ({
                 ...prev,
                 [userId]: remoteStream
@@ -125,6 +159,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             setTimeout(() => {
                 if (remoteVideoRefs.current[userId]) {
                     remoteVideoRefs.current[userId].srcObject = remoteStream;
+                    console.log("✅ Remote video element updated");
                 }
             }, 100);
         });
@@ -154,14 +189,26 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
     // Handle incoming offer
     const handleOffer = useCallback(async (offer, senderId) => {
-        if (!socket) return;
+        console.log("=== HANDLE OFFER CALLED ===");
+        console.log("Offer received from:", senderId);
+        console.log("Socket available:", !!socket);
+        console.log("Local stream available:", !!localStream);
+        
+        if (!socket) {
+            console.log("❌ No socket connection, cannot handle offer");
+            return;
+        }
 
         if (!localStream) {
+            console.log("📱 Initializing local media...");
             await initLocalMedia();
         }
 
+        console.log("🔄 Creating peer connection for:", senderId);
         const peer = createPeer(senderId, false);
+        console.log("📡 Signaling offer...");
         await peer.signal(offer);
+        console.log("✅ Offer handled successfully");
     }, [socket, localStream, initLocalMedia, createPeer]);
 
     // Handle incoming answer
@@ -301,15 +348,34 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         }
     }, [userRole, socket, roomId, setCallStarted]);
 
-    // Accept call
-    const acceptCall = useCallback(() => {
+    // Accept call - with admin/therapist presence check
+    const acceptCall = useCallback((requireTherapistPresence = false, therapistPresent = false) => {
+        console.log("=== WEbrtc acceptCall CALLED ===");
+        console.log("requireTherapistPresence:", requireTherapistPresence);
+        console.log("therapistPresent:", therapistPresent);
+        console.log("socket available:", !!socket);
+        console.log("roomId:", roomId);
+        console.log("userRole:", userRole);
+
+        // If restriction is enabled, check if therapist is present
+        if (requireTherapistPresence && !therapistPresent) {
+            console.log('❌ Cannot accept call: Therapist not present yet');
+            return false; // Return false to indicate call was not accepted
+        }
+
         if (socket) {
+            console.log('✅ Emitting call-accept event');
             socket.emit('call-accept', {
                 roomId,
                 roomType: roomId.startsWith('group') ? 'group' : 'session'
             });
+            console.log('✅ Call accept event emitted successfully');
+            return true; // Return true to indicate call was accepted
+        } else {
+            console.log('❌ Cannot accept call: No socket connection');
+            return false;
         }
-    }, [socket, roomId]);
+    }, [socket, roomId, userRole]);
 
     // Reject call
     const rejectCall = useCallback(() => {
@@ -412,27 +478,34 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         };
     }, [socket, userRole, initialized]);
 
-    // Cleanup on unmount
+    // Cleanup on unmount - but preserve call on page refresh
     useEffect(() => {
         return () => {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
+            // Check if this is a page refresh/unload vs component unmount
+            const isPageUnload = typeof window !== 'undefined' && (window.performance?.navigation?.type === 1 || window.event?.type === 'beforeunload');
 
-            Object.values(peerRefs.current).forEach(peer => {
-                if (peer) peer.destroy();
-            });
+            if (!isPageUnload) {
+            // Only clean up if it's a normal component unmount, not page refresh
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
 
-            // Clean up socket listeners if socket exists
-            if (socket) {
-                try {
-                    socket.removeAllListeners();
-                } catch (err) {
-                    console.error('Error removing socket listeners:', err);
+                Object.values(peerRefs.current).forEach(peer => {
+                    if (peer) peer.destroy();
+                });
+
+                // Clean up socket listeners if socket exists
+                if (socket) {
+                    try {
+                        socket.removeAllListeners();
+                    } catch (err) {
+                        console.error('Error removing socket listeners:', err);
+                    }
                 }
             }
+            // If it's a page refresh, preserve the streams and connections
         };
-    }, [socket]);
+    }, [socket, localStream]);
 
     return {
         localStream,
