@@ -33,6 +33,7 @@ const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const VideoCallPage = lazy(() => import("./pages/VideoCallPage"));
+const GroupVideoCallPage = lazy(() => import("./pages/GroupVideoCallPage"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
@@ -42,7 +43,6 @@ const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
-
 
 const queryClient = new QueryClient();
 
@@ -60,7 +60,10 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
 
-                  <Route path="/questionnaire" element={<QuestionnairePage />} />
+                  <Route
+                    path="/questionnaire"
+                    element={<QuestionnairePage />}
+                  />
                   <Route
                     path="/therapists"
                     element={
@@ -77,7 +80,7 @@ const App = () => (
                       </ProtectedRoute>
                     }
                   />
-         
+
                   <Route path="/plans" element={<SubscriptionPlansPage />} />
 
                   <Route
@@ -133,7 +136,7 @@ const App = () => (
                     path="/profile"
                     element={
                       // <ProtectedRoute>
-                        <ProfilePage />
+                      <ProfilePage />
                       // </ProtectedRoute>
                     }
                   />
@@ -142,6 +145,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <VideoCallPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/group-video-call/:id"
+                    element={
+                      <ProtectedRoute>
+                        <GroupVideoCallPage />
                       </ProtectedRoute>
                     }
                   />
@@ -160,7 +171,7 @@ const App = () => (
                     path="/schedule"
                     element={
                       // <ProtectedRoute>
-                        <SchedulePage />
+                      <SchedulePage />
                       // </ProtectedRoute>
                     }
                   />

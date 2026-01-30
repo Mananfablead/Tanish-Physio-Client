@@ -5,14 +5,13 @@ import VideoCall from "@/components/VideoCall/VideoCall";
 import { videoCallApi } from "@/lib/videoCallApi";
 
 export default function GroupVideoCallPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { user: userObj, token } = useAuthRedux();
-  const user = userObj as any;
+  const { user, token } = useAuthRedux();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = (useState < string) | (null > null);
   const [connected, setConnected] = useState(false);
-  const [groupSessionDetails, setGroupSessionDetails] = useState<any>(null);
+  const [groupSessionDetails, setGroupSessionDetails] = useState < any > null;
 
   useEffect(() => {
     const initializeCall = async () => {
@@ -27,7 +26,7 @@ export default function GroupVideoCallPage() {
           return;
         }
 
-        if (!user.id) {
+        if (!user._id) {
           setError("User ID is missing");
           return;
         }
@@ -58,10 +57,7 @@ export default function GroupVideoCallPage() {
             await videoCallApi.getGroupSessionParticipants(id);
           console.log("Group session participants:", participantsResponse);
           if (participantsResponse.success) {
-            setGroupSessionDetails((prev: any) => ({
-              ...prev,
-              participants: participantsResponse.data.participants,
-            }));
+            setGroupSessionDetails(participantsResponse.data);
           }
         } catch (participantsErr) {
           console.warn(
@@ -73,7 +69,7 @@ export default function GroupVideoCallPage() {
         // Generate call token for group session
         const response = await videoCallApi.generateGroupJoinLink(
           id,
-          user.id,
+          user._id,
           user.role
         );
 
@@ -85,7 +81,7 @@ export default function GroupVideoCallPage() {
           console.error("Group token generation failed:", response);
           setError(response.message || "Failed to generate group call token");
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error initializing group call:", err);
         const errorMessage =
           err.response?.data?.message || "Failed to initialize group call";
@@ -190,8 +186,8 @@ export default function GroupVideoCallPage() {
       user={user}
       isTherapist={user?.role === "therapist"}
       onEndCall={handleEndCall}
-      sessionId={id}
-      sessionDetails={groupSessionDetails}
+      groupSessionId={id}
+      groupSessionDetails={groupSessionDetails}
       connected={connected}
     />
   );
