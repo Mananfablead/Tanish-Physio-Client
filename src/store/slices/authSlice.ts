@@ -123,7 +123,7 @@ export const logout = createAsyncThunk(
 );
 
 // Async thunk for fetching user profile
-export const fetchProfile = createAsyncThunk(
+export const  fetchProfile = createAsyncThunk(
   "auth/fetchProfile",
   async (_, { rejectWithValue }) => {
     try {

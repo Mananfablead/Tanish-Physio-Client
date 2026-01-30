@@ -19,31 +19,6 @@ export interface SubscriptionPlan {
 }
 
 // Define User Subscription interface
-export interface ServiceBooking {
-  _id?: string;
-  id?: string;
-  serviceId: string;
-  serviceName: string;
-  userId: string;
-  date?: string;
-  time?: string;
-  status: string;
-  paymentStatus: string;
-  amount: number;
-  service?: {
-    name: string;
-    description: string;
-    sessions: number;
-    duration: string;
-  };
-  serviceSessionInfo?: {
-    total: number | string;
-    used: number;
-    remaining: number | string;
-    percentageUsed: number;
-  };
-}
-
 export interface UserSubscription {
   _id?: string;
   id?: string;
@@ -58,19 +33,6 @@ export interface UserSubscription {
   description?: string;
   price?: number;
   duration?: string;
-  sessionInfo?: {
-    totalAllowed: number | string;
-    sessionsUsed: number;
-    sessionsRemaining: number | string;
-    bookingsMade: number;
-  };
-  availableSessions?: {
-    total: number | string;
-    used: number;
-    remaining: number | string;
-    percentageUsed: number;
-  };
-  purchasedServices?: ServiceBooking[];
 }
 
 interface SubscriptionState {

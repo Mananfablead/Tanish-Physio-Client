@@ -772,6 +772,20 @@ export default function SchedulePage() {
                       const isBooked = slot.status === "booked";
                       const isUnavailable = slot.status === "unavailable";
 
+                      // Check if this time slot is in the past
+                      const isPastTime = () => {
+                        const now = new Date();
+                        const selectedDateWithoutTime = new Date(selectedDate);
+                        
+                        // Create a date object with the selected date and the slot's start time
+                        const slotDateTime = new Date(selectedDateWithoutTime);
+                        const [startHour, startMinute] = slot.start.split(':').map(Number);
+                        slotDateTime.setHours(startHour, startMinute, 0, 0);
+                        
+                        // Check if the slot time is in the past compared to now
+                        return slotDateTime < now;
+                      };
+
                       const isSelected = selectedTime === timeValue;
 
                       // Calculate slot duration in minutes
@@ -787,6 +801,10 @@ export default function SchedulePage() {
                       const serviceDuration = getServiceDuration();
                       const isSuitableForService = serviceDuration ? slotDurationMinutes >= serviceDuration : true;
                       
+                      // Determine if the slot should be disabled (if it's past time)
+                      const isPast = isPastTime();
+                      const isActuallyAvailable = isAvailable && !isPast;
+                      
                       // Debug logging to see what's happening
                       // console.log('Slot:', slot, 'Duration:', slotDurationMinutes, 'Service Duration:', serviceDuration, 'Suitable:', isSuitableForService);
 
@@ -794,9 +812,9 @@ export default function SchedulePage() {
                         <Button
                           key={slot._id}
                           size="sm"
-                          disabled={!isAvailable}
+                          disabled={!isActuallyAvailable}
                           onClick={() => {
-                            if (isAvailable) {
+                            if (isActuallyAvailable) {
                               setSelectedTime(timeValue);
                               setBookingError(null); // Clear any previous error when selecting a new time
                             }
@@ -805,13 +823,15 @@ export default function SchedulePage() {
           py-2 text-sm font-medium transition-all 
           ${isSelected
                               ? "bg-green-600 text-white hover:bg-green-600"
-                              : isAvailable
+                              : isActuallyAvailable
                                 ? isSuitableForService
                                   ? "border border-green-500 text-green-600 bg-green-50"
                                   : "border border-yellow-500 text-yellow-600 bg-yellow-50"
                                 : isBooked
                                   ? " text-red-500 cursor-not-allowed border border-red-500"
-                                  : " text-gray-400 cursor-not-allowed border border-gray-400"
+                                  : isPast
+                                    ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
+                                    : " text-gray-400 cursor-not-allowed border border-gray-400"
                             }
         `}
                           variant="outline"
