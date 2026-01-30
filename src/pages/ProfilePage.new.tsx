@@ -85,11 +85,16 @@ export default function ProfilePage() {
   
   // Get data from Redux store
   const {
-    activePlan,
     userSubscriptions,
     loading: subsLoading,
     error: subsError,
   } = useSelector((state: any) => state.subscriptions);
+  
+  const {
+    userPayments,
+    loading: paymentsLoading,
+    error: paymentsError,
+  } = useSelector((state: any) => state.payment);
 
   const { toast } = useToast();
 
@@ -107,14 +112,14 @@ export default function ProfilePage() {
   } = useSelector((state: any) => state.bookings);
   
   const bookingList = bookings || [];
-  // const activePlan = user?.subscriptionData;
-
+  const activePlan = user?.subscriptionData;
   
   // Set state based on Redux data
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const nextSession =
     upcomingSessions?.find((session: any) => session.status === "live") || null;
     
+  console.log("object", activePlan);
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -138,7 +143,7 @@ export default function ProfilePage() {
         date: rescheduleDate,
         time: rescheduleTime,
         startTime: `${rescheduleDate}T${rescheduleTime}:00`,
-        // status: "pending"
+        //  status: "pending"
       };
 
       const response: any = await rescheduleSession(sessionToReschedule._id, rescheduleData);
@@ -346,11 +351,7 @@ export default function ProfilePage() {
                 )}
 
                 {selectedSection === "subscriptionHistory" && (
-                  <SubscriptionHistorySection 
-                    userSubscriptions={userSubscriptions} 
-                    loading={subsLoading}
-                    error={subsError}
-                  />
+                  <SubscriptionHistorySection userSubscriptions={userSubscriptions} />
                 )}
 
                 {selectedSection === "personal" && (
