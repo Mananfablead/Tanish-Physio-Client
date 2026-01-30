@@ -841,7 +841,7 @@ export default function SchedulePage() {
     {bookingError && (
                   <div className="mb-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-600 text-sm font-medium">{bookingError}</p>
-                    <p className="text-red-600 text-xs mt-1 font-semibold">💡 Tip: Select a time slot that matches or exceeds your service duration.</p>
+                    {/* <p className="text-red-600 text-xs mt-1 font-semibold">💡 Tip: Select a time slot that matches or exceeds your service duration.</p> */}
                   </div>
                 )}
               </div>

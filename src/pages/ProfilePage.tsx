@@ -37,7 +37,8 @@ import {
   ChevronLeft,
   CheckCircle,
   PlusCircle,
-  CalendarDays
+  CalendarDays,
+  BarChart3
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSelector } from "react-redux";
