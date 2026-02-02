@@ -66,7 +66,7 @@ interface Section {
 // --- Main Component ---
 
 export default function ProfilePage() {
-  const user = useSelector(selectCurrentUser);
+  const   user = useSelector(selectCurrentUser);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [selectedSection, setSelectedSection] = useState<string>("personal");
@@ -114,10 +114,18 @@ export default function ProfilePage() {
 
   
   // Set state based on Redux data
-  const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const nextSession =
-    upcomingSessions?.find((session: any) => session.status === "live") || null;
-    
+  upcomingSessions?.find((session: any) => session.status === "live") || null;
+  
+  const [sessionCompleted, setSessionCompleted] = useState<any[]>([]);
+  
+  // Update completed sessions when sessions data changes
+  useEffect(() => {
+    const completed = sessions.filter(
+      (s) => s.status === "completed"
+    );
+    setSessionCompleted(completed);
+  }, [sessions]);
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -307,7 +315,7 @@ export default function ProfilePage() {
         user={user}
         activePlan={activePlan}
         upcomingSessions={upcomingSessions}
-        sessionHistory={sessionHistory}
+        sessionCompleted={sessionCompleted}
         onImageChange={handleImageChange}
       />
 
