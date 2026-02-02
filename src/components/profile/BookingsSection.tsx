@@ -115,19 +115,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
             </Badge>
           )}
 
-        {/* CREATE SESSION BUTTON */}
-        <Button
-          size="sm"
-          className="rounded-xl font-black"
-          disabled={
-            bookingList.filter(
-              (b) => b.status === "confirmed" && !b.sessionCreated
-            ).length === 0
-          }
-          onClick={handleCreateSession}
-        >
-          Create Session
-        </Button>
+       
       </div>
 
       {/* TABLE */}
@@ -143,9 +131,9 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                   <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                     Date & Time
                   </th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  {/* <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                     Therapist
-                  </th>
+                  </th> */}
                   <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">
                     Amount
                   </th>
@@ -188,9 +176,9 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                     </td>
 
                     {/* THERAPIST */}
-                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                    {/* <td className="px-6 py-4 text-sm text-slate-600 font-medium">
                       {booking.therapistName || "N/A"}
-                    </td>
+                    </td> */}
 
                     {/* AMOUNT */}
                     <td className="px-6 py-4 text-right">
@@ -201,7 +189,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
                     {/* STATUS */}
                     <td className="px-6 py-4 text-center">
-                      <div className="space-y-2">
+                      <div className="space-y-2 flex flex-col items-center">
                         {/* Original Status Badge */}
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-black uppercase

@@ -210,7 +210,7 @@ const getDaysUntilExpiry = (endDate?: string) => {
     const daysLeft = getDaysUntilExpiry(p.endDate);
 
     return (
-      <div className="space-y-1">
+      <div className="space-y-1 flex flex-col">
         {/* MAIN STATUS */}
         <span
           className={`px-3 py-1 rounded-full text-xs font-black uppercase
