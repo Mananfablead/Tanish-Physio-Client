@@ -186,7 +186,7 @@ export default function GroupVideoCallPage() {
       user={user}
       isTherapist={user?.role === "therapist"}
       onEndCall={handleEndCall}
-      groupSessionId={id}
+      sessionId={id}
       groupSessionDetails={groupSessionDetails}
       connected={connected}
     />

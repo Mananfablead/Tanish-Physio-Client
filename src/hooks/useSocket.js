@@ -55,21 +55,91 @@ const useSocket = (roomId, roomType) => {
                 }
             });
 
+            // Add WebRTC signaling event handlers
+            newSocket.on('offer', (data) => {
+                console.log('=== CLIENT RECEIVED OFFER ===');
+                console.log('Offer data:', data);
+                console.log('Socket ID:', newSocket.id);
+                console.log('Sender ID:', data.senderId);
+                console.log('Target ID:', data.targetId);
+
+                // Only handle if this offer is for us
+                if (data.targetId === newSocket.id || !data.targetId) {
+                    console.log('✅ Processing offer for this client');
+                    // Emit event for WebRTC hook to handle
+                    newSocket.emit('webrtc-offer-received', data);
+                } else {
+                    console.log('❌ Ignoring offer - not for this client');
+                }
+            });
+
+            newSocket.on('answer', (data) => {
+                console.log('=== CLIENT RECEIVED ANSWER ===');
+                console.log('Answer data:', data);
+                console.log('Socket ID:', newSocket.id);
+                console.log('Sender ID:', data.senderId);
+                console.log('Target ID:', data.targetId);
+
+                // Only handle if this answer is for us
+                if (data.targetId === newSocket.id) {
+                    console.log('✅ Processing answer for this client');
+                    // Emit event for WebRTC hook to handle
+                    newSocket.emit('webrtc-answer-received', data);
+                } else {
+                    console.log('❌ Ignoring answer - not for this client');
+                }
+            });
+
+            newSocket.on('ice-candidate', (data) => {
+                console.log('=== CLIENT RECEIVED ICE CANDIDATE ===');
+                console.log('ICE candidate data:', data);
+                console.log('Socket ID:', newSocket.id);
+                console.log('Sender ID:', data.senderId);
+                console.log('Target ID:', data.targetId);
+
+                // Only handle if this ICE candidate is for us
+                if (data.targetId === newSocket.id) {
+                    console.log('✅ Processing ICE candidate for this client');
+                    // Emit event for WebRTC hook to handle
+                    newSocket.emit('webrtc-ice-candidate-received', data);
+                } else {
+                    console.log('❌ Ignoring ICE candidate - not for this client');
+                }
+            });
+
             newSocket.on('disconnect', (reason) => {
-                console.log('Disconnected from video call server:', reason);
+                console.log('❌ Disconnected from video call server:', reason);
                 setConnected(false);
+
+                // Handle reconnection for temporary network issues
+                if (reason === 'io server disconnect' || reason === 'transport close') {
+                    console.log('🔄 Attempting reconnection...');
+                    setTimeout(() => {
+                        if (newSocket) {
+                            newSocket.connect();
+                        }
+                    }, 3000);
+                }
             });
 
             newSocket.on('connect_error', (err) => {
-                console.error('Connection error:', err);
+                console.error('❌ Connection error:', err);
                 setError(err.message);
 
                 // Handle authentication errors specifically
                 if (err.message && err.message.includes('Authentication')) {
-                    console.log('Authentication failed, token might be invalid');
+                    console.log('🔒 Authentication failed, token might be invalid');
                     // Don't retry immediately for auth errors
                     return;
                 }
+
+                // Retry connection for network errors
+                console.log('🔄 Retrying connection in 3 seconds...');
+                setTimeout(() => {
+                    if (newSocket && !newSocket.connected) {
+                        newSocket.connect();
+                    }
+                }, 3000);
             });
 
             // Group call specific event handlers
@@ -94,11 +164,15 @@ const useSocket = (roomId, roomType) => {
             });
 
             newSocket.on('error', (err) => {
-                console.error('Socket error:', err);
+                console.error('❌ Socket error:', err);
 
                 // Handle specific session not active error
                 if (err.message && err.message.includes('Session is not active at this time')) {
+                    console.log('⚠️ Session is not active - blocking entry');
                     setError('⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.');
+                } else if (err.message && err.message.includes('Unauthorized to join this session')) {
+                    console.log('⚠️ Unauthorized access attempt');
+                    setError('🔒 Access Denied\n\nYou are not authorized to join this session.');
                 } else {
                     setError(err.message);
                 }
