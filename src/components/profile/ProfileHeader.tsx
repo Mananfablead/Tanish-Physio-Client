@@ -7,7 +7,7 @@ interface ProfileHeaderProps {
   user: any;
   activePlan: any;
   upcomingSessions: any[];
-  sessionHistory: any[];
+  sessionCompleted: any[];
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -15,7 +15,7 @@ export function ProfileHeader({
   user,
   activePlan,
   upcomingSessions,
-  sessionHistory,
+  sessionCompleted,
   onImageChange
 }: ProfileHeaderProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -109,7 +109,7 @@ export function ProfileHeader({
               },
               {
                 label: "Completed",
-                value: sessionHistory.length,
+                value: sessionCompleted.length,
                 icon: Calendar,
                 color: "text-accent",
                 bg: "bg-accent/10",

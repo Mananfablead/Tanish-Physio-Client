@@ -108,7 +108,7 @@ export function SubscriptionHistorySection({
                   <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
                     Sessions
                   </th>
-                
+
                   {/* <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                     Payment
                   </th> */}
@@ -137,32 +137,23 @@ export function SubscriptionHistorySection({
                         Start:{" "}
                         {p.startDate
                           ? new Date(p.startDate).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
                           : "N/A"}
                       </div>
                       <div>
                         End:{" "}
                         {p.endDate
                           ? new Date(p.endDate).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
                           : "N/A"}
                       </div>
-                      <div className="text-slate-400 text-xs">
-                        Next:{" "}
-                        {p.nextBillingDate
-                          ? new Date(p.nextBillingDate).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "N/A"}
-                      </div>
+                      
                     </td>
 
                     {/* Amount */}
@@ -182,7 +173,7 @@ export function SubscriptionHistorySection({
                           <div>
                             {p.availableSessions.used}/{p.availableSessions.total}
                           </div>
-                         
+
                           <div className="font-bold text-primary">
                             Left: {p.availableSessions.remaining}
                           </div>
@@ -210,25 +201,16 @@ export function SubscriptionHistorySection({
                     <td className="px-6 py-4 text-center">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                          ${
-                            p.status === "active"
-                              ? "bg-green-100 text-green-700"
-                              : p.status === "cancelled"
+                          ${p.status === "active"
+                            ? "bg-green-100 text-green-700"
+                            : p.status === "cancelled"
                               ? "bg-red-100 text-red-700"
                               : "bg-yellow-100 text-yellow-700"
                           }`}
                       >
                         {p.status || "unknown"}
                       </span>
-                      <div className="text-[10px] text-slate-400 mt-1">
-                        {p.createdAt
-                          ? new Date(p.createdAt).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "N/A"}
-                      </div>
+                     
                     </td>
                   </tr>
                 ))}
