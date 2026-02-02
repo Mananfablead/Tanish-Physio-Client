@@ -49,6 +49,9 @@ import {
   RescheduleModal
 } from "@/components/profile";
 
+// Import recorded sessions component
+import { RecordedSessionsSection } from "@/components/profile/RecordedSessionsSection";
+
 // --- Component Interfaces ---
 
 interface Section {
@@ -275,6 +278,13 @@ export default function ProfilePage() {
       color: "text-primary",
     },
     {
+      id: "recordedSessions",
+      label: "Recorded Sessions",
+      sub: "Your recorded therapy sessions",
+      icon: Play,
+      color: "text-primary",
+    },
+    {
       id: "subscriptionHistory",
       label: "Subscription History",
       sub: "Your plan & payment history",
@@ -339,6 +349,10 @@ export default function ProfilePage() {
                       setIsRescheduleModalOpen(true);
                     }} 
                   />
+                )}
+
+                {selectedSection === "recordedSessions" && (
+                  <RecordedSessionsSection />
                 )}
 
                 {selectedSection === "bookings" && (

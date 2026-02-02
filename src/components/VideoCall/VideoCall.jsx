@@ -57,6 +57,10 @@ const VideoCall = ({
     setCallActive,
     setParticipants,
     setCallLogId,
+    isRecording,
+    recordingStatus,
+    startRecording,
+    stopRecording,
   } = useWebRTC(roomId, socket, isTherapist);
 
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -134,7 +138,6 @@ const VideoCall = ({
           );
         }
       } else {
-        console.log(`⚠️ Client remote video ref not found for: ${userId}`);
       }
     });
   }, [localStream, remoteStreams, remoteVideoRefs]);
@@ -1888,6 +1891,45 @@ const VideoCall = ({
             >
               <Settings className="h-5 w-5" />
             </Button>
+
+            {/* Recording Button - Only for therapists */}
+            {isTherapist && (
+              <Button
+                variant={isRecording ? "destructive" : "secondary"}
+                size="icon"
+                className={`rounded-2xl md:w-14 md:h-14 w-12 h-12 border-slate-700 ${
+                  isRecording
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={
+                  !externalConnected ||
+                  !connected ||
+                  recordingStatus === "starting"
+                }
+                title={isRecording ? "Stop Recording" : "Start Recording"}
+              >
+                {recordingStatus === "starting" ? (
+                  <div className="h-5 w-5">
+                    <div className="animate-spin rounded-full h-full w-full border-b-2 border-white"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      className={`h-2 w-2 mr-1 ${
+                        isRecording ? "bg-white" : "bg-red-500"
+                      }`}
+                    />
+                    {isRecording ? (
+                      <span className="text-xs">REC</span>
+                    ) : (
+                      <span className="text-xs">REC</span>
+                    )}
+                  </>
+                )}
+              </Button>
+            )}
 
             <Button
               variant="destructive"

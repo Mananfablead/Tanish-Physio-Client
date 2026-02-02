@@ -46,6 +46,10 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     const [participants, setParticipants] = useState([]);
     const [userIdentity, setUserIdentity] = useState(null);
     const [initialized, setInitialized] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingStatus, setRecordingStatus] = useState('stopped'); // 'stopped', 'starting', 'recording'
+    const [recorder, setRecorder] = useState(null);
+    const [recordedChunks, setRecordedChunks] = useState([]);
     const localStreamRef = useRef(null);
 
     // Prevent cleanup on page refresh
@@ -456,7 +460,6 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         const updateRemoteVideoElement = (userId, stream) => {
             // Check if ref exists, if not, try again after a short delay
             if (!remoteVideoRefs.current[userId]) {
-                console.log(`⚠️ Remote video ref not found for: ${userId}, retrying in 100ms`);
                 setTimeout(() => {
                     updateRemoteVideoElement(userId, stream);
                 }, 100);
@@ -496,7 +499,6 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                     console.error(`❌ Error setting remote video srcObject for ${userId}:`, err);
                 }
             } else {
-                console.log(`⚠️ Remote video ref not found for: ${userId}`);
             }
         };
 
@@ -963,6 +965,12 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             setUserIdentity(identity);
             console.log('CLIENT: User identity set:', identity);
 
+            // Check if recording has started
+            if (data.recordingStarted) {
+                console.log('CLIENT: Recording started for call');
+                // Update recording status in UI if needed
+            }
+
             // Add self to participants list
             setParticipants(prev => {
                 const selfExists = prev.some(p => p.socketId === socket.id);
@@ -1039,6 +1047,110 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         };
     }, [socket, localStream]);
 
+    // Start recording function
+    const startRecording = useCallback(async () => {
+        if (!localStream && Object.keys(remoteStreams).length === 0) {
+            console.error('No streams available for recording');
+            return false;
+        }
+
+        try {
+            setRecordingStatus('starting');
+
+            // Create a mixed stream containing both local and remote audio/video
+            const mixedStream = new MediaStream();
+
+            // Add local stream tracks
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    mixedStream.addTrack(track.clone());
+                });
+            }
+
+            // Add remote stream tracks if available
+            Object.values(remoteStreams).forEach(remoteStream => {
+                remoteStream.getTracks().forEach(track => {
+                    mixedStream.addTrack(track.clone());
+                });
+            });
+
+            // Create MediaRecorder
+            const mediaRecorder = new MediaRecorder(mixedStream, {
+                mimeType: 'video/webm;codecs=vp9', // Specify codec for better compatibility
+            });
+
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                console.log('Recording stopped, processing chunks...');
+
+                const blob = new Blob(chunks, { type: 'video/webm' });
+
+                // Upload recording to server
+                try {
+                    const formData = new FormData();
+                    formData.append('recording', blob, `recording-${roomId}-${Date.now()}.webm`);
+                    formData.append('callLogId', callLogId);
+
+                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/video-call/recording/upload`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('Upload failed:', errorData);
+                    } else {
+                        const result = await response.json();
+                        console.log('Recording uploaded successfully:', result);
+                    }
+                } catch (uploadError) {
+                    console.error('Error uploading recording:', uploadError);
+                }
+            };
+
+            mediaRecorder.start();
+            setRecorder(mediaRecorder);
+            setIsRecording(true);
+            setRecordingStatus('recording');
+
+            console.log('Recording started successfully');
+            return true;
+        } catch (error) {
+            console.error('Error starting recording:', error);
+            setRecordingStatus('stopped');
+            return false;
+        }
+    }, [localStream, remoteStreams, roomId, callLogId]);
+
+    // Stop recording function
+    const stopRecording = useCallback(() => {
+        if (recorder && recorder.state === 'recording') {
+            recorder.stop();
+            setIsRecording(false);
+            setRecordingStatus('stopped');
+
+            // Clean up the mixed stream tracks
+            if (recorder.stream) {
+                recorder.stream.getTracks().forEach(track => track.stop());
+            }
+
+            setRecorder(null);
+            console.log('Recording stopped');
+            return true;
+        }
+        return false;
+    }, [recorder]);
+
     return {
         localStream,
         remoteStreams,
@@ -1069,6 +1181,11 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         setCallActive,
         setParticipants,
         setCallLogId,
+        // Recording functions
+        isRecording,
+        recordingStatus,
+        startRecording,
+        stopRecording,
         localStreamRef // Export ref for external access
     };
 };
