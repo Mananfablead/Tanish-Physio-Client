@@ -6,8 +6,10 @@ import { CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
+import { ServiceWithExpiration } from "@/types/user";
+
 interface BookingsSectionProps {
-  bookingList: any[];
+  bookingList: ServiceWithExpiration[];
 }
 
 const ITEMS_PER_PAGE = 5; // Adjust this number as needed
@@ -26,6 +28,29 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return bookingList.slice(startIndex, endIndex);
   }, [bookingList, currentPage]);
+
+  const getServiceExpirationStatus = (booking: ServiceWithExpiration) => {
+    if (booking.isExpired) {
+      return { status: 'expired', text: 'Expire', color: 'text-red-600 bg-red-100' };
+    }
+    if (booking.expiryDate) {
+      const expiryDate = new Date(booking.expiryDate);
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysUntilExpiry <= 7) {
+        return { 
+          status: 'expiring-soon', 
+          text: `Expires in ${daysUntilExpiry} days`, 
+          color: 'text-yellow-600 bg-yellow-100' 
+        };
+      }
+      return { 
+        status: 'active', 
+        text: `Expires ${expiryDate.toLocaleDateString()}`, 
+        color: 'text-green-600 bg-green-100' 
+      };
+    }
+    return { status: 'unlimited', text: 'Unlimited', color: 'text-blue-600 bg-blue-100' };
+  };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -176,20 +201,33 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
                     {/* STATUS */}
                     <td className="px-6 py-4 text-center">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                        ${
-                          booking.status === "confirmed"
-                            ? "bg-green-100 text-green-700"
-                            : booking.status === "cancelled"
-                            ? "bg-red-100 text-red-700"
-                            : booking.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {booking.status}
-                      </span>
+                      <div className="space-y-2">
+                        {/* Original Status Badge */}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-black uppercase
+                          ${
+                            booking.status === "confirmed"
+                              ? "bg-green-100 text-green-700"
+                              : booking.status === "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : booking.status === "pending"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {booking.status}
+                        </span>
+                        
+                        {/* Expiration Status Badge */}
+                        {(() => {
+                          const expirationStatus = getServiceExpirationStatus(booking);
+                          return (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${expirationStatus.color}`}>
+                              {expirationStatus.text}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </td>
                   </tr>
                 ))}

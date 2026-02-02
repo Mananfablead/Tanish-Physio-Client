@@ -1,13 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 
-interface Subscription {
-  _id: string;
-  planName: string;
-  planId: string;
-  amount: number;
-  currency: string;
-  startDate: string;
+import { SubscriptionWithExpiration } from "@/types/user";
+
+interface Subscription extends SubscriptionWithExpiration {
   endDate: string;
   nextBillingDate: string;
   autoRenew: boolean;
@@ -16,11 +12,6 @@ interface Subscription {
   orderId: string;
   paymentId: string;
   createdAt: string;
-  availableSessions?: {
-    total: number;
-    used: number;
-    remaining: number;
-  };
 }
 
 interface SubscriptionHistorySectionProps {
@@ -79,6 +70,21 @@ export function SubscriptionHistorySection({
     );
   }
 
+const isSubscriptionExpired = (endDate?: string) => {
+  if (!endDate) return false;
+  return new Date(endDate).getTime() < Date.now();
+};
+
+const getDaysUntilExpiry = (endDate?: string) => {
+  if (!endDate) return null;
+  return Math.ceil(
+    (new Date(endDate).getTime() - Date.now()) /
+      (1000 * 60 * 60 * 24)
+  );
+};
+
+
+
   return (
     <div className="space-y-6">
       <div>
@@ -119,7 +125,7 @@ export function SubscriptionHistorySection({
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {userSubscriptions.map((p) => (
+                {userSubscriptions.map((p: Subscription) => (
                   <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
                     {/* Plan */}
                     <td className="px-6 py-4">
@@ -198,20 +204,59 @@ export function SubscriptionHistorySection({
                     </td> */}
 
                     {/* Status */}
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                          ${p.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : p.status === "cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                      >
-                        {p.status || "unknown"}
-                      </span>
-                     
-                    </td>
+                   <td className="px-6 py-4 text-center">
+  {(() => {
+    const expired = isSubscriptionExpired(p.endDate);
+    const daysLeft = getDaysUntilExpiry(p.endDate);
+
+    return (
+      <div className="space-y-1">
+        {/* MAIN STATUS */}
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-black uppercase
+            ${
+              expired
+                ? "bg-red-100 text-red-700"
+                : p.status === "active"
+                ? "bg-green-100 text-green-700"
+                : "bg-yellow-100 text-yellow-700"
+            }
+          `}
+        >
+          {expired ? "EXPIRED" : p.status || "UNKNOWN"}
+        </span>
+
+        {/* EXPIRY INFO */}
+        {p.endDate && (
+          expired ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">
+              Expired on{" "}
+              {new Date(p.endDate).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+          ) : daysLeft !== null && daysLeft <= 7 ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+              Expires in {daysLeft} day{daysLeft > 1 ? "s" : ""}
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">
+              Valid till{" "}
+              {new Date(p.endDate).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+          )
+        )}
+      </div>
+    );
+  })()}
+</td>
+
                   </tr>
                 ))}
               </tbody>

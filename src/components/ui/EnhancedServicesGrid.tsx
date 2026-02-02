@@ -135,35 +135,39 @@ export function EnhancedServicesGrid({
           </div>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => {
-            const isActive = categoryFilter === category;
+    {categories?.length > 0 && (
+  <div className="flex flex-wrap gap-2">
+    {categories.map((category) => {
+      const isActive = categoryFilter === category;
 
-            return (
-              <Badge
-                key={category}
-                variant={isActive ? "default" : "outline"}
-                className={`
-          cursor-pointer px-4 py-2 transition-all duration-200
-          ${isActive
-                    ? "bg-primary text-white shadow-md"
-                    : "hover:bg-secondary hover:shadow-sm"}
-        `}
-                onClick={() => setCategoryFilter(category)}
-              >
-                <span className="flex items-center gap-2">
-                  {isActive && (
-                    <span className="h-2 w-2 rounded-full bg-white" />
-                  )}
-                  {category === "all"
-                    ? "All"
-                    : category.charAt(0).toUpperCase() + category.slice(1)}
-                </span>
-              </Badge>
-            );
-          })}
-        </div>
+      return (
+        <Badge
+          key={category}
+          variant={isActive ? "default" : "outline"}
+          className={`
+            cursor-pointer px-4 py-2 transition-all duration-200
+            ${
+              isActive
+                ? "bg-primary text-white shadow-md"
+                : "hover:bg-secondary hover:shadow-sm"
+            }
+          `}
+          onClick={() => setCategoryFilter(category)}
+        >
+          <span className="flex items-center gap-2">
+            {isActive && (
+              <span className="h-2 w-2 rounded-full bg-white" />
+            )}
+            {category === "all"
+              ? "All"
+              : category.charAt(0).toUpperCase() + category.slice(1)}
+          </span>
+        </Badge>
+      );
+    })}
+  </div>
+)}
+
 
       </div>
 

@@ -24,6 +24,7 @@ interface Booking {
     name: string;
     price: number;
     duration: string;
+    validity: number;
   };
   serviceName: string;
   therapistId: {
@@ -41,6 +42,10 @@ interface Booking {
   notes: string;
   paymentStatus: string;
   amount: number;
+  purchaseDate: string;
+  serviceExpiryDate: string;
+  serviceValidityDays: number;
+  isServiceExpired: boolean;
   createdAt: string;
   updatedAt: string;
   clientEmail: string;
@@ -283,7 +288,15 @@ const bookingsSlice = createSlice({
         state.loading = false;
         // API returns { bookings: Booking[] }, so we need to extract the bookings array
         const payload = action.payload;
-        state.bookings = Array.isArray(payload) ? payload : (payload as any).bookings || [];
+        const rawBookings = Array.isArray(payload) ? payload : (payload as any).bookings || [];
+        
+        // Transform the booking data to match the ServiceWithExpiration interface expected by UI
+        state.bookings = rawBookings.map(booking => ({
+          ...booking,
+          // Map backend field names to UI expected field names
+          isExpired: booking.isServiceExpired,
+          expiryDate: booking.serviceExpiryDate,
+        }));
       })
       .addCase(getAllBookingsAsync.rejected, (state, action) => {
         state.loading = false;
