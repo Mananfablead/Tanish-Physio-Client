@@ -11,24 +11,7 @@ import {
   Lock,
   CheckCircle,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+
 import { fetchAllServices } from "@/store/slices/serviceSlice";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
@@ -130,128 +113,7 @@ export default function ServicesPage() {
         <EnhancedServicesGrid services={services} />
       </div>
 
-      {/* Highlight Section */}
-      {/* <div className="bg-gradient-to-r from-primary/5 to-accent/5 py-20">
-        <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
-              Why Choose Our Services?
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              We're committed to providing the highest quality care through our proven approach and expertise.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
-                <UserCheck className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2">Certified Specialists</h3>
-              <p className="text-slate-600">
-                All our therapists are certified professionals with extensive experience in their specialized fields.
-              </p>
-            </Card>
-
-            <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
-                <CheckCircle className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2">Personalized Care Plans</h3>
-              <p className="text-slate-600">
-                Each treatment plan is tailored to your specific condition, goals, and lifestyle.
-              </p>
-            </Card>
-
-            <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
-                <Home className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2">Home Visit Available</h3>
-              <p className="text-slate-600">
-                For your convenience, we offer in-home physiotherapy services when needed.
-              </p>
-            </Card>
-
-            <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2">Proven Recovery Outcomes</h3>
-              <p className="text-slate-600">
-                Our evidence-based approach ensures effective and lasting recovery results.
-              </p>
-            </Card>
-          </div>
-        </div>
-      </div>
-
-      {/* Process Section */}
-      {/* <div className="container py-20">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
-            Simple Steps to Recovery
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Getting started with your physiotherapy journey is easy and straightforward.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-6">
-              <span className="text-2xl font-black text-primary">1</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mb-3">Choose a Service</h3>
-            <p className="text-slate-600 mb-4">
-              Browse our comprehensive list of services and select the one that best matches your needs.
-            </p>
-          </Card>
-
-          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-6">
-              <span className="text-2xl font-black text-primary">2</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mb-3">Consult a Specialist</h3>
-            <p className="text-slate-600 mb-4">
-              Schedule a consultation with our expert physiotherapist to assess your condition.
-            </p>
-          </Card>
-
-          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-6">
-              <span className="text-2xl font-black text-primary">3</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mb-3">Start Recovery</h3>
-            <p className="text-slate-600 mb-4">
-              Begin your personalized treatment plan and start your journey to better health.
-            </p>
-          </Card>
-        </div>
-      </div> */}
-
-      {/* CTA Banner */}
-      {/* <div className="bg-gradient-to-r from-primary to-accent py-20">
-        <div className="container">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-6">
-              Ready to Begin Your Recovery?
-            </h2>
-            <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-              Take the first step towards a healthier, pain-free life with our expert physiotherapy services.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="h-14 px-8 rounded-xl font-black text-lg bg-white text-primary hover:bg-slate-100">
-                Get Started Today
-              </Button>
-              <Button size="lg" variant="outline" className="h-14 px-8 rounded-xl font-black text-lg text-white border-white hover:bg-white/10">
-                Contact Us
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div> */}
+     
     </Layout>
   );
 }

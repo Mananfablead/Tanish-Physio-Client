@@ -26,7 +26,7 @@ export default function BookingConfirmationPage() {
   const { isAuthenticated } = useAuth();
   const { admins: publicAdmins, } = useSelector((state: RootState) => state.admins);
   const primaryDoctor = publicAdmins?.[0];
-
+  console.log("isAuthenticated", isAuthenticated)
   const bookingData = location.state;
   console.log("booking data", bookingData)
   const dispatch = useDispatch<AppDispatch>();
@@ -44,7 +44,7 @@ export default function BookingConfirmationPage() {
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem("qw_questionnaire");
-      if (stored) {
+      if (stored) { 
         const parsed = JSON.parse(stored);
         const now = Date.now();
         const RECENT_DAYS = 90;
@@ -235,6 +235,7 @@ export default function BookingConfirmationPage() {
               bookingId: bookingData?.bookingId,
               serviceId: bookingData?.service?.id,
             },
+            guestUser: guestUser,
           }}
         >
           <Button variant="hero" size="lg">

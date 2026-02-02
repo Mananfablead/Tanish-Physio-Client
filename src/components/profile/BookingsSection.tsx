@@ -1,7 +1,8 @@
+import { useState, useMemo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -9,9 +10,22 @@ interface BookingsSectionProps {
   bookingList: any[];
 }
 
+const ITEMS_PER_PAGE = 5; // Adjust this number as needed
+
 export function BookingsSection({ bookingList }: BookingsSectionProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const totalPages = Math.ceil(bookingList?.length / ITEMS_PER_PAGE || 0);
+  
+  const paginatedBookings = useMemo(() => {
+    if (!bookingList || bookingList.length === 0) return [];
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return bookingList.slice(startIndex, endIndex);
+  }, [bookingList, currentPage]);
 
   const getStatusBadgeClass = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -59,7 +73,11 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
             Your Bookings
           </h2>
 
-          {bookingList.filter((b) => b.status === "confirmed")
+          
+        </div>
+
+        {/* CREATE SESSION BUTTON */}
+        {bookingList.filter((b) => b.status === "confirmed")
             .length > 0 && (
             <Badge className="bg-green-100 text-green-700 font-black flex items-center gap-1">
               <CheckCircle className="h-3 w-3" />
@@ -71,7 +89,6 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
               Confirmed
             </Badge>
           )}
-        </div>
 
         {/* CREATE SESSION BUTTON */}
         <Button
@@ -114,7 +131,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {bookingList.map((booking) => (
+                {paginatedBookings.map((booking) => (
                   <tr
                     key={booking._id}
                     className="hover:bg-slate-50/50 transition-colors"
@@ -179,6 +196,52 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
+              <div className="text-sm text-slate-500">
+                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, bookingList.length)} of {bookingList.length} bookings
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-10 h-10"
+                    >
+                      {pageNum}
+                    </Button>
+                  ))}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       ) : (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">

@@ -27,6 +27,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchActiveQuestionnaire, selectActiveQuestionnaire, selectQuestionnaireLoading, selectQuestionnaireError, QuestionType } from "@/store/slices/questionnaireSlice";
 import { updateProfile } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface QuestionnaireData {
   [key: string]: any; // Dynamic keys for question responses
@@ -38,8 +39,12 @@ export default function QuestionnairePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const pendingPlan = (location.state as any)?.planToActivate || null;
   const serviceToBook = (location.state as any)?.serviceToBook || null;
+  const locationGuestUser = (location.state as any)?.guestUser || null;
+  const sessionGuestUser = typeof window !== 'undefined' ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "null") : null;
+  const guestUser = locationGuestUser || sessionGuestUser || null;
 
   // Redux selectors
   const activeQuestionnaire = useSelector(selectActiveQuestionnaire);
@@ -234,11 +239,14 @@ export default function QuestionnairePage() {
         activeQuestionnaire?.questions || []
       );
 
-      // Update user profile with health data from questionnaire
+      // Update user profile with health data from questionnaire (only for authenticated users)
       const profileData = {
         healthProfile: healthProfileData
       };
-      await updateProfile(profileData);
+      // Only update profile for authenticated users
+      if (isAuthenticated) {
+        await updateProfile(profileData);
+      }
 
       // If we were navigated here to activate a plan, complete activation and send user to booking
       const pending = pendingPlan || (() => {
@@ -274,7 +282,8 @@ export default function QuestionnairePage() {
           subscriptionId: subscriptionId,
           plan: pending, 
           questionnaireData: data, 
-          therapist: assigned 
+          therapist: assigned,
+          guestUser: guestUser
         } });
         return;
       }
@@ -285,13 +294,14 @@ export default function QuestionnairePage() {
           fromServices: true,
           service: serviceToBook, 
           questionnaireData: data, 
-          therapist: assigned 
+          therapist: assigned,
+          guestUser: guestUser
         } });
         return;
       }
 
       // Default behavior: continue to therapist discovery with intake data
-      navigate("/profile", { state: { questionnaireData: data, assigned } });
+      // navigate("/profile", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
     } catch (error) {
       console.error("Error updating profile with questionnaire data:", error);
       // Continue with navigation even if profile update fails
@@ -330,7 +340,8 @@ export default function QuestionnairePage() {
           subscriptionId: subscriptionId,
           plan: pending, 
           questionnaireData: data, 
-          therapist: assigned 
+          therapist: assigned,
+          guestUser: guestUser
         } });
         return;
       }
@@ -341,13 +352,14 @@ export default function QuestionnairePage() {
           fromServices: true,
           service: serviceToBook, 
           questionnaireData: data, 
-          therapist: assigned 
+          therapist: assigned,
+          guestUser: guestUser
         } });
         return;
       }
 
       // Default behavior: continue to therapist discovery with intake data
-      navigate("/profile", { state: { questionnaireData: data, assigned } });
+      // navigate("/profile", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
     }
   };
 
@@ -667,21 +679,24 @@ export default function QuestionnairePage() {
                         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
                           <Button variant="outline" className="w-full lg:w-auto" onClick={() => { setIsReviewing(true); }}>Review</Button>
                           <Button className="w-full lg:w-auto" onClick={async () => {
-                            // Use stored intake as-is; this will activate any pending plan or continue
+                            
                             const stored = loadStoredQuestionnaire();
                             if (stored) {
                               try {
-                                // Transform stored questionnaire data to healthProfile structure
+                               
                                 const healthProfileData = transformQuestionnaireToHealthProfile(
                                   stored.data,
                                   activeQuestionnaire?.questions || []
                                 );
 
-                                // Update user profile with health data from stored questionnaire
+                                // Update user profile with health data from stored questionnaire (only for authenticated users)
                                 const profileData = {
                                   healthProfile: healthProfileData
                                 };
-                                await updateProfile(profileData);
+                                // Only update profile for authenticated users
+                                if (isAuthenticated) {
+                                  await updateProfile(profileData);
+                                }
                               } catch (error) {
                                 console.error("Error updating profile with stored questionnaire data:", error);
                               }
@@ -710,11 +725,12 @@ export default function QuestionnairePage() {
                                   subscriptionId: subscriptionId,
                                   plan: pending, 
                                   questionnaireData: stored.data, 
-                                  therapist: assigned 
+                                  therapist: assigned,
+                                  guestUser: guestUser
                                 } });
                                 return;
                               }
-                              navigate('/profile', { state: { questionnaireData: stored.data, assigned } });
+                              // navigate('/profile', { state: { questionnaireData: stored.data, assigned, guestUser: guestUser } });
                             }
                           }}>Use & Continue</Button>
                         </div>

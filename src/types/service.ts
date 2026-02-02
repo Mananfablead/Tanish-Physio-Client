@@ -18,6 +18,7 @@ export interface Service {
     prerequisites: string;
     whatToExpect: string[];
     resultsTimeline: string;
+    sessions: number;
   };
   media?: {
     heroImage?: string;

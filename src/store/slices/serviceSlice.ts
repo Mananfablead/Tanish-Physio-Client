@@ -27,6 +27,7 @@ const transformServiceFromAPI = (apiService: any): Service => {
     description: apiService.description || 'Service Description',
     category: apiService.category || 'General',
     benefits: Array.isArray(apiService.benefits) ? apiService.benefits : [],
+    
     details: {
       title: apiService.name || apiService.title || 'Service Title',
       description: apiService.description || 'Service Description',
@@ -40,6 +41,7 @@ const transformServiceFromAPI = (apiService: any): Service => {
       prerequisites: Array.isArray(apiService.prerequisites) ? apiService.prerequisites.join(', ') : (apiService.prerequisites || ''),
       whatToExpect: Array.isArray(apiService.features) ? apiService.features : [],
       resultsTimeline: apiService.resultsTimeline || '2-4 weeks',
+      sessions: apiService.sessions,
     },
     media: {
       heroImage: heroImage,

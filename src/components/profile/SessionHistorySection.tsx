@@ -1,7 +1,8 @@
+import { useState, useMemo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Play, CheckCircle } from "lucide-react";
+import { CalendarDays, Play, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface SessionHistorySectionProps {
@@ -9,7 +10,20 @@ interface SessionHistorySectionProps {
   onReschedule: (session: any) => void;
 }
 
+const ITEMS_PER_PAGE = 5; // Adjust this number as needed
+
 export function SessionHistorySection({ sessions, onReschedule }: SessionHistorySectionProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalPages = Math.ceil(sessions?.length / ITEMS_PER_PAGE || 0);
+  
+  const paginatedSessions = useMemo(() => {
+    if (!sessions || sessions.length === 0) return [];
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return sessions.slice(startIndex, endIndex);
+  }, [sessions, currentPage]);
+  
   const getStatusBadgeClass = (status: string) => {
     switch (status?.toLowerCase()) {
       case "scheduled":
@@ -24,6 +38,8 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
         return "bg-red-100 text-red-700";
       case "rescheduled":
         return "bg-yellow-100 text-yellow-700";
+      case "missed":
+        return "bg-destructive/10 text-destructive";
       default:
         return "bg-amber-100 text-amber-700";
     }
@@ -76,7 +92,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {sessions.map((s) => {
+                {paginatedSessions.map((s) => {
                   const isCompleted = s.status === "completed";
 
                   return (
@@ -141,7 +157,9 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                                 ? "bg-primary/10 text-primary"
                                 : s.status === "completed"
                                   ? "bg-success/10 text-success"
-                                  : "bg-amber-100 text-amber-700"
+                                  : s.status === "missed"
+                                    ? "bg-destructive/10 text-destructive"
+                                    : "bg-amber-100 text-amber-700"
                             }`}
                           >
                             {s.status}
@@ -151,7 +169,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
 
                       {/* Actions */}
                       <td className="px-6 py-4 text-center">
-                        {(s.status === "scheduled" || s.status === "pending") && (
+                        {(s.status === "scheduled" || s.status === "pending" || s.status === "missed") && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -169,6 +187,52 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
+              <div className="text-sm text-slate-500">
+                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, sessions.length)} of {sessions.length} sessions
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-10 h-10"
+                    >
+                      {pageNum}
+                    </Button>
+                  ))}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       ) : (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">

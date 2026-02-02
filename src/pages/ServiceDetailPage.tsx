@@ -43,6 +43,7 @@ interface ExtendedService {
 
 // ServiceHero component
 const ServiceHero = ({ service }: { service: ExtendedService }) => {
+  console.log("service", service);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoSliding, setIsAutoSliding] = useState(true); // Auto slide state
   const autoSlideInterval = useRef<NodeJS.Timeout | null>(null);
@@ -121,6 +122,7 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
               >
                 {service.details.sessionDuration}
               </Badge>
+
               <Badge
                 variant="secondary"
                 className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border-primary/20 flex items-center gap-1"
@@ -133,6 +135,12 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
                   const fixedPrice = cleanedPriceRange.split("-")[0];
                   return fixedPrice;
                 })()}
+              </Badge>
+               <Badge
+                variant="secondary"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border-primary/20"
+              >
+                Sessions: {service.details.sessions}
               </Badge>
             </div>
           </div>
@@ -198,6 +206,7 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
       </h2>
 
       <div className="flex flex-col lg:flex-row gap-8">
+        {service.media?.videoUrl &&
         <div className="lg:w-1/2">
           {/* Video Preview */}
           {service.media?.videoUrl && (
@@ -218,11 +227,11 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
             </div>
           )}
         </div>
-
+}
         <div className="lg:w-1/2">
           {/* About Info */}
           <div className="mb-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-3">About This Service</h3>
+            {/* <h3 className="text-xl font-bold text-slate-900 mb-3">About This Service</h3> */}
             <p className="text-slate-600">{service.details.detailedDescription}</p>
           </div>
         </div>

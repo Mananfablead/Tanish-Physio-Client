@@ -1003,20 +1003,24 @@ export default function BookingPage() {
                   {/* Phone */}
                   <div>
                     <Label htmlFor="guestPhone">Phone Number</Label>
-                    <Input
-                      id="guestPhone"
-                      placeholder="Enter your phone number"
-                      value={guestUserData.phone}
-                      disabled={!!user}
-                      onChange={(e) =>
-                        setGuestUserData({
-                          ...guestUserData,
-                          phone: e.target.value,
-                        })
-                      }
-                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+                   <Input
+  id="guestPhone"
+  placeholder="Enter your phone number"
+  value={guestUserData.phone}
+  disabled={!!user}
+  onChange={(e) => {
+    const value = e.target.value.replace(/\D/g, ""); // sirf number
+    if (value.length <= 10) {
+      setGuestUserData({
+        ...guestUserData,
+        phone: value,
+      });
+    }
+  }}
+  maxLength={10}
+  className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+/>
 
-                    />
                   </div>
                 </div>
               </CardContent>
