@@ -456,7 +456,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         const updateRemoteVideoElement = (userId, stream) => {
             // Check if ref exists, if not, try again after a short delay
             if (!remoteVideoRefs.current[userId]) {
-                console.log(`⚠️ Remote video ref not found for: ${userId}, retrying in 100ms`);
+                // console.log(`⚠️ Remote video ref not found for: ${userId}, retrying in 100ms`);
                 setTimeout(() => {
                     updateRemoteVideoElement(userId, stream);
                 }, 100);
@@ -483,7 +483,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                                     console.log(`✅ Remote video playing for user: ${userId}`);
                                 })
                                 .catch(error => {
-                                    console.warn(`⚠️ Remote video autoplay failed for ${userId}:`, error);
+                                    // console.warn(`⚠️ Remote video autoplay failed for ${userId}:`, error);
                                     // Try to play muted
                                     videoElement.muted = true;
                                     videoElement.play().catch(err => {
@@ -867,31 +867,39 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
         const handleParticipantJoined = (data) => {
             console.log('CLIENT: Participant joined:', data);
-            console.log('CLIENT: Participant role data:', data.role, data.isTherapist);
+            
+            // Create standardized participant data (matching backend structure)
+            const newParticipant = {
+                socketId: data.socketId,
+                userId: data.userId,
+                name: data.name && data.name !== 'Clinician' && data.name !== 'User Unknown' ? data.name : 
+                      (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) ||
+                      data.displayName || data.email || `User ${data.userId?.substring(0, 5) || data.socketId?.substring(0, 5) || "Unknown"}`,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                displayName: data.displayName,
+                role: data.role,
+                email: data.email,
+                isTherapist: data.isTherapist,
+                isUser: data.isUser,
+                joinedAt: data.joinedAt || new Date().toISOString(),
+                isSelf: data.socketId === socket.id
+            };
+            
+            console.log('CLIENT: Standardized participant data:', newParticipant);
+            
             setParticipants(prev => {
-                // Avoid duplicates by checking both userId and socketId
-                const exists = prev.some(p =>
-                    p.userId === data.userId && p.socketId === data.socketId
-                );
+                // Avoid duplicates by checking socketId (primary identity)
+                const exists = prev.some(p => p.socketId === newParticipant.socketId);
                 if (exists) {
                     console.log('CLIENT: Participant already exists, skipping');
                     return prev;
                 }
-                const newParticipant = {
-                    userId: data.userId,
-                    socketId: data.socketId,
-                    name: data.name || data.userName || data.firstName + ' ' + data.lastName || data.displayName || `User ${data.userId || data.socketId?.slice(0, 5) || 'Unknown'}`,
-                    role: data.role || (data.isTherapist ? 'therapist' : (data.isUser ? 'patient' : userRole)),
-                    isTherapist: data.isTherapist || (data.role === 'therapist' || data.role === 'admin'),
-                    isUser: data.isUser || (data.role === 'patient'),
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    displayName: data.displayName,
-                    joinedAt: new Date(),
-                    isSelf: data.socketId === socket.id
-                };
+                
                 console.log('CLIENT: Adding new participant:', newParticipant);
-                return [...prev, newParticipant];
+                const updatedParticipants = [...prev, newParticipant];
+                console.log('CLIENT: Updated participants count:', updatedParticipants.length);
+                return updatedParticipants;
             });
 
             // If the participant is an admin/therapist, create offer
@@ -927,8 +935,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 }, 500); // Reduced timeout
             }
 
-            // If the participant is a client/patient and this is client joining client's perspective, prepare to handle offers
-            if (data.role === 'patient' || data.isUser || data.role === 'client') {
+            // If the participant is a client/patient, prepare to handle offers
+            if (data.role === 'patient' || data.isUser) {
                 console.log('CLIENT: Another patient joined, preparing to handle their offer');
                 // Just make sure our local stream is ready to respond to offers
                 if (!localStream) {
@@ -942,12 +950,34 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         const handleParticipantLeft = (data) => {
             console.log('CLIENT: Participant left:', data);
             setParticipants(prev => {
-                const filtered = prev.filter(p =>
-                    p.userId !== data.userId && p.socketId !== data.socketId
-                );
+                const filtered = prev.filter(p => p.socketId !== data.socketId);
                 console.log('CLIENT: Participants after removal:', filtered);
                 return filtered;
             });
+        };
+
+        const handleRoomParticipants = (data) => {
+            console.log('CLIENT: Received room participants:', data);
+            // Set all participants at once to ensure consistency
+            const standardizedParticipants = data.participants.map(p => ({
+                socketId: p.socketId,
+                userId: p.userId,
+                name: p.name && p.name !== 'Clinician' && p.name !== 'User Unknown' ? p.name : 
+                      (p.firstName && p.lastName ? `${p.firstName} ${p.lastName}` : null) ||
+                      p.displayName || p.email || `User ${p.userId?.substring(0, 5) || p.socketId?.substring(0, 5) || "Unknown"}`,
+                firstName: p.firstName,
+                lastName: p.lastName,
+                displayName: p.displayName,
+                role: p.role,
+                email: p.email,
+                isTherapist: p.isTherapist,
+                isUser: p.isUser,
+                joinedAt: p.joinedAt,
+                isSelf: p.socketId === socket.id
+            }));
+            
+            console.log('CLIENT: Standardized room participants:', standardizedParticipants);
+            setParticipants(standardizedParticipants);
         };
 
         const handleJoinedCall = (data) => {
@@ -970,7 +1000,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                     const selfParticipant = {
                         userId: socket.user?.userId,
                         socketId: socket.id,
-                        name: socket.user?.name || socket.user?.firstName + ' ' + socket.user?.lastName || socket.user?.displayName || `You (${userRole})`,
+                        name: socket.user?.name || (socket.user?.firstName && socket.user?.lastName ? 
+                            `${socket.user.firstName} ${socket.user.lastName}` : null) || 
+                            socket.user?.displayName || `You (${userRole})`,
                         role: userRole,
                         isTherapist: userRole === 'therapist' || userRole === 'admin',
                         isUser: userRole === 'patient',
@@ -995,6 +1027,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         // Add participant listeners
         socket.on('participant-joined', handleParticipantJoined);
         socket.on('participant-left', handleParticipantLeft);
+        socket.on('room-participants', handleRoomParticipants);
         socket.on('joined-call', handleJoinedCall);
 
         setInitialized(true);
@@ -1006,6 +1039,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             socket.off('webrtc-ice-candidate-received', handleWebRTCIceCandidate);
             socket.off('participant-joined', handleParticipantJoined);
             socket.off('participant-left', handleParticipantLeft);
+            socket.off('room-participants', handleRoomParticipants);
             socket.off('joined-call', handleJoinedCall);
         };
     }, [socket, userRole, initialized, handleOffer, handleAnswer, handleIceCandidate, initLocalMedia, createPeer, localStream]);

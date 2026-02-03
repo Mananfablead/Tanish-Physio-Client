@@ -134,7 +134,7 @@ const VideoCall = ({
           );
         }
       } else {
-        console.log(`⚠️ Client remote video ref not found for: ${userId}`);
+        // console.log(`⚠️ Client remote video ref not found for: ${userId}`);
       }
     });
   }, [localStream, remoteStreams, remoteVideoRefs]);
@@ -163,6 +163,7 @@ const VideoCall = ({
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
+  const chatContainerRef = React.useRef(null);
   const [mediaError, setMediaError] = useState(null);
   const [isInitializingMedia, setIsInitializingMedia] = useState(false);
   const [therapistPresent, setTherapistPresent] = useState(false);
@@ -172,6 +173,50 @@ const VideoCall = ({
   const [localTherapistName, setLocalTherapistName] = useState(
     therapistName || "Clinician"
   ); // Add missing therapistName state
+
+  // Debug effect to monitor participants changes
+  useEffect(() => {
+    console.log("=== PARTICIPANTS DEBUG ===");
+    console.log("Participants count:", participants?.length || 0);
+    console.log("Participants list:", participants);
+    console.log("Show participants panel:", showParticipants);
+    
+    // Log each participant's name
+    if (participants && participants.length > 0) {
+      participants.forEach((p, index) => {
+        console.log(`Participant ${index}:`, {
+          userId: p.userId,
+          name: p.name,
+          role: p.role,
+          isSelf: p.isSelf
+        });
+      });
+    }
+    
+    console.log("========================");
+  }, [participants, showParticipants]);
+
+  // Ensure self participant is always present
+  useEffect(() => {
+    if (user && socket && (!participants || participants.length === 0)) {
+      console.log("⚠️ No participants found, adding self participant");
+      const selfParticipant = {
+        userId: user.id || user.userId || socket.user?.userId,
+        socketId: socket.id,
+        name: user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "You"),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role || socket.user?.role || "patient",
+        isSelf: true,
+        isTherapist: (user.role === "therapist" || user.role === "admin") || (socket.user?.role === "therapist" || socket.user?.role === "admin"),
+        joinedAt: new Date().toISOString()
+      };
+      
+      setParticipants([selfParticipant]);
+      console.log("✅ Added self participant:", selfParticipant);
+    }
+  }, [participants, showParticipants, user, socket]);
 
   // Debug effect to monitor state changes
   useEffect(() => {
@@ -331,6 +376,33 @@ const VideoCall = ({
         setJoinedCall(true);
         setCallStatus("connected");
         setCallError(null); // Clear any previous errors
+        
+        // Add current user to participants list
+        if (user && socket) {
+          const currentUser = {
+            userId: user.id || user.userId || socket.user?.userId,
+            socketId: socket.id,
+            name: user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "You"),
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role || socket.user?.role || "patient",
+            isSelf: true,
+            isTherapist: (user.role === "therapist" || user.role === "admin") || (socket.user?.role === "therapist" || socket.user?.role === "admin"),
+            joinedAt: new Date().toISOString()
+          };
+          
+          setParticipants((prev) => {
+            // Check if self participant already exists
+            const selfExists = prev.some(p => p.isSelf);
+            if (selfExists) {
+              console.log("✅ Self participant already exists");
+              return prev;
+            }
+            console.log("✅ Adding self participant:", currentUser);
+            return [...prev, currentUser];
+          });
+        }
       };
 
       socket.on("error", handleError);
@@ -341,7 +413,7 @@ const VideoCall = ({
         socket.off("joined-call", handleJoinedCall);
       };
     }
-  }, [socket, handleError]);
+  }, [socket, handleError, user]);
 
   // Timer for call duration
   useEffect(() => {
@@ -359,12 +431,25 @@ const VideoCall = ({
     };
   }, [callActive, callStartTime]);
 
-  // Load chat messages
+  // Load chat messages and join chat room
   useEffect(() => {
-    if (sessionId && externalConnected && connected) {
+    if (sessionId && externalConnected && connected && socket) {
+      // Join the chat room
+      socket.emit('join-room', {
+        sessionId: sessionId
+      });
+      
+      // Load existing messages
       loadChatMessages();
     }
-  }, [sessionId, externalConnected, connected]);
+  }, [sessionId, externalConnected, connected, socket]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages, showChat]);
 
   const loadChatMessages = async () => {
     try {
@@ -382,9 +467,29 @@ const VideoCall = ({
       return;
 
     try {
+      const senderName = user?.name || userName || "You";
+      const messageData = {
+        content: newMessage.trim(),
+        senderId: socket?.id,
+        senderName: senderName,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Send message via API
       await chatApi.sendMessage(sessionId, newMessage.trim());
+      
+      // Add to local chat messages immediately for better UX
+      setChatMessages(prev => [...prev, messageData]);
       setNewMessage("");
-      await loadChatMessages(); // Refresh messages
+      
+      // Also broadcast via socket if available
+      if (socket) {
+        socket.emit("send-message", {
+          roomId,
+          roomType,
+          message: messageData
+        });
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -412,7 +517,16 @@ const VideoCall = ({
 
   // Set up socket listeners
   useEffect(() => {
-    if (!socket || !(externalConnected || connected)) return;
+    console.log("=== SOCKET LISTENERS SETUP ===");
+    console.log("Socket available:", !!socket);
+    console.log("Socket connected:", socket?.connected);
+    console.log("External connected:", externalConnected);
+    console.log("Internal connected:", connected);
+    
+    if (!socket || !(externalConnected || connected)) {
+      console.log("❌ Socket not ready for listeners");
+      return;
+    }
 
     // Handle incoming offer
     const offerListener = (data) => {
@@ -493,68 +607,9 @@ const VideoCall = ({
       console.log("=== PARTICIPANT JOINED EVENT ===");
       console.log("Participant data:", data);
       console.log("Session details available:", !!sessionDetails);
-
-      // Validate that this participant belongs to the session
-      let isValidParticipant = false;
-      let enhancedData = { ...data, isSelf: data.socketId === socket.id };
-
-      // Check if participant exists in session details
-      if (sessionDetails && sessionDetails.participants) {
-        const matchingParticipant = sessionDetails.participants.find(
-          (p) => p.userId === data.userId
-        );
-
-        if (matchingParticipant) {
-          isValidParticipant = true;
-          enhancedData.name = matchingParticipant.name;
-          enhancedData.role = matchingParticipant.role;
-          enhancedData.isSelf = matchingParticipant.isSelf;
-          enhancedData.isTherapist = matchingParticipant.isTherapist;
-          console.log("✅ Valid participant joined:", enhancedData.name);
-        }
-      } else {
-        // If no session details, allow participants but validate basic data
-        if (data.userId && data.socketId) {
-          isValidParticipant = true;
-          console.log(
-            "⚠️ No session details - allowing participant:",
-            data.userId
-          );
-        }
-      }
-
-      // Only add valid participants to the list (avoid duplicates)
-      if (isValidParticipant) {
-        setParticipants((prev) => {
-          // Check if participant already exists
-          const exists = prev.some(
-            (p) =>
-              p.userId === enhancedData.userId &&
-              p.socketId === enhancedData.socketId
-          );
-          if (exists) {
-            console.log(
-              "⚠️ Participant already exists, skipping:",
-              enhancedData.userId
-            );
-            return prev;
-          }
-          console.log("✅ Adding new participant:", enhancedData);
-          return [...prev, enhancedData];
-        });
-      } else {
-        console.log("❌ Invalid participant attempt blocked:", data.userId);
-        return; // Don't process invalid participants
-      }
-      if (data.isTherapist && !isTherapist) {
-        setIncomingCall(true);
-      }
-      console.log("=== PARTICIPANT JOINED EVENT ===");
-      console.log("Participant data:", data);
-      console.log("Current user role:", userRole);
-      console.log("Current therapistPresent state:", therapistPresent);
-      console.log("Current localStream state:", !!localStream);
-      console.log("Current socket connected:", connected);
+      console.log("Current participants count before adding:", participants.length);
+      console.log("Current participants list:", participants);
+      console.log("Participant name:", data.name);
 
       // Check if this is a therapist or admin joining
       let isTherapistJoining = false;
@@ -572,72 +627,44 @@ const VideoCall = ({
         console.log("Participant is not therapist/admin");
       }
 
-      // Enhance participant data with name if available
-      let participantData = { ...data, isSelf: data.socketId === socket.id };
+      // Create enhanced participant data
+      const participantData = {
+        userId: data.userId || socket.user?.userId,
+        socketId: data.socketId || socket.id,
+        name: data.name && data.name !== 'Clinician' && data.name !== 'User Unknown' 
+              ? data.name 
+              : (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) ||
+              (user && data.socketId === socket.id ? 
+                (user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "You")) :
+                `Participant ${data.userId?.substring(0, 5) || data.socketId?.substring(0, 5) || "Unknown"}`),
+        firstName: data.firstName || (user && data.socketId === socket.id ? user.firstName : null),
+        lastName: data.lastName || (user && data.socketId === socket.id ? user.lastName : null),
+        email: data.email,
+        role: data.role || "participant",
+        isSelf: data.socketId === socket.id,
+        isTherapist: data.isTherapist || data.role === "therapist" || data.role === "admin" || false,
+        isUser: data.isUser || data.role === "patient" || false,
+        joinedAt: data.joinedAt || new Date().toISOString()
+      };
 
-      // If the participant doesn't have a name, try to get it from various sources
-      if (!participantData.name) {
-        // First try to get name from session details if available
-        if (sessionDetails && sessionDetails.participants) {
-          // Look for matching participant in session details
-          const matchingParticipant = sessionDetails.participants.find(
-            (p) => p.userId === data.userId
-          );
-
-          if (matchingParticipant && matchingParticipant.name) {
-            participantData.name = matchingParticipant.name;
-            console.log(
-              "Participant name found from session details:",
-              matchingParticipant.name
-            );
-          }
-        } else if (sessionDetails && sessionDetails.session) {
-          // Fallback to old session structure
-          const sessionData = sessionDetails.session;
-
-          // Look for therapist name in session data
-          if (data.isTherapist && sessionData.therapist?.name) {
-            participantData.name = sessionData.therapist.name;
-          }
-          // Look for user name in session data
-          else if (
-            data.userId === sessionData.userId &&
-            sessionData.user?.name
-          ) {
-            participantData.name = sessionData.user.name;
-          }
-        }
-
-        // If still no name, try to get it from the user prop
-        if (!participantData.name) {
-          // If this is the current user, use the name from the user prop
-          if (participantData.isSelf && user) {
-            participantData.name =
-              user.name ||
-              (user.firstName && user.lastName
-                ? user.firstName + " " + user.lastName
-                : "You");
-          } else {
-            // For other participants, if we have user data and it matches, use it
-            // This might happen if the socket event didn't include the name
-            if (user && data.userId && data.userId === user.id) {
-              participantData.name =
-                user.name ||
-                (user.firstName && user.lastName
-                  ? user.firstName + " " + user.lastName
-                  : "User");
-            }
-          }
-        }
-      }
+      console.log("✅ Enhanced participant data:", participantData);
 
       setParticipants((prev) => {
         // Avoid duplicates by checking both userId and socketId
         const exists = prev.some(
-          (p) => p.userId === data.userId && p.socketId === data.socketId
+          (p) => (p.userId === participantData.userId && p.userId) || 
+                 (p.socketId === participantData.socketId && p.socketId)
         );
-        if (exists) return prev;
-        return [...prev, participantData];
+        if (exists) {
+          console.log("⚠️ Participant already exists, skipping:", participantData.userId || participantData.socketId);
+          return prev;
+        }
+        
+        console.log("✅ Adding participant to list:", participantData);
+        const newParticipants = [...prev, participantData];
+        console.log("Updated participants count:", newParticipants.length);
+        console.log("Updated participants list:", newParticipants);
+        return newParticipants;
       });
 
       // AUTO-JOIN LOGIC - Patient auto-joins when therapist joins
@@ -944,9 +971,46 @@ const VideoCall = ({
       }
     };
 
-    // Handle chat message
+    // Handle chat message (from API)
     const chatMessageListener = (data) => {
-      setChatMessages((prev) => [...prev, data.message]);
+      console.log("Client received chat message:", data);
+      
+      // Determine sender name - use provided name or fallback
+      const senderName = data.senderName || 
+                        data.message?.senderName || 
+                        (data.senderId === socket?.id ? (user?.name || userName || "You") : "Clinician");
+      
+      // Add the received message to chat messages
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          ...data.message,
+          senderId: data.senderId || data.message.senderId,
+          senderName: senderName,
+          content: data.message.content || data.message.message || data.message.text,
+          timestamp: data.message.timestamp || data.message.createdAt || new Date().toISOString()
+        }
+      ]);
+    };
+
+    // Handle real-time message broadcast
+    const messageReceivedListener = (data) => {
+      console.log("Client received real-time message:", data);
+      
+      // Determine sender name - use provided name or fallback
+      const senderName = data.senderName || 
+                        data.message?.senderName || 
+                        (data.senderId === socket?.id ? (user?.name || userName || "You") : "Clinician");
+      
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          content: data.message.content || data.message.message || data.message.text || data.content,
+          senderId: data.senderId || data.message?.senderId || socket?.id,
+          senderName: senderName,
+          timestamp: data.timestamp || data.message?.timestamp || data.createdAt || new Date().toISOString()
+        }
+      ]);
     };
 
     // Handle typing indicator
@@ -983,6 +1047,7 @@ const VideoCall = ({
     on("screen-share-toggle", screenShareToggleListener);
     on("user-muted", userMutedListener);
     on("new-message", chatMessageListener);
+    on("message-received", messageReceivedListener);
     on("typing", typingListener);
     on("stop-typing", stopTypingListener);
 
@@ -1011,6 +1076,7 @@ const VideoCall = ({
           socket.off("screen-share-toggle", screenShareToggleListener);
           socket.off("user-muted", userMutedListener);
           socket.off("new-message", chatMessageListener);
+          socket.off("message-received", messageReceivedListener);
           socket.off("typing", typingListener);
           socket.off("stop-typing", stopTypingListener);
         } catch (err) {
@@ -1052,21 +1118,29 @@ const VideoCall = ({
   const renderRemoteVideos = () => {
     if (roomType === "session") {
       // 1-on-1 call - single remote video
-      const userId = Object.keys(remoteStreams)[0];
-      if (userId) {
-        const stream = remoteStreams[userId];
+      const socketId = Object.keys(remoteStreams)[0];
+      if (socketId) {
+        const stream = remoteStreams[socketId];
+        const participant = participants.find(p => p.socketId === socketId) || {};
+        
+        // Debug logging
+        console.log('CLIENT VIDEO RENDER: socketId:', socketId);
+        console.log('CLIENT VIDEO RENDER: participants array:', participants);
+        console.log('CLIENT VIDEO RENDER: found participant:', participant);
+        console.log('CLIENT VIDEO RENDER: participant name:', participant.name);
+        
         return (
           <div className="relative w-full h-full bg-black rounded-xl overflow-hidden">
             <video
               ref={(el) => {
                 if (el) {
-                  remoteVideoRefs.current[userId] = el;
+                  remoteVideoRefs.current[socketId] = el;
                   if (stream) {
                     try {
                       if (el.srcObject !== stream) {
                         el.srcObject = stream;
                         console.log(
-                          `✅ Remote video ref assigned for user: ${userId}`
+                          `✅ Remote video ref assigned for socket: ${socketId}`
                         );
 
                         // Ensure video plays
@@ -1080,19 +1154,19 @@ const VideoCall = ({
                           playPromise
                             .then(() => {
                               console.log(
-                                `✅ Remote video playing for user: ${userId}`
+                                `✅ Remote video playing for socket: ${socketId}`
                               );
                             })
                             .catch((error) => {
                               console.warn(
-                                `⚠️ Remote video autoplay failed for ${userId}:`,
+                                `⚠️ Remote video autoplay failed for ${socketId}:`,
                                 error
                               );
                               // Try to play muted
                               el.muted = true;
                               el.play().catch((err) => {
                                 console.error(
-                                  `❌ Remote video play failed for ${userId}:`,
+                                  `❌ Remote video play failed for ${socketId}:`,
                                   err
                                 );
                               });
@@ -1101,7 +1175,7 @@ const VideoCall = ({
                       }
                     } catch (err) {
                       console.error(
-                        `❌ Error assigning remote video ref for ${userId}:`,
+                        `❌ Error assigning remote video ref for ${socketId}:`,
                         err
                       );
                     }
@@ -1114,7 +1188,7 @@ const VideoCall = ({
               className="w-full h-full object-cover"
             />
             <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-              Clinician
+              {participant.name && participant.name !== 'Clinician' && participant.name !== 'User Unknown' ? participant.name : "Clinician"}
             </div>
           </div>
         );
@@ -1167,17 +1241,18 @@ const VideoCall = ({
         // Multiple participants - grid layout
         return (
           <div className="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
-            {streamKeys.map((userId, index) => {
-              const stream = remoteStreams[userId];
+            {streamKeys.map((socketId, index) => {
+              const stream = remoteStreams[socketId];
+              const participant = participants.find(p => p.socketId === socketId);
               return (
                 <div
-                  key={`${userId}-${index}`}
+                  key={`${socketId}-${index}`}
                   className="relative bg-black rounded-lg overflow-hidden"
                 >
                   <video
                     ref={(el) => {
                       if (el) {
-                        remoteVideoRefs.current[userId] = el;
+                        remoteVideoRefs.current[socketId] = el;
                         if (stream) {
                           el.srcObject = stream;
                         }
@@ -1188,7 +1263,7 @@ const VideoCall = ({
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                    Participant {index + 1}
+                    {participant?.name && participant.name !== 'Clinician' && participant.name !== 'User Unknown' ? participant.name : `Participant ${index + 1}`}
                   </div>
                 </div>
               );
@@ -1199,63 +1274,71 @@ const VideoCall = ({
     }
   };
 
-  // Update participants with user names when user data is available
+  // Update therapist name based on participants - prioritize therapist over other participants
   useEffect(() => {
+    console.log('=== THERAPIST NAME UPDATE ===');
+    console.log('Participants:', participants);
+    console.log('User:', user);
+    
+    // First, update self participant name if needed
     if (user) {
       setParticipants((prevParticipants) => {
-        // Check if any participant needs name update
         const needsUpdate = prevParticipants.some(
           (participant) => participant.isSelf && !participant.name
         );
 
         if (needsUpdate) {
           return prevParticipants.map((participant) => {
-            // If it's the current user and doesn't have a name, add the name from user context
             if (participant.isSelf && !participant.name) {
               return {
                 ...participant,
                 name:
                   user.name ||
                   (user.firstName && user.lastName
-                    ? user.firstName + " " + user.lastName
-                    : "") ||
-                  "You",
+                    ? `${user.firstName} ${user.lastName}`
+                    : "You"),
               };
             }
             return participant;
           });
         }
-        // Return unchanged if no updates needed
         return prevParticipants;
       });
     }
 
-    // Update therapist name based on participants - prioritize therapist over other participants
+    // Find therapist participant (prioritize actual therapists)
     const therapist = participants.find((p) => p.isTherapist && !p.isSelf);
-    if (therapist && therapist.name) {
+    console.log('Found therapist:', therapist);
+    
+    if (therapist && therapist.name && therapist.name !== 'Clinician') {
+      console.log('Setting therapist name to:', therapist.name);
       setLocalTherapistName(therapist.name);
     } else {
       // If no therapist found, look for other non-self participants
       const otherParticipant = participants.find(
-        (p) => !p.isSelf && !p.isTherapist
+        (p) => !p.isSelf && p.name && p.name !== 'Clinician' && p.name !== 'User Unknown'
       );
+      console.log('Found other participant:', otherParticipant);
+      
       if (otherParticipant && otherParticipant.name) {
+        console.log('Setting therapist name to other participant:', otherParticipant.name);
         setLocalTherapistName(otherParticipant.name);
       } else {
         // Default name if no other participant found
-        const isTherapistRole = user?.role === "therapist";
+        const isTherapistRole = user?.role === "therapist" || user?.role === "admin";
         const userName =
           user?.name ||
           (user?.firstName && user?.lastName
-            ? user.firstName + " " + user.lastName
+            ? `${user.firstName} ${user.lastName}`
             : "");
         const defaultTherapistName = isTherapistRole
           ? userName || "You (Therapist)"
           : "Clinician";
+        console.log('Setting default therapist name:', defaultTherapistName);
         setLocalTherapistName(defaultTherapistName);
       }
     }
-  }, [participants, user, setParticipants]);
+  }, [participants, user]);
 
   // Initialize participants from session details if available
   useEffect(() => {
@@ -1604,7 +1687,7 @@ const VideoCall = ({
               </span>
             </div>
             <h1 className="text-white font-semibold tracking-tight">
-              {localTherapistName || "Clinician"}
+              {localTherapistName && localTherapistName !== 'Clinician' ? localTherapistName : "Clinician"}
             </h1>
           </div>
         </div>
@@ -1671,10 +1754,10 @@ const VideoCall = ({
               </Button>
             </div>
             <div className="flex-1 p-6 space-y-6">
-              {participants.length > 0 ? (
+              {participants && participants.length > 0 ? (
                 participants.map((participant, index) => (
                   <div
-                    key={`${participant.userId}-${participant.socketId}-${index}`}
+                    key={`${participant.userId || 'unknown'}-${participant.socketId || 'unknown'}-${index}`}
                     className="flex items-center gap-4"
                   >
                     <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
@@ -1691,15 +1774,13 @@ const VideoCall = ({
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <p className="text-white font-medium text-sm">
-                          {participant.name ||
-                            participant.displayName ||
-                            (participant.firstName && participant.lastName
+                          {participant.name && participant.name !== 'Clinician' && participant.name !== 'User Unknown'
+                            ? participant.name
+                            : (participant.firstName && participant.lastName
                               ? `${participant.firstName} ${participant.lastName}`
                               : null) ||
-                            participant.role ||
-                            `User ${
-                              participant.userId?.substring(0, 5) || "Unknown"
-                            }`}
+                            participant.displayName ||
+                            `User ${participant.userId?.substring(0, 5) || participant.socketId?.substring(0, 5) || "Unknown"}`}
                         </p>
                         {participant.isSelf && (
                           <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4">
@@ -1748,19 +1829,77 @@ const VideoCall = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex-1 p-6 flex flex-col justify-center items-center text-center">
-              <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 border border-slate-700">
-                <MessageSquare className="h-5 w-5 text-slate-500" />
-              </div>
-              <p className="text-slate-400 text-sm font-medium">
-                Chat is secure and encrypted
-              </p>
-              <p className="text-slate-600 text-[10px] mt-2 px-6">
-                All clinical notes shared here will be saved to your recovery
-                record.
-              </p>
+            
+            {/* Chat Messages Display */}
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+              {chatMessages.length === 0 ? (
+                <div className="flex flex-col justify-center items-center text-center h-full py-8">
+                  <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 border border-slate-700">
+                    <MessageSquare className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <p className="text-slate-400 text-sm font-medium">
+                    Chat is secure and encrypted
+                  </p>
+                  <p className="text-slate-600 text-[10px] mt-2 px-6">
+                    All clinical notes shared here will be saved to your recovery record.
+                  </p>
+                </div>
+              ) : (
+                chatMessages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${message.senderId === socket?.id ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                        message.senderId === socket?.id
+                          ? 'bg-emerald-500 text-white rounded-br-md'
+                          : 'bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700'
+                      }`}
+                    >
+                      <p className="text-[10px] font-semibold mb-1 opacity-80">
+                        {message.senderId === socket?.id 
+                          ? (user?.name || userName || "You")
+                          : (message.senderName && message.senderName !== 'Clinician' && message.senderName !== 'User Unknown' ? message.senderName : 'Clinician')}
+                      </p>
+                      <p>{message.content || message.message}</p>
+                      <p
+                        className={`text-[10px] mt-1 ${
+                          message.senderId === socket?.id
+                            ? 'text-emerald-100 opacity-80'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        {new Date(message.timestamp || message.createdAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+              
+              {/* Typing indicators */}
+              {typingUsers.length > 0 && (
+                <div className="flex justify-start">
+                  <div className="bg-slate-800 text-slate-400 rounded-2xl rounded-bl-md px-4 py-3 text-sm border border-slate-700">
+                    <div className="flex items-center gap-1">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                      <span className="ml-2 text-xs">
+                        {typingUsers.length === 1 ? 'Someone is typing...' : `${typingUsers.length} people typing...`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="p-6 border-t border-slate-800">
+            
+            <div className="p-4 border-t border-slate-800">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1772,12 +1911,15 @@ const VideoCall = ({
                       sendChatMessage();
                     }
                   }}
+                  onFocus={handleTyping}
+                  onBlur={handleStopTyping}
                   className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-slate-500 placeholder:text-slate-600"
                 />
                 <Button
                   size="icon"
                   className="bg-slate-100 hover:bg-white text-slate-900 rounded-xl"
                   onClick={sendChatMessage}
+                  disabled={!newMessage.trim() || !externalConnected || !connected}
                 >
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -1879,7 +2021,7 @@ const VideoCall = ({
               <Share className="h-5 w-5" />
             </Button>
 
-            <Button
+            {/* <Button
               variant="secondary"
               size="icon"
               className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300"
@@ -1887,7 +2029,7 @@ const VideoCall = ({
               disabled={!externalConnected || !connected}
             >
               <Settings className="h-5 w-5" />
-            </Button>
+            </Button> */}
 
             <Button
               variant="destructive"
@@ -1921,7 +2063,7 @@ const VideoCall = ({
       </div>
 
       {/* Settings Modal */}
-      {showSettings && (
+      {/* {showSettings && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-t-3xl md:rounded-3xl w-full md:w-96 max-w-md mx-4 mb-0 md:mb-auto animate-in slide-in-from-bottom md:slide-in-from-top duration-300">
             <div className="p-6 border-b border-slate-800">
@@ -1970,7 +2112,7 @@ const VideoCall = ({
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
