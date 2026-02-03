@@ -614,29 +614,7 @@ export default function SchedulePage() {
 
                           {/* ACTIONS */}
                           {/* ACTIONS */}
-                          <div className="flex gap-3 mt-5 justify-end">
-                            {session.status === "Completed" ? (
-                              <Button variant="outline" className="font-bold">
-                                <FileText className="h-4 w-4 mr-2" />
-                                Session Summary
-                              </Button>
-                            ) : session.status === "live" ? (
-                              <Button
-                                className="bg-green-600 hover:bg-green-700 font-bold"
-                                onClick={() =>
-                                  navigate("/video-call", {
-                                    state: {
-                                      sessionId: session.id,
-                                      therapist: session.therapist,
-                                    },
-                                  })
-                                }
-                              >
-                                <VideoIcon className="h-4 w-4 mr-2" />
-                                Join Call
-                              </Button>
-                            ) : null}
-                          </div>
+                         
 
                         </motion.div>
                       ))}

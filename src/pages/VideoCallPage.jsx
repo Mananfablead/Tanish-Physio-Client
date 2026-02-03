@@ -57,25 +57,8 @@ const VideoCallPage = () => {
           // Continue anyway as the token generation will validate access
         }
 
-        // Then, get participant details for the session
-        try {
-          const participantsResponse =
-            await videoCallApi.getSessionParticipants(sessionId);
-          console.log("Session participants:", participantsResponse);
-          if (participantsResponse.success) {
-            // Add participants data to sessionDetails
-            setSessionDetails((prev) => ({
-              ...prev,
-              participants: participantsResponse.data.participants,
-            }));
-          }
-        } catch (participantsErr) {
-          console.warn(
-            "Could not fetch session participants:",
-            participantsErr
-          );
-          // Continue anyway as the basic session validation already passed
-        }
+        // Participants will be populated through peer connections, not API calls
+        console.log("Participants will be populated through peer connections");
 
         console.log(
           "DEBUG: Generating call token for session:",
@@ -129,7 +112,7 @@ const VideoCallPage = () => {
   }, [sessionId, user, token]);
 
   const handleEndCall = () => {
-    navigate("/");
+    navigate("/profile");
   };
 
   // Extract participant names from session details

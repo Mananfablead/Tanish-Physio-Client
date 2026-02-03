@@ -21,7 +21,6 @@ export default defineConfig(({ mode }) => ({
   define: {
     global: "globalThis",
     "process.env": JSON.stringify({}),
-    "process.nextTick": "(fn) => setTimeout(fn, 0)",
     "process.browser": true,
   },
   resolve: {

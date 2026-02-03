@@ -86,6 +86,9 @@ export function PersonalInfoSection({ user, onSaveChanges }: PersonalInfoSection
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <Input
+                      id="location"
+                      defaultValue={user?.location ?? ""}
+                    
                       placeholder="Enter your location"
                       className="h-12 pl-10 rounded-xl border-slate-200 focus:border-primary focus:ring-primary/20 font-bold"
                     />

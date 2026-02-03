@@ -189,34 +189,41 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
                     {/* STATUS */}
                     <td className="px-6 py-4 text-center">
-                      <div className="space-y-2 flex flex-col items-center">
-                        {/* Original Status Badge */}
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                          ${
-                            booking.status === "confirmed"
-                              ? "bg-green-100 text-green-700"
-                              : booking.status === "cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : booking.status === "pending"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                        
-                        {/* Expiration Status Badge */}
-                        {(() => {
-                          const expirationStatus = getServiceExpirationStatus(booking);
-                          return (
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${expirationStatus.color}`}>
-                              {expirationStatus.text}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </td>
+  <div className="space-y-2 flex flex-col items-center">
+    {(() => {
+      const expirationStatus = getServiceExpirationStatus(booking);
+      const isExpired = expirationStatus.text === "Expire";
+
+      return (
+        <>
+          {/* Status badge hide if expired */}
+          {!isExpired && (
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-black uppercase
+              ${
+                booking.status === "confirmed"
+                  ? "bg-green-100 text-green-700"
+                  : booking.status === "cancelled"
+                  ? "bg-red-100 text-red-700"
+                  : booking.status === "pending"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {booking.status}
+            </span>
+          )}
+
+          {/* Expiration badge always show */}
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${expirationStatus.color}`}>
+            {expirationStatus.text}
+          </span>
+        </>
+      );
+    })()}
+  </div>
+</td>
+
                   </tr>
                 ))}
               </tbody>

@@ -52,23 +52,8 @@ export default function GroupVideoCallPage() {
           console.warn("Could not fetch group session details:", sessionErr);
         }
 
-        // Then, get participant details for the group session
-        try {
-          const participantsResponse =
-            await videoCallApi.getGroupSessionParticipants(id);
-          console.log("Group session participants:", participantsResponse);
-          if (participantsResponse.success) {
-            setGroupSessionDetails((prev: any) => ({
-              ...prev,
-              participants: participantsResponse.data.participants,
-            }));
-          }
-        } catch (participantsErr) {
-          console.warn(
-            "Could not fetch group session participants:",
-            participantsErr
-          );
-        }
+        // Participants will be populated through peer connections, not API calls
+        console.log("Group session participants will be populated through peer connections");
 
         // Generate call token for group session
         const response = await videoCallApi.generateGroupJoinLink(

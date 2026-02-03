@@ -264,10 +264,12 @@ export default function ProfilePage() {
       // Get form data
       const nameInput = document.querySelector("#name") as HTMLInputElement;
       const phoneInput = document.querySelector("#phone") as HTMLInputElement;
+      const locationInput = document.querySelector("#location") as HTMLInputElement;
 
       const profileData = {
         name: nameInput?.value || user?.name,
         phone: phoneInput?.value || user?.phone,
+        location: locationInput?.value || user?.location,
       };
 
       await dispatch(updateProfile(profileData));

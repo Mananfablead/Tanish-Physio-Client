@@ -231,9 +231,12 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
                 to={`/video-call?sessionId=${nextSession._id}`}
                 className="flex-1"
               >
-                <Button className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black">
+                <Button 
+                  className={`w-full h-11 rounded-xl ${nextSession.timingStatus === 'join_now' ? 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black' : nextSession.timingStatus === 'join_soon' ? 'bg-secondary hover:bg-secondary/90 font-bold' : 'bg-gray-300 font-bold'}`}
+                  disabled={nextSession.timingStatus !== 'join_now' && nextSession.timingStatus !== 'join_soon'}
+                >
                   <Play className="h-5 w-5 mr-2 fill-white" />
-                  Join Session
+                  {nextSession.timingStatus === 'join_now' ? 'Join Session' : nextSession.timingStatus === 'join_soon' ? 'Join Soon' : 'Join Session'}
                 </Button>
               </Link>
             </div>

@@ -361,6 +361,7 @@ export default function QuestionnairePage() {
       // Default behavior: continue to therapist discovery with intake data
       // navigate("/profile", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
     }
+    navigate("/");
   };
 
   // Define body areas for skeleton type
