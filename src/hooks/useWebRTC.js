@@ -43,6 +43,11 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     const [callActive, setCallActive] = useState(false);
     const [callStarted, setCallStarted] = useState(false);
     const [callLogId, setCallLogId] = useState(null);
+
+    // Debug callLogId changes
+    useEffect(() => {
+        console.log('=== CALL LOG ID CHANGED ===', callLogId);
+    }, [callLogId]);
     const [participants, setParticipants] = useState([]);
     const [userIdentity, setUserIdentity] = useState(null);
     const [initialized, setInitialized] = useState(false);
@@ -51,6 +56,19 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     const [recorder, setRecorder] = useState(null);
     const [recordedChunks, setRecordedChunks] = useState([]);
     const localStreamRef = useRef(null);
+
+    // Define handleCallStarted as useCallback to avoid dependency issues
+    const handleCallStarted = useCallback((data) => {
+        console.log('=== CLIENT CALL STARTED HANDLER ===');
+        console.log('Received data:', data);
+        console.log('callLogId in data:', data.callLogId);
+        if (data.callLogId) {
+            setCallLogId(data.callLogId);
+            console.log('CLIENT: CallLogId set to:', data.callLogId);
+        } else {
+            console.warn('CLIENT: No callLogId received in call-started event');
+        }
+    }, [setCallLogId]);
 
     // Prevent cleanup on page refresh
     useEffect(() => {
@@ -732,13 +750,33 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     }, [userRole, socket, roomId]);
 
     // Start call (therapist only)
-    const startCall = useCallback(() => {
+    const startCall = useCallback(async () => {
         if ((userRole === 'therapist' || userRole === 'admin') && socket) {
+            const callType = roomId.startsWith('group') ? 'group' : 'session';
+
+            try {
+                // Create call log first
+                const { videoCallApi } = await import('../lib/videoCallApi');
+                const callLogResponse = await videoCallApi.createCallLog(undefined, roomId, callType, []);
+
+                if (callLogResponse.callLog) {
+                    setCallLogId(callLogResponse.callLog._id);
+                    console.log('Call log created:', callLogResponse.callLog._id);
+                } else {
+                    console.warn('Call log response did not contain callLog:', callLogResponse);
+                }
+            } catch (error) {
+                console.error('Error creating call log:', error);
+                console.error('Error details:', error.response?.data || error.message);
+            }
+
             socket.emit('call-start', {
                 roomId,
-                roomType: roomId.startsWith('group') ? 'group' : 'session'
+                roomType: callType
             });
             setCallStarted(true);
+
+            console.log('CLIENT: Call start requested, waiting for backend to create call log');
         }
     }, [userRole, socket, roomId, setCallStarted]);
 
@@ -782,13 +820,33 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     }, [socket, roomId]);
 
     // Group call specific functions
-    const startGroupCall = useCallback(() => {
+    const startGroupCall = useCallback(async () => {
         if (socket && roomId.startsWith('group')) {
-            socket.emit('group-call-start', {
-                groupSessionId: roomId
-            });
+            try {
+                // Create call log first
+                const { videoCallApi } = await import('../lib/videoCallApi');
+                const callLogResponse = await videoCallApi.createCallLog(undefined, roomId, 'group', []);
+
+                if (callLogResponse.callLog) {
+                    setCallLogId(callLogResponse.callLog._id);
+                    console.log('Group call log created:', callLogResponse.callLog._id);
+                } else {
+                    console.warn('Group call log response did not contain callLog:', callLogResponse);
+                }
+
+                socket.emit('group-call-start', {
+                    groupSessionId: roomId
+                });
+            } catch (error) {
+                console.error('Error creating group call log:', error);
+                console.error('Error details:', error.response?.data || error.message);
+            // Still start the call even if call log creation fails
+                socket.emit('group-call-start', {
+                    groupSessionId: roomId
+                });
+            }
         }
-    }, [socket, roomId]);
+    }, [socket, roomId, setCallLogId]);
 
     const endGroupCall = useCallback(() => {
         if (socket && roomId.startsWith('group')) {
@@ -1004,6 +1062,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         socket.on('participant-joined', handleParticipantJoined);
         socket.on('participant-left', handleParticipantLeft);
         socket.on('joined-call', handleJoinedCall);
+        socket.on('call-started', handleCallStarted);
 
         setInitialized(true);
 
@@ -1015,6 +1074,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             socket.off('participant-joined', handleParticipantJoined);
             socket.off('participant-left', handleParticipantLeft);
             socket.off('joined-call', handleJoinedCall);
+            socket.off('call-started', handleCallStarted);
         };
     }, [socket, userRole, initialized, handleOffer, handleAnswer, handleIceCandidate, initLocalMedia, createPeer, localStream]);
 
@@ -1094,9 +1154,16 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
                 // Upload recording to server
                 try {
+                    console.log('=== UPLOAD RECORDING DEBUG ===');
+                    console.log('callLogId value:', callLogId);
+                    console.log('callLogId type:', typeof callLogId);
+                    console.log('roomId:', roomId);
+
                     const formData = new FormData();
                     formData.append('recording', blob, `recording-${roomId}-${Date.now()}.webm`);
                     formData.append('callLogId', callLogId);
+
+                    console.log('FormData callLogId:', formData.get('callLogId'));
 
                     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/video-call/recording/upload`, {
                         method: 'POST',

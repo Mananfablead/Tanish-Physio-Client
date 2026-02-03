@@ -95,6 +95,17 @@ export const videoCallApi = {
         });
         return response.data;
     },
+
+    // Create call log
+    createCallLog: async (sessionId, groupSessionId, type, participants) => {
+        const response = await apiClient.post('/logs', {
+            sessionId,
+            groupSessionId,
+            type,
+            participants
+        });
+        return response.data;
+    },
 };
 
 // Admin Video Call API Service
