@@ -38,6 +38,9 @@ export function ActivePlanSection({ activePlan }: ActivePlanSectionProps) {
       </div>
     </div>
   );
+const isExpired =
+  activePlan?.endDate &&
+  new Date(activePlan.endDate).getTime() < Date.now();
 
   return (
     <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
@@ -46,11 +49,18 @@ export function ActivePlanSection({ activePlan }: ActivePlanSectionProps) {
           <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
             Active Plan
           </h3>
-          {activePlan && (
-            <Badge className="bg-success/10 text-success border-none font-bold">
-              ACTIVE
-            </Badge>
-          )}
+     {activePlan && (
+  <Badge
+    className={`border-none font-bold ${
+      isExpired
+        ? "bg-destructive/10 text-destructive"
+        : "bg-success/10 text-success"
+    }`}
+  >
+    {isExpired ? "EXPIRED" : "ACTIVE"}
+  </Badge>
+)}
+
         </div>
         
         {activePlan ? (
@@ -69,9 +79,17 @@ export function ActivePlanSection({ activePlan }: ActivePlanSectionProps) {
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      {activePlan?.status?.charAt(0).toUpperCase() + activePlan?.status?.slice(1) || "Inactive"}
-                    </Badge>
+                   <Badge
+  variant="secondary"
+  className={
+    isExpired
+      ? "bg-red-100 text-red-800"
+      : "bg-green-100 text-green-800"
+  }
+>
+  {isExpired ? "Expired" : "Active"}
+</Badge>
+
                     <span className="text-slate-500 font-medium">
                       Payment via {activePlan?.paymentGateway || "Razorpay"}
                     </span>
