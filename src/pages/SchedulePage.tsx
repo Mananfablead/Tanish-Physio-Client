@@ -388,7 +388,7 @@ export default function SchedulePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Calendar */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <div className="sticky top-6">
                 <Card className="bg-white/80 backdrop-blur rounded-2xl border border-primary/20 shadow-sm overflow-hidden">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -540,7 +540,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Right Column - Sessions List */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-1">
               <Card className="bg-white/80 backdrop-blur rounded-2xl border border-primary/20 shadow-sm overflow-hidden">
                 <CardHeader>
                   <h2 className="font-black text-slate-900 text-lg">
@@ -584,16 +584,16 @@ export default function SchedulePage() {
                                       {session.type}
                                     </Badge>
 
-                                    <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
-                                      {session.status}
-                                    </Badge>
+                                  
 
                                   </div>
                                 </div>
-
-                                <Button variant="ghost" size="icon">
+  <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
+                                      {session.status}
+                                    </Badge>
+                                {/* <Button variant="ghost" size="icon">
                                   <MoreHorizontal className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
                               </div>
 
                               {/* DETAILS */}
@@ -691,7 +691,9 @@ export default function SchedulePage() {
                 size="icon"
                 onClick={() => {
                   setIsBookingModalOpen(false);
-                  setBookingError(null); // Clear error when closing modal
+                  setBookingError(null); 
+                  setSessionTypeValue("");
+                  setSelectedTime("");
                 }}
                 className="h-8 w-8"
               >
@@ -890,6 +892,7 @@ export default function SchedulePage() {
                 onClick={() => {
                   setIsBookingModalOpen(false);
                   setBookingError(null); // Clear error when closing modal
+                  setSelectedTime("");
                 }}
               >
                 Cancel

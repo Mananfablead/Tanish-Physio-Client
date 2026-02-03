@@ -57,7 +57,7 @@ export default function BookingPage() {
   // Handle service-based booking data
   // Handle subscription-based booking data
 
-  const therapist = bookingData?.therapist 
+  const therapist = bookingData?.therapist
 
 
   const serviceBooking = bookingData?.fromServices === true;
@@ -195,8 +195,8 @@ export default function BookingPage() {
   const handlePayment = async () => {
 
     // Validate guest user data if applicable
-    if (isGuestUser && (!guestUserData.name || !guestUserData.email)) {
-      toast.error("Please fill in your name and email to continue");
+    if (isGuestUser && (!guestUserData.name || !guestUserData.email || !guestUserData.phone)) {
+      toast.error("Please fill in your name, email, and phone number to continue");
       return;
     }
 
@@ -474,9 +474,9 @@ export default function BookingPage() {
           },
 
           prefill: {
-            name: isGuestUser ? guestUserData.name : "Customer",
-            email: isGuestUser ? guestUserData.email : "customer@example.com",
-            contact: isGuestUser ? guestUserData.phone : "9999999999",
+            name: isGuestUser ? guestUserData.name : "",
+            email: isGuestUser ? guestUserData.email : "",
+            contact: isGuestUser ? guestUserData.phone : "",
           },
           theme: {
             color: "#3b82f6", // Tailwind blue-500
@@ -647,7 +647,7 @@ export default function BookingPage() {
                   bookingData: { status: 'confirmed' },
                   clientEmail: guestUser.email
                 }));
-                
+
               } else {
 
                 // For authenticated users, use regular booking update
@@ -699,7 +699,7 @@ export default function BookingPage() {
 
                 // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
                 try {
-                  
+
                   if (scheduled) {
                     scheduled.locked = false;
                     scheduled.therapist = therapist;
@@ -750,14 +750,14 @@ export default function BookingPage() {
                 const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
                 console.log("Guest User:", guestUser);
                 console.log("Client Email:", guestUser.email);
-                
+
                 if (!guestUser.email) {
                   console.error("Client email is missing from guest user data!");
                   toast.error("Client email is missing. Please try again.");
                   setIsProcessing(false);
                   return;
                 }
-                
+
                 await dispatch(updateGuestBookingAsync({
                   id: bookingId,
                   bookingData: { status: 'pending' },
@@ -855,9 +855,9 @@ export default function BookingPage() {
           },
 
           prefill: {
-            name: isGuestUser ? guestUserData.name : "Customer",
-            email: isGuestUser ? guestUserData.email : "customer@example.com",
-            contact: isGuestUser ? guestUserData.phone : "9999999999",
+            name: isGuestUser ? guestUserData.name : "",
+            email: isGuestUser ? guestUserData.email : "",
+            contact: isGuestUser ? guestUserData.phone : "",
           },
           theme: {
             color: "#3b82f6", // Tailwind blue-500
@@ -1003,23 +1003,23 @@ export default function BookingPage() {
                   {/* Phone */}
                   <div>
                     <Label htmlFor="guestPhone">Phone Number</Label>
-                   <Input
-  id="guestPhone"
-  placeholder="Enter your phone number"
-  value={guestUserData.phone}
-  disabled={!!user}
-  onChange={(e) => {
-    const value = e.target.value.replace(/\D/g, ""); // sirf number
-    if (value.length <= 10) {
-      setGuestUserData({
-        ...guestUserData,
-        phone: value,
-      });
-    }
-  }}
-  maxLength={10}
-  className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
-/>
+                    <Input
+                      id="guestPhone"
+                      placeholder="Enter your phone number"
+                      value={guestUserData?.phone}
+                      disabled={!!user}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, ""); // sirf number
+                        if (value.length <= 10) {
+                          setGuestUserData({
+                            ...guestUserData,
+                            phone: value,
+                          });
+                        }
+                      }}
+                      maxLength={10}
+                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+                    />
 
                   </div>
                 </div>
@@ -1130,7 +1130,7 @@ export default function BookingPage() {
                   disabled={
                     isProcessing ||
                     (isGuestUser &&
-                      (!guestUserData.name || !guestUserData.email))
+                      (!guestUserData.name || !guestUserData.email || !guestUserData.phone))
                   }
                 >
                   {isProcessing ? (
@@ -1147,7 +1147,7 @@ export default function BookingPage() {
                 </Button>
 
                 {isGuestUser &&
-                  (!guestUserData.name || !guestUserData.email) && (
+                  (!guestUserData.name || !guestUserData.email || !guestUserData.phone) && (
                     <p className="text-xs text-center text-destructive">
                       Please fill in your name and email to continue
                     </p>

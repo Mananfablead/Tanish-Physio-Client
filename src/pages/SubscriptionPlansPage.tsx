@@ -22,6 +22,14 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
@@ -36,12 +44,12 @@ export default function SubscriptionPlansPage() {
   const { plans: subscriptionPlans, loading, error } = useSelector(
     (state: RootState) => state.subscriptions
   );
-
   const user = useSelector(selectCurrentUser);
   const activePlan = user?.subscriptionData || null;
   const activePlanId = activePlan?.planId ?? null;
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [promoApplied] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [expandedFeatures, setExpandedFeatures] = useState<Record<string, boolean>>({});
@@ -102,20 +110,24 @@ export default function SubscriptionPlansPage() {
                     transition={{ delay: index * 0.1 }}
                   >
                     <Card
-                      onClick={() => setSelectedPlan(planId)}
+                      onClick={() => {
+                        if (!activePlanId && !isActive) {
+                          setSelectedPlan(planId);
+                        }
+                      }}
                       className={`relative h-full flex flex-col rounded-2xl cursor-pointer border
                         ${isSelected ? "ring-2 ring-primary" : ""}
                         ${plan.popular ? "shadow-lg" : "shadow-sm"}
                       `}
                     >
-                      {plan.popular && (
+                      {/* {plan.popular && (
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                           <Badge className="bg-orange-500 text-white px-3 py-1">
                             <Zap className="h-3 w-3 mr-1" />
                             Best Value
                           </Badge>
                         </div>
-                      )}
+                      )} */}
 
                       {isActive && (
                         <div className="absolute top-3 right-3">
@@ -150,7 +162,7 @@ export default function SubscriptionPlansPage() {
                         <p className="text-sm text-muted-foreground">
                           {typeof plan.sessions === "number"
                             ? `Up to ${plan.sessions} sessions`
-                            : "Unlimited sessions"}
+                            : plan.sessions} sessions
                         </p>
 
                         {/* DESCRIPTION */}
@@ -242,26 +254,23 @@ export default function SubscriptionPlansPage() {
                           variant={
                             isActive
                               ? "secondary"
-                              : isSelected
-                                ? "hero"
-                                : "outline"
+                              : activePlanId
+                                ? "outline"
+                                : "default"
                           }
-                          // disabled={!!activePlanId && !isActive}
+                          disabled={isActive || !!activePlanId}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // if (activePlanId) {
-                            //   toast.info(
-                            //     "You already have an active subscription"
-                            //   );
-                            //   return;
-                            // }
-                            setSelectedPlan(planId);
+                            if (!isActive && !activePlanId) {
+                              setSelectedPlan(planId);
+                              setIsModalOpen(true);
+                            }
                           }}
                         >
                           {isActive
                             ? "Active Plan"
-                            : isSelected
-                              ? "Selected"
+                            : activePlanId
+                              ? "Plan Already Active"
                               : "Select Plan"}
                         </Button>
                       </CardContent>
@@ -273,99 +282,116 @@ export default function SubscriptionPlansPage() {
           </div>
         )}
 
-        {/* SUMMARY */}
-        {/* {selectedPlan && !activePlanId && ( */}
-          <div className="max-w-6xl mx-auto">
-            <Card className="shadow-xl rounded-2xl">
-              <CardContent className="p-6 space-y-6">
-
-                {/* WHAT YOU GET */}
-                <div>
-                  <h4 className="font-medium mb-3">What you get with this plan</h4>
-                  <div className="grid md:grid-cols-2 gap-3 text-sm">
-                    <div className="flex gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                      1-on-1 live video sessions
-                    </div>
-                    <div className="flex gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                      Personal recovery roadmap
-                    </div>
-                    <div className="flex gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                      Exercise videos & guidance
-                    </div>
-                    <div className="flex gap-2">
-                      <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
-                      Progress tracking & follow-ups
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between">
-                  <h3 className="font-semibold">
+        {/* CONFIRMATION MODAL */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Confirm Your Selection</DialogTitle>
+              <DialogDescription>
+                Please review your selected plan before proceeding
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedPlan && (
+              <div className="space-y-4">
+                <div className="bg-muted/20 rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-2">
                     {subscriptionPlans.find(
                       (p) => (p.planId || p.id) === selectedPlan
                     )?.name}
                   </h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl font-bold text-primary">
+                      ₹{
+                        subscriptionPlans.find(
+                          (p) => (p.planId || p.id) === selectedPlan
+                        )?.price
+                      }
+                    </span>
+                    <span className="text-muted-foreground">
+                      /
+                      {subscriptionPlans.find(
+                        (p) => (p.planId || p.id) === selectedPlan
+                      )?.duration}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {typeof subscriptionPlans.find(
+                      (p) => (p.planId || p.id) === selectedPlan
+                    )?.sessions === "number"
+                      ? `Up to ${subscriptionPlans.find(
+                          (p) => (p.planId || p.id) === selectedPlan
+                        )?.sessions} sessions`
+                      : subscriptionPlans.find(
+                          (p) => (p.planId || p.id) === selectedPlan
+                        )?.sessions} sessions
+                  </p>
+                </div>
 
-                  <p className="text-muted-foreground text-sm">
-                    Auto-renews after{" "}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>1-on-1 video sessions</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Personal recovery plan</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Exercise guidance</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Progress tracking</span>
+                  </div>
+                </div>
+
+                <div className="bg-muted/10 rounded-lg p-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Auto-renews every{" "}
                     {subscriptionPlans.find(
                       (p) => (p.planId || p.id) === selectedPlan
                     )?.duration}. Cancel anytime.
                   </p>
                 </div>
-                {/* TRUST & SAFETY */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-green-500" />
-                    Secure & private
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Video className="h-4 w-4 text-blue-500" />
-                    HD video calls
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4 text-yellow-500" />
-                    Certified experts
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-purple-500" />
-                    Flexible scheduling
-                  </div>
-                </div>
-
-                <Button
-                  size="lg"
-                  variant="hero"
-                  className="w-full"
-                  onClick={() => {
-                    const plan = subscriptionPlans.find(
-                      (p) => (p.planId || p.id) === selectedPlan
-                    );
-                    if (!plan) return;
-
-                    navigate("/booking", {
-                      state: {
-                        service: {
-                          id: plan.planId || plan.id,
-                          name: plan.name,
-                          price: String(plan.price),
-                          duration: plan.duration,
-                        },
-                        fromSubscription: true,
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  const plan = subscriptionPlans.find(
+                    (p) => (p.planId || p.id) === selectedPlan
+                  );
+                  if (!plan) return;
+                  
+                  setIsModalOpen(false);
+                  navigate("/booking", {
+                    state: {
+                      service: {
+                        id: plan.planId || plan.id,
+                        name: plan.name,
+                        price: String(plan.price),
+                        duration: plan.duration,
                       },
-                    });
-                  }}
-                >
-                  Book Now
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        {/* )} */}
+                      fromSubscription: true,
+                    },
+                  });
+                }}
+              >
+                Confirm & Continue
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

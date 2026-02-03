@@ -388,7 +388,7 @@ export default function LandingPage() {
               </div>
               
               {/* Floating Stats Card */}
-              <Card variant="glass" className="absolute -bottom-6 -left-6 p-4 border border-primary/20 shadow-xl">
+              {/* <Card variant="glass" className="absolute -bottom-6 -left-6 p-4 border border-primary/20 shadow-xl">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full gradient-primary flex items-center justify-center">
                     <Users className="h-6 w-6 text-primary-foreground" />
@@ -398,7 +398,7 @@ export default function LandingPage() {
                     <p className="text-sm text-muted-foreground">Active Therapists</p>
                   </div>
                 </div>
-              </Card>
+              </Card> */}
 
               <Card variant="glass" className="absolute -top-4 -right-4 p-4 border border-primary/20 shadow-xl">
                 <div className="flex items-center gap-3">

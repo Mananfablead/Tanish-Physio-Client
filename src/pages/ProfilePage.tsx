@@ -49,6 +49,9 @@ import {
   RescheduleModal
 } from "@/components/profile";
 
+// Import recorded sessions component
+import { RecordedSessionsSection } from "@/components/profile/RecordedSessionsSection";
+
 // --- Component Interfaces ---
 
 interface Section {
@@ -123,6 +126,54 @@ export default function ProfilePage() {
     );
     setSessionCompleted(completed);
   }, [sessions]);
+  
+  // Calculate expiration status for subscriptions and services
+  const getExpirationStatus = (item: any, type: 'subscription' | 'service') => {
+    if (type === 'subscription') {
+      if (item.isExpired) {
+        return { status: 'expired', text: 'Expire', color: 'text-red-600 bg-red-100' };
+      }
+      if (item.endDate) {
+        const expiryDate = new Date(item.endDate);
+        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (daysUntilExpiry <= 7) {
+          return { 
+            status: 'expiring-soon', 
+            text: `Expires in ${daysUntilExpiry} days`, 
+            color: 'text-yellow-600 bg-yellow-100' 
+          };
+        }
+        return { 
+          status: 'active', 
+          text: `Expires ${expiryDate.toLocaleDateString()}`, 
+          color: 'text-green-600 bg-green-100' 
+        };
+      }
+      return { status: 'active', text: 'Active', color: 'text-green-600 bg-green-100' };
+    } else {
+      // Service expiration
+      if (item.isExpired) {
+        return { status: 'expired', text: 'Expire', color: 'text-red-600 bg-red-100' };
+      }
+      if (item.expiryDate) {
+        const expiryDate = new Date(item.expiryDate);
+        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (daysUntilExpiry <= 7) {
+          return { 
+            status: 'expiring-soon', 
+            text: `Expires in ${daysUntilExpiry} days`, 
+            color: 'text-yellow-600 bg-yellow-100' 
+          };
+        }
+        return { 
+          status: 'active', 
+          text: `Expires ${expiryDate.toLocaleDateString()}`, 
+          color: 'text-green-600 bg-green-100' 
+        };
+      }
+      return { status: 'unlimited', text: 'Unlimited', color: 'text-blue-600 bg-blue-100' };
+    }
+  };
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -283,6 +334,13 @@ export default function ProfilePage() {
       color: "text-primary",
     },
     {
+      id: "recordedSessions",
+      label: "Recorded Sessions",
+      sub: "Your recorded therapy sessions",
+      icon: Play,
+      color: "text-primary",
+    },
+    {
       id: "subscriptionHistory",
       label: "Subscription History",
       sub: "Your plan & payment history",
@@ -347,6 +405,10 @@ export default function ProfilePage() {
                       setIsRescheduleModalOpen(true);
                     }} 
                   />
+                )}
+
+                {selectedSection === "recordedSessions" && (
+                  <RecordedSessionsSection />
                 )}
 
                 {selectedSection === "bookings" && (

@@ -121,22 +121,9 @@ const subscriptionSlice = createSlice({
         state.plans = action.payload.map((plan: any) => ({
           ...plan,
           id: plan._id,
-          sessions: plan.duration === 'monthly' ? 'Unlimited' : 1,
-          services: [
-            'Orthopedic Physiotherapy',
-            'Neuro Physiotherapy', 
-            'Sports Physiotherapy',
-            plan.duration === 'monthly' 
-              ? 'All physiotherapy services' 
-              : 'Basic physiotherapy service',
-            plan.duration === 'monthly' 
-              ? 'Personalized treatment plans' 
-              : 'Basic exercise plan',
-            plan.duration === 'monthly' 
-              ? 'Unlimited exercise plans' 
-              : 'Exercise plan access',
-          ],
-          popular: plan.planId === 'yearly',
+          sessions: plan.sessions,
+          
+          popular: plan.planId
         }));
       })
       .addCase(fetchSubscriptionPlans.rejected, (state, action) => {
