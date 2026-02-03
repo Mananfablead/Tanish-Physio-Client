@@ -96,6 +96,13 @@ export const videoCallApi = {
         return response.data;
     },
 
+    // Get user recordings
+    getUserRecordings: async (params = {}) => {
+        const queryParams = new URLSearchParams(params);
+        const response = await apiClient.get(`/recordings/user${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+        return response.data;
+    },
+
     // Create call log
     createCallLog: async (sessionId, groupSessionId, type, participants) => {
         const response = await apiClient.post('/logs', {
@@ -149,6 +156,69 @@ export const adminVideoCallApi = {
     // Get participants for a session
     getSessionParticipants: async (sessionId) => {
         const response = await apiClient.get(`/session/${sessionId}/participants`);
+        return response.data;
+    },
+
+    // Recording APIs
+    startRecording: async (callLogId) => {
+        const response = await apiClient.post('/recording/start', {
+            callLogId
+        });
+        return response.data;
+    },
+
+    stopRecording: async (callLogId) => {
+        const response = await apiClient.post('/recording/stop', {
+            callLogId
+        });
+        return response.data;
+    },
+
+    uploadRecording: async (file, callLogId) => {
+        const formData = new FormData();
+        formData.append('recording', file);
+        formData.append('callLogId', callLogId);
+
+        const response = await apiClient.post('/recording/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    },
+
+    uploadRecordingImage: async (file, callLogId) => {
+        const formData = new FormData();
+        formData.append('recordingImage', file);
+        formData.append('callLogId', callLogId);
+
+        const response = await apiClient.post('/recording/image', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    },
+
+    getUserRecordings: async (params = {}) => {
+        const queryParams = new URLSearchParams(params);
+        const response = await apiClient.get(`/recordings/user${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+        return response.data;
+    },
+
+    getAllRecordings: async (params = {}) => {
+        const queryParams = new URLSearchParams(params);
+        const response = await apiClient.get(`/recordings${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+        return response.data;
+    },
+
+    getRecordingById: async (id) => {
+        const response = await apiClient.get(`/recordings/${id}`);
+        return response.data;
+    },
+
+    getRecordingUsers: async (id) => {
+        const response = await apiClient.get(`/recordings/${id}/users`);
         return response.data;
     },
 };

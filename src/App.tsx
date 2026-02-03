@@ -40,6 +40,7 @@ const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const ContactUsPage = lazy(() => import("./pages/ContactUsPage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
+const RecordedSessionsPage = lazy(() => import("./pages/RecordedSessionsPage"));
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
@@ -173,6 +174,14 @@ const App = () => (
                       // <ProtectedRoute>
                       <SchedulePage />
                       // </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/recorded-sessions"
+                    element={
+                      <ProtectedRoute>
+                        <RecordedSessionsPage />
+                      </ProtectedRoute>
                     }
                   />
 
