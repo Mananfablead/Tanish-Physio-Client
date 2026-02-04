@@ -52,10 +52,6 @@ export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subs
             <div className="col-span-full text-center py-8">
               <p>Loading subscription plans...</p>
             </div>
-          ) : subscriptionError ? (
-            <div className="col-span-full text-center py-8">
-              <p className="text-destructive">Error loading subscription plans: {subscriptionError}</p>
-            </div>
           ) : (
             subscriptionPlans.slice(0, 3).map((plan, index) => {
               const planId = plan.planId || plan.id;

@@ -39,8 +39,9 @@ import {
 
 const registerSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').min(1, 'Email is required'),
     phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Phone number cannot exceed 15 digits'),
+    
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -73,11 +74,7 @@ const RegisterPage = () => {
     });
 
     const valuePoints = [
-        // {
-        //     icon: ShieldCheck,
-        //     title: "Clinical Grade Security",
-        //     description: "Encrypted, HIPAA-compliant patient data handling."
-        // },
+  
         {
             icon: Stethoscope,
             title: "Professional Oversight",
@@ -142,7 +139,7 @@ const RegisterPage = () => {
 
                 {/* Right Column: Register Card */}
                 <div className="lg:col-span-7 flex justify-center lg:justify-start">
-                    <div className="w-full max-w-[520px] bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100 p-8 md:p-12 relative animate-in fade-in zoom-in-95 duration-700">
+                    <div className="w-full  bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100 p-8 md:p-12 relative animate-in fade-in zoom-in-95 duration-700">
                         
                         {/* Mobile Logo */}
                         <div className="lg:hidden flex justify-center mb-8">
@@ -220,49 +217,51 @@ const RegisterPage = () => {
                                         )}
                                     />
 
-                                    <FormField
-                                        control={registerForm.control}
-                                        name="phone"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500 ml-1">Phone Number</FormLabel>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <input
-                                                            {...field}
-                                                            type="tel"
-                                                            placeholder="Enter your phone number"
-                                                            className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium"
-                                                        />
-                                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage className="text-xs font-medium text-red-500" />
-                                            </FormItem>
-                                        )}
-                                    />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField
+                                            control={registerForm.control}
+                                            name="phone"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500 ml-1">Phone Number</FormLabel>
+                                                    <FormControl>
+                                                        <div className="relative">
+                                                            <input
+                                                                {...field}
+                                                                type="tel"
+                                                                placeholder="Enter your phone number"
+                                                                className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium"
+                                                            />
+                                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage className="text-xs font-medium text-red-500" />
+                                                </FormItem>
+                                            )}
+                                        />
 
-                                    <FormField
-                                        control={registerForm.control}
-                                        name="email"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</FormLabel>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <input
-                                                            {...field}
-                                                            type="email"
-                                                            placeholder="name@example.com"
-                                                            className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium"
-                                                        />
-                                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage className="text-xs font-medium text-red-500" />
-                                            </FormItem>
-                                        )}
-                                    />
+                                        <FormField
+                                            control={registerForm.control}
+                                            name="email"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</FormLabel>
+                                                    <FormControl>
+                                                        <div className="relative">
+                                                            <input
+                                                                {...field}
+                                                                type="email"
+                                                                placeholder="name@example.com"
+                                                                className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium"
+                                                            />
+                                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage className="text-xs font-medium text-red-500" />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
 
                                     <FormField
                                         control={registerForm.control}
@@ -345,16 +344,7 @@ const RegisterPage = () => {
                             </div>
                         </div>
 
-                        {/* Trust Microcopy */}
-                        {/* <div className="mt-8 pt-8 border-t border-slate-100 text-center">
-                            <div className="flex items-center justify-center gap-2 text-slate-400 mb-1">
-                                <ShieldCheck className="h-4 w-4 text-green-500" />
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Secure Patient Portal</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 font-medium">
-                                Your clinical data is protected by hospital-grade AES-256 encryption.
-                            </p>
-                        </div> */}
+                        
                     </div>
                 </div>
             </div>

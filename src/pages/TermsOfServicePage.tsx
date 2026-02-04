@@ -202,17 +202,7 @@ export default function TermsOfServicePage() {
                 
                 {/* Main Content */}
                 <div className="lg:w-3/4 p-8">
-                  {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      <div>
-                        <p className="font-medium text-red-800">Error loading terms of service</p>
-                        <p className="text-red-600 text-sm mt-1">{error}. Showing default content.</p>
-                      </div>
-                    </div>
-                  )}
+                  
                   
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-12">

@@ -26,10 +26,6 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
           <div className="text-center py-12">
             <p>Loading featured therapist...</p>
           </div>
-        ) : adminsError ? (
-          <div className="text-center py-12">
-            <p className="text-destructive">Error loading featured therapist: {adminsError}</p>
-          </div>
         ) : publicAdmins && publicAdmins.length > 0 ? (
           <motion.div
             className="grid lg:grid-cols-2 gap-16 items-center"

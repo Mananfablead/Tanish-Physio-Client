@@ -191,31 +191,6 @@ const getIconComponent = (iconName: string) => {
   return iconMap[iconName] || ClipboardList;
 };
 
-// Component to handle image with fallback
-const ConditionDisplay = ({ image, label }: { image: string; label: string }) => {
-  const [imgSrc, setImgSrc] = useState(image);
-  const [useFallback, setUseFallback] = useState(!image);
-
-  useEffect(() => {
-    setImgSrc(image);
-    setUseFallback(!image);
-  }, [image]);
-
-  if (useFallback) {
-    const FallbackIcon = getIconComponent("Activity");
-    return <FallbackIcon className="h-8 w-8" />;
-  }
-
-  return (
-    <img 
-      src={imgSrc} 
-      alt={label}
-      className="h-8 w-8 object-contain"
-      onError={() => setUseFallback(true)}
-    />
-  );
-};
-
 export default function LandingPage() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);

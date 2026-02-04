@@ -87,13 +87,7 @@ export default function AboutUsPage() {
           </div>
         )}
         
-        {/* Error message */}
-        {error && (
-          <div className="text-center py-10">
-            <p className="text-red-500">Error loading about us information: {error}</p>
-          </div>
-        )}
-        
+    
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-green-600 bg-clip-text text-transparent mb-4">

@@ -38,20 +38,6 @@ export default function ServicesPage() {
     );
   }
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <p className="text-lg text-red-600">Error: {error}</p>
-            <Button onClick={() => window.location.reload()} className="mt-4">
-              Retry
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>

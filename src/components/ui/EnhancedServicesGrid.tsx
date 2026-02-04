@@ -77,7 +77,7 @@ export function EnhancedServicesGrid({
       )
     );
 
-    return ["all", ...uniqueCategories];
+    return uniqueCategories;
   }, [servicesToDisplay]);
 
 
@@ -89,7 +89,6 @@ export function EnhancedServicesGrid({
         service.description?.toLowerCase().includes(searchTerm?.toLowerCase());
 
       const matchesCategory =
-        categoryFilter === "all" ||
         service.category?.toLowerCase().includes(categoryFilter.toLowerCase()) ||
         service.title.toLowerCase().includes(categoryFilter.toLowerCase());
 
@@ -158,9 +157,7 @@ export function EnhancedServicesGrid({
             {isActive && (
               <span className="h-2 w-2 rounded-full bg-white" />
             )}
-            {category === "all"
-              ? "All"
-              : category.charAt(0).toUpperCase() + category.slice(1)}
+            {category.charAt(0).toUpperCase() + category.slice(1)}
           </span>
         </Badge>
       );
@@ -202,9 +199,7 @@ export function EnhancedServicesGrid({
                     <span className="text-sm text-slate-500">
                       Session Duration: {service?.details?.sessionDuration}
                     </span>
-        <span className="text-sm text-slate-500">
-                      Sessions: {service?.details?.sessions}
-                    </span>
+
                     <span className="text-lg font-bold text-primary">
                       {service?.details?.price}
                     </span>

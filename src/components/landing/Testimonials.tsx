@@ -27,7 +27,7 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
       </div>
 
       <div className="container relative z-10">
-        <motion.div 
+        <motion.div
           className="text-center max-w-2xl mx-auto mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -60,19 +60,13 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
                     <p className="text-white">Loading testimonials...</p>
                   </div>
                 </CarouselItem>
-              ) : testimonialsError ? (
-                <CarouselItem className="pl-4 md:basis-1/3">
-                  <div className="h-full p-8 flex items-center justify-center">
-                    <p className="text-destructive text-white">Error loading testimonials: {testimonialsError}</p>
-                  </div>
-                </CarouselItem>
               ) : featuredTestimonials.length > 0 ? (
                 featuredTestimonials?.map((testimonial: any, index: number) => (
                   <CarouselItem key={testimonial?._id || index} className="pl-4 md:basis-1/3">
                     <motion.div variants={fadeInUp}>
                       <Card className={`h-full p-8 hover:shadow-xl transition-all duration-500 border-l-4 bg-gradient-to-br from-white to-muted/20 dark:from-background dark:to-muted/5 relative group overflow-hidden`}>
                         <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
-                        
+
                         <div className="flex items-center gap-4 mb-6 relative z-10">
                           <Avatar className="h-14 w-14 border-2 shadow-md transition-transform duration-500 group-hover:scale-110"
                             style={{ borderColor: 'hsl(var(--primary/30))' }}>
@@ -84,16 +78,16 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
                             <p className="text-xs font-bold uppercase tracking-widest text-primary">{testimonial?.problem}</p>
                           </div>
                         </div>
-                        
+
                         <div className="flex mb-6 relative z-10">
                           {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`h-4 w-4 ${i < testimonial?.rating ? "fill-warning text-warning" : "text-muted"}`} 
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${i < testimonial?.rating ? "fill-warning text-warning" : "text-muted"}`}
                             />
                           ))}
                         </div>
-                        
+
                         <div className="relative z-10">
                           <Quote className="h-10 w-10 text-primary/10 absolute -top-4 -left-2 transition-colors duration-500 group-hover:text-primary/20" />
                           <p className="text-muted-foreground italic relative z-10 pl-6 leading-relaxed line-clamp-4">
@@ -107,7 +101,7 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
                   </CarouselItem>
                 ))
               ) : (
-                <CarouselItem className="pl-4 md:basis-1/3">
+                <CarouselItem className="pl-4">
                   <div className="h-full p-8 flex items-center justify-center">
                     <p className="text-white">No featured testimonials available.</p>
                   </div>

@@ -31,10 +31,6 @@ export default function FAQPage() {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
               </div>
-            ) : error ? (
-              <div className="bg-destructive/10 border border-destructive rounded-lg p-6 text-center">
-                <p className="text-destructive">Error loading FAQs: {error}</p>
-              </div>
             ) : faqs.length > 0 ? (
               faqs.map((faq, index) => (
                 <div key={faq._id || index} className="border border-primary/20 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md">
