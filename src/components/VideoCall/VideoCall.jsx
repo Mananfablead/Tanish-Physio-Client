@@ -65,6 +65,7 @@ const VideoCall = ({
 
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
+  const [participantAudioStatus, setParticipantAudioStatus] = useState({});
 
   // Effect to update video elements when streams change
   useEffect(() => {
@@ -670,6 +671,14 @@ const VideoCall = ({
         console.log("Updated participants list:", newParticipants);
         return newParticipants;
       });
+      
+      // Initialize audio status for the new participant (default to enabled)
+      if (participantData.userId) {
+        setParticipantAudioStatus(prev => ({
+          ...prev,
+          [participantData.userId]: true // Audio enabled by default
+        }));
+      }
 
       // AUTO-JOIN LOGIC - Patient auto-joins when therapist joins
       console.log("=== AUTO-JOIN CHECK ===");
@@ -881,6 +890,15 @@ const VideoCall = ({
     // Handle participant left
     const participantLeftListener = (data) => {
       setParticipants((prev) => prev.filter((p) => p.userId !== data.userId));
+      
+      // Remove audio status for the leaving participant
+      if (data.userId) {
+        setParticipantAudioStatus(prev => {
+          const newStatus = { ...prev };
+          delete newStatus[data.userId];
+          return newStatus;
+        });
+      }
     };
 
     // Handle call started
@@ -955,6 +973,15 @@ const VideoCall = ({
     // Handle audio toggle
     const audioToggleListener = (data) => {
       // Update UI to reflect other participant's audio status
+      console.log("Audio toggle received from user:", data.userId, "muted:", data.muted);
+      
+      // Update the audio status for the specific user
+      if (data.userId) {
+        setParticipantAudioStatus(prev => ({
+          ...prev,
+          [data.userId]: !data.muted // Store whether audio is enabled (opposite of muted)
+        }));
+      }
     };
 
     // Handle video toggle
