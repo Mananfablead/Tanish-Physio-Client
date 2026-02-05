@@ -1,5 +1,11 @@
 import { motion } from "framer-motion";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import Autoplay from "embla-carousel-autoplay";
 import { getIconComponent } from "./utils";
@@ -59,21 +65,28 @@ interface ConditionsWeTreatProps {
   getIconComponent?: (iconName: string) => any;
 }
 
-const ConditionalIconRenderer = ({ imageUrl, iconName, altText }) => {
+/* ---------------------------------- */
+/* Icon / Image fallback component */
+/* ---------------------------------- */
+const ConditionalIconRenderer = ({
+  imageUrl,
+  iconName = "Activity",
+  altText,
+}: {
+  imageUrl?: string;
+  iconName?: string;
+  altText?: string;
+}) => {
   const [hasError, setHasError] = useState(false);
-  
-  if (hasError) {
-    const IconComponent = getIconComponent(iconName || "Activity");
-    return (
-      <div className="h-8 w-8">
-        <IconComponent className="h-8 w-8" />
-      </div>
-    );
+
+  if (!imageUrl || hasError) {
+    const IconComponent = getIconComponent(iconName);
+    return <IconComponent className="h-8 w-8" />;
   }
 
   return (
-    <img 
-      src={imageUrl} 
+    <img
+      src={imageUrl}
       alt={altText}
       className="h-8 w-8 object-contain"
       onError={() => setHasError(true)}
@@ -81,12 +94,11 @@ const ConditionalIconRenderer = ({ imageUrl, iconName, altText }) => {
   );
 };
 
-export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }: ConditionsWeTreatProps) => {
-  // Use passed props or fallback to local definitions
-  const fadeInUpAnimation = fadeInUp || {
+export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => {
+  const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 }
+    transition: { duration: 0.5 },
   };
   
   const getIconComponentFn = getIconComponent || ((iconName: string) => {
@@ -144,35 +156,37 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
 
   return (
     <section className="py-16 relative overflow-hidden border-y border-primary/10">
-      <div className="absolute top-0 right-0 w-full h-full pointer-events-none">
+      {/* Background Blur */}
+      <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-accent/10 rounded-full blur-[120px]" />
       </div>
+
       <div className="container relative z-10">
-        <motion.div 
+        {/* Heading */}
+        <motion.div
           className="text-center max-w-2xl mx-auto mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <Badge variant="secondary" className="mb-4 border border-primary/20">{cmsConditions?.title || 'Specialties'}</Badge>
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">{cmsConditions?.title || 'Conditions We Treat'}</h2>
+          <Badge variant="secondary" className="mb-4 border border-primary/20">
+            {cmsConditions?.title || "Specialties"}
+          </Badge>
+          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+            {cmsConditions?.title || "Conditions We Treat"}
+          </h2>
           <p className="text-muted-foreground">
-            {cmsConditions?.description || 'Our experts specialize in a wide range of physical conditions to help you get back to your best self.'}
+            {cmsConditions?.description ||
+              "Our experts specialize in a wide range of physical conditions to help you get back to your best self."}
           </p>
         </motion.div>
 
+        {/* Carousel */}
         <div className="px-12">
           <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            plugins={[
-              Autoplay({
-                delay: 3000,
-              }),
-            ]}
+            opts={{ align: "start", loop: true }}
+            plugins={[Autoplay({ delay: 3000 })]}
             className="w-full"
           >
             <CarouselContent className="-ml-4">
@@ -203,7 +217,7 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                 return (
                   <CarouselItem key={condition._id || index} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/6">
                     <motion.div 
-                      variants={fadeInUpAnimation}
+                      variants={fadeInUp}
                       whileHover={{ y: -8 }}
                       className="group cursor-pointer py-2"
                     >
@@ -218,20 +232,27 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                           ) : (
                             <div className="h-8 w-8">
                               <>{(() => {
-                                const IconComponent = getIconComponentFn(condition.icon || "Activity");
+                                const IconComponent = getIconComponent(condition.icon || "Activity");
                                 return <IconComponent className="h-8 w-8" />;
                               })()}</>
                             </div>
                           )}
                         </div>
-                        <span className="font-bold text-sm tracking-wide">{item.label}</span>
-                        <div className={`mt-4 h-1 w-0 ${item.activeLine} mx-auto rounded-full group-hover:w-12 transition-all duration-500`} />
+
+                        {/* Title */}
+                        <span className="font-bold text-sm tracking-wide">
+                          {condition.title}
+                        </span>
+
+                        {/* Hover Line */}
+                        <div className="mt-4 h-1 w-0 bg-primary mx-auto rounded-full group-hover:w-12 transition-all duration-500" />
                       </div>
                     </motion.div>
                   </CarouselItem>
-                );
-              })}
+                )
+              )}
             </CarouselContent>
+
             <CarouselPrevious className="-left-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
             <CarouselNext className="-right-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
           </Carousel>
