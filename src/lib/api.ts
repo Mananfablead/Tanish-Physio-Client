@@ -1,4 +1,5 @@
 import axios from "axios";
+ 
 
 // Create an axios instance
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;
@@ -90,7 +91,7 @@ export const submitQuestionnaireResponse = (data: {
 
 // Update user profile with health data
 export const updateProfileQuestion = (profileData: any) => {
-  return api.put('/auth/profile', profileData);
+  return api.put("/auth/profile", profileData);
 };
 
 // Booking API functions
@@ -208,13 +209,21 @@ export const updateGuestBookingStatus = (
   return api.put(`/bookings/guest-status/${id}`, { status, clientEmail });
 };
 
-export const updateGuestBooking = (id: string, bookingData: any, clientEmail: string) => {
-  console.log('updateGuestBooking called with:', { id, bookingData, clientEmail });
+export const updateGuestBooking = (
+  id: string,
+  bookingData: any,
+  clientEmail: string
+) => {
+  console.log("updateGuestBooking called with:", {
+    id,
+    bookingData,
+    clientEmail,
+  });
   const payload = {
     status: bookingData.status,
     clientEmail: clientEmail,
   };
-  console.log('Sending payload:', payload);
+  console.log("Sending payload:", payload);
   return api.put(`/bookings/guest-status/${id}`, payload);
 };
 
@@ -386,50 +395,43 @@ export const getBookingDetails = (id: string, clientEmail: string) => {
 export const videoCallAPI = {
   // Generate secure JWT token for joining call
   generateJoinLink: (sessionId, userId, role) =>
-    api.post('/video-call/generate-join-link', { sessionId, userId, role }),
+    api.post("/video-call/generate-join-link", { sessionId, userId, role }),
 
   // Verify call token
   verifyJoinLink: (token) =>
-    api.post('/video-call/verify-join-link', { token }),
+    api.post("/video-call/verify-join-link", { token }),
 
   // Get call details for a session
-  getCallDetails: (sessionId) =>
-    api.get(`/video-call/info/${sessionId}`),
+  getCallDetails: (sessionId) => api.get(`/video-call/info/${sessionId}`),
 
   // Get user's call history
-  getCallHistory: (params = {}) =>
-    api.get('/video-call/history', { params }),
+  getCallHistory: (params = {}) => api.get("/video-call/history", { params }),
 
   // Report call issue
   reportCallIssue: (sessionId, issue, description) =>
-    api.post('/video-call/report-issue', { sessionId, issue, description }),
+    api.post("/video-call/report-issue", { sessionId, issue, description }),
 };
 
 // Chat API functions
 export const chatAPI = {
   // Join a chat room
-  joinRoom: () =>
-    api.post('/chat/join'),
+  joinRoom: () => api.post("/chat/join"),
 
   // Leave a chat room
-  leaveRoom: () =>
-    api.post('/chat/leave'),
+  leaveRoom: () => api.post("/chat/leave"),
 
   // Send a chat message
   sendMessage: (sessionId, message) =>
-    api.post('/chat/send', { sessionId, message }),
+    api.post("/chat/send", { sessionId, message }),
 
   // Get chat messages for a session
-  getMessages: (sessionId) =>
-    api.get(`/chat/${sessionId}`),
+  getMessages: (sessionId) => api.get(`/chat/${sessionId}`),
 
   // Send typing indicator
-  sendTyping: () =>
-    api.post('/chat/typing'),
+  sendTyping: () => api.post("/chat/typing"),
 
   // Send stop typing indicator
-  sendStopTyping: () =>
-    api.post('/chat/stop-typing'),
+  sendStopTyping: () => api.post("/chat/stop-typing"),
 };
 
 export default api;
