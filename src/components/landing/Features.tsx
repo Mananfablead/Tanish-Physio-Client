@@ -6,9 +6,13 @@ import { Link } from "react-router-dom";
 
 interface FeaturesProps {
   cmsWhyUs: any;
+  fadeInUp?: any;
+  CountUp?: any;
+  setHoveredStat?: any;
+  hoveredStat?: any;
 }
 
-export const Features = ({ cmsWhyUs }: FeaturesProps) => {
+export const Features = ({ cmsWhyUs, fadeInUp, CountUp, setHoveredStat, hoveredStat }: FeaturesProps) => {
   return (
     <section className="py-16 relative overflow-hidden border-y border-white/10" style={{ backgroundColor: '#2d8e8d' }}>
       <div className="absolute inset-0 pointer-events-none">

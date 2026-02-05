@@ -8,6 +8,8 @@ interface SubscriptionPlansProps {
   subscriptionPlans: any[];
   subscriptionLoading: boolean;
   subscriptionError: string | null;
+  stagger?: any;
+  fadeInUp?: any;
 }
 
 const stagger = {
@@ -24,7 +26,21 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 };
 
-export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subscriptionError }: SubscriptionPlansProps) => {
+export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subscriptionError, stagger, fadeInUp }: SubscriptionPlansProps) => {
+  // Use passed props or fallback to local definitions
+  const staggerAnimation = stagger || {
+    animate: {
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+  
+  const fadeInUpAnimation = fadeInUp || {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
+  };
   return (
     <section className="py-8 bg-muted/30">
       <div className="container">
@@ -43,7 +59,7 @@ export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subs
 
         <motion.div 
           className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto"
-          variants={stagger}
+          variants={staggerAnimation}
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
@@ -57,7 +73,7 @@ export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subs
               const planId = plan.planId || plan.id;
               const highlight = plan.popular || planId === 'weekly';
               return (
-            <motion.div key={planId} variants={fadeInUp}>
+            <motion.div key={planId} variants={fadeInUpAnimation}>
               <Card className={`relative h-full p-8 flex flex-col ${highlight ? "border-primary shadow-lg scale-105 z-10" : "border-border shadow-sm"}`}>
                 {highlight && (
                   <Badge className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground">

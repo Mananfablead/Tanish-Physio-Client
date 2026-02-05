@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 
 interface HowItWorksProps {
   cmsSteps: any[];
+  stagger?: any;
+  fadeInUp?: any;
 }
 
 const stagger = {
@@ -20,7 +22,21 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 };
 
-export const HowItWorks = ({ cmsSteps }: HowItWorksProps) => {
+export const HowItWorks = ({ cmsSteps, stagger, fadeInUp }: HowItWorksProps) => {
+  // Use passed props or fallback to local definitions
+  const staggerAnimation = stagger || {
+    animate: {
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+  
+  const fadeInUpAnimation = fadeInUp || {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
+  };
   return (
     <section className="py-16 relative overflow-hidden bg-primary/[0.02] border-y border-primary/10">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none">
@@ -46,7 +62,7 @@ export const HowItWorks = ({ cmsSteps }: HowItWorksProps) => {
 
         <motion.div 
           className="grid md:grid-cols-3 gap-8 relative"
-          variants={stagger}
+          variants={staggerAnimation}
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
@@ -76,7 +92,7 @@ export const HowItWorks = ({ cmsSteps }: HowItWorksProps) => {
             const color = colors[index % colors.length];
             
             return (
-              <motion.div key={item._id || index} variants={fadeInUp} className="relative z-10">
+              <motion.div key={item._id || index} variants={fadeInUpAnimation} className="relative z-10">
                 <Card 
                   variant="gradient" 
                   className="h-full p-8 text-center relative overflow-hidden group border-t-4 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"

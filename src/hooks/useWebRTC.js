@@ -1200,7 +1200,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
                     console.log('FormData callLogId:', formData.get('callLogId'));
 
-                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/video-call/recording/upload`, {
+                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/video-call/recording/upload`, {
                         method: 'POST',
                         body: formData,
                         headers: {

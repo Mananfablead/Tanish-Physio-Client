@@ -4,9 +4,59 @@ import { Badge } from "@/components/ui/badge";
 import Autoplay from "embla-carousel-autoplay";
 import { getIconComponent } from "./utils";
 import { useState } from "react";
+import { 
+  ClipboardList,
+  UserCheck,
+  Video,
+  Star,
+  Shield,
+  Award,
+  CheckCircle,
+  Users,
+  Clock,
+  Activity,
+  HeartPulse,
+  Stethoscope,
+  Bone,
+  Dumbbell,
+  Zap,
+  Quote,
+  HelpCircle,
+  Lock,
+  ShieldCheck,
+  AlertCircle,
+  MapPin,
+  Calendar,
+  Check,
+  FileText,
+  User,
+  Phone,
+  Mail,
+  Home,
+  Briefcase,
+  GraduationCap,
+  Heart,
+  Eye,
+  Settings,
+  Search,
+  Filter,
+  Grid,
+  List,
+  Map,
+  Navigation,
+  Package,
+  ShoppingCart,
+  Tag,
+  Truck,
+  Wrench,
+  Plus,
+  Minus,
+} from "lucide-react";
 
 interface ConditionsWeTreatProps {
   cmsConditions: any;
+  fadeInUp?: any;
+  getIconComponent?: (iconName: string) => any;
 }
 
 const ConditionalIconRenderer = ({ imageUrl, iconName, altText }) => {
@@ -31,12 +81,66 @@ const ConditionalIconRenderer = ({ imageUrl, iconName, altText }) => {
   );
 };
 
-export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => {
-  const fadeInUp = {
+export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }: ConditionsWeTreatProps) => {
+  // Use passed props or fallback to local definitions
+  const fadeInUpAnimation = fadeInUp || {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5 }
   };
+  
+  const getIconComponentFn = getIconComponent || ((iconName: string) => {
+    const iconMap: Record<string, any> = {
+      ClipboardList: ClipboardList,
+      UserCheck: UserCheck,
+      Video: Video,
+      Star: Star,
+      Shield: Shield,
+      Award: Award,
+      CheckCircle: CheckCircle,
+      Users: Users,
+      Clock: Clock,
+      Activity: Activity,
+      HeartPulse: HeartPulse,
+      Stethoscope: Stethoscope,
+      Bone: Bone,
+      Dumbbell: Dumbbell,
+      Zap: Zap,
+      Quote: Quote,
+      HelpCircle: HelpCircle,
+      Lock: Lock,
+      ShieldCheck: ShieldCheck,
+      AlertCircle: AlertCircle,
+      MapPin: MapPin,
+      Calendar: Calendar,
+      Check: Check,
+      FileText: FileText,
+      User: User,
+      Phone: Phone,
+      Mail: Mail,
+      Home: Home,
+      Briefcase: Briefcase,
+      GraduationCap: GraduationCap,
+      Heart: Heart,
+      Eye: Eye,
+      Settings: Settings,
+      Search: Search,
+      Filter: Filter,
+      Grid: Grid,
+      List: List,
+      Map: Map,
+      Navigation: Navigation,
+      Package: Package,
+      ShoppingCart: ShoppingCart,
+      Tag: Tag,
+      Truck: Truck,
+      Wrench: Wrench,
+      Plus: Plus,
+      Minus: Minus,
+    };
+    
+    return iconMap[iconName] || ClipboardList;
+  });
 
   return (
     <section className="py-16 relative overflow-hidden border-y border-primary/10">
@@ -99,7 +203,7 @@ export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => 
                 return (
                   <CarouselItem key={condition._id || index} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/6">
                     <motion.div 
-                      variants={fadeInUp}
+                      variants={fadeInUpAnimation}
                       whileHover={{ y: -8 }}
                       className="group cursor-pointer py-2"
                     >
@@ -114,7 +218,7 @@ export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => 
                           ) : (
                             <div className="h-8 w-8">
                               <>{(() => {
-                                const IconComponent = getIconComponent(condition.icon || "Activity");
+                                const IconComponent = getIconComponentFn(condition.icon || "Activity");
                                 return <IconComponent className="h-8 w-8" />;
                               })()}</>
                             </div>
