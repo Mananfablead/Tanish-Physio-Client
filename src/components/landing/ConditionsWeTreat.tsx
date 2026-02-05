@@ -94,8 +94,9 @@ const ConditionalIconRenderer = ({
   );
 };
 
-export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => {
-  const fadeInUp = {
+export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }: ConditionsWeTreatProps) => {
+  // Use passed props or fallback to local definitions
+  const fadeInUpAnimation = fadeInUp || {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5 },
@@ -190,53 +191,24 @@ export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => 
             className="w-full"
           >
             <CarouselContent className="-ml-4">
-              {(cmsConditions?.conditions && cmsConditions.conditions.length > 0 ? cmsConditions.conditions : [
-                { name: "Neck Pain", image: "", icon: "Activity" },
-                { name: "Back Pain", image: "", icon: "Bone" },
-                { name: "Knee Pain", image: "", icon: "HeartPulse" },
-                { name: "Shoulder Pain", image: "", icon: "Zap" },
-                { name: "Sports Injury", image: "", icon: "Dumbbell" },
-                { name: "Post-Surgery", image: "", icon: "Stethoscope" },
-                { name: "Sciatica", image: "", icon: "Activity" },
-                { name: "Arthritis", image: "", icon: "Bone" },
-                { name: "Spinal Cord", image: "", icon: "Activity" },
-                { name: "Hip Pain", image: "", icon: "Zap" },
-                { name: "Muscle Strain", image: "", icon: "Activity" },
-                { name: "Ligament Tear", image: "", icon: "HeartPulse" }
-              ]).map((condition: any, index: number) => {
-                const item = {
-                  label: condition.name,
-                  image: condition.image,
-                  color: ["primary", "accent", "success", "warning"][index % 4],
-                  borderColor: "hover:border-primary",
-                  bgColor: "bg-primary/10",
-                  hoverBg: "group-hover:bg-primary",
-                  activeLine: "bg-primary"
-                };
-                
-                return (
-                  <CarouselItem key={condition._id || index} className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/6">
-                    <motion.div 
+              {cmsConditions?.conditions?.map(
+                (condition: any, index: number) => (
+                  <CarouselItem
+                    key={condition._id || index}
+                    className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/6"
+                  >
+                    <motion.div
                       variants={fadeInUp}
                       whileHover={{ y: -8 }}
                       className="group cursor-pointer py-2"
                     >
-                      <div className={`bg-background rounded-2xl p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 group-hover:shadow-xl ${item.borderColor}`}>
-                        <div className={`h-16 w-16 rounded-2xl ${item.bgColor} flex items-center justify-center mx-auto mb-6 ${item.hoverBg} group-hover:text-white transition-all duration-500 shadow-sm`}>
-                          {item.image ? (
-                            <ConditionalIconRenderer 
-                              imageUrl={item.image} 
-                              iconName={condition.icon || "Activity"} 
-                              altText={item.label} 
-                            />
-                          ) : (
-                            <div className="h-8 w-8">
-                              <>{(() => {
-                                const IconComponent = getIconComponent(condition.icon || "Activity");
-                                return <IconComponent className="h-8 w-8" />;
-                              })()}</>
-                            </div>
-                          )}
+                      <div className="bg-background rounded-2xl p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 hover:border-primary hover:shadow-xl">
+                        {/* Icon / Image */}
+                        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                          <ConditionalIconRenderer
+                            imageUrl={condition.image}
+                            altText={condition.title}
+                          />
                         </div>
 
                         {/* Title */}
