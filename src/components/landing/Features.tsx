@@ -60,9 +60,9 @@ export const Features = ({ cmsWhyUs }: FeaturesProps) => {
             </div>
 
             <Link to="/questionnaire">
-              <button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 py-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+              <button className="mt-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 py-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 flex items-center gap-2">
                 Start Your Assessment
-                <ArrowRight className="h-5 w-5 ml-2" />
+                <ArrowRight className="h-5 w-5" />
               </button>
             </Link>
           </motion.div>

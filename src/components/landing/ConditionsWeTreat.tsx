@@ -3,10 +3,33 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Badge } from "@/components/ui/badge";
 import Autoplay from "embla-carousel-autoplay";
 import { getIconComponent } from "./utils";
+import { useState } from "react";
 
 interface ConditionsWeTreatProps {
   cmsConditions: any;
 }
+
+const ConditionalIconRenderer = ({ imageUrl, iconName, altText }) => {
+  const [hasError, setHasError] = useState(false);
+  
+  if (hasError) {
+    const IconComponent = getIconComponent(iconName || "Activity");
+    return (
+      <div className="h-8 w-8">
+        <IconComponent className="h-8 w-8" />
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={imageUrl} 
+      alt={altText}
+      className="h-8 w-8 object-contain"
+      onError={() => setHasError(true)}
+    />
+  );
+};
 
 export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => {
   const fadeInUp = {
@@ -83,29 +106,18 @@ export const ConditionsWeTreat = ({ cmsConditions }: ConditionsWeTreatProps) => 
                       <div className={`bg-background rounded-2xl p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 group-hover:shadow-xl ${item.borderColor}`}>
                         <div className={`h-16 w-16 rounded-2xl ${item.bgColor} flex items-center justify-center mx-auto mb-6 ${item.hoverBg} group-hover:text-white transition-all duration-500 shadow-sm`}>
                           {item.image ? (
-                            <img 
-                              src={item.image} 
-                              alt={item.label}
-                              className="h-8 w-8 object-contain"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null;
-                                // Hide the broken image and let the fallback render
-                                target.style.display = "none";
-                                // Show the parent container again to reveal the fallback
-                                if (target.parentElement) {
-                                  target.parentElement.innerHTML = '';
-                                  const fallbackIcon = getIconComponent("Activity");
-                                  if (fallbackIcon) {
-                                    const iconElement = document.createElement('div');
-                                    iconElement.innerHTML = `<svg class=\"h-8 w-8\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"></line><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"></line></svg>`;
-                                    target.parentElement.appendChild(iconElement);
-                                  }
-                                }
-                              }}
+                            <ConditionalIconRenderer 
+                              imageUrl={item.image} 
+                              iconName={condition.icon || "Activity"} 
+                              altText={item.label} 
                             />
                           ) : (
-                            <></>
+                            <div className="h-8 w-8">
+                              <>{(() => {
+                                const IconComponent = getIconComponent(condition.icon || "Activity");
+                                return <IconComponent className="h-8 w-8" />;
+                              })()}</>
+                            </div>
                           )}
                         </div>
                         <span className="font-bold text-sm tracking-wide">{item.label}</span>
