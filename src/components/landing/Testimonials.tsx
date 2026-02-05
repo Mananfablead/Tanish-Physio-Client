@@ -10,6 +10,7 @@ interface TestimonialsProps {
   featuredTestimonials: any[];
   testimonialsLoading: boolean;
   testimonialsError: string | null;
+  fadeInUp?: any;
 }
 
 const fadeInUp = {
@@ -18,7 +19,13 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 };
 
-export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testimonialsError }: TestimonialsProps) => {
+export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testimonialsError, fadeInUp }: TestimonialsProps) => {
+  // Use passed prop or fallback to local definition
+  const fadeInUpAnimation = fadeInUp || {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
+  };
   return (
     <section className="py-16 relative overflow-hidden border-y border-primary/10" style={{ backgroundColor: '#2d8e8d' }}>
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
@@ -63,7 +70,7 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
               ) : featuredTestimonials.length > 0 ? (
                 featuredTestimonials?.map((testimonial: any, index: number) => (
                   <CarouselItem key={testimonial?._id || index} className="pl-4 md:basis-1/3">
-                    <motion.div variants={fadeInUp}>
+                    <motion.div variants={fadeInUpAnimation}>
                       <Card className={`h-full p-8 hover:shadow-xl transition-all duration-500 border-l-4 bg-gradient-to-br from-white to-muted/20 dark:from-background dark:to-muted/5 relative group overflow-hidden`}>
                         <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
 

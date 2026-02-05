@@ -8,6 +8,7 @@ import heroImage from "@/assets/hero-physio.jpg";
 
 interface HeroSectionProps {
   cmsHero: any;
+  heroImage?: string;
 }
 
 const fadeInUp = {
@@ -16,7 +17,7 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 };
 
-export const HeroSection = ({ cmsHero }: HeroSectionProps) => {
+export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
   return (
     <section className="relative overflow-hidden gradient-hero border-b border-primary/5">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />

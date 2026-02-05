@@ -161,15 +161,28 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    autoGainControl: true
+                    autoGainControl: true,
+                    sampleRate: 44100,
+                    channelCount: 2
+                    // Note: Removed deviceId constraint to use default device
                 }
             });
 
             const stream = await Promise.race([mediaPromise, timeoutPromise]);
 
+            // Verify that the stream has both audio and video tracks as expected
+            const audioTracks = stream.getAudioTracks();
+            const videoTracks = stream.getVideoTracks();
+            
+            console.log(`✅ Media initialized successfully - Audio tracks: ${audioTracks.length}, Video tracks: ${videoTracks.length}`);
+            
+            // Log specific information about audio track if available
+            if (audioTracks.length > 0) {
+                console.log(`Audio track enabled: ${audioTracks[0].enabled}, readyState: ${audioTracks[0].readyState}`);
+            }
+            
             setLocalStream(stream);
             localStreamRef.current = stream; // Update ref
-            console.log('✅ Media initialized successfully');
             return stream;
 
         } catch (error) {
@@ -179,7 +192,26 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             if (error.name === 'NotAllowedError') {
                 throw new Error('Camera and microphone access denied. Please enable permissions in browser settings and refresh the page.');
             } else if (error.name === 'NotFoundError') {
-                throw new Error('No camera or microphone found. Please connect devices and try again.');
+                console.log('No camera found, trying audio only...');
+                // Try audio only
+                try {
+                    const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            sampleRate: 44100,
+                            channelCount: 2
+                        }
+                    });
+                    setLocalStream(audioOnlyStream);
+                    localStreamRef.current = audioOnlyStream; // Update ref
+                    console.log('✅ Audio-only mode initialized (no camera found)');
+                    return audioOnlyStream;
+                } catch (audioError) {
+                    console.error('Audio-only also failed:', audioError);
+                    throw new Error('No camera or microphone found. Please connect devices and try again.');
+                }
             } else if (error.name === 'OverconstrainedError') {
                 // Try with basic constraints
                 if (retryCount < maxRetries) {
@@ -189,41 +221,85 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 }
                 throw new Error('Device constraints not supported. Please check your camera/microphone specifications.');
             } else if (error.message.includes('took too long')) {
-                // Timeout error - try again with audio only
+                // Timeout error - try again with basic constraints
                 if (retryCount < maxRetries) {
-                    console.log('Timeout occurred, trying audio only...');
+                    console.log('Timeout occurred, trying with basic constraints...');
                     try {
-                        const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
-                            audio: true,
-                            video: false
+                        const basicStream = await navigator.mediaDevices.getUserMedia({
+                            video: true,
+                            audio: true
                         });
-                        setLocalStream(audioOnlyStream);
-                        localStreamRef.current = audioOnlyStream; // Update ref
-                        console.log('✅ Audio-only mode initialized');
-                        return audioOnlyStream;
-                    } catch (audioError) {
-                        console.error('Audio-only also failed:', audioError);
-                        throw new Error('Please check your camera and microphone permissions, then refresh the page.');
+                        setLocalStream(basicStream);
+                        localStreamRef.current = basicStream; // Update ref
+                        console.log('✅ Media initialized with basic constraints');
+                        return basicStream;
+                    } catch (basicError) {
+                        console.error('Basic constraints also failed, trying audio only...');
+                        // Try audio only as last resort
+                        try {
+                            const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
+                                audio: true
+                            });
+                            setLocalStream(audioOnlyStream);
+                            localStreamRef.current = audioOnlyStream; // Update ref
+                            console.log('✅ Audio-only mode initialized after timeout');
+                            return audioOnlyStream;
+                        } catch (audioError) {
+                            console.error('Audio-only also failed:', audioError);
+                            throw new Error('Please check your camera and microphone permissions, then refresh the page.');
+                        }
                     }
                 }
                 throw error;
             } else if (error.name === 'NotReadableError') {
                 throw new Error('Camera/microphone is being used by another application. Please close other apps and try again.');
             } else {
-                // For other errors, try audio-only as fallback
+                // For other errors, try to initialize audio and video separately
                 if (retryCount < maxRetries) {
-                    console.log('Trying audio only mode...');
+                    console.log('Trying separate audio/video initialization...');
                     try {
-                        const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
-                            audio: true,
-                            video: false
-                        });
-                        setLocalStream(audioOnlyStream);
-                        localStreamRef.current = audioOnlyStream; // Update ref
-                        console.log('✅ Audio-only mode initialized');
-                        return audioOnlyStream;
-                    } catch (audioError) {
-                        console.error('Audio only also failed:', audioError);
+                        // First try to get video
+                        let videoStream = null;
+                        try {
+                            videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        } catch (videoError) {
+                            console.log('Video initialization failed, continuing with audio only');
+                        }
+                        
+                        // Then try to get audio
+                        let audioStream = null;
+                        try {
+                            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        } catch (audioError) {
+                            console.error('Audio initialization failed');
+                            throw new Error('Microphone access denied or unavailable. Please check your microphone permissions.');
+                        }
+                        
+                        // Combine streams if both available
+                        if (videoStream && audioStream) {
+                            const combinedStream = new MediaStream([
+                                ...videoStream.getVideoTracks(),
+                                ...audioStream.getAudioTracks()
+                            ]);
+                            setLocalStream(combinedStream);
+                            localStreamRef.current = combinedStream;
+                            console.log('✅ Combined audio/video stream initialized');
+                            return combinedStream;
+                        } else if (audioStream) {
+                            setLocalStream(audioStream);
+                            localStreamRef.current = audioStream;
+                            console.log('✅ Audio-only stream initialized');
+                            return audioStream;
+                        } else if (videoStream) {
+                            setLocalStream(videoStream);
+                            localStreamRef.current = videoStream;
+                            console.log('✅ Video-only stream initialized');
+                            return videoStream;
+                        } else {
+                            throw new Error('Could not initialize either audio or video stream.');
+                        }
+                    } catch (separateError) {
+                        console.error('Separate audio/video initialization also failed:', separateError);
                         throw new Error('Please check your camera and microphone permissions, then refresh the page.');
                     }
                 }
@@ -262,6 +338,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         // Validate stream tracks
         const audioTracks = finalStream.getAudioTracks();
         const videoTracks = finalStream.getVideoTracks();
+
+        console.log(`Stream validation - Audio tracks: ${audioTracks.length}, Video tracks: ${videoTracks.length}`);
 
         if (audioTracks.length === 0 && videoTracks.length === 0) {
             console.error('❌ Stream has no audio or video tracks for user:', userId);
@@ -521,6 +599,29 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             }
         };
 
+        // When peer connects, ensure audio state is synchronized
+        peer.on('connect', () => {
+            console.log('✅ Peer connection established with:', userId);
+            
+            // Synchronize audio state after connection
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    const audioTrack = audioTracks[0];
+                    // Update peer connection with current audio state
+                    setTimeout(() => {
+                        if (peer && peer._pc && peer._pc.getSenders) {
+                            peer._pc.getSenders().forEach(sender => {
+                                if (sender.track && sender.track.kind === 'audio') {
+                                    sender.track.enabled = audioTrack.enabled;
+                                }
+                            });
+                        }
+                    }, 100);
+                }
+            }
+        });
+
         peer.on('close', () => {
             setRemoteStreams(prev => {
                 const newState = { ...prev };
@@ -590,6 +691,25 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             console.error("❌ Failed to create peer connection for:", senderId);
             return;
         }
+        
+        // Ensure audio track state is properly synchronized after connection
+        if (localStream) {
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                const audioTrack = audioTracks[0];
+                // Update peer connection with current audio state
+                setTimeout(() => {
+                    if (peer && peer._pc && peer._pc.getSenders) {
+                        peer._pc.getSenders().forEach(sender => {
+                            if (sender.track && sender.track.kind === 'audio') {
+                                sender.track.enabled = audioTrack.enabled;
+                            }
+                        });
+                    }
+                }, 100);
+            }
+        }
+        
         console.log("📡 Signaling offer...");
         try {
             await peer.signal(offer);
@@ -609,6 +729,26 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         if (peerRefs.current[senderId]) {
             try {
                 await peerRefs.current[senderId].signal(answer);
+                
+                // Ensure audio track state is properly synchronized after connection
+                if (localStream) {
+                    const audioTracks = localStream.getAudioTracks();
+                    if (audioTracks.length > 0) {
+                        const audioTrack = audioTracks[0];
+                        // Update peer connection with current audio state
+                        setTimeout(() => {
+                            const peer = peerRefs.current[senderId];
+                            if (peer && peer._pc && peer._pc.getSenders) {
+                                peer._pc.getSenders().forEach(sender => {
+                                    if (sender.track && sender.track.kind === 'audio') {
+                                        sender.track.enabled = audioTrack.enabled;
+                                    }
+                                });
+                            }
+                        }, 100);
+                    }
+                }
+                
                 console.log("✅ Answer handled successfully");
             } catch (error) {
                 console.error("❌ Error handling answer:", error);
@@ -624,6 +764,25 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 console.error("❌ Failed to create peer connection for:", senderId);
                 return;
             }
+            
+            // Ensure audio track state is properly synchronized after connection
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    const audioTrack = audioTracks[0];
+                    // Update peer connection with current audio state
+                    setTimeout(() => {
+                        if (peer && peer._pc && peer._pc.getSenders) {
+                            peer._pc.getSenders().forEach(sender => {
+                                if (sender.track && sender.track.kind === 'audio') {
+                                    sender.track.enabled = audioTrack.enabled;
+                                }
+                            });
+                        }
+                    }, 100);
+                }
+            }
+            
             try {
                 await peer.signal(answer);
                 console.log("✅ Answer handled with new peer connection");
@@ -645,16 +804,31 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     // Toggle audio
     const toggleAudio = useCallback(() => {
         if (localStream) {
-            const audioTrack = localStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                const audioTrack = audioTracks[0];
+                const newEnabledState = !audioTrack.enabled;
+                audioTrack.enabled = newEnabledState;
+                
+                // Update all peer connections with the new audio state
+                Object.values(peerRefs.current).forEach(peer => {
+                    if (peer && peer._pc && peer._pc.getSenders) {
+                        peer._pc.getSenders().forEach(sender => {
+                            if (sender.track && sender.track.kind === 'audio') {
+                                sender.track.enabled = newEnabledState;
+                            }
+                        });
+                    }
+                });
+                
                 if (socket) {
                     socket.emit('audio-toggle', {
                         roomId,
-                        muted: !audioTrack.enabled
+                        muted: !newEnabledState, // Send opposite of enabled state (muted = !enabled)
+                        userId: socket.user?.userId // Include userId to identify who toggled
                     });
                 }
-                return audioTrack.enabled;
+                return newEnabledState;
             }
         }
         return false;
@@ -687,9 +861,39 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         if (screenTrack) {
             // Stop screen sharing and revert to camera
             screenTrack.stop();
-            const cameraTrack = await navigator.mediaDevices.getUserMedia({ video: true });
-            localStream.addTrack(cameraTrack.getVideoTracks()[0]);
-
+            
+            // Get all tracks except the screen track
+            const videoTracks = localStream.getVideoTracks().filter(track => track !== screenTrack);
+            const audioTracks = localStream.getAudioTracks();
+            
+            // Stop and remove the screen track
+            screenTrack.stop();
+            localStream.removeTrack(screenTrack);
+            
+            // Get new camera video track
+            const cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    frameRate: { ideal: 30 }
+                }
+            });
+            
+            // Replace the old video track with the new camera track
+            if (videoTracks.length > 0) {
+                localStream.removeTrack(videoTracks[0]);
+                videoTracks[0].stop(); // Stop the old video track
+            }
+            
+            // Add the new camera video track
+            localStream.addTrack(cameraStream.getVideoTracks()[0]);
+            
+            // Update the video element with the modified stream
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = localStream;
+            }
+            
+            // Emit screen share toggle event
             if (socket) {
                 socket.emit('screen-share-toggle', {
                     roomId,
@@ -1200,7 +1404,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
                     console.log('FormData callLogId:', formData.get('callLogId'));
 
-                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/video-call/recording/upload`, {
+                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/video-call/recording/upload`, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -1252,6 +1456,16 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         }
         return false;
     }, [recorder]);
+
+    // Effect to sync audio state when local stream changes
+    useEffect(() => {
+        if (localStream) {
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                console.log('Local stream audio track state changed:', audioTracks[0].enabled);
+            }
+        }
+    }, [localStream]);
 
     return {
         localStream,

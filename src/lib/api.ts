@@ -395,21 +395,21 @@ export const getBookingDetails = (id: string, clientEmail: string) => {
 export const videoCallAPI = {
   // Generate secure JWT token for joining call
   generateJoinLink: (sessionId, userId, role) =>
-    api.post("/video-call/generate-join-link", { sessionId, userId, role }),
+    api.post("video-call/generate-join-link", { sessionId, userId, role }),
 
   // Verify call token
   verifyJoinLink: (token) =>
-    api.post("/video-call/verify-join-link", { token }),
+    api.post("video-call/verify-join-link", { token }),
 
   // Get call details for a session
-  getCallDetails: (sessionId) => api.get(`/video-call/info/${sessionId}`),
+  getCallDetails: (sessionId) => api.get(`video-call/info/${sessionId}`),
 
   // Get user's call history
-  getCallHistory: (params = {}) => api.get("/video-call/history", { params }),
+  getCallHistory: (params = {}) => api.get("video-call/history", { params }),
 
   // Report call issue
   reportCallIssue: (sessionId, issue, description) =>
-    api.post("/video-call/report-issue", { sessionId, issue, description }),
+    api.post("video-call/report-issue", { sessionId, issue, description }),
 };
 
 // Chat API functions

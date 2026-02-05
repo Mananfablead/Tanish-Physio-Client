@@ -65,6 +65,7 @@ const VideoCall = ({
 
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
+  const [participantAudioStatus, setParticipantAudioStatus] = useState({});
 
   // Effect to update video elements when streams change
   useEffect(() => {
@@ -670,6 +671,14 @@ const VideoCall = ({
         console.log("Updated participants list:", newParticipants);
         return newParticipants;
       });
+      
+      // Initialize audio status for the new participant (default to enabled)
+      if (participantData.userId) {
+        setParticipantAudioStatus(prev => ({
+          ...prev,
+          [participantData.userId]: true // Audio enabled by default
+        }));
+      }
 
       // AUTO-JOIN LOGIC - Patient auto-joins when therapist joins
       console.log("=== AUTO-JOIN CHECK ===");
@@ -881,6 +890,15 @@ const VideoCall = ({
     // Handle participant left
     const participantLeftListener = (data) => {
       setParticipants((prev) => prev.filter((p) => p.userId !== data.userId));
+      
+      // Remove audio status for the leaving participant
+      if (data.userId) {
+        setParticipantAudioStatus(prev => {
+          const newStatus = { ...prev };
+          delete newStatus[data.userId];
+          return newStatus;
+        });
+      }
     };
 
     // Handle call started
@@ -955,6 +973,15 @@ const VideoCall = ({
     // Handle audio toggle
     const audioToggleListener = (data) => {
       // Update UI to reflect other participant's audio status
+      console.log("Audio toggle received from user:", data.userId, "muted:", data.muted);
+      
+      // Update the audio status for the specific user
+      if (data.userId) {
+        setParticipantAudioStatus(prev => ({
+          ...prev,
+          [data.userId]: !data.muted // Store whether audio is enabled (opposite of muted)
+        }));
+      }
     };
 
     // Handle video toggle
@@ -1137,45 +1164,44 @@ const VideoCall = ({
           <div className="relative w-full h-full bg-black rounded-xl overflow-hidden">
             <video
               ref={(el) => {
-                if (el) {
+                if (el && stream) {
                   remoteVideoRefs.current[socketId] = el;
-                  if (stream) {
+                  // Only assign srcObject if it's different to prevent blinking
+                  if (el.srcObject !== stream) {
                     try {
-                      if (el.srcObject !== stream) {
-                        el.srcObject = stream;
-                        console.log(
-                          `✅ Remote video ref assigned for socket: ${socketId}`
-                        );
+                      el.srcObject = stream;
+                      console.log(
+                        `✅ Remote video ref assigned for socket: ${socketId}`
+                      );
 
-                        // Ensure video plays
-                        el.muted = true;
-                        el.autoplay = true;
-                        el.playsInline = true;
+                      // Ensure video plays
+                      el.muted = true;
+                      el.autoplay = true;
+                      el.playsInline = true;
 
-                        // Play the video
-                        const playPromise = el.play();
-                        if (playPromise !== undefined) {
-                          playPromise
-                            .then(() => {
-                              console.log(
-                                `✅ Remote video playing for socket: ${socketId}`
+                      // Play the video
+                      const playPromise = el.play();
+                      if (playPromise !== undefined) {
+                        playPromise
+                          .then(() => {
+                            console.log(
+                              `✅ Remote video playing for socket: ${socketId}`
+                            );
+                          })
+                          .catch((error) => {
+                            console.warn(
+                              `⚠️ Remote video autoplay failed for ${socketId}:`,
+                              error
+                            );
+                            // Try to play muted
+                            el.muted = true;
+                            el.play().catch((err) => {
+                              console.error(
+                                `❌ Remote video play failed for ${socketId}:`,
+                                err
                               );
-                            })
-                            .catch((error) => {
-                              console.warn(
-                                `⚠️ Remote video autoplay failed for ${socketId}:`,
-                                error
-                              );
-                              // Try to play muted
-                              el.muted = true;
-                              el.play().catch((err) => {
-                                console.error(
-                                  `❌ Remote video play failed for ${socketId}:`,
-                                  err
-                                );
-                              });
                             });
-                        }
+                          });
                       }
                     } catch (err) {
                       console.error(
@@ -1673,16 +1699,16 @@ const VideoCall = ({
         </div>
       )}
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-4 bg-slate-900 border-b border-slate-800">
-        <div className="flex items-center gap-6">
-          <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center border border-slate-700">
-            <Video className="h-5 w-5 text-slate-300" />
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 py-4 bg-slate-900 border-b border-slate-800 gap-3 sm:gap-0">
+        <div className="flex items-center gap-3 sm:gap-6">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-2xl bg-slate-800 flex items-center justify-center border border-slate-700">
+            <Video className="h-4 sm:h-5 w-4 sm:w-5 text-slate-300" />
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-0.5">
               <Badge
                 variant="outline"
-                className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider px-2 py-0"
+                className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0"
               >
                 Live Session
               </Badge>
@@ -1690,12 +1716,12 @@ const VideoCall = ({
                 • {sessionDetails?.session?.time || "Time not specified"}
               </span>
             </div>
-            <h1 className="text-white font-semibold tracking-tight">
+            <h1 className="text-white font-semibold tracking-tight text-sm sm:text-base truncate">
               {localTherapistName && localTherapistName !== 'Clinician' ? localTherapistName : "Clinician"}
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="sm"
@@ -1708,8 +1734,11 @@ const VideoCall = ({
               setShowSettings(false);
             }}
           >
-            <Users className="h-4 w-4 mr-2" />
-            <span className="hidden md:inline">Participants</span>
+            <Users className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline text-xs">
+              Participants ({participants.length})
+            </span>
+            <span className="sm:hidden text-xs">({participants.length})</span>
           </Button>
           <Button
             variant="ghost"
@@ -1723,8 +1752,9 @@ const VideoCall = ({
               setShowSettings(false);
             }}
           >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            <span className="hidden md:inline">Clinical Chat</span>
+            <MessageSquare className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline text-xs">Clinical Chat</span>
+            <span className="sm:hidden text-xs">Chat</span>
           </Button>
         </div>
       </div>
@@ -1733,21 +1763,18 @@ const VideoCall = ({
       <div className="flex-1 relative bg-slate-950 flex overflow-hidden">
         {/* Main Video (Doctor/Remote) */}
         <div
-          className={`flex-1 relative flex items-center justify-center transition-all duration-500 ${
+          className={`flex-1 relative transition-all duration-500 ${
             showParticipants || showChat ? "md:mr-0" : ""
           }`}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-950/50 pointer-events-none" />
           {renderRemoteVideos()}
         </div>
 
         {/* Side Panels */}
         {showParticipants && (
-          <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50">
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-white font-semibold">
-                Participants ({participants.length})
-              </h3>
+          <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50 max-h-screen md:max-h-full">
+            <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-white font-semibold text-base">Participants</h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -1757,14 +1784,14 @@ const VideoCall = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex-1 p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {participants && participants.length > 0 ? (
                 participants.map((participant, index) => (
                   <div
                     key={`${participant.userId || 'unknown'}-${participant.socketId || 'unknown'}-${index}`}
-                    className="flex items-center gap-4"
+                    className="flex items-center gap-3 sm:gap-4 p-2 rounded-lg bg-slate-800/30"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
                       {(participant.name &&
                         participant.name.charAt(0).toUpperCase()) ||
                         (participant.firstName &&
@@ -1775,9 +1802,9 @@ const VideoCall = ({
                           participant.role.charAt(0).toUpperCase()) ||
                         "U"}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-white font-medium text-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
+                        <p className="text-white font-medium text-sm truncate">
                           {participant.name && participant.name !== 'Clinician' && participant.name !== 'User Unknown'
                             ? participant.name
                             : (participant.firstName && participant.lastName
@@ -1787,7 +1814,7 @@ const VideoCall = ({
                             `User ${participant.userId?.substring(0, 5) || participant.socketId?.substring(0, 5) || "Unknown"}`}
                         </p>
                         {participant.isSelf && (
-                          <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4">
+                          <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4 flex-shrink-0 ml-1">
                             You
                           </Badge>
                         )}
@@ -1795,12 +1822,12 @@ const VideoCall = ({
                           participant.role === "therapist" ||
                           participant.role === "admin") &&
                           !participant.isSelf && (
-                            <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4">
+                            <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4 flex-shrink-0 ml-1">
                               {participant.role === "admin" ? "Admin" : "Host"}
                             </Badge>
                           )}
                       </div>
-                      <p className="text-slate-500 text-xs">
+                      <p className="text-slate-500 text-xs truncate">
                         {participant.joinedAt
                           ? `Joined: ${new Date(
                               participant.joinedAt
@@ -1821,9 +1848,9 @@ const VideoCall = ({
         )}
 
         {showChat && (
-          <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50">
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-white font-semibold">Clinical Chat</h3>
+          <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50 max-h-screen md:max-h-full">
+            <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-white font-semibold text-base">Clinical Chat</h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -1835,11 +1862,11 @@ const VideoCall = ({
             </div>
             
             {/* Chat Messages Display */}
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
               {chatMessages.length === 0 ? (
                 <div className="flex flex-col justify-center items-center text-center h-full py-8">
-                  <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 border border-slate-700">
-                    <MessageSquare className="h-5 w-5 text-slate-500" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 border border-slate-700">
+                    <MessageSquare className="h-4 sm:h-5 w-4 sm:w-5 text-slate-500" />
                   </div>
                   <p className="text-slate-400 text-sm font-medium">
                     Chat is secure and encrypted
@@ -1855,7 +1882,7 @@ const VideoCall = ({
                     className={`flex ${message.senderId === socket?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                      className={`max-w-[80%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm ${
                         message.senderId === socket?.id
                           ? 'bg-emerald-500 text-white rounded-br-md'
                           : 'bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700'
@@ -1887,15 +1914,23 @@ const VideoCall = ({
               {/* Typing indicators */}
               {typingUsers.length > 0 && (
                 <div className="flex justify-start">
-                  <div className="bg-slate-800 text-slate-400 rounded-2xl rounded-bl-md px-4 py-3 text-sm border border-slate-700">
+                  <div className="bg-slate-800 text-slate-400 rounded-2xl rounded-bl-md px-3 sm:px-4 py-2 sm:py-3 text-sm border border-slate-700">
                     <div className="flex items-center gap-1">
                       <div className="flex gap-1">
                         <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                        <div
+                          className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.4s" }}
+                        ></div>
                       </div>
                       <span className="ml-2 text-xs">
-                        {typingUsers.length === 1 ? 'Someone is typing...' : `${typingUsers.length} people typing...`}
+                        {typingUsers.length === 1
+                          ? "Someone is typing..."
+                          : `${typingUsers.length} people typing...`}
                       </span>
                     </div>
                   </div>
@@ -1903,7 +1938,7 @@ const VideoCall = ({
               )}
             </div>
             
-            <div className="p-4 border-t border-slate-800">
+            <div className="p-3 sm:p-4 border-t border-slate-800">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1917,7 +1952,7 @@ const VideoCall = ({
                   }}
                   onFocus={handleTyping}
                   onBlur={handleStopTyping}
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-slate-500 placeholder:text-slate-600"
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 sm:px-4 py-2 text-white text-sm focus:outline-none focus:border-slate-500 placeholder:text-slate-600"
                 />
                 <Button
                   size="icon"
@@ -1933,15 +1968,16 @@ const VideoCall = ({
         )}
         {/* Self Video (Patient/Local) */}
         <div
-          className={`absolute md:bottom-8 md:right-8 bottom-4 right-4 md:w-64 md:h-44 w-44 h-36 rounded-[2rem] overflow-hidden border-4 border-slate-900 shadow-2xl transition-all duration-500 ${
+          className={`absolute md:bottom-8 md:right-8 bottom-24 right-4 md:w-64 md:h-44 w-44 h-36 rounded-[2rem] overflow-hidden border-4 border-slate-900 shadow-2xl transition-all duration-500 ${
             showParticipants || showChat ? "md:translate-x-[-320px]" : ""
           }`}
         >
           <video
             ref={(el) => {
-              if (el) {
+              if (el && localStream) {
                 localVideoRef.current = el;
-                if (localStream) {
+                // Only assign srcObject if it's different to prevent blinking
+                if (el.srcObject !== localStream) {
                   try {
                     el.srcObject = localStream;
                     console.log("✅ Local video ref and srcObject assigned");
@@ -1972,21 +2008,21 @@ const VideoCall = ({
 
       {/* Controls */}
       <div className="bg-slate-900 px-4 py-4 md:px-8 md:py-8 border-t border-slate-800 md:relative fixed bottom-0 left-0 right-0 z-40">
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between">
-          <div className="w-32 hidden md:flex items-center gap-2">
+        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+          <div className="w-24 sm:w-32 hidden md:flex items-center gap-2">
             <Badge
               variant="outline"
-              className="border-slate-700 text-slate-500"
+              className="border-slate-700 text-slate-500 text-[10px] px-2 py-0.5"
             >
               HD 1080p
             </Badge>
           </div>
 
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
             <Button
               variant={audioEnabled ? "secondary" : "destructive"}
               size="icon"
-              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700"
+              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700 min-w-[48px]"
               onClick={toggleAudioHandler}
               disabled={!externalConnected || !connected}
             >
@@ -2000,7 +2036,7 @@ const VideoCall = ({
             <Button
               variant={videoEnabled ? "secondary" : "destructive"}
               size="icon"
-              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700"
+              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700 min-w-[48px]"
               onClick={toggleVideoHandler}
               disabled={!externalConnected || !connected}
             >
@@ -2014,7 +2050,7 @@ const VideoCall = ({
             <Button
               variant={screenSharing ? "default" : "secondary"}
               size="icon"
-              className={`rounded-2xl md:w-14 md:h-14 w-12 h-12 border-slate-700 ${
+              className={`rounded-2xl md:w-14 md:h-14 w-12 h-12 border-slate-700 min-w-[48px] ${
                 screenSharing
                   ? "bg-white text-slate-900"
                   : "bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -2025,59 +2061,47 @@ const VideoCall = ({
               <Share className="h-5 w-5" />
             </Button>
 
-            {/* <Button
-              variant="secondary"
-              size="icon"
-              className="rounded-2xl md:w-14 md:h-14 w-12 h-12 bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300"
-              onClick={() => setShowSettings(true)}
-              disabled={!externalConnected || !connected}
-            >
-              <Settings className="h-5 w-5" />
-            </Button> */}
-
             {/* Recording Button - Only for therapists */}
             {isTherapist && (
-              <Button
-                variant={isRecording ? "destructive" : "secondary"}
-                size="icon"
-                className={`rounded-2xl md:w-14 md:h-14 w-12 h-12 border-slate-700 ${
-                  isRecording
-                    ? "bg-red-500 text-white animate-pulse"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={
-                  !externalConnected ||
-                  !connected ||
-                  recordingStatus === "starting"
-                }
-                title={isRecording ? "Stop Recording" : "Start Recording"}
-              >
-                {recordingStatus === "starting" ? (
-                  <div className="h-5 w-5">
-                    <div className="animate-spin rounded-full h-full w-full border-b-2 border-white"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div
-                      className={`h-2 w-2 mr-1 ${
-                        isRecording ? "bg-white" : "bg-red-500"
-                      }`}
-                    />
-                    {isRecording ? (
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  variant={isRecording ? "destructive" : "secondary"}
+                  size="icon"
+                  className={`rounded-2xl md:w-14 md:h-14 w-12 h-12 border-slate-700 min-w-[48px] ${
+                    isRecording
+                      ? "bg-red-500 text-white animate-pulse"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={
+                    !externalConnected ||
+                    !connected ||
+                    recordingStatus === "starting"
+                  }
+                  title={isRecording ? "Stop Recording" : "Start Recording"}
+                >
+                  {recordingStatus === "starting" ? (
+                    <div className="h-5 w-5">
+                      <div className="animate-spin rounded-full h-full w-full border-b-2 border-white"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className={`h-2 w-2 mr-1 ${
+                          isRecording ? "bg-white" : "bg-red-500"
+                        }`}
+                      />
                       <span className="text-xs">REC</span>
-                    ) : (
-                      <span className="text-xs">REC</span>
-                    )}
-                  </>
-                )}
-              </Button>
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
 
             <Button
               variant="destructive"
               size="icon"
-              className="rounded-2xl md:w-16 md:h-14 w-14 h-12 bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/20 ml-4"
+              className="rounded-2xl md:w-16 md:h-14 w-14 h-12 bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/20 min-w-[56px]"
               onClick={
                 isTherapist
                   ? endCall
@@ -2094,10 +2118,10 @@ const VideoCall = ({
             </Button>
           </div>
 
-          <div className="w-32 flex justify-end">
+          <div className="w-24 sm:w-32 flex justify-end">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <span className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Connected
               </span>
             </div>

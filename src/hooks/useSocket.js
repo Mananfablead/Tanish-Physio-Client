@@ -31,25 +31,37 @@ const useSocket = (roomId, roomType) => {
 
         try {
             const socketOptions = {
-                transports: ['websocket', 'polling']
+                transports: ['websocket', 'polling'],
+                // Add timeout for connection
+                timeout: 20000,
+                // Force new connection each time
+                forceNew: true,
+                // Reconnection settings
+                reconnection: true,
+                reconnectionAttempts: 3,
+                reconnectionDelay: 1000
             };
 
             // Always add auth token since we checked it exists above
             socketOptions.auth = { token: token };
 
-            // Properly extract the base URL for WebSocket connection by removing '/api' suffix
+            // Determine WebSocket server URL based on environment
             let serverUrl;
-            if (import.meta.env.VITE_API_BASE_URL) {
-                // Remove trailing '/api' if present to get the base URL
+            if (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.includes('localhost')) {
+                // Development environment - use localhost WebSocket server
+                serverUrl = 'http://localhost:5000';
+            } else if (import.meta.env.VITE_API_BASE_URL) {
+                // Production environment - extract WebSocket URL from API URL
+                // For production, remove '/api' and use the base URL for WebSocket
                 serverUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '');
             } else {
-                // Fallback to base URL without '/api'
-                serverUrl = 'https://apitanishvideo.fableadtech.in';
+                // Fallback to production WebSocket server URL based on project configuration
+                serverUrl = 'https://apitanishvideo.fableadtech.in'; // Production WebSocket server
             }
 
             const newSocket = io(serverUrl, socketOptions);
 
-            console.log('Connecting to video call server...', serverUrl);
+            console.log('Connecting to video call server...', serverUrl, 'with options:', socketOptions);
 
             newSocket.on('connect', () => {
                 console.log('Connected to video call server');
@@ -136,7 +148,14 @@ const useSocket = (roomId, roomType) => {
 
             newSocket.on('connect_error', (err) => {
                 console.error('❌ Connection error:', err);
-                setError(err.message);
+                
+                // Handle specific "Invalid namespace" error
+                if (err.message && err.message.includes('Invalid namespace')) {
+                    console.error('❌ Invalid namespace error - Check WebSocket server URL configuration');
+                    setError('Invalid namespace: Please check WebSocket server configuration');
+                } else {
+                    setError(err.message);
+                }
 
                 // Handle authentication errors specifically
                 if (err.message && err.message.includes('Authentication')) {

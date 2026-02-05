@@ -265,8 +265,6 @@ export default function LandingPage() {
       {/* Hero Section */}
       <HeroSection 
         cmsHero={cmsHero}
-        cmsHeroLoading={cmsHeroLoading}
-        cmsHeroError={cmsHeroError}
         heroImage={heroImage}
       />
 
