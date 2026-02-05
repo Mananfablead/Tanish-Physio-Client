@@ -1,12 +1,12 @@
 import axios from "axios";
 
 // Create an axios instance
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;
 
 console.log("API_BASE_URL", API_BASE_URL)
 
 // Fallback URL if environment variable is not set
-const baseURL = API_BASE_URL
+const baseURL = API_BASE_URL || "http://localhost:5000/api";
 
 const api = axios.create({
   baseURL: baseURL,

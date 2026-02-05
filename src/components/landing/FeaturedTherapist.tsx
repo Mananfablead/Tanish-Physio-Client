@@ -89,17 +89,18 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link to="/questionnaire">
-                  <button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 py-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+                  <button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6 py-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 flex items-center gap-2">
                     Start Assessment
-                    <ArrowRight className="h-5 w-5 ml-2" />
+                    <ArrowRight className="h-5 w-5" />
                   </button>
                 </Link>
 
                 <Link to={`/therapist/${publicAdmins[0].id}`}>
                   <button
-                    className="rounded-md px-4 py-2 text-sm font-medium border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                    className="rounded-full bg-primary/10 text-primary hover:bg-primary/20 h-12 px-6 py-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 flex items-center gap-2"
                   >
                     View Full Profile
+                    <ArrowRight className="h-5 w-5" />
                   </button>
                 </Link>
               </div>
