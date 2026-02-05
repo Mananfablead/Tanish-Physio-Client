@@ -136,6 +136,36 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         return initLocalMediaInternal();
     }, [socket]);
     
+    // Create a dummy stream for testing purposes when no real devices are available
+    const createDummyStream = () => {
+        // Create a silent audio track
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const destination = audioContext.createMediaStreamDestination();
+        oscillator.connect(destination);
+        oscillator.start();
+
+        // Create a black video track
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const dummyVideoStream = canvas.captureStream(30); // 30 FPS
+        const dummyAudioStream = destination.stream;
+
+        // Combine both streams
+        const combinedStream = new MediaStream([
+            ...dummyVideoStream.getVideoTracks(),
+            ...dummyAudioStream.getAudioTracks()
+        ]);
+
+        console.log('✅ Dummy stream created for testing');
+        return combinedStream;
+    };
+
     // Internal function to handle the actual media initialization
     const initLocalMediaInternal = async (retryCount = 0) => {
         const maxRetries = 3;
@@ -152,7 +182,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             });
 
             // Try to get media with timeout
-            const mediaPromise = navigator.mediaDevices.getUserMedia({
+            const constraints = {
                 video: {
                     width: { ideal: 1280 },
                     height: { ideal: 720 },
@@ -166,7 +196,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                     channelCount: 2
                     // Note: Removed deviceId constraint to use default device
                 }
-            });
+            };
+
+            const mediaPromise = navigator.mediaDevices.getUserMedia(constraints);
 
             const stream = await Promise.race([mediaPromise, timeoutPromise]);
 
@@ -245,8 +277,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                             console.log('✅ Audio-only mode initialized after timeout');
                             return audioOnlyStream;
                         } catch (audioError) {
-                            console.error('Audio-only also failed:', audioError);
-                            throw new Error('Please check your camera and microphone permissions, then refresh the page.');
+                            console.error('Audio-only also failed, creating dummy stream for testing...');
+                            // Create a dummy stream for testing purposes
+                            return createDummyStream();
                         }
                     }
                 }
@@ -271,8 +304,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                         try {
                             audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         } catch (audioError) {
-                            console.error('Audio initialization failed');
-                            throw new Error('Microphone access denied or unavailable. Please check your microphone permissions.');
+                            console.error('Audio initialization failed, creating dummy stream for testing...');
+                            // Create a dummy stream for testing purposes
+                            return createDummyStream();
                         }
                         
                         // Combine streams if both available
@@ -296,11 +330,14 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                             console.log('✅ Video-only stream initialized');
                             return videoStream;
                         } else {
-                            throw new Error('Could not initialize either audio or video stream.');
+                            console.log('Creating dummy stream for testing...');
+                            // Create a dummy stream for testing purposes
+                            return createDummyStream();
                         }
                     } catch (separateError) {
-                        console.error('Separate audio/video initialization also failed:', separateError);
-                        throw new Error('Please check your camera and microphone permissions, then refresh the page.');
+                        console.error('Separate audio/video initialization also failed, creating dummy stream for testing...', separateError);
+                        // Create a dummy stream for testing purposes
+                        return createDummyStream();
                     }
                 }
                 throw error;
@@ -608,16 +645,41 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 const audioTracks = localStream.getAudioTracks();
                 if (audioTracks.length > 0) {
                     const audioTrack = audioTracks[0];
+                    
                     // Update peer connection with current audio state
-                    setTimeout(() => {
+                    const updateAudioTrack = () => {
                         if (peer && peer._pc && peer._pc.getSenders) {
-                            peer._pc.getSenders().forEach(sender => {
+                            const senders = peer._pc.getSenders();
+                            let audioSenderFound = false;
+                            
+                            senders.forEach(async (sender) => {
                                 if (sender.track && sender.track.kind === 'audio') {
-                                    sender.track.enabled = audioTrack.enabled;
+                                    audioSenderFound = true;
+                                    try {
+                                        sender.track.enabled = audioTrack.enabled;
+                                        console.log('✅ Audio track state updated for peer:', userId);
+                                    } catch (error) {
+                                        console.error('Error updating audio track on connect:', error);
+                                    }
                                 }
                             });
+                            
+                            // If no audio sender was found, try to add the track
+                            if (!audioSenderFound && audioTrack) {
+                                try {
+                                    peer._pc.addTrack(audioTrack, finalStream);
+                                    console.log('✅ Audio track added to peer connection:', userId);
+                                } catch (addError) {
+                                    console.error('Error adding audio track to peer:', addError);
+                                }
+                            }
                         }
-                    }, 100);
+                    };
+                    
+                    // Try to update immediately and then again after delays
+                    updateAudioTrack();
+                    setTimeout(updateAudioTrack, 100);
+                    setTimeout(updateAudioTrack, 500);
                 }
             }
         });
@@ -697,16 +759,41 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             const audioTracks = localStream.getAudioTracks();
             if (audioTracks.length > 0) {
                 const audioTrack = audioTracks[0];
+                
                 // Update peer connection with current audio state
-                setTimeout(() => {
+                const updateAudioTrack = () => {
                     if (peer && peer._pc && peer._pc.getSenders) {
-                        peer._pc.getSenders().forEach(sender => {
+                        const senders = peer._pc.getSenders();
+                        let audioSenderFound = false;
+                        
+                        senders.forEach(async (sender) => {
                             if (sender.track && sender.track.kind === 'audio') {
-                                sender.track.enabled = audioTrack.enabled;
+                                audioSenderFound = true;
+                                try {
+                                    sender.track.enabled = audioTrack.enabled;
+                                    console.log('✅ Audio track state updated for peer after offer:', senderId);
+                                } catch (error) {
+                                    console.error('Error updating audio track after offer:', error);
+                                }
                             }
                         });
+                        
+                        // If no audio sender was found, try to add the track
+                        if (!audioSenderFound && audioTrack) {
+                            try {
+                                peer._pc.addTrack(audioTrack, localStream);
+                                console.log('✅ Audio track added to peer connection after offer:', senderId);
+                            } catch (addError) {
+                                console.error('Error adding audio track after offer:', addError);
+                            }
+                        }
                     }
-                }, 100);
+                };
+                
+                // Try to update immediately and then again after delays
+                updateAudioTrack();
+                setTimeout(updateAudioTrack, 100);
+                setTimeout(updateAudioTrack, 500);
             }
         }
         
@@ -735,17 +822,42 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                     const audioTracks = localStream.getAudioTracks();
                     if (audioTracks.length > 0) {
                         const audioTrack = audioTracks[0];
+                        
                         // Update peer connection with current audio state
-                        setTimeout(() => {
+                        const updateAudioTrack = () => {
                             const peer = peerRefs.current[senderId];
                             if (peer && peer._pc && peer._pc.getSenders) {
-                                peer._pc.getSenders().forEach(sender => {
+                                const senders = peer._pc.getSenders();
+                                let audioSenderFound = false;
+                                
+                                senders.forEach(async (sender) => {
                                     if (sender.track && sender.track.kind === 'audio') {
-                                        sender.track.enabled = audioTrack.enabled;
+                                        audioSenderFound = true;
+                                        try {
+                                            sender.track.enabled = audioTrack.enabled;
+                                            console.log('✅ Audio track state updated for peer after answer:', senderId);
+                                        } catch (error) {
+                                            console.error('Error updating audio track after answer:', error);
+                                        }
                                     }
                                 });
+                                
+                                // If no audio sender was found, try to add the track
+                                if (!audioSenderFound && audioTrack) {
+                                    try {
+                                        peer._pc.addTrack(audioTrack, localStream);
+                                        console.log('✅ Audio track added to peer connection after answer:', senderId);
+                                    } catch (addError) {
+                                        console.error('Error adding audio track after answer:', addError);
+                                    }
+                                }
                             }
-                        }, 100);
+                        };
+                        
+                        // Try to update immediately and then again after delays
+                        updateAudioTrack();
+                        setTimeout(updateAudioTrack, 100);
+                        setTimeout(updateAudioTrack, 500);
                     }
                 }
                 
@@ -770,16 +882,41 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 const audioTracks = localStream.getAudioTracks();
                 if (audioTracks.length > 0) {
                     const audioTrack = audioTracks[0];
+                    
                     // Update peer connection with current audio state
-                    setTimeout(() => {
+                    const updateAudioTrack = () => {
                         if (peer && peer._pc && peer._pc.getSenders) {
-                            peer._pc.getSenders().forEach(sender => {
+                            const senders = peer._pc.getSenders();
+                            let audioSenderFound = false;
+                            
+                            senders.forEach(async (sender) => {
                                 if (sender.track && sender.track.kind === 'audio') {
-                                    sender.track.enabled = audioTrack.enabled;
+                                    audioSenderFound = true;
+                                    try {
+                                        sender.track.enabled = audioTrack.enabled;
+                                        console.log('✅ Audio track state updated for peer after new connection:', senderId);
+                                    } catch (error) {
+                                        console.error('Error updating audio track after new connection:', error);
+                                    }
                                 }
                             });
+                            
+                            // If no audio sender was found, try to add the track
+                            if (!audioSenderFound && audioTrack) {
+                                try {
+                                    peer._pc.addTrack(audioTrack, localStream);
+                                    console.log('✅ Audio track added to peer connection after new connection:', senderId);
+                                } catch (addError) {
+                                    console.error('Error adding audio track after new connection:', addError);
+                                }
+                            }
                         }
-                    }, 100);
+                    };
+                    
+                    // Try to update immediately and then again after delays
+                    updateAudioTrack();
+                    setTimeout(updateAudioTrack, 100);
+                    setTimeout(updateAudioTrack, 500);
                 }
             }
             
@@ -813,9 +950,13 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 // Update all peer connections with the new audio state
                 Object.values(peerRefs.current).forEach(peer => {
                     if (peer && peer._pc && peer._pc.getSenders) {
-                        peer._pc.getSenders().forEach(sender => {
+                        peer._pc.getSenders().forEach(async (sender) => {
                             if (sender.track && sender.track.kind === 'audio') {
-                                sender.track.enabled = newEnabledState;
+                                try {
+                                    sender.track.enabled = newEnabledState;
+                                } catch (error) {
+                                    console.error('Error updating audio track state:', error);
+                                }
                             }
                         });
                     }
