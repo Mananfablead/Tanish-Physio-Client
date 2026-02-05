@@ -162,7 +162,7 @@ export default function SchedulePage() {
         endTime,
         type: sessionTypeValue,
         status: sessionStatusValue,
-        therapistId: bookingData?.therapistId || publicAdmins[0]?.id,
+        // therapistId: bookingData?.therapistId || publicAdmins[0]?.id,
       };
 
       const response: any = await createSession(sessionData);
