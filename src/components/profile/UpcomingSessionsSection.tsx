@@ -221,12 +221,7 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
             </div>
             
             <div className="flex gap-3 w-full pt-6 border-t border-slate-50">
-              <Button
-                variant="outline"
-                className="flex-1 h-11 rounded-xl border-slate-200 font-bold hover:bg-primary"
-              >
-                <Users className="h-5 w-5 mr-2" /> Message
-              </Button>
+             
               <Link
                 to={`/video-call?sessionId=${nextSession._id}`}
                 className="flex-1"
