@@ -76,9 +76,9 @@ const App = () => (
                   <Route
                     path="/therapist/:id"
                     element={
-                      <ProtectedRoute>
+                      // <ProtectedRoute>
                         <TherapistProfilePage />
-                      </ProtectedRoute>
+                      // </ProtectedRoute>
                     }
                   />
 
