@@ -69,7 +69,11 @@ export default function ProfilePage() {
   const   user = useSelector(selectCurrentUser);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [selectedSection, setSelectedSection] = useState<string>("personal");
+  const [selectedSection, setSelectedSection] = useState<string>(() => {
+    // Retrieve the selected section from localStorage, default to 'personal'
+    const savedSection = localStorage.getItem('profileSelectedSection');
+    return savedSection || "personal";
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Reschedule states
@@ -175,6 +179,11 @@ export default function ProfilePage() {
     }
   };
 
+  // Save selected section to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('profileSelectedSection', selectedSection);
+  }, [selectedSection]);
+  
   // Fetch user data when component mounts
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
@@ -269,7 +278,7 @@ export default function ProfilePage() {
       const profileData = {
         name: nameInput?.value || user?.name,
         phone: phoneInput?.value || user?.phone,
-        location: locationInput?.value || user?.location,
+        location: locationInput?.value || (user as any)?.location || "",
       };
 
       await dispatch(updateProfile(profileData));

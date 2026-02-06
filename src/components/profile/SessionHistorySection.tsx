@@ -68,7 +68,8 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
 
       {sessions && sessions.length > 0 ? (
         <div>
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200">
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
@@ -170,6 +171,93 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
               </tbody>
             </table>
           </div>
+          
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {paginatedSessions.map((s) => (
+              <Card key={s._id} className="p-4 border border-slate-200 rounded-lg">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {s.bookingId?.serviceName || "Therapy Session"}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {s.date
+                          ? new Date(s.date).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
+                          : "N/A"}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {s.time || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      {s.status === "live" ? (
+                        <Link
+                          to={`/video-call?sessionId=${s._id}`}
+                          className="inline-flex items-center justify-center
+                bg-green-600 hover:bg-green-700
+                text-white font-bold text-xs
+                px-3 py-1 rounded-full whitespace-nowrap"
+                        >
+                          Join Call
+                        </Link>
+                      ) : (
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-black uppercase
+        ${s.status === "scheduled"
+                              ? "bg-blue-100 text-blue-700"
+                              : s.status === "confirmed"
+                                ? "bg-primary/10 text-primary"
+                                : s.status === "completed"
+                                  ? "bg-success/10 text-success"
+                                  : s.status === "missed"
+                                    ? "bg-destructive/10 text-destructive"
+                                    : "bg-amber-100 text-amber-700"
+                            }`}
+                        >
+                          {s.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    <div>
+                      <p className="text-xs text-slate-500">Type</p>
+                      <p className="text-sm text-slate-900">{s.type || "1-on-1"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Duration</p>
+                      <p className="text-sm text-slate-900">{s.duration ? `${s.duration} min` : "—"}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-slate-100">
+                    {(s.status === "scheduled" || s.status === "pending" || s.status === "missed") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="font-bold border-primary text-primary hover:bg-primary hover:text-white w-full"
+                        onClick={() => onReschedule(s)}
+                      >
+                        <CalendarDays className="h-4 w-4 mr-1" />
+                        Reschedule
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+          
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-4 gap-4">
               <div className="text-sm text-slate-500 text-center sm:text-left">

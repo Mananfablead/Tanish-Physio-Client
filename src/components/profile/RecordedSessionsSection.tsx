@@ -151,72 +151,183 @@ export function RecordedSessionsSection({
         </Badge>
       </div>
 
-      {recordings.length > 0 ? (
-        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    Service
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    Date & Time
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    Duration
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    File Size
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+      {/* DESKTOP TABLE VIEW */}
+      <div className="hidden md:block">
+        {recordings.length > 0 ? (
+          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      Service
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      Date & Time
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      Duration
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      File Size
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
 
-              <tbody className="divide-y divide-slate-100">
-                {recordings.map((recording) => (
-                  <tr
-                    key={recording._id}
-                    className="hover:bg-slate-50/50 transition-colors"
-                  >
-                    {/* Service */}
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">
+                <tbody className="divide-y divide-slate-100">
+                  {recordings.map((recording) => (
+                    <tr
+                      key={recording._id}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
+                      {/* Service */}
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-900">
+                          {recording.sessionId?.bookingId?.serviceName ||
+                            "Therapy Session"}
+                        </div>
+                      </td>
+
+                      {/* Date & Time */}
+                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                        {recording.callStartedAt
+                          ? formatDate(recording.callStartedAt)
+                          : "N/A"}
+                        <br />
+                        <span className="text-xs">
+                          {recording.callStartedAt
+                            ? formatTime(recording.callStartedAt)
+                            : "—"}
+                        </span>
+                      </td>
+
+                      {/* Duration */}
+                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                        {formatDuration(recording.recordingDuration)}
+                      </td>
+
+                      {/* File Size */}
+                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                        {formatFileSize(recording.recordingSize)}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4 text-center">
+                        <Badge
+                          variant={
+                            recording.recordingStatus === "completed"
+                              ? "default"
+                              : recording.recordingStatus === "recording"
+                              ? "secondary"
+                              : "outline"
+                          }
+                          className={
+                            recording.recordingStatus === "completed"
+                              ? "bg-green-100 text-green-700"
+                              : recording.recordingStatus === "recording"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-700"
+                          }
+                        >
+                          {recording.recordingStatus}
+                        </Badge>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex justify-center space-x-2">
+                          {recording.recordingUrl && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
+                                onClick={() => {
+                                  window.open(
+                                    `${import.meta.env.VITE_API_BASE_URL}${
+                                      recording.recordingUrl
+                                    }`,
+                                    "_blank"
+                                  );
+                                }}
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                Watch
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="font-bold border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+                                onClick={() => {
+                                  // Trigger download
+                                  const link = document.createElement("a");
+                                  link.href = `${
+                                    import.meta.env.VITE_API_BASE_URL
+                                  }${recording.recordingUrl}`;
+                                  link.download = `recording-${recording._id}.webm`;
+                                  link.click();
+                                }}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Download
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : (
+          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  Recorded Sessions
+                </h3>
+              </div>
+              <div className="py-12 text-center space-y-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                  <FileVideo className="h-8 w-8 text-slate-300" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900">
+                    No Recordings Yet
+                  </h3>
+                  <p className="text-slate-500 font-medium">
+                    Your recorded therapy sessions will appear here.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+      
+      {/* MOBILE CARD VIEW */}
+      <div className="md:hidden">
+        {recordings.length > 0 ? (
+          <div className="space-y-4">
+            {recordings.map((recording) => (
+              <Card key={recording._id} className="p-4 border border-slate-200 rounded-lg">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">
                         {recording.sessionId?.bookingId?.serviceName ||
                           "Therapy Session"}
-                      </div>
-                    </td>
-
-                    {/* Date & Time */}
-                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                      {recording.callStartedAt
-                        ? formatDate(recording.callStartedAt)
-                        : "N/A"}
-                      <br />
-                      <span className="text-xs">
-                        {recording.callStartedAt
-                          ? formatTime(recording.callStartedAt)
-                          : "—"}
-                      </span>
-                    </td>
-
-                    {/* Duration */}
-                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                      {formatDuration(recording.recordingDuration)}
-                    </td>
-
-                    {/* File Size */}
-                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                      {formatFileSize(recording.recordingSize)}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-6 py-4 text-center">
+                      </h3>
+                    </div>
+                    <div className="text-right">
                       <Badge
                         variant={
                           recording.recordingStatus === "completed"
@@ -235,80 +346,113 @@ export function RecordedSessionsSection({
                       >
                         {recording.recordingStatus}
                       </Badge>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex justify-center space-x-2">
-                        {recording.recordingUrl && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
-                              onClick={() => {
-                                window.open(
-                                  recording.recordingUrl.startsWith('http') 
-                                    ? recording.recordingUrl 
-                                    : `${import.meta.env.VITE_API_BASE_URL}${recording.recordingUrl}`,
-                                  "_blank"
-                                );
-                              }}
-                            >
-                              <Play className="h-3 w-3 mr-1" />
-                              Watch
-                            </Button>
-                            {/* <Button
-                              variant="outline"
-                              size="sm"
-                              className="font-bold border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
-                              onClick={() => {
-                                // Trigger download
-                                const link = document.createElement("a");
-                                link.href = recording.recordingUrl.startsWith('http')
-                                  ? recording.recordingUrl
-                                  : `${import.meta.env.VITE_API_BASE_URL}${recording.recordingUrl}`;
-                                link.download = `recording-${recording._id}.webm`;
-                                link.click();
-                              }}
-                            >
-                              <Download className="h-3 w-3 mr-1" />
-                              Download
-                            </Button> */}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    <div>
+                      <p className="text-xs text-slate-500">Date</p>
+                      <p className="text-sm text-slate-900">
+                        {recording.callStartedAt
+                          ? formatDate(recording.callStartedAt)
+                          : "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Time</p>
+                      <p className="text-sm text-slate-900">
+                        {recording.callStartedAt
+                          ? formatTime(recording.callStartedAt)
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    <div>
+                      <p className="text-xs text-slate-500">Duration</p>
+                      <p className="text-sm text-slate-900">
+                        {formatDuration(recording.recordingDuration)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">File Size</p>
+                      <p className="text-sm text-slate-900">
+                        {formatFileSize(recording.recordingSize)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-slate-100">
+                    <div className="flex justify-center space-x-2">
+                      {recording.recordingUrl && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="font-bold border-primary text-primary hover:bg-primary hover:text-white flex-1"
+                            onClick={() => {
+                              window.open(
+                                `${import.meta.env.VITE_API_BASE_URL}${
+                                  recording.recordingUrl
+                                }`,
+                                "_blank"
+                              );
+                            }}
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            Watch
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="font-bold border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white flex-1"
+                            onClick={() => {
+                              // Trigger download
+                              const link = document.createElement("a");
+                              link.href = `${
+                                import.meta.env.VITE_API_BASE_URL
+                              }${recording.recordingUrl}`;
+                              link.download = `recording-${recording._id}.webm`;
+                              link.click();
+                            }}
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Download
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
-        </Card>
-      ) : (
-        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                Recorded Sessions
-              </h3>
-            </div>
-            <div className="py-12 text-center space-y-4">
-              <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                <FileVideo className="h-8 w-8 text-slate-300" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-xl font-black text-slate-900">
-                  No Recordings Yet
+        ) : (
+          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  Recorded Sessions
                 </h3>
-                <p className="text-slate-500 font-medium">
-                  Your recorded therapy sessions will appear here.
-                </p>
+              </div>
+              <div className="py-12 text-center space-y-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                  <FileVideo className="h-8 w-8 text-slate-300" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900">
+                    No Recordings Yet
+                  </h3>
+                  <p className="text-slate-500 font-medium">
+                    Your recorded therapy sessions will appear here.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
