@@ -47,7 +47,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
             Session
@@ -56,34 +56,81 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
             Your past consultations and recorded sessions
           </p>
         </div>
-        <Badge
-          variant="outline"
-          className="px-4 py-1.5 rounded-full border-slate-200 text-slate-600 font-bold bg-white"
-        >
-          {sessions?.length || 0} Sessions
-        </Badge>
+        <div className="self-start sm:self-auto">
+          <Badge
+            variant="outline"
+            className="px-4 py-1.5 rounded-full border-slate-200 text-slate-600 font-bold bg-white"
+          >
+            {sessions?.length || 0} Sessions
+          </Badge>
+        </div>
       </div>
 
       {sessions && sessions.length > 0 ? (
-        <div className="space-y-4">
-          {paginatedSessions.map((s) => {
-            const isCompleted = s.status === "completed";
-            
-            return (
-              <Card key={s._id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="font-bold text-slate-900">
-                      {s.bookingId?.serviceName || "Therapy Session"}
-                    </div>
-                    <div className="flex items-center gap-2">
+        <div>
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Session
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Date & Time
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {paginatedSessions.map((s) => (
+                  <tr key={s._id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-slate-900">
+                        {s.bookingId?.serviceName || "Therapy Session"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-600">
+                        {s.date
+                          ? new Date(s.date).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
+                          : "N/A"}
+                      </div>
+                      <div className="text-sm text-slate-500">
+                        {s.time || "—"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                      {s.type || "1-on-1"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                      {s.duration ? `${s.duration} min` : "—"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {s.status === "live" ? (
                         <Link
                           to={`/video-call?sessionId=${s._id}`}
                           className="inline-flex items-center justify-center
-               bg-green-600 hover:bg-green-700
-               text-white font-bold text-sm
-               px-4 py-1.5 rounded-full"
+                bg-green-600 hover:bg-green-700
+                text-white font-bold text-sm
+                px-4 py-1.5 rounded-full whitespace-nowrap flex-shrink-0"
                         >
                           Join Call
                         </Link>
@@ -104,65 +151,31 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                           {s.status}
                         </span>
                       )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-slate-600 font-medium">
-                      <Calendar className="h-4 w-4 mr-2 text-slate-400" />
-                      {s.date
-                        ? new Date(s.date).toLocaleDateString(
-                            "en-IN",
-                            {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            }
-                          )
-                        : "N/A"}
-                    </div>
-                    
-                    <div className="flex items-center text-sm text-slate-600 font-medium">
-                      <Clock className="h-4 w-4 mr-2 text-slate-400" />
-                      {s.time || "—"}
-                    </div>
-                    
-                    <div className="flex items-center text-sm text-slate-600 font-medium">
-                      <Video className="h-4 w-4 mr-2 text-slate-400" />
-                      {s.type || "1-on-1"}
-                    </div>
-                    
-                    <div className="flex items-center text-sm text-slate-600 font-medium">
-                      <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                      {s.duration ? `${s.duration} min` : "—"}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                    {(s.status === "scheduled" || s.status === "pending" || s.status === "missed") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
-                        onClick={() => onReschedule(s)}
-                      >
-                        <CalendarDays className="h-4 w-4 mr-1" />
-                        Reschedule
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-          
-          {/* Pagination Controls */}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {(s.status === "scheduled" || s.status === "pending" || s.status === "missed") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
+                          onClick={() => onReschedule(s)}
+                        >
+                          <CalendarDays className="h-4 w-4 mr-1" />
+                          Reschedule
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-4">
-              <div className="text-sm text-slate-500">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-4 gap-4">
+              <div className="text-sm text-slate-500 text-center sm:text-left">
                 Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, sessions.length)} of {sessions.length} sessions
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -171,21 +184,35 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                   className="flex items-center"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  <span className="hidden sm:inline ml-1">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                 </Button>
                 
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="w-10 h-10"
-                    >
-                      {pageNum}
-                    </Button>
-                  ))}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const pageNum = currentPage <= 3 
+                      ? i + 1 
+                      : currentPage >= totalPages - 2 
+                        ? totalPages - 4 + i 
+                        : currentPage - 2 + i;
+                    
+                    if (pageNum < 1 || pageNum > totalPages) return null;
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-10 h-10"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                  {totalPages > 5 && (currentPage > 4 || currentPage < totalPages - 3) && (
+                    <span className="flex items-center h-10 px-2">...</span>
+                  )}
                 </div>
                 
                 <Button
@@ -195,7 +222,8 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                   disabled={currentPage === totalPages}
                   className="flex items-center"
                 >
-                  Next
+                  <span className="hidden sm:inline mr-1">Next</span>
+                  <span className="sm:hidden">Next</span>
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
@@ -205,7 +233,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
       ) : (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                 Session History
               </h3>
@@ -218,7 +246,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                 <h3 className="text-xl font-black text-slate-900">
                   No Session History
                 </h3>
-                <p className="text-slate-500 font-medium">
+                <p className="text-slate-500 font-medium max-w-xs mx-auto">
                   You haven't completed any sessions yet.
                 </p>
               </div>
