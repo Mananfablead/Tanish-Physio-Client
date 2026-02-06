@@ -54,6 +54,7 @@ const VideoCall = ({
     rejectCall,
     localVideoRef,
     remoteVideoRefs,
+    remoteAudioRefs,
     setCallActive,
     setParticipants,
     setCallLogId,
@@ -93,6 +94,7 @@ const VideoCall = ({
 
     // Update remote videos when remoteStreams change
     Object.entries(remoteStreams).forEach(([userId, stream]) => {
+      // Update video element
       if (remoteVideoRefs.current[userId] && stream) {
         try {
           const videoElement = remoteVideoRefs.current[userId];
@@ -102,7 +104,7 @@ const VideoCall = ({
               `✅ Client remote video element updated for user: ${userId}`
             );
 
-            // Ensure remote video plays
+            // Ensure remote video plays (muted to prevent feedback)
             videoElement.muted = true;
             videoElement.autoplay = true;
             videoElement.playsInline = true;
@@ -140,6 +142,55 @@ const VideoCall = ({
         }
       } else {
         // console.log(`⚠️ Client remote video ref not found for: ${userId}`);
+      }
+
+      // Update audio element for remote audio
+      if (remoteAudioRefs.current[userId] && stream) {
+        try {
+          const audioElement = remoteAudioRefs.current[userId];
+          if (audioElement.srcObject !== stream) {
+            audioElement.srcObject = stream;
+            console.log(
+              `✅ Client remote audio element updated for user: ${userId}`
+            );
+
+            // Ensure remote audio plays (unmuted)
+            audioElement.muted = false;
+            audioElement.autoplay = true;
+
+            // Play the audio
+            const playPromise = audioElement.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  console.log(
+                    `✅ Client remote audio playing for user: ${userId}`
+                  );
+                })
+                .catch((error) => {
+                  console.warn(
+                    `⚠️ Client remote audio autoplay failed for ${userId}:`,
+                    error
+                  );
+                  // Try to play unmuted
+                  audioElement.muted = false;
+                  audioElement.play().catch((err) => {
+                    console.error(
+                      `❌ Client remote audio play failed for ${userId}:`,
+                      err
+                    );
+                  });
+                });
+            }
+          }
+        } catch (err) {
+          console.error(
+            `❌ Error setting client remote audio srcObject for ${userId}:`,
+            err
+          );
+        }
+      } else {
+        // console.log(`⚠️ Client remote audio ref not found for: ${userId}`);
       }
     });
   }, [localStream, remoteStreams, remoteVideoRefs]);
@@ -185,7 +236,7 @@ const VideoCall = ({
     console.log("Participants count:", participants?.length || 0);
     console.log("Participants list:", participants);
     console.log("Show participants panel:", showParticipants);
-    
+
     // Log each participant's name
     if (participants && participants.length > 0) {
       participants.forEach((p, index) => {
@@ -193,11 +244,11 @@ const VideoCall = ({
           userId: p.userId,
           name: p.name,
           role: p.role,
-          isSelf: p.isSelf
+          isSelf: p.isSelf,
         });
       });
     }
-    
+
     console.log("========================");
   }, [participants, showParticipants]);
 
@@ -208,16 +259,24 @@ const VideoCall = ({
       const selfParticipant = {
         userId: user.id || user.userId || socket.user?.userId,
         socketId: socket.id,
-        name: user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "You"),
+        name:
+          user.name ||
+          (user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : "You"),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         role: user.role || socket.user?.role || "patient",
         isSelf: true,
-        isTherapist: (user.role === "therapist" || user.role === "admin") || (socket.user?.role === "therapist" || socket.user?.role === "admin"),
-        joinedAt: new Date().toISOString()
+        isTherapist:
+          user.role === "therapist" ||
+          user.role === "admin" ||
+          socket.user?.role === "therapist" ||
+          socket.user?.role === "admin",
+        joinedAt: new Date().toISOString(),
       };
-      
+
       setParticipants([selfParticipant]);
       console.log("✅ Added self participant:", selfParticipant);
     }
@@ -381,25 +440,33 @@ const VideoCall = ({
         setJoinedCall(true);
         setCallStatus("connected");
         setCallError(null); // Clear any previous errors
-        
+
         // Add current user to participants list
         if (user && socket) {
           const currentUser = {
             userId: user.id || user.userId || socket.user?.userId,
             socketId: socket.id,
-            name: user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "You"),
+            name:
+              user.name ||
+              (user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : "You"),
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
             role: user.role || socket.user?.role || "patient",
             isSelf: true,
-            isTherapist: (user.role === "therapist" || user.role === "admin") || (socket.user?.role === "therapist" || socket.user?.role === "admin"),
-            joinedAt: new Date().toISOString()
+            isTherapist:
+              user.role === "therapist" ||
+              user.role === "admin" ||
+              socket.user?.role === "therapist" ||
+              socket.user?.role === "admin",
+            joinedAt: new Date().toISOString(),
           };
-          
+
           setParticipants((prev) => {
             // Check if self participant already exists
-            const selfExists = prev.some(p => p.isSelf);
+            const selfExists = prev.some((p) => p.isSelf);
             if (selfExists) {
               console.log("✅ Self participant already exists");
               return prev;
@@ -440,10 +507,10 @@ const VideoCall = ({
   useEffect(() => {
     if (sessionId && externalConnected && connected && socket) {
       // Join the chat room
-      socket.emit('join-room', {
-        sessionId: sessionId
+      socket.emit("join-room", {
+        sessionId: sessionId,
       });
-      
+
       // Load existing messages
       loadChatMessages();
     }
@@ -452,7 +519,8 @@ const VideoCall = ({
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [chatMessages, showChat]);
 
@@ -477,22 +545,22 @@ const VideoCall = ({
         content: newMessage.trim(),
         senderId: socket?.id,
         senderName: senderName,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       // Send message via API
       await chatApi.sendMessage(sessionId, newMessage.trim());
-      
+
       // Add to local chat messages immediately for better UX
-      setChatMessages(prev => [...prev, messageData]);
+      setChatMessages((prev) => [...prev, messageData]);
       setNewMessage("");
-      
+
       // Also broadcast via socket if available
       if (socket) {
         socket.emit("send-message", {
           roomId,
           roomType,
-          message: messageData
+          message: messageData,
         });
       }
     } catch (error) {
@@ -527,7 +595,7 @@ const VideoCall = ({
     console.log("Socket connected:", socket?.connected);
     console.log("External connected:", externalConnected);
     console.log("Internal connected:", connected);
-    
+
     if (!socket || !(externalConnected || connected)) {
       console.log("❌ Socket not ready for listeners");
       return;
@@ -612,7 +680,10 @@ const VideoCall = ({
       console.log("=== PARTICIPANT JOINED EVENT ===");
       console.log("Participant data:", data);
       console.log("Session details available:", !!sessionDetails);
-      console.log("Current participants count before adding:", participants.length);
+      console.log(
+        "Current participants count before adding:",
+        participants.length
+      );
       console.log("Current participants list:", participants);
       console.log("Participant name:", data.name);
 
@@ -636,20 +707,38 @@ const VideoCall = ({
       const participantData = {
         userId: data.userId || socket.user?.userId,
         socketId: data.socketId || socket.id,
-        name: data.name && data.name !== 'Clinician' && data.name !== 'User Unknown' 
-              ? data.name 
-              : (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : null) ||
-              (user && data.socketId === socket.id ? 
-                (user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "You")) :
-                `Participant ${data.userId?.substring(0, 5) || data.socketId?.substring(0, 5) || "Unknown"}`),
-        firstName: data.firstName || (user && data.socketId === socket.id ? user.firstName : null),
-        lastName: data.lastName || (user && data.socketId === socket.id ? user.lastName : null),
+        name:
+          data.name && data.name !== "Clinician" && data.name !== "User Unknown"
+            ? data.name
+            : (data.firstName && data.lastName
+                ? `${data.firstName} ${data.lastName}`
+                : null) ||
+              (user && data.socketId === socket.id
+                ? user.name ||
+                  (user.firstName && user.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : "You")
+                : `Participant ${
+                    data.userId?.substring(0, 5) ||
+                    data.socketId?.substring(0, 5) ||
+                    "Unknown"
+                  }`),
+        firstName:
+          data.firstName ||
+          (user && data.socketId === socket.id ? user.firstName : null),
+        lastName:
+          data.lastName ||
+          (user && data.socketId === socket.id ? user.lastName : null),
         email: data.email,
         role: data.role || "participant",
         isSelf: data.socketId === socket.id,
-        isTherapist: data.isTherapist || data.role === "therapist" || data.role === "admin" || false,
+        isTherapist:
+          data.isTherapist ||
+          data.role === "therapist" ||
+          data.role === "admin" ||
+          false,
         isUser: data.isUser || data.role === "patient" || false,
-        joinedAt: data.joinedAt || new Date().toISOString()
+        joinedAt: data.joinedAt || new Date().toISOString(),
       };
 
       console.log("✅ Enhanced participant data:", participantData);
@@ -657,26 +746,30 @@ const VideoCall = ({
       setParticipants((prev) => {
         // Avoid duplicates by checking both userId and socketId
         const exists = prev.some(
-          (p) => (p.userId === participantData.userId && p.userId) || 
-                 (p.socketId === participantData.socketId && p.socketId)
+          (p) =>
+            (p.userId === participantData.userId && p.userId) ||
+            (p.socketId === participantData.socketId && p.socketId)
         );
         if (exists) {
-          console.log("⚠️ Participant already exists, skipping:", participantData.userId || participantData.socketId);
+          console.log(
+            "⚠️ Participant already exists, skipping:",
+            participantData.userId || participantData.socketId
+          );
           return prev;
         }
-        
+
         console.log("✅ Adding participant to list:", participantData);
         const newParticipants = [...prev, participantData];
         console.log("Updated participants count:", newParticipants.length);
         console.log("Updated participants list:", newParticipants);
         return newParticipants;
       });
-      
+
       // Initialize audio status for the new participant (default to enabled)
       if (participantData.userId) {
-        setParticipantAudioStatus(prev => ({
+        setParticipantAudioStatus((prev) => ({
           ...prev,
-          [participantData.userId]: true // Audio enabled by default
+          [participantData.userId]: true, // Audio enabled by default
         }));
       }
 
@@ -890,10 +983,10 @@ const VideoCall = ({
     // Handle participant left
     const participantLeftListener = (data) => {
       setParticipants((prev) => prev.filter((p) => p.userId !== data.userId));
-      
+
       // Remove audio status for the leaving participant
       if (data.userId) {
-        setParticipantAudioStatus(prev => {
+        setParticipantAudioStatus((prev) => {
           const newStatus = { ...prev };
           delete newStatus[data.userId];
           return newStatus;
@@ -973,13 +1066,18 @@ const VideoCall = ({
     // Handle audio toggle
     const audioToggleListener = (data) => {
       // Update UI to reflect other participant's audio status
-      console.log("Audio toggle received from user:", data.userId, "muted:", data.muted);
-      
+      console.log(
+        "Audio toggle received from user:",
+        data.userId,
+        "muted:",
+        data.muted
+      );
+
       // Update the audio status for the specific user
       if (data.userId) {
-        setParticipantAudioStatus(prev => ({
+        setParticipantAudioStatus((prev) => ({
           ...prev,
-          [data.userId]: !data.muted // Store whether audio is enabled (opposite of muted)
+          [data.userId]: !data.muted, // Store whether audio is enabled (opposite of muted)
         }));
       }
     };
@@ -1005,12 +1103,15 @@ const VideoCall = ({
     // Handle chat message (from API)
     const chatMessageListener = (data) => {
       console.log("Client received chat message:", data);
-      
+
       // Determine sender name - use provided name or fallback
-      const senderName = data.senderName || 
-                        data.message?.senderName || 
-                        (data.senderId === socket?.id ? (user?.name || userName || "You") : "Clinician");
-      
+      const senderName =
+        data.senderName ||
+        data.message?.senderName ||
+        (data.senderId === socket?.id
+          ? user?.name || userName || "You"
+          : "Clinician");
+
       // Add the received message to chat messages
       setChatMessages((prev) => [
         ...prev,
@@ -1018,29 +1119,44 @@ const VideoCall = ({
           ...data.message,
           senderId: data.senderId || data.message.senderId,
           senderName: senderName,
-          content: data.message.content || data.message.message || data.message.text,
-          timestamp: data.message.timestamp || data.message.createdAt || new Date().toISOString()
-        }
+          content:
+            data.message.content || data.message.message || data.message.text,
+          timestamp:
+            data.message.timestamp ||
+            data.message.createdAt ||
+            new Date().toISOString(),
+        },
       ]);
     };
 
     // Handle real-time message broadcast
     const messageReceivedListener = (data) => {
       console.log("Client received real-time message:", data);
-      
+
       // Determine sender name - use provided name or fallback
-      const senderName = data.senderName || 
-                        data.message?.senderName || 
-                        (data.senderId === socket?.id ? (user?.name || userName || "You") : "Clinician");
-      
+      const senderName =
+        data.senderName ||
+        data.message?.senderName ||
+        (data.senderId === socket?.id
+          ? user?.name || userName || "You"
+          : "Clinician");
+
       setChatMessages((prev) => [
         ...prev,
         {
-          content: data.message.content || data.message.message || data.message.text || data.content,
+          content:
+            data.message.content ||
+            data.message.message ||
+            data.message.text ||
+            data.content,
           senderId: data.senderId || data.message?.senderId || socket?.id,
           senderName: senderName,
-          timestamp: data.timestamp || data.message?.timestamp || data.createdAt || new Date().toISOString()
-        }
+          timestamp:
+            data.timestamp ||
+            data.message?.timestamp ||
+            data.createdAt ||
+            new Date().toISOString(),
+        },
       ]);
     };
 
@@ -1152,16 +1268,64 @@ const VideoCall = ({
       const socketId = Object.keys(remoteStreams)[0];
       if (socketId) {
         const stream = remoteStreams[socketId];
-        const participant = participants.find(p => p.socketId === socketId) || {};
-        
+        const participant =
+          participants.find((p) => p.socketId === socketId) || {};
+
         // Debug logging
-        console.log('CLIENT VIDEO RENDER: socketId:', socketId);
-        console.log('CLIENT VIDEO RENDER: participants array:', participants);
-        console.log('CLIENT VIDEO RENDER: found participant:', participant);
-        console.log('CLIENT VIDEO RENDER: participant name:', participant.name);
-        
+        console.log("CLIENT VIDEO RENDER: socketId:", socketId);
+        console.log("CLIENT VIDEO RENDER: participants array:", participants);
+        console.log("CLIENT VIDEO RENDER: found participant:", participant);
+        console.log("CLIENT VIDEO RENDER: participant name:", participant.name);
+
         return (
           <div className="relative w-full h-full bg-black rounded-xl overflow-hidden">
+            {/* Hidden audio element for remote audio */}
+            <audio
+              ref={(el) => {
+                if (el && stream) {
+                  remoteAudioRefs.current[socketId] = el;
+                  if (el.srcObject !== stream) {
+                    try {
+                      el.srcObject = stream;
+                      console.log(
+                        `✅ Remote audio ref assigned for socket: ${socketId}`
+                      );
+                      el.muted = false;
+                      el.autoplay = true;
+                      const playPromise = el.play();
+                      if (playPromise !== undefined) {
+                        playPromise
+                          .then(() => {
+                            console.log(
+                              `✅ Remote audio playing for socket: ${socketId}`
+                            );
+                          })
+                          .catch((error) => {
+                            console.warn(
+                              `⚠️ Remote audio autoplay failed for ${socketId}:`,
+                              error
+                            );
+                            el.muted = false;
+                            el.play().catch((err) => {
+                              console.error(
+                                `❌ Remote audio play failed for ${socketId}:`,
+                                err
+                              );
+                            });
+                          });
+                      }
+                    } catch (err) {
+                      console.error(
+                        `❌ Error assigning remote audio ref for ${socketId}:`,
+                        err
+                      );
+                    }
+                  }
+                }
+              }}
+              autoPlay
+              className="hidden"
+            />
             <video
               ref={(el) => {
                 if (el && stream) {
@@ -1218,7 +1382,11 @@ const VideoCall = ({
               className="w-full h-full object-cover"
             />
             <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-              {participant.name && participant.name !== 'Clinician' && participant.name !== 'User Unknown' ? participant.name : "Clinician"}
+              {participant.name &&
+              participant.name !== "Clinician" &&
+              participant.name !== "User Unknown"
+                ? participant.name
+                : "Clinician"}
             </div>
           </div>
         );
@@ -1252,6 +1420,28 @@ const VideoCall = ({
         const stream = remoteStreams[streamKeys[0]];
         return (
           <div className="relative w-full h-full bg-black rounded-xl overflow-hidden">
+            {/* Hidden audio element for remote audio */}
+            <audio
+              ref={(el) => {
+                if (el && stream) {
+                  remoteAudioRefs.current[streamKeys[0]] = el;
+                  if (el.srcObject !== stream) {
+                    el.srcObject = stream;
+                    el.muted = false;
+                    el.autoplay = true;
+                    const playPromise = el.play();
+                    if (playPromise !== undefined) {
+                      playPromise.catch(() => {
+                        el.muted = false;
+                        el.play().catch(() => {});
+                      });
+                    }
+                  }
+                }
+              }}
+              autoPlay
+              className="hidden"
+            />
             <video
               ref={(el) => {
                 if (el) {
@@ -1273,12 +1463,36 @@ const VideoCall = ({
           <div className="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
             {streamKeys.map((socketId, index) => {
               const stream = remoteStreams[socketId];
-              const participant = participants.find(p => p.socketId === socketId);
+              const participant = participants.find(
+                (p) => p.socketId === socketId
+              );
               return (
                 <div
                   key={`${socketId}-${index}`}
                   className="relative bg-black rounded-lg overflow-hidden"
                 >
+                  {/* Hidden audio element for remote audio */}
+                  <audio
+                    ref={(el) => {
+                      if (el && stream) {
+                        remoteAudioRefs.current[socketId] = el;
+                        if (el.srcObject !== stream) {
+                          el.srcObject = stream;
+                          el.muted = false;
+                          el.autoplay = true;
+                          const playPromise = el.play();
+                          if (playPromise !== undefined) {
+                            playPromise.catch(() => {
+                              el.muted = false;
+                              el.play().catch(() => {});
+                            });
+                          }
+                        }
+                      }
+                    }}
+                    autoPlay
+                    className="hidden"
+                  />
                   <video
                     ref={(el) => {
                       if (el) {
@@ -1293,7 +1507,11 @@ const VideoCall = ({
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                    {participant?.name && participant.name !== 'Clinician' && participant.name !== 'User Unknown' ? participant.name : `Participant ${index + 1}`}
+                    {participant?.name &&
+                    participant.name !== "Clinician" &&
+                    participant.name !== "User Unknown"
+                      ? participant.name
+                      : `Participant ${index + 1}`}
                   </div>
                 </div>
               );

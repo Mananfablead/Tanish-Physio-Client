@@ -94,6 +94,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
     const peerRefs = useRef({});
     const localVideoRef = useRef(null);
     const remoteVideoRefs = useRef({});
+    const remoteAudioRefs = useRef({});
 
     // Initialize local media
     const initLocalMedia = useCallback(async () => {
@@ -1540,7 +1541,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                     console.log('roomId:', roomId);
 
                     const formData = new FormData();
-                    formData.append('recording', blob, `recording-${roomId}-${Date.now()}.webm`);
+                    formData.append('recording-videos', blob, `recording-${roomId}-${Date.now()}.webm`);
                     formData.append('callLogId', callLogId);
 
                     console.log('FormData callLogId:', formData.get('callLogId'));
@@ -1635,6 +1636,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
         stopScreenShare,
         localVideoRef,
         remoteVideoRefs,
+        remoteAudioRefs,
         setCallActive,
         setParticipants,
         setCallLogId,
