@@ -248,9 +248,9 @@ export function RecordedSessionsSection({
                               className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
                               onClick={() => {
                                 window.open(
-                                  `${import.meta.env.VITE_API_BASE_URL}${
-                                    recording.recordingUrl
-                                  }`,
+                                  recording.recordingUrl.startsWith('http') 
+                                    ? recording.recordingUrl 
+                                    : `${import.meta.env.VITE_API_BASE_URL}${recording.recordingUrl}`,
                                   "_blank"
                                 );
                               }}
@@ -258,23 +258,23 @@ export function RecordedSessionsSection({
                               <Play className="h-3 w-3 mr-1" />
                               Watch
                             </Button>
-                            <Button
+                            {/* <Button
                               variant="outline"
                               size="sm"
                               className="font-bold border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
                               onClick={() => {
                                 // Trigger download
                                 const link = document.createElement("a");
-                                link.href = `${
-                                  import.meta.env.VITE_API_BASE_URL
-                                }${recording.recordingUrl}`;
+                                link.href = recording.recordingUrl.startsWith('http')
+                                  ? recording.recordingUrl
+                                  : `${import.meta.env.VITE_API_BASE_URL}${recording.recordingUrl}`;
                                 link.download = `recording-${recording._id}.webm`;
                                 link.click();
                               }}
                             >
                               <Download className="h-3 w-3 mr-1" />
                               Download
-                            </Button>
+                            </Button> */}
                           </>
                         )}
                       </div>
