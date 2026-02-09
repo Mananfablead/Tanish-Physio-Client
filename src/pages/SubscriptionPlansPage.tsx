@@ -47,6 +47,8 @@ export default function SubscriptionPlansPage() {
   const user = useSelector(selectCurrentUser);
   const activePlan = user?.subscriptionData || null;
   const activePlanId = activePlan?.planId ?? null;
+  const isSubscriptionExpired = activePlan?.isExpired ?? false;
+  const hasActiveSubscription = activePlanId && !isSubscriptionExpired;
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,7 +102,7 @@ export default function SubscriptionPlansPage() {
               subscriptionPlans.map((plan, index) => {
                 const planId = plan.planId || plan.id;
                 const isSelected = selectedPlan === planId;
-                const isActive = activePlanId === planId;
+                const isActive = activePlanId === planId && !isSubscriptionExpired;
 
                 return (
                   <motion.div
@@ -111,7 +113,7 @@ export default function SubscriptionPlansPage() {
                   >
                     <Card
                       onClick={() => {
-                        if (!activePlanId && !isActive) {
+                        if ((!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId)) && !isActive) {
                           setSelectedPlan(planId);
                         }
                       }}
@@ -132,6 +134,11 @@ export default function SubscriptionPlansPage() {
                       {isActive && (
                         <div className="absolute top-3 right-3">
                           <Badge variant="success">Active</Badge>
+                        </div>
+                      )}
+                      {isSubscriptionExpired && activePlanId === planId && (
+                        <div className="absolute top-3 right-3">
+                          <Badge variant="destructive">Expired</Badge>
                         </div>
                       )}
 
@@ -254,14 +261,14 @@ export default function SubscriptionPlansPage() {
                           variant={
                             isActive
                               ? "secondary"
-                              : activePlanId
+                              : (hasActiveSubscription && activePlanId === planId)
                                 ? "outline"
                                 : "default"
                           }
-                          disabled={isActive || !!activePlanId}
+                          disabled={isActive || (hasActiveSubscription && !isSubscriptionExpired && activePlanId !== planId)}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!isActive && !activePlanId) {
+                            if (!isActive && (!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId))) {
                               setSelectedPlan(planId);
                               setIsModalOpen(true);
                             }
@@ -269,9 +276,11 @@ export default function SubscriptionPlansPage() {
                         >
                           {isActive
                             ? "Active Plan"
-                            : activePlanId
+                            : (hasActiveSubscription && activePlanId === planId)
                               ? "Plan Already Active"
-                              : "Select Plan"}
+                              : isSubscriptionExpired && activePlanId === planId
+                                ? "Renew Plan"
+                                : "Select Plan"}
                         </Button>
                       </CardContent>
                     </Card>
@@ -279,6 +288,38 @@ export default function SubscriptionPlansPage() {
                 );
               })
             )}
+          </div>
+        )}
+
+        {/* EXPIRED SUBSCRIPTION WARNING */}
+        {isSubscriptionExpired && activePlan && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <Card className="border-destructive bg-destructive/5">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="mt-1">
+                    <ShieldCheck className="h-6 w-6 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-destructive mb-2">Subscription Expired</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Your {activePlan.planName} expired {Math.abs(activePlan.daysRemaining || 0)} day(s) ago. 
+                      Please select a new plan to continue your therapy sessions.
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Expired on: {new Date(activePlan.endDate).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Award className="h-3 w-3" />
+                        <span>Plan: {activePlan.planName}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
