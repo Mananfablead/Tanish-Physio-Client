@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { User } from "lucide-react";
 
 interface HowItWorksProps {
   cmsSteps: any[];
@@ -31,7 +32,7 @@ export const HowItWorks = ({ cmsSteps, stagger, fadeInUp }: HowItWorksProps) => 
       }
     }
   };
-  
+
   const fadeInUpAnimation = fadeInUp || {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -43,9 +44,9 @@ export const HowItWorks = ({ cmsSteps, stagger, fadeInUp }: HowItWorksProps) => 
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-[120px]" />
       </div>
-      
+
       <div className="container relative z-10">
-        <motion.div 
+        <motion.div
           className="text-center max-w-2xl mx-auto mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -60,7 +61,7 @@ export const HowItWorks = ({ cmsSteps, stagger, fadeInUp }: HowItWorksProps) => 
           </p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="grid md:grid-cols-3 gap-8 relative"
           variants={staggerAnimation}
           initial="initial"
@@ -69,7 +70,7 @@ export const HowItWorks = ({ cmsSteps, stagger, fadeInUp }: HowItWorksProps) => 
         >
           {/* Connection Lines (Desktop) */}
           <div className="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-y-1/2 z-0" />
-          
+
           {(cmsSteps && cmsSteps.length > 0 ? cmsSteps : [
             {
               title: "Answer Health Questions",
@@ -90,11 +91,11 @@ export const HowItWorks = ({ cmsSteps, stagger, fadeInUp }: HowItWorksProps) => 
             const stepNumber = (index + 1).toString().padStart(2, '0');
             const colors = ['primary', 'accent', 'success'];
             const color = colors[index % colors.length];
-            
+
             return (
               <motion.div key={item._id || index} variants={fadeInUpAnimation} className="relative z-10">
-                <Card 
-                  variant="gradient" 
+                <Card
+                  variant="gradient"
                   className="h-full p-8 text-center relative overflow-hidden group border-t-4 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                   style={{ borderTopColor: `hsl(var(--${color}))` }}
                 >
@@ -103,23 +104,32 @@ export const HowItWorks = ({ cmsSteps, stagger, fadeInUp }: HowItWorksProps) => 
                   </div>
                   <div className="relative z-10">
                     {item.image ? (
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-6 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                        <img 
-                          src={item.image} 
-                          alt={item.title}
-                          className="w-full h-full object-cover"
+                      <div
+                        className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-6
+               shadow-lg shadow-primary/20
+               group-hover:scale-110 transition-transform
+               flex items-center justify-center"
+                      >
+                        <img
+                          src={item.image}
+                          alt={item.title || "image"}
+                          className="w-10 h-10 object-cover"
                           onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.onerror = null;
-                            target.style.display = 'none';
+                            e.currentTarget.src = "https://placehold.co/64x64/png";
                           }}
                         />
                       </div>
                     ) : (
-                      <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                        <span className="h-8 w-8 text-white flex items-center justify-center">?</span>
+                      <div
+                        className="h-16 w-16 rounded-2xl gradient-primary
+             flex items-center justify-center
+             mx-auto mb-6 shadow-lg shadow-primary/20
+             group-hover:scale-110 transition-transform"
+                      >
+                        <User className="w-8 h-8 text-white" />
                       </div>
                     )}
+
                     <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">{item.title}</h3>
                     <p className="text-muted-foreground leading-relaxed">{item.description}</p>
                   </div>

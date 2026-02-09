@@ -711,6 +711,7 @@ export default function SchedulePage() {
                 </div>
               </div>
 
+
               {/* AVAILABLE TIMES */}
               <div>
                 <div>
@@ -824,7 +825,7 @@ export default function SchedulePage() {
                 </div>
 
                 ) : (
-                  <div className="text-center py-10">
+                  <div className="text-center py-0">
                     <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                       <Calendar className="h-7 w-7 text-primary/60" />
                     </div>
