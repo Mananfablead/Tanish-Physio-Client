@@ -132,9 +132,17 @@ export default function QuestionnairePage() {
       // persist
       saveStoredQuestionnaire(next);
 
+      // Clear validation error when user starts answering
+      if (validationErrors[questionId]) {
+        const newErrors = {...validationErrors};
+        delete newErrors[questionId];
+        setValidationErrors(newErrors);
+      }
+
       // Auto advance to next question if there is one and it's not a text field
       const question = activeQuestionnaire?.questions.find((q: any) => q._id === questionId);
-      if (question && question.type !== 'text') {
+      // Only auto-advance if the question is not required OR has been answered with a non-empty value
+      if (question && question.type !== 'text' && (!question.required || (value && value.toString().trim() !== ''))) {
         const currentQuestionIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === questionId) ?? -1;
         if (currentQuestionIndex >= 0 && currentQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1) {
           setActiveQuestionIndex(currentQuestionIndex + 1);
@@ -149,13 +157,50 @@ export default function QuestionnairePage() {
     });
   };
 
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+
   const handleNext = () => {
+    // Check if current question is required and hasn't been answered
+    const currentQuestion = activeQuestionnaire?.questions[activeQuestionIndex];
+    if (currentQuestion?.required && (!data[currentQuestion._id] || data[currentQuestion._id].toString().trim() === '')) {
+      setValidationErrors({
+        ...validationErrors,
+        [currentQuestion._id]: `${currentQuestion.question} is required`
+      });
+      return;
+    }
+
+    // Clear validation error for current question if it exists
+    if (validationErrors[currentQuestion?._id]) {
+      const newErrors = {...validationErrors};
+      delete newErrors[currentQuestion._id];
+      setValidationErrors(newErrors);
+    }
+
     // Skip manual navigation if auto-advance is enabled
     // This function is kept for backward compatibility and edge cases
     if (activeQuestionnaire && activeQuestionIndex < activeQuestionnaire.questions.length - 1) {
       setActiveQuestionIndex(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
+      // Before going to review, validate all required questions are answered
+      const requiredQuestions = activeQuestionnaire?.questions.filter((q: any) => q.required) || [];
+      const unansweredRequired = requiredQuestions.filter((q: any) => !data[q._id] || data[q._id].toString().trim() === '');
+      
+      if (unansweredRequired.length > 0) {
+        // Set validation errors for all unanswered required questions
+        const newErrors: {[key: string]: string} = {};
+        unansweredRequired.forEach((q: any) => {
+          newErrors[q._id] = `${q.question} is required`;
+        });
+        setValidationErrors(newErrors);
+        
+        // Navigate to the first unanswered required question
+        const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === unansweredRequired[0]._id) || 0;
+        setActiveQuestionIndex(firstUnansweredIndex);
+        return;
+      }
+      
       setIsReviewing(true);
     }
   };
@@ -229,6 +274,24 @@ export default function QuestionnairePage() {
   };
 
   const handleSubmit = async () => {
+    // Validate all required questions before submitting
+    const requiredQuestions = activeQuestionnaire?.questions.filter((q: any) => q.required) || [];
+    const unansweredRequired = requiredQuestions.filter((q: any) => !data[q._id] || data[q._id].toString().trim() === '');
+    
+    if (unansweredRequired.length > 0) {
+      // Set validation errors for all unanswered required questions
+      const newErrors: {[key: string]: string} = {};
+      unansweredRequired.forEach((q: any) => {
+        newErrors[q._id] = `${q.question} is required`;
+      });
+      setValidationErrors(newErrors);
+      
+      // Navigate to the first unanswered required question
+      const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === unansweredRequired[0]._id) || 0;
+      setActiveQuestionIndex(firstUnansweredIndex);
+      return;
+    }
+
     // persist intake
     saveStoredQuestionnaire(data);
 
@@ -385,6 +448,9 @@ export default function QuestionnairePage() {
   // Render question based on type
   const renderQuestion = (question: any) => {
     const currentValue = data[question._id] || '';
+    const isRequired = question.required;
+    const isAnswered = !!currentValue && currentValue.toString().trim() !== '';
+    const hasError = validationErrors[question._id];
 
     switch (question.type) {
       case 'text':
@@ -392,10 +458,21 @@ export default function QuestionnairePage() {
           <div className="space-y-4">
             <Input
               value={currentValue}
-              onChange={(e) => updateAnswer(question._id, e.target.value)}
+              onChange={(e) => {
+                // Clear validation error when user starts typing
+                if (validationErrors[question._id]) {
+                  const newErrors = {...validationErrors};
+                  delete newErrors[question._id];
+                  setValidationErrors(newErrors);
+                }
+                updateAnswer(question._id, e.target.value);
+              }}
               placeholder="Enter your response"
-              className="min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl border-slate-200 focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm"
+              className={`${hasError ? 'border-red-500 focus:ring-red-500' : isRequired && !isAnswered ? 'border-red-500 focus:ring-red-500' : 'border-slate-200'} min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm`}
             />
+            {hasError && (
+              <p className="text-red-500 text-sm font-bold">{validationErrors[question._id]}</p>
+            )}
           </div>
         );
 
@@ -403,7 +480,15 @@ export default function QuestionnairePage() {
         return (
           <RadioGroup
             value={currentValue}
-            onValueChange={(value) => updateAnswer(question._id, value)}
+            onValueChange={(value) => {
+              // Clear validation error when user selects an option
+              if (validationErrors[question._id]) {
+                const newErrors = {...validationErrors};
+                delete newErrors[question._id];
+                setValidationErrors(newErrors);
+              }
+              updateAnswer(question._id, value);
+            }}
             className="grid grid-cols-1 gap-4"
           >
             {question.options.map((option: string) => (
@@ -411,7 +496,7 @@ export default function QuestionnairePage() {
                 <RadioGroupItem value={option} id={option} className="peer sr-only" />
                 <Label
                   htmlFor={option}
-                  className="flex items-center rounded-2xl border-2 border-primary/20 bg-white p-4 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-bold shadow-sm group"
+                  className={`flex items-center rounded-2xl border-2 ${hasError ? 'border-red-500' : isRequired && !isAnswered ? 'border-red-300' : 'border-primary/20'} bg-white p-4 hover:bg-primary/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all text-sm font-bold shadow-sm group`}
                 >
                   <div className={`w-6 h-6 rounded-full border-2 mr-5 flex items-center justify-center transition-all ${currentValue === option ? "border-primary bg-primary" : "border-slate-200 group-hover:border-primary/40"
                     }`}>
@@ -425,9 +510,9 @@ export default function QuestionnairePage() {
         );
 
       case 'slider':
-        const sliderValue = parseInt(currentValue) || 5;
+        const sliderValue = parseInt(currentValue) || 0;
         return (
-          <div className="bg-gradient-to-br from-primary/5 to-secondary/10 p-2 rounded-3xl border border-primary/20 space-y-12 shadow-inner">
+          <div className={`bg-gradient-to-br from-primary/5 to-secondary/10 p-2 rounded-3xl ${hasError ? 'border border-red-500' : isRequired && !isAnswered ? 'border border-red-300' : 'border border-primary/20'} space-y-12 shadow-inner`}>
             <div className="text-center relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 blur-3xl rounded-full" />
               <span className="text-8xl font-black text-primary tracking-tighter relative tabular-nums">{sliderValue}</span>
@@ -441,6 +526,12 @@ export default function QuestionnairePage() {
               <Slider
                 value={[sliderValue]}
                 onValueChange={([value]) => {
+                  // Clear validation error when user adjusts the slider
+                  if (validationErrors[question._id]) {
+                    const newErrors = {...validationErrors};
+                    delete newErrors[question._id];
+                    setValidationErrors(newErrors);
+                  }
                   updateAnswer(question._id, value.toString());
                 }}
                 min={1}
@@ -460,7 +551,7 @@ export default function QuestionnairePage() {
       case 'skeleton':
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="relative w-full aspect-[3/4] max-w-[260px] md:max-w-[300px] mx-auto bg-slate-50 rounded-3xl p-6 md:p-8 shadow-inner border border-slate-100 flex items-center justify-center">
+            <div className={`relative w-full aspect-[3/4] max-w-[260px] md:max-w-[300px] mx-auto ${hasError ? 'bg-red-50' : isRequired && !isAnswered ? 'bg-red-50' : 'bg-slate-50'} rounded-3xl p-6 md:p-8 shadow-inner border ${hasError ? 'border-red-500' : isRequired && !isAnswered ? 'border-red-200' : 'border-slate-100'} flex items-center justify-center`}>
               <svg viewBox="0 0 100 200" className="w-full h-full opacity-10 text-slate-900">
                 <ellipse cx="50" cy="18" rx="12" ry="15" fill="currentColor" />
                 <rect x="35" y="35" width="30" height="50" rx="5" fill="currentColor" />
@@ -477,7 +568,15 @@ export default function QuestionnairePage() {
                       ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                       : "bg-slate-300 hover:bg-primary/40"
                     }`}
-                  onClick={() => updateAnswer(question._id, area.id)}
+                  onClick={() => {
+                    // Clear validation error when user selects an area
+                    if (validationErrors[question._id]) {
+                      const newErrors = {...validationErrors};
+                      delete newErrors[question._id];
+                      setValidationErrors(newErrors);
+                    }
+                    updateAnswer(question._id, area.id);
+                  }}
                 />
               ))}
             </div>
@@ -488,8 +587,16 @@ export default function QuestionnairePage() {
                   key={area.id}
                   variant={currentValue === area.id ? "default" : "secondary"}
                   className={`cursor-pointer transition-all px-6 py-4 text-xs font-black rounded-2xl ${currentValue === area.id ? "shadow-2xl scale-110" : "bg-white hover:bg-slate-50 border-slate-100"
-                    }`}
-                  onClick={() => updateAnswer(question._id, area.id)}
+                    } ${hasError ? 'border-red-500' : isRequired && !isAnswered ? 'border-red-200' : ''}`}
+                  onClick={() => {
+                    // Clear validation error when user selects an area
+                    if (validationErrors[question._id]) {
+                      const newErrors = {...validationErrors};
+                      delete newErrors[question._id];
+                      setValidationErrors(newErrors);
+                    }
+                    updateAnswer(question._id, area.id);
+                  }}
                 >
                   {area.label}
                 </Badge>
@@ -512,10 +619,21 @@ export default function QuestionnairePage() {
           <div className="space-y-4">
             <Input
               value={currentValue}
-              onChange={(e) => updateAnswer(question._id, e.target.value)}
+              onChange={(e) => {
+                // Clear validation error when user starts typing
+                if (validationErrors[question._id]) {
+                  const newErrors = {...validationErrors};
+                  delete newErrors[question._id];
+                  setValidationErrors(newErrors);
+                }
+                updateAnswer(question._id, e.target.value);
+              }}
               placeholder="Enter your response"
-              className="min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl border-slate-200 focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm"
+              className={`${hasError ? 'border-red-500 focus:ring-red-500' : isRequired && !isAnswered ? 'border-red-500 focus:ring-red-500' : 'border-slate-200'} min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm`}
             />
+            {hasError && (
+              <p className="text-red-500 text-sm font-bold">{validationErrors[question._id]}</p>
+            )}
           </div>
         );
     }
@@ -751,7 +869,10 @@ export default function QuestionnairePage() {
                                 {activeQuestionIndex + 1}
                               </div>
                               <div>
-                                <h3 id={`question-${currentQuestion._id}-title`} className="font-black text-2xl text-slate-900 tracking-tight">{currentQuestion.question}</h3>
+                                <h3 id={`question-${currentQuestion._id}-title`} className="font-black text-2xl text-slate-900 tracking-tight">
+                                  {currentQuestion.question}
+                                  {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
+                                </h3>
                                 <p className="text-sm text-slate-500 mt-1">Answer this question to continue</p>
                               </div>
                             </div>
@@ -760,7 +881,11 @@ export default function QuestionnairePage() {
                               {renderQuestion(currentQuestion)}
                             </div>
 
-                            <div className="mt-8 flex items-center justify-between gap-4">
+                            <div className="mt-4">
+                              <p className="text-sm text-slate-500 italic">* Indicates required field</p>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between gap-4">
                               {activeQuestionIndex > 0 ? (
                                 <Button variant="outline" onClick={handlePrevious} className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all">Back</Button>
                               ) : (
@@ -871,18 +996,21 @@ export default function QuestionnairePage() {
         {/* Sticky CTA for mobile & tablet (<lg) */}
         {!isReviewing && currentQuestion && !keyboardVisible && (
           <div className="lg:hidden fixed inset-x-0 bottom-0 p-4 bg-white border-t shadow z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 1rem)' }}>
-            <div className="flex gap-3">
-              {activeQuestionIndex > 0 && (
-                <Button variant="outline" onClick={handlePrevious} className="flex-1 h-12 min-h-[48px] rounded-xl font-black">
-                  Back
-                </Button>
-              )}
-              <button
-                onClick={handleNext}
-                className="flex-1 h-12 min-h-[48px] rounded-xl font-black bg-primary text-white"
-              >
-                {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
-              </button>
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-slate-500 text-center italic">* Indicates required field</p>
+              <div className="flex gap-3">
+                {activeQuestionIndex > 0 && (
+                  <Button variant="outline" onClick={handlePrevious} className="flex-1 h-12 min-h-[48px] rounded-xl font-black">
+                    Back
+                  </Button>
+                )}
+                <button
+                  onClick={handleNext}
+                  className="flex-1 h-12 min-h-[48px] rounded-xl font-black bg-primary text-white"
+                >
+                  {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
+                </button>
+              </div>
             </div>
           </div>
         )}
