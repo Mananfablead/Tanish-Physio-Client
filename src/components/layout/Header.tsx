@@ -97,7 +97,7 @@ export function Header() {
                 >
                   {user?.profilePicture ? (
                     <img
-                      src={`data:image/jpeg;base64,${user.profilePicture}`}
+                      src={user?.profilePicture}
                       alt={user?.name || "User profile"}
                       className="h-10 w-10 md:h-14 md:w-14 rounded-full object-cover border border-slate-200"
                     />
