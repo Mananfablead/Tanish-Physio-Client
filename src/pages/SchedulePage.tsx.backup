@@ -51,6 +51,9 @@ export default function SchedulePage() {
   const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
   const user = useSelector(selectCurrentUser);
 
+  // Use subscriptionData id and purchasedServices bookingIds from user data
+  const subscriptionId = user?.subscriptionData?.id;
+  const purchasedServiceBookingIds = user?.purchasedServices?.map((service: any) => service.bookingId) || [];
 
   // Helper function to get service duration from booking data
   const getServiceDuration = () => {
@@ -141,38 +144,35 @@ export default function SchedulePage() {
         endTime = null; // Backend will calculate endTime based on duration if not provided
       }
 
-      // Determine bookingId and subscriptionId based on user selection
+      // Determine bookingId based on available data
       let finalBookingId = null;
-      let finalSubscriptionId = subscriptionIdValue; // Start with existing subscriptionIdValue
       
-      // Priority: Use selected service/subscription from dropdowns
-      if (selectedServiceOrSubscription) {
-        // Check if it's a service or subscription
-        const isService = user?.purchasedServices?.some((service: any) => service.id === selectedServiceOrSubscription);
-        const isSubscription = user?.subscriptionData?.id === selectedServiceOrSubscription;
-        
-        if (isService) {
-          // Find the selected service and use its bookingId
-          const selectedServiceData = user?.purchasedServices?.find((service: any) => service.id === selectedServiceOrSubscription);
-          finalBookingId = selectedServiceData?.bookingId || null;
-          finalSubscriptionId = null; // Clear subscriptionId when service is selected
-        } else if (isSubscription) {
-          // Use subscription bookingId and set subscriptionId
-          finalBookingId = user?.subscriptionData?.bookingId || null;
-          finalSubscriptionId = selectedServiceOrSubscription; // Set the subscriptionId to the selected subscription
+      // Use selected service from dropdown if available
+      if (selectedService) {
+        const service = user?.purchasedServices?.find((s: any) => s.id === selectedService);
+        if (service) {
+          finalBookingId = service.bookingId || null;
+          subscriptionIdValue = null; // Clear subscription when using service
         }
-      } else if (bookingData?.fromServices || (bookingData?.bookingId && !subscriptionIdValue)) {
+      }
+      // Use selected subscription from dropdown if available
+      else if (selectedSubscription) {
+        if (user?.subscriptionData?.id === selectedSubscription) {
+          subscriptionIdValue = user.subscriptionData.id;
+          finalBookingId = null; // Clear bookingId when using subscription
+        }
+      }
+      // Fallback to existing logic
+      else if (bookingData?.fromServices || (bookingData?.bookingId && !subscriptionIdValue)) {
         finalBookingId = (bookingData?.bookingId || bookingData?.service?.bookingId) || null;
-        finalSubscriptionId = null; // Clear subscriptionId when using bookingData service
       } else if (!subscriptionIdValue && user?.purchasedServices && user.purchasedServices.length > 0) {
         // Use the first purchased service bookingId if no specific booking ID and no subscription
         finalBookingId = user.purchasedServices[0].bookingId || null;
-        finalSubscriptionId = null; // Clear subscriptionId when using first service
       }
 
       const sessionData = {
         bookingId: finalBookingId,
-        subscriptionId: finalSubscriptionId,
+        subscriptionId: subscriptionIdValue,
         date: format(selectedDate, "yyyy-MM-dd"),
         time: startTime, // Still send time for backward compatibility
         startTime,
@@ -251,7 +251,8 @@ export default function SchedulePage() {
   const [sessionTypeValue, setSessionTypeValue] = useState<string>("1-on-1");
   const [sessionStatusValue, setSessionStatusValue] = useState<string>("pending");
   const [sessionNotesValue, setSessionNotesValue] = useState<string>("");
-  const [selectedServiceOrSubscription, setSelectedServiceOrSubscription] = useState<string>("");
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [selectedSubscription, setSelectedSubscription] = useState<string>("");
 
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -648,18 +649,7 @@ export default function SchedulePage() {
                         No sessions scheduled
                       </h3>
 
-                      {/* <p className="text-slate-500 font-medium max-w-xs mx-auto">
-                        You don’t have any sessions scheduled for{" "}
-                        {format(selectedDate, "MMMM d, yyyy")}.
-                      </p> */}
-
-                      {/* <Button
-                        className="h-11 rounded-xl bg-primary text-white font-bold px-6"
-                        onClick={() => setIsBookingModalOpen(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Book Session
-                      </Button> */}
+                    
                     </div>
                   )}
                 </CardContent>
@@ -675,7 +665,7 @@ export default function SchedulePage() {
       {/* Booking Modal */}
       {isBookingModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden">
 
             {/* HEADER */}
             <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -690,7 +680,8 @@ export default function SchedulePage() {
                   setBookingError(null); 
                   setSessionTypeValue("");
                   setSelectedTime("");
-                  setSelectedServiceOrSubscription("");
+                  setSelectedService("");
+                  setSelectedSubscription("");
                 }}
                 className="h-8 w-8"
               >
@@ -701,47 +692,78 @@ export default function SchedulePage() {
             {/* BODY */}
             <div className="p-6 space-y-6">
 
-              {/* DATE + SESSION TYPE */}
-              <div className="flex flex-col md:flex-row justify-between gap-6 items-start">
+              {/* DATE INFO */}
+              <div>
+                <h4 className="font-bold text-slate-800 mb-1">
+                  {format(selectedDate, "EEEE, MMMM d, yyyy")}
+                </h4>
+                <p className="text-slate-500 text-sm">
+                  Select a time for your session
+                </p>
+              </div>
 
-                {/* DATE INFO */}
-                <div>
-                  <h4 className="font-bold text-slate-800 mb-1">
-                    {format(selectedDate, "EEEE, MMMM d, yyyy")}
-                  </h4>
-                  <p className="text-slate-500 text-sm">
-                    Select a time for your session
-                  </p>
-                </div>
-
-                {/* SERVICE OR SUBSCRIPTION DROPDOWN */}
+              {/* SERVICE AND SUBSCRIPTION DROPDOWNS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* PURCHASED SERVICES DROPDOWN */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Select Service or Subscription
+                    Purchased Services
                   </label>
                   <select
-                    value={selectedServiceOrSubscription}
-                    onChange={(e) => setSelectedServiceOrSubscription(e.target.value)}
+                    value={selectedService}
+                    onChange={(e) => {
+                      setSelectedService(e.target.value);
+                      // Auto deselect subscription when service is selected
+                      if (e.target.value) {
+                        setSelectedSubscription("");
+                      }
+                    }}
                     className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
-                    <option value="">Select a service or subscription</option>
-                    
-                    {/* Purchased Services */}
+                    <option value="">Select a service</option>
                     {user?.purchasedServices?.map((service: any) => (
                       <option key={service.id} value={service.id}>
-                        Service: {service.name} - {service.duration}
+                        {service.name} - {service.duration}
                       </option>
                     ))}
-                    
-                    {/* Subscription Plan */}
+                  </select>
+                </div>
+
+                {/* SUBSCRIPTION PLANS DROPDOWN */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Subscription Plans
+                  </label>
+                  <select
+                    value={selectedSubscription}
+                    onChange={(e) => {
+                      setSelectedSubscription(e.target.value);
+                      // Auto deselect service when subscription is selected
+                      if (e.target.value) {
+                        setSelectedService("");
+                      }
+                    }}
+                    className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="">Select a subscription</option>
                     {user?.subscriptionData && (
                       <option value={user.subscriptionData.id}>
-                        Subscription: {user.subscriptionData.planName} ({user.subscriptionData.status})
+                        {user.subscriptionData.planName} ({user.subscriptionData.status})
                       </option>
                     )}
                   </select>
                 </div>
-                   <div className="w-40">
+              </div>
+
+
+              {/* AVAILABLE TIMES WITH SESSION TYPE */}
+              <div>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-3">
+                  <h4 className="font-bold text-slate-800">
+                    Available Times
+                  </h4>
+                  {/* SESSION TYPE SELECT */}
+                  <div className="w-40">
                     <label className="block text-xs font-semibold text-slate-600 mb-1">
                       Session Type
                     </label>
@@ -751,19 +773,10 @@ export default function SchedulePage() {
                       className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       <option value="1-on-1">1-on-1</option>
-                      {/* <option value="group">Group</option> */}
+                      <option value="group">Group</option>
                     </select>
                   </div>
-              </div>
-
-
-              {/* AVAILABLE TIMES WITH SESSION TYPE */}
-              <div>
-              
-                <div>
-                  <h4 className="font-bold text-slate-800 mb-3">
-                    Available Times
-                  </h4>
+                </div>
 
                   {/* STATUS LEGEND */}
                   <div className="flex flex-wrap gap-4 text-sm mb-4">
@@ -918,7 +931,8 @@ export default function SchedulePage() {
                   setIsBookingModalOpen(false);
                   setBookingError(null); // Clear error when closing modal
                   setSelectedTime("");
-                  setSelectedServiceOrSubscription("");
+                  setSelectedService("");
+                  setSelectedSubscription("");
                 }}
               >
                 Cancel
@@ -928,7 +942,7 @@ export default function SchedulePage() {
             
                 <Button
                   className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                  disabled={!selectedTime || !selectedServiceOrSubscription}
+                  disabled={!selectedTime}
                   onClick={handleBooking}
                 >
                   Confirm

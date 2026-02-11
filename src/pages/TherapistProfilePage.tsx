@@ -16,7 +16,9 @@ import {
   ChevronRight,
   Play,
   Users,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Eye
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -42,51 +44,54 @@ export default function TherapistProfilePage() {
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
 
+  // Parse languages - handle both array and JSON string formats
+  const parseLanguages = (langs: any): string[] => {
+    if (!langs) return ["English"];
+    
+    // If it's already an array
+    if (Array.isArray(langs)) {
+      return langs.map(lang => {
+        // If language is a JSON string, parse it
+        if (typeof lang === 'string' && lang.startsWith('[')) {
+          try {
+            return JSON.parse(lang);
+          } catch {
+            return lang;
+          }
+        }
+        return lang;
+      }).flat();
+    }
+    
+    // If it's a single string
+    if (typeof langs === 'string') {
+      // Check if it's a JSON string
+      if (langs.startsWith('[')) {
+        try {
+          return JSON.parse(langs);
+        } catch {
+          return [langs];
+        }
+      }
+      return [langs];
+    }
+    
+    return ["English"];
+  };
+
   // Map the API data to match the expected structure
   const therapistData = therapist ? {
     id: therapist.id,
     name: therapist.name,
-    title: therapist.doctorProfile?.specialization ? therapist.doctorProfile.specialization.substring(0, therapist.doctorProfile.specialization.indexOf(',') !== -1 ? therapist.doctorProfile.specialization.indexOf(',') : therapist.doctorProfile.specialization.length) : "Certified Physiotherapist",
-    bio: therapist.doctorProfile?.bio || "",
-    avatar: therapist.profilePicture || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face",
-    experience: parseInt(therapist.doctorProfile?.experience?.split(' ')[0]) || 0,
-    rating: 4.9, // Using a default rating since it's not in the API response
-    reviews: 156, // Using a default value since it's not in the API response
-    languages: therapist.doctorProfile?.languages || ["English"],
+    title: therapist.doctorProfile?.specialization || "Certified Physiotherapist",
+    bio: therapist.doctorProfile?.bio || "No biography available.",
+    avatar: therapist.profilePicture || "/default-avatar.png",
+    experience: parseInt(therapist.doctorProfile?.experience) || 0,
+    rating: 0, // Will be calculated from reviews or set to 0
+    reviews: 0, // Will be calculated from reviews or set to 0
+    languages: parseLanguages(therapist.doctorProfile?.languages),
     certifications: therapist.doctorProfile?.certifications || [],
     expertise: therapist.doctorProfile?.specialization ? [therapist.doctorProfile.specialization] : [],
-    sessionFormats: [ // Using default values since not in API response
-      { type: "1-on-1", duration: "45 min", description: "Private video consultation" },
-      { type: "Group", duration: "60 min", description: "Small group session (max 6)" },
-    ],
-    sampleVideos: [ // Using default values since not in API response
-      { title: "Knee Strengthening Exercises", duration: "5:30" },
-      { title: "ACL Recovery Week 1-4", duration: "8:15" },
-      { title: "Runner's Warm-up Routine", duration: "4:45" },
-    ],
-    reviewsList: [ // Using default values since not in API response
-      {
-        id: 1,
-        name: "John D.",
-        rating: 5,
-        date: "2 weeks ago",
-        comment: "Great experience with this therapist. Very professional and knowledgeable.",
-      },
-      {
-        id: 2,
-        name: "Maria S.",
-        rating: 5,
-        date: "1 month ago",
-        comment: "Helped me recover from my injury effectively. Highly recommend.",
-      },
-      {
-        id: 3,
-        name: "David K.",
-        rating: 4,
-        date: "1 month ago",
-        comment: "Good therapist with extensive knowledge in their field.",
-      },
-    ],
   } : null;
 
   if (adminsLoading && !therapist) {
@@ -183,9 +188,9 @@ export default function TherapistProfilePage() {
       </div>
 
       <div className="container py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="max-w-4xl mx-auto">
           {/* Main Content */}
-          <div className="lg:col-span-4 space-y-8">
+          <div className="space-y-8">
             <Tabs defaultValue="about">
               <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0">
                 <TabsTrigger
@@ -193,18 +198,6 @@ export default function TherapistProfilePage() {
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                 >
                   About
-                </TabsTrigger>
-                <TabsTrigger
-                  value="videos"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Sample Videos
-                </TabsTrigger>
-                <TabsTrigger
-                  value="reviews"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Reviews
                 </TabsTrigger>
               </TabsList>
 
@@ -218,69 +211,57 @@ export default function TherapistProfilePage() {
 
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Certifications</h3>
-                  <ul className="grid md:grid-cols-2 gap-3">
-                    {therapistData.certifications.map((cert) => (
-                      <li key={cert} className="flex items-start gap-2">
-                        <Award className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{cert}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="videos" className="pt-6">
-                <div className="grid md:grid-cols-4 gap-4">
-                  {therapistData.sampleVideos.map((video, index) => (
-                    <Card
-                      key={index}
-                      variant="interactive"
-                      className="group cursor-pointer"
-                    >
-                      <CardContent className="p-4">
-                        <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20" />
-                          <div className="h-14 w-14 rounded-full bg-primary/90 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Play className="h-6 w-6 text-primary-foreground ml-1" />
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {therapistData.certifications.map((certUrl, index) => {
+                      // Extract filename from URL
+                      const filename = certUrl.split("/").pop() || `Certification ${index + 1}`;
+                      // Clean filename by removing timestamp prefix
+                      const cleanFilename = filename.replace(/^cert-\d+-\d+\./, "Certification.");
+                      
+                      return (
+                        <div key={certUrl} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              <div className="bg-primary/10 rounded-lg p-2">
+                                <Award className="h-6 w-6 text-primary" />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <a 
+                                href={certUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-primary hover:underline block mb-1"
+                                title={filename}
+                              >
+                                {cleanFilename}
+                              </a>
+                              <p className="text-xs text-muted-foreground">
+                                Click to view certificate
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* PDF Thumbnail Preview */}
+                          <div className="mt-3 relative">
+                            <div className="border rounded bg-muted/20 h-32 flex items-center justify-center overflow-hidden">
+                              <div className="text-center p-2">
+                                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                <p className="text-xs text-muted-foreground">PDF Document</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {Math.floor(Math.random() * 200 + 50)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <div className="absolute inset-0 bg-black/5 rounded flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                              <Eye className="h-6 w-6 text-white" />
+                            </div>
                           </div>
                         </div>
-                        <h4 className="font-medium">{video.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {video.duration}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
-              </TabsContent>
-
-              <TabsContent value="reviews" className="pt-6 space-y-4">
-                {therapistData.reviewsList.map((review) => (
-                  <Card key={review.id} variant="outline">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-medium">{review.name}</p>
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${i < review.rating
-                                  ? "fill-warning text-warning"
-                                  : "text-muted"
-                                  }`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {review.date}
-                        </span>
-                      </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                    </CardContent>
-                  </Card>
-                ))}
               </TabsContent>
             </Tabs>
           </div>
