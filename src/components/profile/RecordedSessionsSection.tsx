@@ -150,7 +150,6 @@ export function RecordedSessionsSection({
           {recordings.length} Recordings
         </Badge>
       </div>
-
       {/* DESKTOP TABLE VIEW */}
       <div className="hidden md:block">
         {recordings.length > 0 ? (
@@ -249,12 +248,7 @@ export function RecordedSessionsSection({
                                 size="sm"
                                 className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
                                 onClick={() => {
-                                  window.open(
-                                    `${import.meta.env.VITE_API_BASE_URL}${
-                                      recording.recordingUrl
-                                    }`,
-                                    "_blank"
-                                  );
+                                  window.open(recording.recordingUrl, "_blank");
                                 }}
                               >
                                 <Play className="h-3 w-3 mr-1" />
@@ -267,9 +261,7 @@ export function RecordedSessionsSection({
                                 onClick={() => {
                                   // Trigger download
                                   const link = document.createElement("a");
-                                  link.href = `${
-                                    import.meta.env.VITE_API_BASE_URL
-                                  }${recording.recordingUrl}`;
+                                  link.href = recording.recordingUrl;
                                   link.download = `recording-${recording._id}.webm`;
                                   link.click();
                                 }}
@@ -312,13 +304,15 @@ export function RecordedSessionsSection({
           </Card>
         )}
       </div>
-      
-      {/* MOBILE CARD VIEW */}
+      ;{/* MOBILE CARD VIEW */}
       <div className="md:hidden">
         {recordings.length > 0 ? (
           <div className="space-y-4">
             {recordings.map((recording) => (
-              <Card key={recording._id} className="p-4 border border-slate-200 rounded-lg">
+              <Card
+                key={recording._id}
+                className="p-4 border border-slate-200 rounded-lg"
+              >
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -348,7 +342,7 @@ export function RecordedSessionsSection({
                       </Badge>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                     <div>
                       <p className="text-xs text-slate-500">Date</p>
@@ -367,7 +361,7 @@ export function RecordedSessionsSection({
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                     <div>
                       <p className="text-xs text-slate-500">Duration</p>
@@ -382,7 +376,7 @@ export function RecordedSessionsSection({
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="pt-2 border-t border-slate-100">
                     <div className="flex justify-center space-x-2">
                       {recording.recordingUrl && (
@@ -392,12 +386,7 @@ export function RecordedSessionsSection({
                             size="sm"
                             className="font-bold border-primary text-primary hover:bg-primary hover:text-white flex-1"
                             onClick={() => {
-                              window.open(
-                                `${import.meta.env.VITE_API_BASE_URL}${
-                                  recording.recordingUrl
-                                }`,
-                                "_blank"
-                              );
+                              window.open(recording.recordingUrl, "_blank");
                             }}
                           >
                             <Play className="h-3 w-3 mr-1" />
@@ -410,9 +399,7 @@ export function RecordedSessionsSection({
                             onClick={() => {
                               // Trigger download
                               const link = document.createElement("a");
-                              link.href = `${
-                                import.meta.env.VITE_API_BASE_URL
-                              }${recording.recordingUrl}`;
+                              link.href = recording.recordingUrl;
                               link.download = `recording-${recording._id}.webm`;
                               link.click();
                             }}
@@ -453,6 +440,7 @@ export function RecordedSessionsSection({
           </Card>
         )}
       </div>
+      ;
     </div>
   );
 }
