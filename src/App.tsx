@@ -176,7 +176,7 @@ const App = () => (
                   <Route path="/contact" element={<ContactUsPage />} />
                   <Route path="/services" element={<ServicesPage />} />
                   <Route
-                    path="/service/:serviceId"
+                    path="/service/:slug"
                     element={<ServiceDetailPage />}
                   />
                   <Route

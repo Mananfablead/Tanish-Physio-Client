@@ -547,7 +547,7 @@ const VideoCall = ({
             data.message || "Connection failed"
           );
         }
-        setShowGoogleMeetPopup(true);
+        // setShowGoogleMeetPopup(true);
         setCallError(null); // Clear the call error to prevent conflict with popup
       }
     },
@@ -2255,7 +2255,7 @@ const VideoCall = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {/* API Response Display */}
             {/* <div className="p-4 bg-slate-800/50 border-b border-slate-700">
               <h4 className="text-slate-300 font-medium text-sm mb-2">API Response:</h4>
@@ -2266,7 +2266,7 @@ const VideoCall = ({
                 }
               </pre>
             </div> */}
-            
+
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {participants && participants.length > 0 ? (
                 participants.map((participant, index) => (
@@ -2278,8 +2278,8 @@ const VideoCall = ({
                   >
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
                       {(participant.name &&
-                        participant.name !== 'Clinician' &&
-                        participant.name !== 'User Unknown' &&
+                        participant.name !== "Clinician" &&
+                        participant.name !== "User Unknown" &&
                         participant.name.charAt(0).toUpperCase()) ||
                         (participant.firstName &&
                           participant.firstName.charAt(0).toUpperCase()) ||
@@ -2299,11 +2299,17 @@ const VideoCall = ({
                           participant.name !== "User Unknown"
                             ? participant.name
                             : (participant.firstName && participant.lastName
-                              ? `${participant.firstName} ${participant.lastName}`
-                              : (participant.firstName ? participant.firstName : null)) ||
-                            participant.displayName ||
-                            participant.email ||
-                            `User ${participant.userId?.substring(0, 5) || participant.socketId?.substring(0, 5) || "Unknown"}`}
+                                ? `${participant.firstName} ${participant.lastName}`
+                                : participant.firstName
+                                ? participant.firstName
+                                : null) ||
+                              participant.displayName ||
+                              participant.email ||
+                              `User ${
+                                participant.userId?.substring(0, 5) ||
+                                participant.socketId?.substring(0, 5) ||
+                                "Unknown"
+                              }`}
                         </p>
                         {participant.isSelf && (
                           <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4 flex-shrink-0 ml-1">
@@ -2640,11 +2646,11 @@ const VideoCall = ({
       </div>
 
       {/* Google Meet Error Popup */}
-      <GoogleMeetErrorPopup
+      {/* <GoogleMeetErrorPopup
         isOpen={showGoogleMeetPopup}
-        onClose={() => setShowGoogleMeetPopup(false)}
+        // onClose={() => setShowGoogleMeetPopup(false)}
         sessionId={sessionId}
-      />
+      /> */}
     </div>
   );
 };

@@ -10,53 +10,70 @@ const transformServiceFromAPI = (apiService: any): Service => {
   const images = Array.isArray(apiService.images) ? apiService.images : [];
   const heroImage = images[0] || apiService.heroImage || apiService.image;
   const aboutImage = images[1] || apiService.aboutImage || heroImage;
-  
+
   // Handle videos array - use first video
   const videos = Array.isArray(apiService.videos) ? apiService.videos : [];
   const videoUrl = videos[0] || apiService.videoUrl;
-  
+
   // Combine additional images with features
   const additionalImages = images.slice(2); // All images except the first two
-  const existingFeatures = Array.isArray(apiService.features) ? apiService.features : [];
+  const existingFeatures = Array.isArray(apiService.features)
+    ? apiService.features
+    : [];
   const combinedFeatures = [...existingFeatures, ...additionalImages];
-  
+
   return {
-    id: apiService._id || apiService.id || Math.random().toString(36).substr(2, 9),
-    icon: apiService.icon || 'default-icon',
-    title: apiService.name || apiService.title || 'Service Title',
-    description: apiService.description || 'Service Description',
-    category: apiService.category || 'General',
+    id:
+      apiService._id ||
+      apiService.id ||
+      Math.random().toString(36).substr(2, 9),
+    slug: apiService.slug || undefined, // Add slug field
+    icon: apiService.icon || "default-icon",
+    title: apiService.name || apiService.title || "Service Title",
+    description: apiService.description || "Service Description",
+    category: apiService.category || "General",
     benefits: Array.isArray(apiService.benefits) ? apiService.benefits : [],
-    
+
     details: {
-      title: apiService.name || apiService.title || 'Service Title',
-      description: apiService.description || 'Service Description',
+      title: apiService.name || apiService.title || "Service Title",
+      description: apiService.description || "Service Description",
       benefits: Array.isArray(apiService.benefits) ? apiService.benefits : [],
-      detailedDescription: apiService.about || apiService.detailedDescription || apiService.description || 'Detailed description',
-      conditionsTreated: Array.isArray(apiService.contraindications) ? apiService.contraindications : [],
+      detailedDescription:
+        apiService.about ||
+        apiService.detailedDescription ||
+        apiService.description ||
+        "Detailed description",
+      conditionsTreated: Array.isArray(apiService.contraindications)
+        ? apiService.contraindications
+        : [],
       features: combinedFeatures, // Include additional images in features
-      sessionDuration: apiService.duration || apiService.sessionDuration || '30 min',
+      sessionDuration:
+        apiService.duration || apiService.sessionDuration || "30 min",
       price: `₹${apiService.price || 0}`,
       priceRange: `₹${apiService.price || 0}`,
-      prerequisites: Array.isArray(apiService.prerequisites) ? apiService.prerequisites.join(', ') : (apiService.prerequisites || ''),
-      whatToExpect: Array.isArray(apiService.features) ? apiService.features : [],
-      resultsTimeline: apiService.resultsTimeline || '2-4 weeks',
+      prerequisites: Array.isArray(apiService.prerequisites)
+        ? apiService.prerequisites.join(", ")
+        : apiService.prerequisites || "",
+      whatToExpect: Array.isArray(apiService.features)
+        ? apiService.features
+        : [],
+      resultsTimeline: apiService.resultsTimeline || "2-4 weeks",
       sessions: apiService.sessions,
     },
     media: {
       heroImage: heroImage,
       aboutImage: aboutImage,
       videoUrl: videoUrl,
-    }
+    },
   };
 };
 
 // Async thunks for service operations
 export const fetchAllServices = createAsyncThunk(
-  'services/fetchAll',
+  "services/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/services');
+      const response = await api.get("/services");
       // Transform the API response to match the expected format
       const responseData: any = response.data;
       const apiServices = responseData.data?.services || responseData;
@@ -69,10 +86,25 @@ export const fetchAllServices = createAsyncThunk(
 );
 
 export const fetchServiceById = createAsyncThunk(
-  'services/fetchById',
+  "services/fetchById",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await api.get(`/services/${id}`);
+      // Transform the API response to match the expected format
+      const responseData: any = response.data;
+      const apiService = responseData.data?.service || responseData;
+      return transformServiceFromAPI(apiService);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchServiceBySlug = createAsyncThunk(
+  "services/fetchBySlug",
+  async (slug: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/services/slug/${slug}`);
       // Transform the API response to match the expected format
       const responseData: any = response.data;
       const apiService = responseData.data?.service || responseData;
@@ -136,6 +168,18 @@ const serviceSlice = createSlice({
         state.selectedService = action.payload as any;
       })
       .addCase(fetchServiceById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchServiceBySlug.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchServiceBySlug.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedService = action.payload as any;
+      })
+      .addCase(fetchServiceBySlug.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

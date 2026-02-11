@@ -752,7 +752,7 @@ export default function BookingPage() {
                 await dispatch(
                   updateGuestBookingAsync({
                     id: bookingId,
-                    bookingData: { status: "confirmed" },
+                    bookingData: { status: "pending" },
                     clientEmail: guestUser.email,
                   })
                 );
@@ -899,7 +899,7 @@ export default function BookingPage() {
                 await dispatch(
                   updateBookingAsync({
                     id: bookingId,
-                    bookingData: { status: "confirmed" },
+                    bookingData: { status: "pending" },
                   })
                 );
               }

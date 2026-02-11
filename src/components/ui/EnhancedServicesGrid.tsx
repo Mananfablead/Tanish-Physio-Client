@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 
 interface Service {
   id: number | string;
+  slug?: string;
   title: string;
   description: string;
   category?: string;
@@ -46,12 +47,7 @@ export function EnhancedServicesGrid({
     const uniqueCategories = Array.from(
       new Set(
         servicesToDisplay
-          .map(
-            (s) =>
-              s.category ||
-              s.title?.split(" ")[0] ||
-              "Other"
-          )
+          .map((s) => s.category || s.title?.split(" ")[0] || "Other")
           .map((c) => c.trim())
           .filter(Boolean)
       )
@@ -69,7 +65,9 @@ export function EnhancedServicesGrid({
 
       const matchesCategory =
         categoryFilter === "all" ||
-        service.category?.toLowerCase().includes(categoryFilter.toLowerCase()) ||
+        service.category
+          ?.toLowerCase()
+          .includes(categoryFilter.toLowerCase()) ||
         service.title.toLowerCase().includes(categoryFilter.toLowerCase());
 
       return matchesSearch && matchesCategory;
@@ -143,7 +141,14 @@ export function EnhancedServicesGrid({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {currentServices.length > 0 ? (
           currentServices.map((service) => (
-            <Link to={`/service/${service.id}`} key={service.id}>
+            <Link
+              to={
+                service.slug
+                  ? `/service/${service.slug}`
+                  : `/service/${service.id}`
+              }
+              key={service.id}
+            >
               <div className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition">
                 <div className="h-48 overflow-hidden">
                   <img
@@ -159,22 +164,16 @@ export function EnhancedServicesGrid({
                 </div>
 
                 <div className="p-6 space-y-3">
-                  <h3 className="text-xl font-bold">
-                    {service.title}
-                  </h3>
+                  <h3 className="text-xl font-bold">{service.title}</h3>
 
                   <div className="flex justify-between text-sm text-slate-500">
-                    <span>
-                      Duration: {service.details.sessionDuration}
-                    </span>
+                    <span>Duration: {service.details.sessionDuration}</span>
                     <span className="font-bold text-primary">
                       {service.details.price}
                     </span>
                   </div>
 
-                  <p className="text-slate-600">
-                    {service.description}
-                  </p>
+                  <p className="text-slate-600">{service.description}</p>
 
                   <Button
                     variant="outline"
@@ -189,12 +188,8 @@ export function EnhancedServicesGrid({
         ) : (
           <div className="col-span-full text-center py-12">
             <Search className="mx-auto h-12 w-12 text-primary mb-4" />
-            <h3 className="text-xl font-bold">
-              No Services Found
-            </h3>
-            <p className="text-slate-600">
-              Try adjusting search or filters
-            </p>
+            <h3 className="text-xl font-bold">No Services Found</h3>
+            <p className="text-slate-600">Try adjusting search or filters</p>
           </div>
         )}
       </div>
@@ -211,9 +206,7 @@ export function EnhancedServicesGrid({
               variant="outline"
               size="sm"
               disabled={currentPage === 1}
-              onClick={() =>
-                setCurrentPage((p) => Math.max(p - 1, 1))
-              }
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -222,9 +215,7 @@ export function EnhancedServicesGrid({
               variant="outline"
               size="sm"
               disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((p) => Math.min(p + 1, totalPages))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
