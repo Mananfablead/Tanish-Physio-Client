@@ -79,49 +79,37 @@ export default function SubscriptionPlansPage() {
 
   return (
     <Layout>
-      {/* HERO SECTION WITH GRADIENT BACKGROUND */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-10">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-6 pt-8 pb-10">
+
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>
-        <div className="container relative z-10 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 backdrop-blur-sm rounded-full border border-primary/20">
+
+        <div className="container relative z-10 text-center space-y-4">
+{/* <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 backdrop-blur-sm rounded-full border border-primary/20">
             <TrendingUp className="h-4 w-4 fill-primary text-primary" />
-            <span className="text-sm font-medium">Flexible Therapy Plans</span>
-          </div>
+          <span className="text-sm font-medium">
+  Expert-Guided Recovery Plans
+</span>
 
-          <div className="space-y-4 max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Start Your Recovery,
-              <span className="block"> Guided by Experts</span>
-            </h1>
-
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Choose a therapy plan that matches your recovery goals. Every plan
-              includes one-on-one guidance from certified physiotherapists.
-            </p>
-          </div>
-
-          {/* View Toggle */}
-          {/* <div className="flex justify-center mt-8">
-            <div className="inline-flex items-center bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border">
-              <button
-                onClick={() => setViewMode('cards')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'cards' ? 'bg-primary text-primary-foreground shadow' : 'hover:bg-accent'}`}
-              >
-                Card View
-              </button>
-              <button
-                onClick={() => setViewMode('comparison')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'comparison' ? 'bg-primary text-primary-foreground shadow' : 'hover:bg-accent'}`}
-              >
-                Compare Plans
-              </button>
-            </div>
           </div> */}
+          {/* Heading */}
+       <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
+  Start Your Recovery, Guided by 
+  <span className="block">Experts</span>
+</h1>
+
+
+          {/* Description */}
+          <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
+            Choose a therapy plan that matches your recovery goals with
+            certified physiotherapist guidance.
+          </p>
+
         </div>
       </div>
 
+
       {/* PLANS SECTION */}
-      <div className="container py-16">
+      <div className="container py-10">
         {subscriptionPlans.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">

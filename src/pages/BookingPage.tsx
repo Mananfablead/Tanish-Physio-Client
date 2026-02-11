@@ -39,6 +39,11 @@ export default function BookingPage() {
     email: "",
     phone: "",
   });
+
+  // Validation states
+  const [nameError, setNameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   useEffect(() => {
     if (user) {
       setGuestUserData({
@@ -192,16 +197,72 @@ export default function BookingPage() {
     storedIntake.updatedAt &&
     now - storedIntake.updatedAt < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
+  // Email validation function
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  // Name validation function
+  const validateName = (name: string) => {
+    const nameRegex = /^[a-zA-Z\s]{2,50}$/; // Only letters and spaces, 2-50 characters
+    return nameRegex.test(name.trim());
+  };
+
+  // Phone validation function
+  const validatePhone = (phone: string) => {
+    // International mobile number validation (10-15 digits)
+    const phoneRegex = /^\d{10,15}$/;
+    return phoneRegex.test(phone);
+  };
+
   const handlePayment = async () => {
     // Validate guest user data if applicable
-    if (
-      isGuestUser &&
-      (!guestUserData.name || !guestUserData.email || !guestUserData.phone)
-    ) {
-      toast.error(
-        "Please fill in your name, email, and phone number to continue"
-      );
-      return;
+    if (isGuestUser) {
+      let hasError = false;
+      
+      // Name validation
+      if (!guestUserData.name.trim()) {
+        setNameError("Name is required");
+        hasError = true;
+      } else if (!validateName(guestUserData.name)) {
+        setNameError("Please enter a valid name (2-50 letters only)");
+        hasError = true;
+      } else {
+        setNameError("");
+      }
+      
+      // Email validation
+      if (!guestUserData.email.trim()) {
+        setEmailError("Email is required");
+        hasError = true;
+      } else if (!validateEmail(guestUserData.email)) {
+        setEmailError("Please enter a valid email address");
+        hasError = true;
+      } else {
+        setEmailError("");
+      }
+      
+      // Phone validation
+      if (!guestUserData.phone.trim()) {
+        setPhoneError("Phone number is required");
+        hasError = true;
+      } else if (guestUserData.phone.length < 10) {
+        setPhoneError("Phone number must be at least 10 digits");
+        hasError = true;
+      } else if (guestUserData.phone.length > 15) {
+        setPhoneError("Phone number cannot exceed 15 digits");
+        hasError = true;
+      } else if (!validatePhone(guestUserData.phone)) {
+        setPhoneError("Please enter a valid mobile number (10-15 digits)");
+        hasError = true;
+      } else {
+        setPhoneError("");
+      }
+      
+      if (hasError) {
+        return;
+      }
     }
 
     // Prepare guest user data
@@ -1125,61 +1186,82 @@ export default function BookingPage() {
                 <div className="space-y-4">
                   {/* Full Name */}
                   <div>
-                    <Label htmlFor="guestName">Full Name</Label>
+                    <Label htmlFor="guestName">Full Name *</Label>
                     <Input
                       id="guestName"
-                      placeholder="Enter your full name"
+                      placeholder="Enter your full name (2-50 letters)"
                       value={guestUserData.name}
                       disabled={!!user}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setGuestUserData({
                           ...guestUserData,
                           name: e.target.value,
-                        })
-                      }
-                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+                        });
+                        // Clear error when user starts typing
+                        if (nameError) setNameError("");
+                      }}
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${nameError ? "border-destructive" : ""}`}
                     />
+                    {nameError && (
+                      <p className="text-destructive text-sm mt-1">{nameError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter 2-50 letters only
+                    </p>
                   </div>
 
                   {/* Email */}
                   <div>
-                    <Label htmlFor="guestEmail">Email Address</Label>
+                    <Label htmlFor="guestEmail">Email Address *</Label>
                     <Input
                       id="guestEmail"
                       type="email"
                       placeholder="Enter your email address"
                       value={guestUserData.email}
                       disabled={!!user}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setGuestUserData({
                           ...guestUserData,
                           email: e.target.value,
-                        })
-                      }
-                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+                        });
+                        // Clear error when user starts typing
+                        if (emailError) setEmailError("");
+                      }}
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${emailError ? "border-destructive" : ""}`}
                     />
+                    {emailError && (
+                      <p className="text-destructive text-sm mt-1">{emailError}</p>
+                    )}
                   </div>
 
                   {/* Phone */}
                   <div>
-                    <Label htmlFor="guestPhone">Phone Number</Label>
+                    <Label htmlFor="guestPhone">Phone Number *</Label>
                     <Input
                       id="guestPhone"
-                      placeholder="Enter your phone number"
+                      placeholder="Enter your phone number (10-15 digits)"
                       value={guestUserData?.phone}
                       disabled={!!user}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, ""); // sirf number
+                        const value = e.target.value.replace(/\D/g, ""); // Remove non-digits
                         if (value.length <= 15) {
                           setGuestUserData({
                             ...guestUserData,
                             phone: value,
                           });
+                          // Clear error when user starts typing
+                          if (phoneError) setPhoneError("");
                         }
                       }}
                       maxLength={15}
-                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${phoneError ? "border-destructive" : ""}`}
                     />
+                    {phoneError && (
+                      <p className="text-destructive text-sm mt-1">{phoneError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter 10-15 digit mobile number (any country)
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -1320,24 +1402,22 @@ export default function BookingPage() {
                   )}
                 </Button>
 
-                {isGuestUser &&
-                  (!guestUserData.name ||
-                    !guestUserData.email ||
-                    !guestUserData.phone) && (
-                    <p className="text-xs text-center text-destructive">
-                      Please fill in your name, email, and phone number (10-15
-                      digits) to continue
-                    </p>
-                  )}
-                <p className="text-xs text-center text-muted-foreground">
+                {isGuestUser && (nameError || emailError || phoneError) && (
+                  <div className="text-xs text-center text-destructive space-y-1">
+                    {nameError && <p>{nameError}</p>}
+                    {emailError && <p>{emailError}</p>}
+                    {phoneError && <p>{phoneError}</p>}
+                  </div>
+                )}
+                {/* <p className="text-xs text-center text-muted-foreground">
                   By completing this purchase, you agree to our Terms of
                   Service.
-                </p>
+                </p> */}
               </CardContent>
             </Card>
 
             {/* Cancellation Policy */}
-            <Card variant="outline">
+            {/* <Card variant="outline">
               <CardContent className="p-4">
                 <h4 className="font-medium mb-2">
                   {subscriptionBooking ? "Subscription Terms" : "Booking Terms"}
@@ -1368,7 +1448,7 @@ export default function BookingPage() {
                   )}
                 </ul>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>

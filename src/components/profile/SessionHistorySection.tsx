@@ -25,10 +25,10 @@ const ITEMS_PER_PAGE = 5; // Adjust this number as needed
 export function SessionHistorySection({ sessions, onReschedule }: SessionHistorySectionProps) {
   const isSessionTimeArrived = (session: any) => {
     if (!session?.startTime) return true; // If no startTime, assume it's available
-    
+
     const now = new Date();
     const sessionStartTime = new Date(session.startTime);
-    
+
     // Enable join if current time is past or equal to session start time
     return now >= sessionStartTime;
   };
@@ -145,10 +145,10 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                       <div className="text-sm text-slate-600">
                         {s.date
                           ? new Date(s.date).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
                           : "N/A"}
                       </div>
                       <div className="text-sm text-slate-500">
@@ -187,17 +187,16 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                         <div className="flex flex-col gap-2">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-black uppercase
-          ${
-            s.status === "scheduled"
-              ? "bg-blue-100 text-blue-700"
-              : s.status === "confirmed"
-              ? "bg-primary/10 text-primary"
-              : s.status === "completed"
-              ? "bg-success/10 text-success"
-              : s.status === "missed"
-              ? "bg-destructive/10 text-destructive"
-              : "bg-amber-100 text-amber-700"
-          }`}
+          ${s.status === "scheduled"
+                                ? "bg-blue-100 text-blue-700"
+                                : s.status === "confirmed"
+                                  ? "bg-primary/10 text-primary"
+                                  : s.status === "completed"
+                                    ? "bg-success/10 text-success"
+                                    : s.status === "missed"
+                                      ? "bg-destructive/10 text-destructive"
+                                      : "bg-amber-100 text-amber-700"
+                              }`}
                           >
                             {s.status}
                           </span>
@@ -208,16 +207,16 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                       {(s.status === "scheduled" ||
                         s.status === "pending" ||
                         s.status === "missed") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
-                          onClick={() => onReschedule(s)}
-                        >
-                          <CalendarDays className="h-4 w-4 mr-1" />
-                          Reschedule
-                        </Button>
-                      )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
+                            onClick={() => onReschedule(s)}
+                          >
+                            <CalendarDays className="h-4 w-4 mr-1" />
+                            Reschedule
+                          </Button>
+                        )}
                     </td>
                   </tr>
                 ))}
@@ -241,10 +240,10 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                       <p className="text-xs text-slate-500 mt-1">
                         {s.date
                           ? new Date(s.date).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
                           : "N/A"}
                       </p>
                       <p className="text-xs text-slate-500">{s.time || "—"}</p>
@@ -274,17 +273,16 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                       ) : (
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-black uppercase
-        ${
-          s.status === "scheduled"
-            ? "bg-blue-100 text-blue-700"
-            : s.status === "confirmed"
-            ? "bg-primary/10 text-primary"
-            : s.status === "completed"
-            ? "bg-success/10 text-success"
-            : s.status === "missed"
-            ? "bg-destructive/10 text-destructive"
-            : "bg-amber-100 text-amber-700"
-        }`}
+        ${s.status === "scheduled"
+                              ? "bg-blue-100 text-blue-700"
+                              : s.status === "confirmed"
+                                ? "bg-primary/10 text-primary"
+                                : s.status === "completed"
+                                  ? "bg-success/10 text-success"
+                                  : s.status === "missed"
+                                    ? "bg-destructive/10 text-destructive"
+                                    : "bg-amber-100 text-amber-700"
+                            }`}
                         >
                           {s.status}
                         </span>
@@ -311,16 +309,16 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                     {(s.status === "scheduled" ||
                       s.status === "pending" ||
                       s.status === "missed") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="font-bold border-primary text-primary hover:bg-primary hover:text-white w-full"
-                        onClick={() => onReschedule(s)}
-                      >
-                        <CalendarDays className="h-4 w-4 mr-1" />
-                        Reschedule
-                      </Button>
-                    )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="font-bold border-primary text-primary hover:bg-primary hover:text-white w-full"
+                          onClick={() => onReschedule(s)}
+                        >
+                          <CalendarDays className="h-4 w-4 mr-1" />
+                          Reschedule
+                        </Button>
+                      )}
                   </div>
                 </div>
               </Card>
@@ -355,8 +353,8 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                       currentPage <= 3
                         ? i + 1
                         : currentPage >= totalPages - 2
-                        ? totalPages - 4 + i
-                        : currentPage - 2 + i;
+                          ? totalPages - 4 + i
+                          : currentPage - 2 + i;
 
                     if (pageNum < 1 || pageNum > totalPages) return null;
 

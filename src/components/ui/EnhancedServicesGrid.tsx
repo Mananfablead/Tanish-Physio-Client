@@ -7,7 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Service {
   id: number | string;
@@ -33,6 +33,7 @@ export function EnhancedServicesGrid({
   services = [],
 }: EnhancedServicesGridProps) {
   const servicesToDisplay = services;
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -87,24 +88,10 @@ export function EnhancedServicesGrid({
   return (
     <div className="space-y-8 py-6">
       {/* Filters */}
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <div className="relative max-w-md w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search services..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-10 rounded-xl"
-            />
-          </div>
-        </div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
 
-        {/* Category Badges */}
-        <div className="flex flex-wrap gap-2">
+        {/* Categories */}
+        <div className="flex flex-wrap gap-3">
           {categories.map((category) => {
             const isActive = categoryFilter === category;
 
@@ -112,11 +99,10 @@ export function EnhancedServicesGrid({
               <Badge
                 key={category}
                 variant={isActive ? "default" : "outline"}
-                className={`cursor-pointer px-4 py-2 transition-all
-                  ${
-                    isActive
-                      ? "bg-primary text-white shadow-md"
-                      : "hover:bg-secondary"
+                className={`cursor-pointer px-4 py-2 rounded-full transition-all duration-200
+            ${isActive
+                    ? "bg-primary text-white shadow-md scale-105"
+                    : "hover:bg-secondary/60 hover:scale-105"
                   }`}
                 onClick={() => {
                   setCategoryFilter(category);
@@ -125,7 +111,7 @@ export function EnhancedServicesGrid({
               >
                 <span className="flex items-center gap-2">
                   {isActive && (
-                    <span className="h-2 w-2 rounded-full bg-white" />
+                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
                   )}
                   {category === "all"
                     ? "All"
@@ -135,7 +121,23 @@ export function EnhancedServicesGrid({
             );
           })}
         </div>
+
+        {/* Search */}
+        <div className="relative w-full lg:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search services..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="pl-10 rounded-full shadow-sm focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
       </div>
+
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -159,7 +161,7 @@ export function EnhancedServicesGrid({
                       )}`
                     }
                     alt={service.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   />
                 </div>
 
@@ -175,12 +177,60 @@ export function EnhancedServicesGrid({
 
                   <p className="text-slate-600">{service.description}</p>
 
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-xl border-primary text-primary hover:bg-primary hover:text-white font-bold"
-                  >
-                    Read More
-                  </Button>
+                  {/* Push button to bottom */}
+                  <div className="mt-auto flex flex-col sm:flex-row gap-3">
+
+                    <Button
+                      className="flex-1 rounded-xl font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-200"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const bookingData = {
+                          service: {
+                            id: service.id,
+                            name: service.title,
+                            price: service.details.price.replace("₹", "").split("-")[0],
+                            duration: service.details.sessionDuration,
+                          },
+                          fromServices: true,
+                          therapist: {
+                            id: `th-${Math.floor(Math.random() * 10000)}`,
+                            name: "Assigned Clinician",
+                            title: "Matched Specialist",
+                          },
+                          session: {
+                            type: "1-on-1",
+                            duration: service.details.sessionDuration,
+                            price: parseInt(service.details.price.replace("₹", "").split("-")[0]),
+                          },
+                          plan: {
+                            name: `${service.title} Plan`,
+                            price: parseInt(service.details.price.replace("₹", "").split("-")[0]),
+                            duration: service.details.sessionDuration,
+                          }
+                        };
+                        
+                        console.log("Booking Data:", bookingData);
+                        navigate("/booking", { state: bookingData });
+                      }}
+                    >
+                      Book Session
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="flex-1 rounded-xl border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200"
+                      asChild
+                    >
+                      <Link to={`/service/${service.id}`}>
+                        View Details
+                      </Link>
+                    </Button>
+
+                  </div>
+
+
                 </div>
               </div>
             </Link>
