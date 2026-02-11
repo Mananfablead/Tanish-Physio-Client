@@ -43,6 +43,7 @@ const ContactUsPage = lazy(() => import("./pages/ContactUsPage"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 const RecordedSessionsPage = lazy(() => import("./pages/RecordedSessionsPage"));
+const TestimonialsPage = lazy(() => import("./pages/TestimonialsPage"));
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
@@ -171,10 +172,11 @@ const App = () => (
 
                   {/* Support pages */}
                   <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/aboutUs" element={<AboutUsPage />} />
+                  <Route path="/about" element={<AboutUsPage />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/contact" element={<ContactUsPage />} />
                   <Route path="/services" element={<ServicesPage />} />
+                  <Route path="/testimonials" element={<TestimonialsPage />} />
                   <Route
                     path="/service/:slug"
                     element={<ServiceDetailPage />}

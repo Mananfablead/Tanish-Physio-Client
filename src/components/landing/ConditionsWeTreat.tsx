@@ -7,6 +7,14 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import Autoplay from "embla-carousel-autoplay";
 import { getIconComponent } from "./utils";
 import { useState } from "react";
@@ -57,6 +65,8 @@ import {
   Wrench,
   Plus,
   Minus,
+  ArrowRight,
+  X,
 } from "lucide-react";
 
 interface ConditionsWeTreatProps {
@@ -95,6 +105,9 @@ const ConditionalIconRenderer = ({
 };
 
 export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }: ConditionsWeTreatProps) => {
+  const [selectedCondition, setSelectedCondition] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   // Use passed props or fallback to local definitions
   const fadeInUpAnimation = fadeInUp || {
     initial: { opacity: 0, y: 20 },
@@ -154,6 +167,16 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
     
     return iconMap[iconName] || ClipboardList;
   });
+  
+  const handleConditionClick = (condition: any) => {
+    setSelectedCondition(condition);
+    setIsModalOpen(true);
+  };
+  
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedCondition(null);
+  };
 
   return (
     <section className="py-16 relative overflow-hidden border-y border-primary/10">
@@ -201,6 +224,7 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                       variants={fadeInUp}
                       whileHover={{ y: -8 }}
                       className="group cursor-pointer py-2"
+                      onClick={() => handleConditionClick(condition)}
                     >
                       <div className="bg-background rounded-2xl p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 hover:border-primary hover:shadow-xl">
                         {/* Icon / Image */}
@@ -230,6 +254,115 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
           </Carousel>
         </div>
       </div>
+      
+      {/* Condition Detail Modal */}
+ {/* Condition Detail Modal */}
+<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+  <DialogContent className="
+    w-[95vw]
+    max-w-2xl
+    max-h-[85vh]
+    overflow-hidden
+    mx-auto
+    p-0
+    rounded-2xl
+    border-border/50
+    bg-background/95
+    backdrop-blur-xl
+    shadow-2xl
+    flex
+    flex-col
+  ">
+    
+    {/* HEADER */}
+    <DialogHeader className="border-b border-border/30 px-4 sm:px-6 py-4">
+      <div className="flex justify-between items-center">
+        <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          {selectedCondition?.title}
+        </DialogTitle>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={closeModal}
+          className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+        >
+          
+        </Button>
+      </div>
+    </DialogHeader>
+
+    {/* SCROLLABLE BODY */}
+    <div className="overflow-y-auto px-4 sm:px-6 py-4">
+      <div className="space-y-6">
+        
+        {/* Main Content Area */}
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          
+          {/* Image */}
+          {selectedCondition?.image && (
+            <div className="flex-shrink-0 md:sticky md:top-4">
+              <div className="h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-40 lg:w-40 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shadow-lg border border-primary/10 mx-auto md:mx-0">
+                <img
+                  src={selectedCondition.image}
+                  alt={selectedCondition.title}
+                  className="h-full w-full object-contain p-3 sm:p-4 transition-transform hover:scale-105 duration-300"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {selectedCondition?.content && (
+              <div className="prose max-w-none">
+                <div className="
+                  bg-muted/30
+                  rounded-xl
+                  p-4 sm:p-5
+                  border border-border/20
+                  shadow-sm
+                  max-h-[45vh]
+                  overflow-y-auto
+                ">
+                  <p className="
+                    text-foreground
+                    text-base sm:text-lg
+                    leading-relaxed
+                    break-words
+                    whitespace-pre-wrap
+                  ">
+                    {selectedCondition.content}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Button */}
+        <div className="flex justify-center pt-2">
+          <Button 
+            size="lg" 
+            className="rounded-full px-8 sm:px-12 py-4 text-base sm:text-lg group w-full sm:w-auto h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            onClick={() => {
+              closeModal();
+              console.log("Book consultation clicked for:", selectedCondition?.title);
+            }}
+          >
+            <span className="flex items-center font-semibold">
+              Book Consultation
+              <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+            </span>
+          </Button>
+        </div>
+
+      </div>
+    </div>
+
+  </DialogContent>
+</Dialog>
+
     </section>
   );
 };
