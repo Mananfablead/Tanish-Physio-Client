@@ -101,7 +101,7 @@ export default function SubscriptionPlansPage() {
           </div>
 
           {/* View Toggle */}
-          <div className="flex justify-center mt-8">
+          {/* <div className="flex justify-center mt-8">
             <div className="inline-flex items-center bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border">
               <button
                 onClick={() => setViewMode('cards')}
@@ -116,7 +116,7 @@ export default function SubscriptionPlansPage() {
                 Compare Plans
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -133,7 +133,7 @@ export default function SubscriptionPlansPage() {
             </p>
           </div>
         ) : viewMode === 'cards' ? (
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-0">
             {loading ? (
               <div className="col-span-full flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -149,8 +149,8 @@ export default function SubscriptionPlansPage() {
                 const isActive = activePlanId === planId && !isSubscriptionExpired;
 
                 // Calculate discount percentage
-                const discountPercentage = plan.originalPrice 
-                  ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100) 
+                const discountPercentage = plan.originalPrice
+                  ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
                   : 0;
 
                 return (
@@ -161,14 +161,14 @@ export default function SubscriptionPlansPage() {
                     transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
                     className="relative"
                   >
-                    {plan.popular && (
+                    {/* {plan.popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                         <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-1 shadow-lg">
                           <Zap className="h-3 w-3 mr-1" />
                           Most Popular
                         </Badge>
                       </div>
-                    )}
+                    )} */}
 
                     <Card
                       onClick={() => {
@@ -182,7 +182,7 @@ export default function SubscriptionPlansPage() {
                       <div className={`absolute inset-0 bg-gradient-to-br ${plan.popular ? "from-primary/5 to-secondary/5" : "from-muted/20 to-background"} pointer-events-none`} />
 
                       {isActive && (
-                        <div className="absolute top-4 right-4 z-10">
+                        <div className="absolute top-0 right-4 z-10">
                           <Badge variant="success" className="bg-green-500/90 text-white border-green-500">
                             Active
                           </Badge>
@@ -196,16 +196,16 @@ export default function SubscriptionPlansPage() {
                         </div>
                       )}
 
-                      <CardHeader className="text-center flex-shrink-0 pt-8 pb-6 relative z-10">
+                      <CardHeader className="text-center flex-shrink-0 pt-4 pb-4 relative z-10">
                         <CardTitle className="text-2xl font-bold">
                           {plan.name}
                         </CardTitle>
                         <CardDescription className="text-base mt-2">
-                          {plan.duration}
+                          {plan.planId}
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="text-center space-y-6 flex-grow flex flex-col px-8 pb-8 relative z-10">
+                      <CardContent className="text-center space-y-6 flex-grow flex flex-col px-8 pb-4 relative z-10">
                         {/* PRICE SECTION */}
                         <div className="space-y-2">
                           {plan.originalPrice && (
@@ -231,7 +231,7 @@ export default function SubscriptionPlansPage() {
                         </div>
 
                         {/* SESSIONS */}
-                        <div className="py-3">
+                        <div className="py-0">
                           <p className="text-lg font-semibold text-primary">
                             {typeof plan.sessions === "number"
                               ? `Up to ${plan.sessions} sessions`
@@ -388,7 +388,7 @@ export default function SubscriptionPlansPage() {
                   <td className="p-4 font-medium">Duration</td>
                   {subscriptionPlans.map((plan) => (
                     <td key={`duration-${plan.planId || plan.id}`} className="p-4 text-center">
-                      {plan.duration}
+                      {plan.planId}
                     </td>
                   ))}
                 </tr>
@@ -515,7 +515,7 @@ export default function SubscriptionPlansPage() {
                 </DialogDescription>
               </DialogHeader>
             </div>
-            
+
             {selectedPlan && (
               <div className="p-6 space-y-6">
                 <div className="bg-gradient-to-br from-muted/50 to-background border rounded-2xl p-5">
@@ -546,11 +546,11 @@ export default function SubscriptionPlansPage() {
                       (p) => (p.planId || p.id) === selectedPlan
                     )?.sessions === "number"
                       ? `Up to ${subscriptionPlans.find(
-                          (p) => (p.planId || p.id) === selectedPlan
-                        )?.sessions} sessions`
+                        (p) => (p.planId || p.id) === selectedPlan
+                      )?.sessions} sessions`
                       : subscriptionPlans.find(
-                          (p) => (p.planId || p.id) === selectedPlan
-                        )?.sessions} sessions
+                        (p) => (p.planId || p.id) === selectedPlan
+                      )?.sessions} sessions
                   </p>
                 </div>
 
@@ -600,7 +600,7 @@ export default function SubscriptionPlansPage() {
                 </div>
               </div>
             )}
-            
+
             <DialogFooter className="p-6 pt-0">
               <Button
                 variant="outline"
@@ -616,7 +616,7 @@ export default function SubscriptionPlansPage() {
                     (p) => (p.planId || p.id) === selectedPlan
                   );
                   if (!plan) return;
-                  
+
                   setIsModalOpen(false);
                   navigate("/booking", {
                     state: {

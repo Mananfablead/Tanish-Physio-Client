@@ -217,7 +217,7 @@ export function RecordedSessionsSection({
                       </td> */}
 
                       {/* Status */}
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4 text-center font-medium uppercase">
                         <Badge
                           variant={
                             recording.recordingStatus === "completed"
@@ -304,7 +304,7 @@ export function RecordedSessionsSection({
           </Card>
         )}
       </div>
-      ;{/* MOBILE CARD VIEW */}
+      {/* MOBILE CARD VIEW */}
       <div className="md:hidden">
         {recordings.length > 0 ? (
           <div className="space-y-4">
@@ -440,7 +440,7 @@ export function RecordedSessionsSection({
           </Card>
         )}
       </div>
-      ;
+      
     </div>
-  );
+  )
 }
