@@ -131,7 +131,7 @@ export default function ProfilePage() {
   );
   
   const nextSession =
-    sessions?.find((session: any) => session.status === "live") || null;
+  sessions?.find((session: any) => session.status === "live") || null;
   
   const [sessionCompleted, setSessionCompleted] = useState<any[]>([]);
 
@@ -416,21 +416,24 @@ export default function ProfilePage() {
         upcomingSessions={filteredUpcomingSessions}
         sessionCompleted={sessionCompleted}
         onImageChange={handleImageChange}
+        liveSession={nextSession}
       />
 
       <div className="container -mt-16 pb-20 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Navigation */}
-          <SidebarNavigation
-            sections={sections}
-            selectedSection={selectedSection}
-            setSelectedSection={setSelectedSection}
-            isMobileMenuOpen={isMobileMenuOpen}
-            setIsMobileMenuOpen={setIsMobileMenuOpen}
-          />
+          <div className="lg:sticky lg:top-24">
+            <SidebarNavigation
+              sections={sections}
+              selectedSection={selectedSection}
+              setSelectedSection={setSelectedSection}
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
+          </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <div className="bg-slate-200/40 backdrop-blur p-3 rounded-2xl space-y-4 border border-slate-200 shadow-sm">
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">

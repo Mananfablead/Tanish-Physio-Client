@@ -26,18 +26,18 @@ export default function AboutUsPage() {
   if (about?.values && Array.isArray(about.values)) {
     // If it's already an array of strings
     cmsValues = about.values as string[];
-  } else if (about?.values && typeof about.values[0] === 'string') {
-    // If it's a string that represents an array, try to parse it
-    try {
-      const parsedValue = JSON.parse(about.values[0]);
-      if (Array.isArray(parsedValue)) {
-        cmsValues = parsedValue;
-      } else {
+    
+    // Check if the first element is a JSON string (incorrectly stored)
+    if (cmsValues.length === 1 && typeof cmsValues[0] === 'string') {
+      try {
+        const parsedValue = JSON.parse(cmsValues[0]);
+        if (Array.isArray(parsedValue)) {
+          cmsValues = parsedValue;
+        }
+      } catch {
+        // If parsing fails, use default values
         cmsValues = ["Compassion", "Excellence", "Accessibility", "Integrity", "Innovation"];
       }
-    } catch {
-      // If parsing fails, use default values
-      cmsValues = ["Compassion", "Excellence", "Accessibility", "Integrity", "Innovation"];
     }
   } else {
     cmsValues = ["Compassion", "Excellence", "Accessibility", "Integrity", "Innovation"];
@@ -233,29 +233,7 @@ export default function AboutUsPage() {
           </div>
         </div>
         
-        {/* Services Section */}
-        <div className="mb-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-foreground">Our Services</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive physiotherapy services designed to address various conditions and promote overall wellness
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {services.map((service, index) => (
-              <div 
-                key={index}
-                className="bg-card rounded-lg border p-4 flex items-center gap-3 hover:shadow-sm transition-shadow duration-300"
-              >
-                <div className="bg-primary/10 p-2 rounded-lg">
-                  <service.icon className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-foreground font-medium">{service.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+  
       </div>
     </div>
     </Layout>

@@ -285,6 +285,14 @@ export default function SchedulePage() {
   }, [selectedDate, availability]);
 
   const [sessions, setSessions] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const sessionsPerPage = 10;
+
+  const currentSessions = useMemo(() => {
+    const startIndex = (currentPage - 1) * sessionsPerPage;
+    const endIndex = startIndex + sessionsPerPage;
+    return sessions.slice(startIndex, endIndex);
+  }, [sessions, currentPage]);
   const dispatch = useAppDispatch();
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
@@ -404,7 +412,7 @@ export default function SchedulePage() {
 
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Left Column - Calendar */}
             <div className="lg:col-span-2">
               <div className="sticky top-6">
@@ -558,7 +566,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Right Column - Sessions List */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <Card className="bg-white/80 backdrop-blur rounded-2xl border border-primary/20 shadow-sm overflow-hidden">
                 <CardHeader>
                   <h2 className="font-black text-slate-900 text-lg">
@@ -572,7 +580,34 @@ export default function SchedulePage() {
                 <CardContent>
                   {sessions.length > 0 ? (
                     <div className="space-y-4">
-                      {sessions.map((session, index) => (
+                      {/* Pagination Controls */}
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-slate-600">
+                          Showing {Math.min((currentPage - 1) * sessionsPerPage + 1, sessions.length)} - {Math.min(currentPage * sessionsPerPage, sessions.length)} of {sessions.length} sessions
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-sm text-slate-600">
+                            Page {currentPage} of {Math.ceil(sessions.length / sessionsPerPage)}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(sessions.length / sessionsPerPage)))}
+                            disabled={currentPage === Math.ceil(sessions.length / sessionsPerPage)}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                      {currentSessions.map((session, index) => (
                         <motion.div
                           key={session.id}
                           className="border rounded-xl p-5 bg-white hover:shadow-md transition-all"
@@ -636,6 +671,30 @@ export default function SchedulePage() {
 
                         </motion.div>
                       ))}
+                      {/* Pagination Controls */}
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-sm text-slate-600">
+                            Page {currentPage} of {Math.ceil(sessions.length / sessionsPerPage)}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(sessions.length / sessionsPerPage)))}
+                            disabled={currentPage === Math.ceil(sessions.length / sessionsPerPage)}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     /* EMPTY STATE */

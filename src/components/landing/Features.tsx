@@ -13,6 +13,7 @@ interface FeaturesProps {
 }
 
 export const Features = ({ cmsWhyUs, fadeInUp, CountUp, setHoveredStat, hoveredStat }: FeaturesProps) => {
+  console.log(cmsWhyUs);
   return (
     <section className="py-16 relative overflow-hidden border-y border-white/10" style={{ backgroundColor: '#2d8e8d' }}>
       <div className="absolute inset-0 pointer-events-none">
@@ -83,17 +84,33 @@ export const Features = ({ cmsWhyUs, fadeInUp, CountUp, setHoveredStat, hoveredS
               { label: "Sessions", value: "50K+", description: "Virtual consultations completed", _id: "3" },
               { label: "Avg Rating", value: "4.9", description: "Based on patient reviews", _id: "4", offset: "mt-12" }
             ]).map((stat: any, i: number) => (
-              <Card 
-                key={stat._id || i} 
-                className={`p-8 mt-2 text-center border-2 border-primary/10 hover:border-primary/30 transition-all duration-500 hover:scale-105 shadow-xl bg-white/90 group relative overflow-hidden ${stat.offset || ""}`}
+              <motion.div
+                key={stat._id || i}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={fadeInUp}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className={`h-full ${stat.offset || ""}`}
               >
+                <Card 
+                  className="p-8 text-center border-2 border-primary/10 hover:border-primary/30 transition-all duration-500 hover:scale-105 shadow-xl bg-white/90 group relative overflow-hidden h-full"
+                >
                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
                 <p className="text-4xl lg:text-5xl font-bold text-primary mb-2 tracking-tight relative z-10">
-                  {stat.value}
+                  {CountUp && typeof CountUp === 'function' && stat.value ? (
+                    <CountUp 
+                      value={stat.value}
+                      duration={2.5}
+                    />
+                  ) : (
+                    stat.value || '0'
+                  )}
                 </p>
                 <p className="text-lg font-semibold text-slate-900 uppercase tracking-wider relative z-10">{stat.label}</p>
                 <p className="text-md text-muted-foreground mt-2 relative z-10">{stat.description}</p>
               </Card>
+              </motion.div>
             ))}
           </motion.div>
         </div>
