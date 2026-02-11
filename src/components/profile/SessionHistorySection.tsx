@@ -13,6 +13,15 @@ interface SessionHistorySectionProps {
 const ITEMS_PER_PAGE = 5; // Adjust this number as needed
 
 export function SessionHistorySection({ sessions, onReschedule }: SessionHistorySectionProps) {
+  const isSessionTimeArrived = (session: any) => {
+    if (!session?.startTime) return true; // If no startTime, assume it's available
+    
+    const now = new Date();
+    const sessionStartTime = new Date(session.startTime);
+    
+    // Enable join if current time is past or equal to session start time
+    return now >= sessionStartTime;
+  };
   const [currentPage, setCurrentPage] = useState(1);
   
   const totalPages = Math.ceil(sessions?.length / ITEMS_PER_PAGE || 0);
@@ -126,15 +135,26 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {s.status === "live" ? (
-                        <Link
-                          to={`/video-call?sessionId=${s._id}`}
-                          className="inline-flex items-center justify-center
-                bg-green-600 hover:bg-green-700
-                text-white font-bold text-sm
-                px-4 py-1.5 rounded-full whitespace-nowrap flex-shrink-0"
-                        >
-                          Join Call
-                        </Link>
+                        isSessionTimeArrived(s) ? (
+                          <Link
+                            to={`/video-call?sessionId=${s._id}`}
+                            className="inline-flex items-center justify-center
+                  bg-green-600 hover:bg-green-700
+                  text-white font-bold text-sm
+                  px-4 py-1.5 rounded-full whitespace-nowrap flex-shrink-0"
+                          >
+                            Join Call
+                          </Link>
+                        ) : (
+                          <button
+                            className="inline-flex items-center justify-center
+                  bg-gray-400 text-white font-bold text-sm
+                  px-4 py-1.5 rounded-full whitespace-nowrap flex-shrink-0 cursor-not-allowed"
+                            disabled
+                          >
+                            Starts in {Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                          </button>
+                        )
                       ) : (
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-black uppercase
@@ -200,15 +220,26 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                     </div>
                     <div>
                       {s.status === "live" ? (
-                        <Link
-                          to={`/video-call?sessionId=${s._id}`}
-                          className="inline-flex items-center justify-center
-                bg-green-600 hover:bg-green-700
-                text-white font-bold text-xs
-                px-3 py-1 rounded-full whitespace-nowrap"
-                        >
-                          Join Call
-                        </Link>
+                        isSessionTimeArrived(s) ? (
+                          <Link
+                            to={`/video-call?sessionId=${s._id}`}
+                            className="inline-flex items-center justify-center
+                  bg-green-600 hover:bg-green-700
+                  text-white font-bold text-xs
+                  px-3 py-1 rounded-full whitespace-nowrap"
+                          >
+                            Join Call
+                          </Link>
+                        ) : (
+                          <button
+                            className="inline-flex items-center justify-center
+                  bg-gray-400 text-white font-bold text-xs
+                  px-3 py-1 rounded-full whitespace-nowrap cursor-not-allowed"
+                            disabled
+                          >
+                            Starts in {Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                          </button>
+                        )
                       ) : (
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-black uppercase

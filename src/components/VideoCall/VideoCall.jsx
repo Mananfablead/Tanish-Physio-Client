@@ -211,6 +211,7 @@ const VideoCall = ({
   const [showParticipants, setShowParticipants] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [apiResponse, setApiResponse] = useState(null); // Store API response for debugging
   const [callStatus, setCallStatus] = useState("connecting"); // connecting, connected, ringing, missed, ended
   const [incomingCall, setIncomingCall] = useState(false);
   const [callStartTime, setCallStartTime] = useState(null);
@@ -225,10 +226,119 @@ const VideoCall = ({
   const [therapistPresent, setTherapistPresent] = useState(false);
   const [waitingForTherapist, setWaitingForTherapist] = useState(false); // Add missing waitingForTherapist state
   const [userRole, setUserRole] = useState("patient"); // Add missing userRole state
+  
+  // Get user role from URL params or session storage
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlUserRole = urlParams.get('userRole');
+    if (urlUserRole) {
+      setUserRole(urlUserRole);
+    } else if (user && user.role) {
+      setUserRole(user.role);
+    }
+  }, [user]);
   const [joinedCall, setJoinedCall] = useState(false); // Add missing joinedCall state
   const [localTherapistName, setLocalTherapistName] = useState(
     therapistName || "Clinician"
   ); // Add missing therapistName state
+
+  // Fetch participants data from API when participants panel is shown
+  useEffect(() => {
+    const fetchParticipantsData = async () => {
+      if (showParticipants && sessionId) {
+        try {
+          console.log("Fetching participants data for session:", sessionId);
+          const response = await videoCallApi.getSessionParticipants(sessionId);
+          
+          if (response.success && response.data) {
+            console.log("Participants API response:", response.data);
+            setApiResponse(response); // Store full API response for display
+            
+            // Handle different API response structures
+            let participantsData = [];
+            
+            // Check if response.data is an array
+            if (Array.isArray(response.data)) {
+              participantsData = response.data;
+            } 
+            // Check if response.data has a participants array
+            else if (response.data.participants && Array.isArray(response.data.participants)) {
+              participantsData = response.data.participants;
+            }
+            // Check if response.data is an object with participant data
+            else if (typeof response.data === 'object' && response.data !== null) {
+              participantsData = [response.data];
+            }
+            
+            console.log("Processed participants data:", participantsData);
+            
+            // Transform API data to match expected participant structure
+            const apiParticipants = participantsData.map(participant => ({
+              userId: participant.userId || participant._id,
+              socketId: participant.socketId || `socket-${participant.userId || participant._id}`,
+              name: participant.name || 
+                    (participant.firstName && participant.lastName 
+                      ? `${participant.firstName} ${participant.lastName}`
+                      : null) || 
+                    participant.displayName || 
+                    `User ${participant.userId?.substring(0, 5) || 'Unknown'}`,
+              firstName: participant.firstName,
+              lastName: participant.lastName,
+              displayName: participant.displayName,
+              role: participant.role || 'user',
+              isTherapist: participant.role === 'therapist' || participant.role === 'admin',
+              isUser: participant.role === 'user' || participant.role === 'patient',
+              isSelf: participant.userId === user?.id, // Assuming user.id matches participant.userId
+              joinedAt: participant.joinedAt || new Date().toISOString()
+            }));
+            
+            // Merge with existing participants (preserve WebRTC participants)
+            setParticipants(prevParticipants => {
+              // Keep existing WebRTC participants
+              const existingWebRTC = prevParticipants.filter(p => p.socketId && !p.socketId.startsWith('socket-'));
+              
+              // Add or update API participants
+              const updatedApiParticipants = apiParticipants.map(apiParticipant => {
+                const existing = existingWebRTC.find(p => p.userId === apiParticipant.userId);
+                if (existing) {
+                  // Update existing participant with API data
+                  return {
+                    ...existing,
+                    ...apiParticipant,
+                    // Preserve WebRTC specific properties
+                    socketId: existing.socketId, // Keep WebRTC socketId
+                    isSelf: existing.isSelf
+                  };
+                }
+                return apiParticipant;
+              });
+              
+              // Combine WebRTC participants with API participants
+              const combined = [...existingWebRTC];
+              updatedApiParticipants.forEach(apiParticipant => {
+                if (!combined.some(p => p.userId === apiParticipant.userId)) {
+                  combined.push(apiParticipant);
+                }
+              });
+              
+              console.log("Combined participants:", combined);
+              return combined;
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching participants data:", error);
+          setApiResponse({
+            success: false,
+            error: error.message,
+            data: null
+          });
+          // Don't show error to user, just log it
+        }
+      }
+    };
+
+    fetchParticipantsData();
+  }, [showParticipants, sessionId, user?.id]);
 
   // Debug effect to monitor participants changes
   useEffect(() => {
@@ -477,15 +587,107 @@ const VideoCall = ({
         }
       };
 
-      socket.on("error", handleError);
+      const handleJoinedVideoRoom = (data) => {
+        console.log("Client: Successfully joined video room:", data);
+        setJoinedCall(true);
+        setCallStatus("connected");
+        setCallError(null); // Clear any previous errors
+
+        // Add current user to participants list
+        if (user && socket) {
+          const currentUser = {
+            userId: user.id || user.userId || socket.user?.userId,
+            socketId: socket.id,
+            name:
+              user.name ||
+              (user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : "You"),
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role || socket.user?.role || "patient",
+            isSelf: true,
+            isTherapist:
+              user.role === "therapist" ||
+              user.role === "admin" ||
+              socket.user?.role === "therapist" ||
+              socket.user?.role === "admin",
+            joinedAt: new Date().toISOString(),
+          };
+
+          setParticipants((prev) => {
+            // Check if self participant already exists
+            const selfExists = prev.some((p) => p.isSelf);
+            if (selfExists) {
+              console.log("✅ Self participant already exists");
+              return prev;
+            }
+            console.log("✅ Adding self participant:", currentUser);
+            return [...prev, currentUser];
+          });
+        }
+      };
+
+      const handleSocketError = (data) => {
+        console.error("Video call error:", data);
+        
+        // Handle specific error messages
+        if (data.message && data.message.includes("Patients must join through the waiting room")) {
+          // Check if this is an approved patient trying to join directly
+          const urlParams = new URLSearchParams(window.location.search);
+          const isApproved = urlParams.get('approved') === 'true';
+          const userRole = urlParams.get('userRole') || sessionStorage.getItem('userRole');
+          
+          if (isApproved && userRole === 'patient') {
+            // This is likely a timing issue where the backend hasn't processed the approval yet
+            // Retry the join after a brief delay
+            console.log("Approved patient encountering waiting room error, retrying...");
+            setTimeout(() => {
+              if (socket) {
+                socket.emit('join-video-room', {
+                  sessionId: roomId
+                });
+              }
+            }, 1000);
+            return; // Don't treat this as a final error
+          }
+        }
+        
+        // Handle specific session not active error
+        if (
+          data.message &&
+          data.message.includes("Session is not active at this time")
+        ) {
+          setCallError(
+            "⏰ Session Not Active\n\nThis session is not currently active. Please check:\n• Your scheduled appointment time\n• That you're joining at the correct time\n\nIf you believe this is an error, please contact support."
+          );
+          // Set appropriate call status for inactive session
+          setCallStatus("inactive");
+        } else if (
+          data.message &&
+          data.message.includes("Unauthorized to join this session")
+        ) {
+          setCallError(
+            "🔒 Access Denied\n\nYou are not authorized to join this session.\n\nIf you believe this is an error, please contact your administrator."
+          );
+          setCallStatus("unauthorized");
+        } else {
+          setCallError(data.message || "An error occurred during the video call");
+        }
+      };
+
+      socket.on("error", handleSocketError);
       socket.on("joined-call", handleJoinedCall);
+      socket.on("joined-video-room", handleJoinedVideoRoom);
 
       return () => {
-        socket.off("error", handleError);
+        socket.off("error", handleSocketError);
         socket.off("joined-call", handleJoinedCall);
+        socket.off("joined-video-room", handleJoinedVideoRoom);
       };
     }
-  }, [socket, handleError, user]);
+  }, [socket, roomId, user]);
 
   // Timer for call duration
   useEffect(() => {
@@ -1997,11 +2199,26 @@ const VideoCall = ({
                 variant="ghost"
                 size="icon"
                 className="text-slate-400 hover:text-white"
-                onClick={() => setShowParticipants(false)}
+                onClick={() => {
+                  setShowParticipants(false);
+                  setApiResponse(null); // Clear API response when closing
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
+            
+            {/* API Response Display */}
+            {/* <div className="p-4 bg-slate-800/50 border-b border-slate-700">
+              <h4 className="text-slate-300 font-medium text-sm mb-2">API Response:</h4>
+              <pre className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded overflow-x-auto">
+                {apiResponse 
+                  ? JSON.stringify(apiResponse, null, 2)
+                  : "Loading..."
+                }
+              </pre>
+            </div> */}
+            
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {participants && participants.length > 0 ? (
                 participants.map((participant, index) => (
@@ -2011,11 +2228,15 @@ const VideoCall = ({
                   >
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
                       {(participant.name &&
+                        participant.name !== 'Clinician' &&
+                        participant.name !== 'User Unknown' &&
                         participant.name.charAt(0).toUpperCase()) ||
                         (participant.firstName &&
                           participant.firstName.charAt(0).toUpperCase()) ||
                         (participant.displayName &&
                           participant.displayName.charAt(0).toUpperCase()) ||
+                        (participant.email &&
+                          participant.email.charAt(0).toUpperCase()) ||
                         (participant.role &&
                           participant.role.charAt(0).toUpperCase()) ||
                         "U"}
@@ -2027,8 +2248,9 @@ const VideoCall = ({
                             ? participant.name
                             : (participant.firstName && participant.lastName
                               ? `${participant.firstName} ${participant.lastName}`
-                              : null) ||
+                              : (participant.firstName ? participant.firstName : null)) ||
                             participant.displayName ||
+                            participant.email ||
                             `User ${participant.userId?.substring(0, 5) || participant.socketId?.substring(0, 5) || "Unknown"}`}
                         </p>
                         {participant.isSelf && (

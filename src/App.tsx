@@ -33,6 +33,7 @@ const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ServicesPage = lazy(() => import("./pages/ServicesPage"));
 const VideoCallPage = lazy(() => import("./pages/VideoCallPage"));
+const WaitingRoomPage = lazy(() => import("./pages/WaitingRoomPage"));
 const GroupVideoCallPage = lazy(() => import("./pages/GroupVideoCallPage"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
@@ -146,6 +147,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <VideoCallPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/waiting-room"
+                    element={
+                      <ProtectedRoute>
+                        <WaitingRoomPage />
                       </ProtectedRoute>
                     }
                   />

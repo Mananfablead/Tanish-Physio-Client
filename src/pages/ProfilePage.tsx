@@ -117,9 +117,19 @@ export default function ProfilePage() {
   // const activePlan = user?.subscriptionData;
 
   
-  // Set state based on Redux data
+  // Set state based on Redux data - separate sessions by current status
+  // Filtered upcoming sessions: pending and scheduled sessions
+  const filteredUpcomingSessions = sessions.filter((session: any) => 
+    (session.status === "pending" || session.status === "scheduled")
+  );
+  
+  // Live sessions: currently live sessions
+  const liveSessions = sessions.filter((session: any) => 
+    session.status === "live"
+  );
+  
   const nextSession =
-  upcomingSessions?.find((session: any) => session.status === "live") || null;
+    sessions?.find((session: any) => session.status === "live") || null;
   
   const [sessionCompleted, setSessionCompleted] = useState<any[]>([]);
   
@@ -188,8 +198,7 @@ export default function ProfilePage() {
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
     dispatch(fetchUserPayments());
-    dispatch(fetchUpcomingSessions());
-    dispatch(fetchAllSessions());
+    dispatch(fetchAllSessions()); // Fetch all sessions to show upcoming and live sessions
     dispatch(getAllBookingsAsync());
     dispatch(fetchProfile());
   }, []);
@@ -373,7 +382,7 @@ export default function ProfilePage() {
       <ProfileHeader
         user={user}
         activePlan={activePlan}
-        upcomingSessions={upcomingSessions}
+        upcomingSessions={filteredUpcomingSessions}
         sessionCompleted={sessionCompleted}
         onImageChange={handleImageChange}
       />
@@ -400,7 +409,8 @@ export default function ProfilePage() {
 
                 {selectedSection === "upcoming" && (
                   <UpcomingSessionsSection 
-                    upcomingSessions={upcomingSessions} 
+                    upcomingSessions={filteredUpcomingSessions} 
+                    liveSessions={liveSessions}
                     nextSession={nextSession} 
                   />
                 )}

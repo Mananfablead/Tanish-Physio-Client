@@ -6,10 +6,11 @@ import { Link } from "react-router-dom";
 
 interface UpcomingSessionsSectionProps {
   upcomingSessions: any[];
+  liveSessions: any[];
   nextSession: any;
 }
 
-export function UpcomingSessionsSection({ upcomingSessions, nextSession }: UpcomingSessionsSectionProps) {
+export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSession }: UpcomingSessionsSectionProps) {
   const formatSessionDateTime = (startTime?: string, endTime?: string) => {
     if (!startTime) return "-";
 
@@ -36,7 +37,17 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
         })
       : "-";
 
-    return `${dateStr} - ${startTimeStr} to ${endTimeStr}`;
+    return `${dateStr} - ${startTimeStr} `;
+  };
+
+  const isSessionTimeArrived = (session: any) => {
+    if (!session?.startTime) return false;
+    
+    const now = new Date();
+    const sessionStartTime = new Date(session.startTime);
+    
+    // Enable join if current time is past or equal to session start time
+    return now >= sessionStartTime;
   };
 
   const InfoBlock = ({
@@ -70,11 +81,14 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
     </div>
   );
 
+  // Use the liveSessions and upcomingSessions passed from parent
+  // upcomingSessions already contains pending and scheduled sessions
+  // liveSessions already contains live sessions
+
   return (
     <>
-      {/* Live Sessions Section - Show only sessions with "live" status */}
-      {upcomingSessions.filter((session) => session.status === "live").length >
-        0 && (
+      {/* Live Sessions Section - Show sessions with "live" status */}
+      {liveSessions.length > 0 && (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -83,41 +97,44 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
               </h3>
             </div>
             <div className="space-y-4">
-              {upcomingSessions
-                .filter((session) => session.status === "live")
-                .map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
-                  >
-                    {/* Therapist + Session Info */}
-                    <div className="flex-1">
-                      <h4 className="font-black text-slate-900">
-                        {session?.subscriptionId?.planName || "Session"}
-                      </h4>
-                      <p className="text-sm text-slate-500 font-medium">
-                        {formatSessionDateTime(
-                          session?.startTime,
-                          session?.endTime
-                        )}
-                      </p>
-                    </div>
+              {liveSessions.map((session) => (
+                <div
+                  key={session._id || session.id}
+                  className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
+                >
+                  {/* Therapist + Session Info */}
+                  <div className="flex-1">
+                    <h4 className="font-black text-slate-900">
+                      {session?.subscriptionId?.planName || "Session"}
+                    </h4>
+                    <p className="text-sm text-slate-500 font-medium">
+                      {formatSessionDateTime(
+                        session?.startTime,
+                        session?.endTime
+                      )}
+                    </p>
+                  </div>
 
-                    {/* Status */}
+                  {/* Status */}
+                  <div className="flex flex-col items-end gap-2">
                     <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
                       {session.status}
                     </span>
+                    {session.status === "live" && !isSessionTimeArrived(session) && (
+                      <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                        Starts in {Math.ceil((new Date(session.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                      </span>
+                    )}
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           </div>
         </Card>
       )}
 
-      {/* Upcoming Sessions Section - Show sessions that are not "live" or "completed" */}
-      {upcomingSessions.filter(
-        (session) => session.status !== "live" && session.status !== "completed"
-      ).length > 0 && (
+      {/* Upcoming Sessions Section - Show pending and scheduled sessions */}
+      {upcomingSessions.length > 0 && (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -126,45 +143,49 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
               </h3>
             </div>
             <div className="space-y-4">
-              {upcomingSessions
-                .filter(
-                  (session) =>
-                    session.status !== "live" && session.status !== "completed"
-                )
-                .map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
-                  >
-                    {/* Therapist + Session Info */}
-                    <div className="flex-1">
-                      <h4 className="font-black text-slate-900">
-                        {session?.subscriptionId?.planName || "Session"}
-                      </h4>
-                      <p className="text-sm text-slate-500 font-medium">
-                        {formatSessionDateTime(
-                          session?.startTime,
-                          session?.endTime
-                        )}
-                      </p>
-                    </div>
+              {upcomingSessions.map((session) => (
+                <div
+                  key={session._id || session.id}
+                  className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
+                >
+                  {/* Therapist + Session Info */}
+                  <div className="flex-1">
+                    <h4 className="font-black text-slate-900">
+                      {session?.subscriptionId?.planName || "Session"}
+                    </h4>
+                    <p className="text-sm text-slate-500 font-medium">
+                      {formatSessionDateTime(
+                        session?.startTime,
+                        session?.endTime
+                      )}
+                    </p>
+                  </div>
 
-                    {/* Status */}
+                  {/* Status and Timing */}
+                  <div className="flex flex-col items-end gap-2">
                     <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
                       {session.status}
                     </span>
+                    {session.timingStatus === "join_now" && !isSessionTimeArrived(session) && (
+                      <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                        Starts in {Math.ceil((new Date(session.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                      </span>
+                    )}
+                    {session.timingStatus === "join_soon" && (
+                      <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                        Join soon
+                      </span>
+                    )}
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           </div>
         </Card>
       )}
 
       {/* Next Session Detail View - Only show if there's a next session and no other upcoming sessions */}
-      {nextSession &&
-      upcomingSessions.filter(
-        (session) => session.status !== "live" && session.status !== "completed"
-      ).length === 0 ? (
+      {nextSession && upcomingSessions.length === 0 ? (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -228,7 +249,7 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
             <div className="flex gap-3 w-full pt-6 border-t border-slate-50">
               <Link
                 to={
-                  nextSession._id
+                  nextSession._id && isSessionTimeArrived(nextSession)
                     ? `/video-call?sessionId=${nextSession._id}`
                     : "#"
                 }
@@ -236,21 +257,28 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
               >
                 <Button
                   className={`w-full h-11 rounded-xl ${
-                    nextSession.timingStatus === "join_now"
+                    // Enabled states
+                    (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") && 
+                    isSessionTimeArrived(nextSession)
                       ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
-                      : nextSession.timingStatus === "join_soon"
+                      : (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") && 
+                        !isSessionTimeArrived(nextSession)
                       ? "bg-secondary hover:bg-secondary/90 font-bold"
                       : "bg-gray-300 font-bold"
                   }`}
                   disabled={
-                    (nextSession.timingStatus !== "join_now" &&
-                      nextSession.timingStatus !== "join_soon") ||
-                    !nextSession._id
+                    !nextSession._id ||
+                    nextSession.timingStatus === "normal" ||
+                    (nextSession.status === "live" && !isSessionTimeArrived(nextSession))
                   }
                 >
                   <Play className="h-5 w-5 mr-2 fill-white" />
-                  {nextSession.timingStatus === "join_now"
-                    ? "Join Session"
+                  {nextSession.status === "live" && !isSessionTimeArrived(nextSession)
+                    ? `Starts in ${Math.ceil((new Date(nextSession.startTime).getTime() - Date.now()) / (1000 * 60))} min`
+                    : nextSession.timingStatus === "join_now"
+                    ? isSessionTimeArrived(nextSession)
+                      ? "Join Session"
+                      : `Join in ${Math.ceil((new Date(nextSession.startTime).getTime() - Date.now()) / (1000 * 60))} min`
                     : nextSession.timingStatus === "join_soon"
                     ? "Join Soon"
                     : "Join Session"}
@@ -260,10 +288,7 @@ export function UpcomingSessionsSection({ upcomingSessions, nextSession }: Upcom
           </div>
         </Card>
       ) : (
-        upcomingSessions.filter(
-          (session) =>
-            session.status !== "live" && session.status !== "completed"
-        ).length === 0 && (
+        liveSessions.length === 0 && upcomingSessions.length === 0 && (
           <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
