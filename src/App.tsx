@@ -12,6 +12,7 @@ import { store, persistor } from './store';
 import ScrollToTop from "@/components/ScrollToTop";
 
 // Lazy load pages for better performance and loading states
+const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const QuestionnairePage = lazy(() => import("./pages/QuestionnairePage"));
 const TherapistDiscoveryPage = lazy(
@@ -61,6 +62,7 @@ const App = () => (
               <Suspense fallback={<LoadingScreen />}>
                 <ScrollToTop />
                 <Routes>
+                  {/* <Route path="/" element={<ComingSoonPage />} /> */}
                   <Route path="/" element={<LandingPage />} />
 
                   <Route
@@ -79,7 +81,7 @@ const App = () => (
                     path="/therapist/:id"
                     element={
                       // <ProtectedRoute>
-                        <TherapistProfilePage />
+                      <TherapistProfilePage />
                       // </ProtectedRoute>
                     }
                   />
@@ -176,7 +178,7 @@ const App = () => (
                   <Route path="/services" element={<ServicesPage />} />
                   <Route path="/testimonials" element={<TestimonialsPage />} />
                   <Route
-                    path="/service/:serviceId"
+                    path="/service/:slug"
                     element={<ServiceDetailPage />}
                   />
                   <Route

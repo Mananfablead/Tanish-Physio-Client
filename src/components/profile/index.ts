@@ -7,3 +7,4 @@ export * from './BookingsSection';
 export * from './SubscriptionHistorySection';
 export * from './PersonalInfoSection';
 export * from './RescheduleModal';
+export * from "./GoogleMeetDisplay";

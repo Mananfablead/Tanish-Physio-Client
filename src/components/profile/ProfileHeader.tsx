@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Camera, Mail, Phone, Activity, Calendar, Clock } from "lucide-react";
+import { Camera, Mail, Phone, Activity, Calendar, Clock, Video, Play } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 interface ProfileHeaderProps {
   user: any;
@@ -9,6 +10,7 @@ interface ProfileHeaderProps {
   upcomingSessions: any[];
   sessionCompleted: any[];
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  liveSession?: any; // Add live session prop
 }
 
 export function ProfileHeader({
@@ -16,7 +18,8 @@ export function ProfileHeader({
   activePlan,
   upcomingSessions,
   sessionCompleted,
-  onImageChange
+  onImageChange,
+  liveSession
 }: ProfileHeaderProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -32,7 +35,7 @@ export function ProfileHeader({
     // ✅ INSTANT PREVIEW
     const localPreview = URL.createObjectURL(file);
     setPreviewImage(localPreview);
-    
+
     onImageChange(e);
   };
 
@@ -46,6 +49,7 @@ export function ProfileHeader({
       </div>
 
       <div className="container relative z-10">
+        
         <div className="flex flex-col lg:flex-row items-center lg:items-end gap-8">
           <div className="relative group">
             <div className="absolute -inset-1.5 bg-gradient-to-tr from-primary via-accent to-primary rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-500 animate-gradient-xy" />
@@ -85,6 +89,8 @@ export function ProfileHeader({
                 <h1 className="text-5xl font-black text-white tracking-tight">
                   {user?.name}
                 </h1>
+                {/* Live Session Join Button */}
+
               </div>
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-white font-bold">
                 <p className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
@@ -96,7 +102,15 @@ export function ProfileHeader({
               </div>
             </div>
           </div>
-
+         {liveSession && (
+  <Link
+    to={`/video-call?sessionId=${liveSession._id}`}
+    className="ml-4 bg-white hover:bg-white/90 text-primary font-bold px-6 py-3 rounded-full flex items-center gap-2 shadow-lg"
+  >
+    <Play className="h-5 w-5" />
+    Join Now
+  </Link>
+)}
           {/* Stats Section */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full lg:w-auto">
             {[

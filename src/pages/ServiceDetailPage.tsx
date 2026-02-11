@@ -5,9 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee, ChevronLeft } from "lucide-react";
 import { Service } from "@/types/service";
-import { fetchServiceById } from "@/store/slices/serviceSlice";
+import {
+  fetchServiceById,
+  fetchServiceBySlug,
+} from "@/store/slices/serviceSlice";
 import { useEffect, useState, useRef } from "react";
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import type { AppDispatch } from "@/store";
 import { useAuth } from "@/context/AuthContext";
@@ -52,14 +55,16 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
   const allImages = [
     service.media?.heroImage,
     service.media?.aboutImage,
-    ...(service.details.features || []) // Assuming features might contain additional images
-  ].filter(img => img); // Remove any undefined/null values
+    ...(service.details.features || []), // Assuming features might contain additional images
+  ].filter((img) => img); // Remove any undefined/null values
 
   // If no images from features, just use hero and about images
-  const validImages = allImages.length > 0 ? allImages : [
-    service.media?.heroImage,
-    service.media?.aboutImage
-  ].filter(img => img);
+  const validImages =
+    allImages.length > 0
+      ? allImages
+      : [service.media?.heroImage, service.media?.aboutImage].filter(
+          (img) => img
+        );
 
   const hasNextImage = currentImageIndex < validImages.length - 1;
   const hasPrevImage = currentImageIndex > 0;
@@ -68,7 +73,7 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
   useEffect(() => {
     if (validImages.length > 1 && isAutoSliding) {
       autoSlideInterval.current = setInterval(() => {
-        setCurrentImageIndex(prev => (prev + 1) % validImages.length);
+        setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
       }, 3000); // 3 seconds interval
     }
 
@@ -81,12 +86,14 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
 
   const nextImage = () => {
     setIsAutoSliding(false); // Pause auto slide on manual navigation
-    setCurrentImageIndex(prev => (prev + 1) % validImages.length);
+    setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
   };
 
   const prevImage = () => {
     setIsAutoSliding(false); // Pause auto slide on manual navigation
-    setCurrentImageIndex(prev => (prev - 1 + validImages.length) % validImages.length);
+    setCurrentImageIndex(
+      (prev) => (prev - 1 + validImages.length) % validImages.length
+    );
   };
 
   const goToImage = (index: number) => {
@@ -129,14 +136,15 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
               >
                 <IndianRupee className="h-4 w-4" />
                 {(() => {
-                  const priceRange = service.details.priceRange || service.details.price;
+                  const priceRange =
+                    service.details.priceRange || service.details.price;
                   const cleanedPriceRange = priceRange.replace("₹", "");
                   // Extract first price from range (e.g., "4000-7500" -> "4000")
                   const fixedPrice = cleanedPriceRange.split("-")[0];
                   return fixedPrice;
                 })()}
               </Badge>
-               <Badge
+              <Badge
                 variant="secondary"
                 className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border-primary/20"
               >
@@ -163,7 +171,9 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
             loading="lazy"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(service.title)}`;
+              target.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(
+                service.title
+              )}`;
             }}
           />
 
@@ -173,7 +183,9 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
               <button
                 onClick={prevImage}
                 disabled={!hasPrevImage}
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200 ${!hasPrevImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200 ${
+                  !hasPrevImage ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <ChevronLeft className="w-5 h-5 text-slate-800" />
               </button>
@@ -181,12 +193,12 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
               <button
                 onClick={nextImage}
                 disabled={!hasNextImage}
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200 ${!hasNextImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200 ${
+                  !hasNextImage ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <ChevronRight className="w-5 h-5 text-slate-800" />
               </button>
-
-
             </>
           )}
         </div>
@@ -206,33 +218,38 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
       </h2>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {service.media?.videoUrl &&
-        <div className="lg:w-1/2">
-          {/* Video Preview */}
-          {service.media?.videoUrl && (
-            <div className="relative rounded-2xl overflow-hidden bg-slate-100 aspect-video flex items-center justify-center mb-6">
-              <img
-                src={service.media.heroImage || "https://placehold.co/600x400/e2e8f0/64748b?text=Video+Preview"}
-                alt="Video preview"
-                className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
-              />
-              <button
-                onClick={() => setIsVideoOpen(true)}
-                className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors duration-200"
-              >
-                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/90 hover:bg-primary transition-colors duration-200">
-                  <Play className="w-6 h-6 text-white ml-1" />
-                </div>
-              </button>
-            </div>
-          )}
-        </div>
-}
+        {service.media?.videoUrl && (
+          <div className="lg:w-1/2">
+            {/* Video Preview */}
+            {service.media?.videoUrl && (
+              <div className="relative rounded-2xl overflow-hidden bg-slate-100 aspect-video flex items-center justify-center mb-6">
+                <img
+                  src={
+                    service.media.heroImage ||
+                    "https://placehold.co/600x400/e2e8f0/64748b?text=Video+Preview"
+                  }
+                  alt="Video preview"
+                  className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
+                />
+                <button
+                  onClick={() => setIsVideoOpen(true)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors duration-200"
+                >
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/90 hover:bg-primary transition-colors duration-200">
+                    <Play className="w-6 h-6 text-white ml-1" />
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         <div className="lg:w-1/2">
           {/* About Info */}
           <div className="mb-6">
             {/* <h3 className="text-xl font-bold text-slate-900 mb-3">About This Service</h3> */}
-            <p className="text-slate-600">{service.details.detailedDescription}</p>
+            <p className="text-slate-600">
+              {service.details.detailedDescription}
+            </p>
           </div>
         </div>
       </div>
@@ -281,12 +298,13 @@ const ServiceSidebar = ({
   const { isAuthenticated } = useAuth();
 
   const handleBooking = () => {
-
     const bookingData = {
       service: {
         id: service.id,
         name: service.details.title,
-        price: (service.details.priceRange || service.details.price).replace("₹", "").split("-")[0],
+        price: (service.details.priceRange || service.details.price)
+          .replace("₹", "")
+          .split("-")[0],
         duration: service.details.sessionDuration,
       },
       fromServices: true,
@@ -298,17 +316,24 @@ const ServiceSidebar = ({
       session: {
         type: "1-on-1",
         duration: service.details.sessionDuration,
-        price: parseInt((service.details.priceRange || service.details.price).replace("₹", "").split("-")[0]),
+        price: parseInt(
+          (service.details.priceRange || service.details.price)
+            .replace("₹", "")
+            .split("-")[0]
+        ),
       },
       plan: {
         name: `${service.details.title} Plan`,
-        price: parseInt((service.details.priceRange || service.details.price).replace("₹", "").split("-")[0]),
+        price: parseInt(
+          (service.details.priceRange || service.details.price)
+            .replace("₹", "")
+            .split("-")[0]
+        ),
         duration: service.details.sessionDuration,
-      }
+      },
     };
     console.log("Booking Data:", bookingData);
     navigate("/booking", { state: bookingData });
-
   };
 
   return (
@@ -330,7 +355,8 @@ const ServiceSidebar = ({
             <span className="font-medium text-slate-900 flex items-center gap-1">
               <IndianRupee className="h-4 w-4" />
               {(() => {
-                const priceRange = service.details.priceRange || service.details.price;
+                const priceRange =
+                  service.details.priceRange || service.details.price;
                 const cleanedPriceRange = priceRange.replace("₹", "");
                 // Extract first price from range (e.g., "4000-7500" -> "4000")
                 const fixedPrice = cleanedPriceRange.split("-")[0];
@@ -344,8 +370,8 @@ const ServiceSidebar = ({
               {service.details.resultsTimeline}
             </span>
           </div>
-          
-            {/* <div className="flex justify-between">
+
+          {/* <div className="flex justify-between">
               <span className="text-slate-600">Prerequisites:</span>
               <span className="font-medium text-slate-900">
                 {service.details.prerequisites}
@@ -412,7 +438,7 @@ const CollapsibleList = ({
   const [isOpen, setIsOpen] = useState(false);
 
   if (items.length <= 4) {
-    console.log(items)
+    console.log(items);
     return (
       <div>
         <h2 className="text-xl font-bold text-slate-900 mb-4">{title}</h2>
@@ -438,8 +464,9 @@ const CollapsibleList = ({
         >
           {isOpen ? "Show Less" : "Show All"}
           <ChevronRight
-            className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-90" : ""
-              }`}
+            className={`w-4 h-4 transition-transform duration-200 ${
+              isOpen ? "rotate-90" : ""
+            }`}
           />
         </button>
       </div>
@@ -457,23 +484,44 @@ const CollapsibleList = ({
 };
 
 export default function ServiceDetailPage() {
-  const { serviceId } = useParams<{ serviceId: string }>();
+  const { serviceId, slug } = useParams<{ serviceId: string; slug: string }>();
   const navigate = useNavigate();
   const dispatch: AppDispatch = useDispatch();
   const { isAuthenticated } = useAuth();
 
   // Get service from Redux store
-  const { selectedService, loading, error } = useSelector((state: RootState) => state.services);
+  const { selectedService, loading, error } = useSelector(
+    (state: RootState) => state.services
+  );
+
+  // Use slug if available, otherwise fall back to serviceId
+  const identifier = slug || serviceId;
 
   useEffect(() => {
-    if (serviceId) {
-      dispatch(fetchServiceById(serviceId));
+    if (identifier) {
+      // If we have a slug parameter, use it directly
+      if (slug) {
+        dispatch(fetchServiceBySlug(slug));
+      }
+      // Otherwise, check if serviceId looks like a slug or ID
+      else if (serviceId) {
+        // Check if the serviceId looks like a slug (contains hyphens and is not a typical MongoDB ID)
+        // MongoDB IDs are typically 24 hex characters, while slugs contain hyphens
+        const isLikelyASlug =
+          serviceId.includes("-") || !/^[0-9a-fA-F]{24}$/.test(serviceId);
+
+        if (isLikelyASlug) {
+          dispatch(fetchServiceBySlug(serviceId));
+        } else {
+          dispatch(fetchServiceById(serviceId));
+        }
+      }
     }
-  }, [dispatch]);
+  }, [dispatch, identifier, slug, serviceId]);
 
   // Use the service from Redux store
   const service = selectedService;
-  console.log(service)
+  console.log(service);
   if (loading) {
     return (
       <Layout>
@@ -525,7 +573,9 @@ export default function ServiceDetailPage() {
               Services
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-slate-900">{service?.details.title || 'Loading...'}</span>
+            <span className="text-slate-900">
+              {service?.details.title || "Loading..."}
+            </span>
           </div>
 
           <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
@@ -536,20 +586,17 @@ export default function ServiceDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2 space-y-8">
                     <ServiceMedia service={service as ExtendedService} />
-                    {
-                      service.details.conditionsTreated.length > 0 && (
-                        <div className="border-t border-slate-200 pt-8">
-                          <CollapsibleList
-                            title="Conditions We Treat"
-                            items={service.details.conditionsTreated}
-                            icon={
-                              <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                            }
-                          />
-                        </div>
-                      )
-                    }
-
+                    {service.details.conditionsTreated.length > 0 && (
+                      <div className="border-t border-slate-200 pt-8">
+                        <CollapsibleList
+                          title="Conditions We Treat"
+                          items={service.details.conditionsTreated}
+                          icon={
+                            <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                          }
+                        />
+                      </div>
+                    )}
 
                     <div className="border-t border-slate-200 pt-8">
                       <CollapsibleList
@@ -573,14 +620,15 @@ export default function ServiceDetailPage() {
                   </div>
 
                   <div className="lg:col-span-1">
-                    <ServiceSidebar service={service as ExtendedService} navigate={navigate} />
+                    <ServiceSidebar
+                      service={service as ExtendedService}
+                      navigate={navigate}
+                    />
                   </div>
                 </div>
               </>
             )}
           </Card>
-
-
         </div>
       </div>
     </Layout>

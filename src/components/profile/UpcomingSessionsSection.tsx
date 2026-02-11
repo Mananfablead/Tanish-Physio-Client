@@ -87,9 +87,10 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
   return (
     <>
-      {/* Live Sessions Section - Show sessions with "live" status */}
-      {liveSessions.length > 0 && (
-        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
+      {/* Live Sessions Section - Show only sessions with "live" status */}
+      {upcomingSessions.filter((session) => session.status === "live").length >
+        0 && (
+        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
@@ -185,8 +186,11 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
       )}
 
       {/* Next Session Detail View - Only show if there's a next session and no other upcoming sessions */}
-      {nextSession && upcomingSessions.length === 0 ? (
-        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
+      {nextSession &&
+      upcomingSessions.filter(
+        (session) => session.status !== "live" && session.status !== "completed"
+      ).length === 0 ? (
+        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
@@ -246,7 +250,7 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
               </div>
             </div>
 
-            <div className="flex gap-3 w-full pt-6 border-t border-slate-50">
+            <div className="flex gap-3 w-full  border-t border-slate-50">
               <Link
                 to={
                   nextSession._id && isSessionTimeArrived(nextSession)

@@ -14,11 +14,14 @@ import {
   ArrowRight,
   X,
   Clock,
+  Link,
 } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
 import useWebRTC from "../../hooks/useWebRTC";
+import { useNotifications } from "../../hooks/useNotifications"; // Add notification hook
 import { videoCallApi } from "../../lib/videoCallApi";
 import { chatApi } from "../../lib/chatApi";
+import GoogleMeetErrorPopup from "./GoogleMeetErrorPopup";
 
 const VideoCall = ({
   roomId,
@@ -537,10 +540,18 @@ const VideoCall = ({
         );
         setCallStatus("unauthorized");
       } else {
-        setCallError(data.message || "An error occurred during the video call");
+        // For other connection errors, report to admin and show Google Meet popup as alternative
+        if (sessionId) {
+          reportConnectionFailure(
+            sessionId,
+            data.message || "Connection failed"
+          );
+        }
+        // setShowGoogleMeetPopup(true);
+        setCallError(null); // Clear the call error to prevent conflict with popup
       }
     },
-    [setCallError]
+    [setCallError, socket, sessionId]
   );
 
   useEffect(() => {
@@ -1726,10 +1737,10 @@ const VideoCall = ({
 
   // Update therapist name based on participants - prioritize therapist over other participants
   useEffect(() => {
-    console.log('=== THERAPIST NAME UPDATE ===');
-    console.log('Participants:', participants);
-    console.log('User:', user);
-    
+    console.log("=== THERAPIST NAME UPDATE ===");
+    console.log("Participants:", participants);
+    console.log("User:", user);
+
     // First, update self participant name if needed
     if (user) {
       setParticipants((prevParticipants) => {
@@ -1758,24 +1769,32 @@ const VideoCall = ({
 
     // Find therapist participant (prioritize actual therapists)
     const therapist = participants.find((p) => p.isTherapist && !p.isSelf);
-    console.log('Found therapist:', therapist);
-    
-    if (therapist && therapist.name && therapist.name !== 'Clinician') {
-      console.log('Setting therapist name to:', therapist.name);
+    console.log("Found therapist:", therapist);
+
+    if (therapist && therapist.name && therapist.name !== "Clinician") {
+      console.log("Setting therapist name to:", therapist.name);
       setLocalTherapistName(therapist.name);
     } else {
       // If no therapist found, look for other non-self participants
       const otherParticipant = participants.find(
-        (p) => !p.isSelf && p.name && p.name !== 'Clinician' && p.name !== 'User Unknown'
+        (p) =>
+          !p.isSelf &&
+          p.name &&
+          p.name !== "Clinician" &&
+          p.name !== "User Unknown"
       );
-      console.log('Found other participant:', otherParticipant);
-      
+      console.log("Found other participant:", otherParticipant);
+
       if (otherParticipant && otherParticipant.name) {
-        console.log('Setting therapist name to other participant:', otherParticipant.name);
+        console.log(
+          "Setting therapist name to other participant:",
+          otherParticipant.name
+        );
         setLocalTherapistName(otherParticipant.name);
       } else {
         // Default name if no other participant found
-        const isTherapistRole = user?.role === "therapist" || user?.role === "admin";
+        const isTherapistRole =
+          user?.role === "therapist" || user?.role === "admin";
         const userName =
           user?.name ||
           (user?.firstName && user?.lastName
@@ -1784,7 +1803,7 @@ const VideoCall = ({
         const defaultTherapistName = isTherapistRole
           ? userName || "You (Therapist)"
           : "Clinician";
-        console.log('Setting default therapist name:', defaultTherapistName);
+        console.log("Setting default therapist name:", defaultTherapistName);
         setLocalTherapistName(defaultTherapistName);
       }
     }
@@ -2135,9 +2154,36 @@ const VideoCall = ({
               <span className="text-slate-500 text-xs font-medium">
                 • {sessionDetails?.session?.time || "Time not specified"}
               </span>
+              {sessionDetails?.session?.googleMeetLink && (
+                <div className="flex items-center gap-1 ml-2">
+                  <Link className="h-3 w-3 text-blue-400" />
+                  {sessionDetails.session.googleMeetExpiresAt &&
+                  new Date() >
+                    new Date(sessionDetails.session.googleMeetExpiresAt) ? (
+                    <span className="text-red-400 text-xs font-medium">
+                      Google Meet Link Expired
+                    </span>
+                  ) : (
+                    <a
+                      href={sessionDetails.session.googleMeetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-xs font-medium underline flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      <span>Google Meet</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
             <h1 className="text-white font-semibold tracking-tight text-sm sm:text-base truncate">
-              {localTherapistName && localTherapistName !== 'Clinician' ? localTherapistName : "Clinician"}
+              {localTherapistName && localTherapistName !== "Clinician"
+                ? localTherapistName
+                : "Clinician"}
             </h1>
           </div>
         </div>
@@ -2194,7 +2240,9 @@ const VideoCall = ({
         {showParticipants && (
           <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50 max-h-screen md:max-h-full">
             <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-white font-semibold text-base">Participants</h3>
+              <h3 className="text-white font-semibold text-base">
+                Participants
+              </h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -2207,7 +2255,7 @@ const VideoCall = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {/* API Response Display */}
             {/* <div className="p-4 bg-slate-800/50 border-b border-slate-700">
               <h4 className="text-slate-300 font-medium text-sm mb-2">API Response:</h4>
@@ -2218,18 +2266,20 @@ const VideoCall = ({
                 }
               </pre>
             </div> */}
-            
+
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {participants && participants.length > 0 ? (
                 participants.map((participant, index) => (
                   <div
-                    key={`${participant.userId || 'unknown'}-${participant.socketId || 'unknown'}-${index}`}
+                    key={`${participant.userId || "unknown"}-${
+                      participant.socketId || "unknown"
+                    }-${index}`}
                     className="flex items-center gap-3 sm:gap-4 p-2 rounded-lg bg-slate-800/30"
                   >
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
                       {(participant.name &&
-                        participant.name !== 'Clinician' &&
-                        participant.name !== 'User Unknown' &&
+                        participant.name !== "Clinician" &&
+                        participant.name !== "User Unknown" &&
                         participant.name.charAt(0).toUpperCase()) ||
                         (participant.firstName &&
                           participant.firstName.charAt(0).toUpperCase()) ||
@@ -2244,14 +2294,22 @@ const VideoCall = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center justify-between gap-1">
                         <p className="text-white font-medium text-sm truncate">
-                          {participant.name && participant.name !== 'Clinician' && participant.name !== 'User Unknown'
+                          {participant.name &&
+                          participant.name !== "Clinician" &&
+                          participant.name !== "User Unknown"
                             ? participant.name
                             : (participant.firstName && participant.lastName
-                              ? `${participant.firstName} ${participant.lastName}`
-                              : (participant.firstName ? participant.firstName : null)) ||
-                            participant.displayName ||
-                            participant.email ||
-                            `User ${participant.userId?.substring(0, 5) || participant.socketId?.substring(0, 5) || "Unknown"}`}
+                                ? `${participant.firstName} ${participant.lastName}`
+                                : participant.firstName
+                                ? participant.firstName
+                                : null) ||
+                              participant.displayName ||
+                              participant.email ||
+                              `User ${
+                                participant.userId?.substring(0, 5) ||
+                                participant.socketId?.substring(0, 5) ||
+                                "Unknown"
+                              }`}
                         </p>
                         {participant.isSelf && (
                           <Badge className="bg-slate-800 text-slate-400 border-none text-[8px] h-4 flex-shrink-0 ml-1">
@@ -2290,7 +2348,9 @@ const VideoCall = ({
         {showChat && (
           <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50 max-h-screen md:max-h-full">
             <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-white font-semibold text-base">Clinical Chat</h3>
+              <h3 className="text-white font-semibold text-base">
+                Clinical Chat
+              </h3>
               <Button
                 variant="ghost"
                 size="icon"
@@ -2300,9 +2360,12 @@ const VideoCall = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {/* Chat Messages Display */}
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
+            <div
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3"
+            >
               {chatMessages.length === 0 ? (
                 <div className="flex flex-col justify-center items-center text-center h-full py-8">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 border border-slate-700">
@@ -2312,45 +2375,56 @@ const VideoCall = ({
                     Chat is secure and encrypted
                   </p>
                   <p className="text-slate-600 text-[10px] mt-2 px-6">
-                    All clinical notes shared here will be saved to your recovery record.
+                    All clinical notes shared here will be saved to your
+                    recovery record.
                   </p>
                 </div>
               ) : (
                 chatMessages.map((message, index) => (
                   <div
                     key={index}
-                    className={`flex ${message.senderId === socket?.id ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${
+                      message.senderId === socket?.id
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
                   >
                     <div
                       className={`max-w-[80%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm ${
                         message.senderId === socket?.id
-                          ? 'bg-emerald-500 text-white rounded-br-md'
-                          : 'bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700'
+                          ? "bg-emerald-500 text-white rounded-br-md"
+                          : "bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700"
                       }`}
                     >
                       <p className="text-[10px] font-semibold mb-1 opacity-80">
-                        {message.senderId === socket?.id 
-                          ? (user?.name || userName || "You")
-                          : (message.senderName && message.senderName !== 'Clinician' && message.senderName !== 'User Unknown' ? message.senderName : 'Clinician')}
+                        {message.senderId === socket?.id
+                          ? user?.name || userName || "You"
+                          : message.senderName &&
+                            message.senderName !== "Clinician" &&
+                            message.senderName !== "User Unknown"
+                          ? message.senderName
+                          : "Clinician"}
                       </p>
                       <p>{message.content || message.message}</p>
                       <p
                         className={`text-[10px] mt-1 ${
                           message.senderId === socket?.id
-                            ? 'text-emerald-100 opacity-80'
-                            : 'text-slate-400'
+                            ? "text-emerald-100 opacity-80"
+                            : "text-slate-400"
                         }`}
                       >
-                        {new Date(message.timestamp || message.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
+                        {new Date(
+                          message.timestamp || message.createdAt
+                        ).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </p>
                     </div>
                   </div>
                 ))
               )}
-              
+
               {/* Typing indicators */}
               {typingUsers.length > 0 && (
                 <div className="flex justify-start">
@@ -2377,7 +2451,7 @@ const VideoCall = ({
                 </div>
               )}
             </div>
-            
+
             <div className="p-3 sm:p-4 border-t border-slate-800">
               <div className="flex gap-2">
                 <input
@@ -2398,7 +2472,9 @@ const VideoCall = ({
                   size="icon"
                   className="bg-slate-100 hover:bg-white text-slate-900 rounded-xl"
                   onClick={sendChatMessage}
-                  disabled={!newMessage.trim() || !externalConnected || !connected}
+                  disabled={
+                    !newMessage.trim() || !externalConnected || !connected
+                  }
                 >
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -2569,57 +2645,12 @@ const VideoCall = ({
         </div>
       </div>
 
-      {/* Settings Modal */}
-      {/* {showSettings && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-t-3xl md:rounded-3xl w-full md:w-96 max-w-md mx-4 mb-0 md:mb-auto animate-in slide-in-from-bottom md:slide-in-from-top duration-300">
-            <div className="p-6 border-b border-slate-800">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold">Settings</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-slate-400 hover:text-white"
-                  onClick={() => setShowSettings(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="p-6 space-y-6">
-              <div>
-                <h4 className="text-slate-300 font-medium mb-3 text-sm">
-                  Audio Input
-                </h4>
-                <select className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-600">
-                  <option>Default Microphone</option>
-                  <option>External USB Microphone</option>
-                </select>
-              </div>
-              <div>
-                <h4 className="text-slate-300 font-medium mb-3 text-sm">
-                  Video Input
-                </h4>
-                <select className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-600">
-                  <option>Default Camera</option>
-                  <option>External Webcam</option>
-                </select>
-              </div>
-              <div>
-                <h4 className="text-slate-300 font-medium mb-3 text-sm">
-                  Connection Quality
-                </h4>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full w-3/4"></div>
-                  </div>
-                  <span className="text-xs text-slate-500">Good</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
+      {/* Google Meet Error Popup */}
+      {/* <GoogleMeetErrorPopup
+        isOpen={showGoogleMeetPopup}
+        // onClose={() => setShowGoogleMeetPopup(false)}
+        sessionId={sessionId}
+      /> */}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 export interface Service {
   id: string | number;
+  slug?: string; // Add optional slug field
   icon: string; // Using string for icon name instead of JSX.Element
   title: string;
   description: string;

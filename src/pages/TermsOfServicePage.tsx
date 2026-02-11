@@ -236,9 +236,7 @@ export default function TermsOfServicePage() {
             </CardContent>
           </Card>
           
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} Tanish Physio. All rights reserved.</p>
-          </div>
+          
         </div>
       </div>
     </Layout>

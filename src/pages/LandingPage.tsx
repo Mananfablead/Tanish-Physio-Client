@@ -119,7 +119,7 @@ const CountUp = ({ value, duration = 2 }: { value: string; duration?: number }) 
   const [displayValue, setDisplayValue] = useState("0");
 
   useEffect(() => {
-    if (inView) {
+    if (inView && value && typeof value === 'string') {
       const match = value.match(/(\d+\.?\d*)(.*)/);
       if (match) {
         const target = parseFloat(match[1]);
@@ -137,7 +137,7 @@ const CountUp = ({ value, duration = 2 }: { value: string; duration?: number }) 
     }
   }, [inView, value, duration]);
 
-  return <span ref={ref}>{displayValue}</span>;
+  return <span ref={ref}>{value ? displayValue : "0"}</span>;
 };
 
 // Helper function to map icon names to components

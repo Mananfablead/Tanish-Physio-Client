@@ -86,6 +86,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Show profile dropdown when authenticated */}
           {isAuthenticated ? (
             <DropdownMenu>
@@ -102,7 +103,7 @@ export function Header() {
                 >
                   {user?.profilePicture ? (
                     <img
-                      src={`data:image/jpeg;base64,${user.profilePicture}`}
+                      src={user?.profilePicture}
                       alt={user?.name || "User profile"}
                       className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover border-2 border-border shadow-sm"
                     />

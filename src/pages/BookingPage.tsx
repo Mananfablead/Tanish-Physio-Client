@@ -39,6 +39,11 @@ export default function BookingPage() {
     email: "",
     phone: "",
   });
+
+  // Validation states
+  const [nameError, setNameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   useEffect(() => {
     if (user) {
       setGuestUserData({
@@ -192,12 +197,72 @@ export default function BookingPage() {
     storedIntake.updatedAt &&
     now - storedIntake.updatedAt < RECENT_DAYS * 24 * 60 * 60 * 1000;
 
-  const handlePayment = async () => {
+  // Email validation function
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
 
+  // Name validation function
+  const validateName = (name: string) => {
+    const nameRegex = /^[a-zA-Z\s]{2,50}$/; // Only letters and spaces, 2-50 characters
+    return nameRegex.test(name.trim());
+  };
+
+  // Phone validation function
+  const validatePhone = (phone: string) => {
+    // International mobile number validation (10-15 digits)
+    const phoneRegex = /^\d{10,15}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const handlePayment = async () => {
     // Validate guest user data if applicable
-    if (isGuestUser && (!guestUserData.name || !guestUserData.email || !guestUserData.phone)) {
-      toast.error("Please fill in your name, email, and phone number to continue");
-      return;
+    if (isGuestUser) {
+      let hasError = false;
+      
+      // Name validation
+      if (!guestUserData.name.trim()) {
+        setNameError("Name is required");
+        hasError = true;
+      } else if (!validateName(guestUserData.name)) {
+        setNameError("Please enter a valid name (2-50 letters only)");
+        hasError = true;
+      } else {
+        setNameError("");
+      }
+      
+      // Email validation
+      if (!guestUserData.email.trim()) {
+        setEmailError("Email is required");
+        hasError = true;
+      } else if (!validateEmail(guestUserData.email)) {
+        setEmailError("Please enter a valid email address");
+        hasError = true;
+      } else {
+        setEmailError("");
+      }
+      
+      // Phone validation
+      if (!guestUserData.phone.trim()) {
+        setPhoneError("Phone number is required");
+        hasError = true;
+      } else if (guestUserData.phone.length < 10) {
+        setPhoneError("Phone number must be at least 10 digits");
+        hasError = true;
+      } else if (guestUserData.phone.length > 15) {
+        setPhoneError("Phone number cannot exceed 15 digits");
+        hasError = true;
+      } else if (!validatePhone(guestUserData.phone)) {
+        setPhoneError("Please enter a valid mobile number (10-15 digits)");
+        hasError = true;
+      } else {
+        setPhoneError("");
+      }
+      
+      if (hasError) {
+        return;
+      }
     }
 
     // Prepare guest user data
@@ -232,35 +297,57 @@ export default function BookingPage() {
             clientPhone: guestUserData.phone,
           };
 
-          paymentOrderResult = await dispatch(createGuestSubscriptionPaymentOrderAsync(guestSubscriptionPaymentOrderData));
+          paymentOrderResult = await dispatch(
+            createGuestSubscriptionPaymentOrderAsync(
+              guestSubscriptionPaymentOrderData
+            )
+          );
         } else {
           const subscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
-            currency: "INR"
+            currency: "INR",
           };
-          paymentOrderResult = await dispatch(createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData));
+          paymentOrderResult = await dispatch(
+            createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData)
+          );
         }
 
-        if (!createSubscriptionPaymentOrderAsync.fulfilled.match(paymentOrderResult) && !createGuestSubscriptionPaymentOrderAsync.fulfilled.match(paymentOrderResult)) {
-          toast.error("Failed to create subscription payment order. Please try again.");
+        if (
+          !createSubscriptionPaymentOrderAsync.fulfilled.match(
+            paymentOrderResult
+          ) &&
+          !createGuestSubscriptionPaymentOrderAsync.fulfilled.match(
+            paymentOrderResult
+          )
+        ) {
+          toast.error(
+            "Failed to create subscription payment order. Please try again."
+          );
           setIsProcessing(false);
           return;
         }
 
         if (!paymentOrderResult.payload) {
           console.error("Payment order creation failed:", paymentOrderResult);
-          toast.error(paymentOrderResult.payload?.message || "Payment order creation failed. Please try again.");
+          toast.error(
+            paymentOrderResult.payload?.message ||
+              "Payment order creation failed. Please try again."
+          );
           setIsProcessing(false);
           return;
         }
         // Extract order details from the response - the structure depends on which API was called
-        const orderData = paymentOrderResult.payload.order || paymentOrderResult.payload;
+        const orderData =
+          paymentOrderResult.payload.order || paymentOrderResult.payload;
         const { orderId, key: razorpayKey } = orderData;
 
         // Razorpay options for subscription
         const options = {
-          key: razorpayKey || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_S250uIjk1rVbsT",
+          key:
+            razorpayKey ||
+            import.meta.env.VITE_RAZORPAY_KEY_ID ||
+            "rzp_test_S250uIjk1rVbsT",
           order_id: orderId, // Use the order ID from the backend
           amount: finalPrice * 100, // Convert to paise (multiply by 100)
           currency: "INR",
@@ -280,15 +367,30 @@ export default function BookingPage() {
             // Dispatch subscription payment verification action
             let verifyResult;
             if (isGuestUser) {
-              verifyResult = await dispatch(verifyGuestSubscriptionPaymentAsync(paymentVerificationData));
+              verifyResult = await dispatch(
+                verifyGuestSubscriptionPaymentAsync(paymentVerificationData)
+              );
             } else {
-              verifyResult = await dispatch(verifySubscriptionPaymentTransaction(paymentVerificationData));
+              verifyResult = await dispatch(
+                verifySubscriptionPaymentTransaction(paymentVerificationData)
+              );
             }
-            if ((isGuestUser && verifyGuestSubscriptionPaymentAsync.fulfilled.match(verifyResult)) || (!isGuestUser && verifySubscriptionPaymentTransaction.fulfilled.match(verifyResult))) {
+            if (
+              (isGuestUser &&
+                verifyGuestSubscriptionPaymentAsync.fulfilled.match(
+                  verifyResult
+                )) ||
+              (!isGuestUser &&
+                verifySubscriptionPaymentTransaction.fulfilled.match(
+                  verifyResult
+                ))
+            ) {
               // Verification successful - process subscription
               try {
                 // Get subscription ID from response
-                const subscriptionId = verifyResult.payload?.subscription?.id || verifyResult.payload?.data?.subscription?.id;
+                const subscriptionId =
+                  verifyResult.payload?.subscription?.id ||
+                  verifyResult.payload?.data?.subscription?.id;
 
                 // Persist plan as active subscription with subscription ID
                 sessionStorage.setItem(
@@ -297,7 +399,7 @@ export default function BookingPage() {
                     plan,
                     subscriptionId, // Store the actual subscription ID
                     purchasedAt: Date.now(),
-                    active: true
+                    active: true,
                   })
                 );
 
@@ -330,9 +432,14 @@ export default function BookingPage() {
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
-                    sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan));
-                  } catch (e) { }
-                  navigate("/questionnaire", { state: { planToActivate: plan } });
+                    sessionStorage.setItem(
+                      "qw_pending_plan",
+                      JSON.stringify(plan)
+                    );
+                  } catch (e) {}
+                  navigate("/questionnaire", {
+                    state: { planToActivate: plan },
+                  });
                   return;
                 }
 
@@ -343,7 +450,10 @@ export default function BookingPage() {
                     title: "Matched Specialist",
                     assignedAt: Date.now(),
                   };
-                  sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
+                  sessionStorage.setItem(
+                    "qw_assigned",
+                    JSON.stringify(therapist)
+                  );
 
                   if (scheduled) {
                     scheduled.locked = false;
@@ -354,12 +464,12 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
-                  !localStorage.getItem("token")
+                  !localStorage.getItem("token");
 
                 toast.success("Payment successful!.");
                 // Navigate to booking confirmation page for all users
@@ -367,23 +477,37 @@ export default function BookingPage() {
                   state: {
                     ...bookingData,
                     finalPrice,
-                    guestUser: wasGuestUser ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}") : undefined,
+                    guestUser: wasGuestUser
+                      ? JSON.parse(
+                          sessionStorage.getItem("qw_guest_user") || "{}"
+                        )
+                      : undefined,
                     fromSubscription: true,
                   },
                 });
               } catch (error) {
-                console.error("Error processing subscription payment success:", error);
-                toast.error("Something went wrong after payment. Please contact support.");
+                console.error(
+                  "Error processing subscription payment success:",
+                  error
+                );
+                toast.error(
+                  "Something went wrong after payment. Please contact support."
+                );
               }
             } else {
-              console.error("Subscription payment verification failed:", verifyResult.payload);
+              console.error(
+                "Subscription payment verification failed:",
+                verifyResult.payload
+              );
 
               // For subscription payments, we don't need to update booking status
               // The subscription is already activated via the payment verification
 
               try {
                 // Get subscription ID from response (even in fallback scenario)
-                const subscriptionId = verifyResult.payload?.subscription?.id || verifyResult.payload?.data?.subscription?.id;
+                const subscriptionId =
+                  verifyResult.payload?.subscription?.id ||
+                  verifyResult.payload?.data?.subscription?.id;
                 // Persist plan as active subscription with subscription ID
                 sessionStorage.setItem(
                   "qw_plan",
@@ -391,7 +515,7 @@ export default function BookingPage() {
                     plan,
                     subscriptionId, // Store the actual subscription ID
                     purchasedAt: Date.now(),
-                    active: true
+                    active: true,
                   })
                 );
 
@@ -424,9 +548,14 @@ export default function BookingPage() {
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
-                    sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan));
-                  } catch (e) { }
-                  navigate("/questionnaire", { state: { planToActivate: plan } });
+                    sessionStorage.setItem(
+                      "qw_pending_plan",
+                      JSON.stringify(plan)
+                    );
+                  } catch (e) {}
+                  navigate("/questionnaire", {
+                    state: { planToActivate: plan },
+                  });
                   return;
                 }
 
@@ -438,7 +567,10 @@ export default function BookingPage() {
                     title: "Matched Specialist",
                     assignedAt: Date.now(),
                   };
-                  sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
+                  sessionStorage.setItem(
+                    "qw_assigned",
+                    JSON.stringify(therapist)
+                  );
 
                   if (scheduled) {
                     scheduled.locked = false;
@@ -449,12 +581,12 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
-                  !localStorage.getItem("token")
+                  !localStorage.getItem("token");
 
                 toast.success("Payment successful!.");
                 // Navigate to booking confirmation page for all users
@@ -462,13 +594,22 @@ export default function BookingPage() {
                   state: {
                     ...bookingData,
                     finalPrice,
-                    guestUser: wasGuestUser ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}") : undefined,
+                    guestUser: wasGuestUser
+                      ? JSON.parse(
+                          sessionStorage.getItem("qw_guest_user") || "{}"
+                        )
+                      : undefined,
                     fromSubscription: true,
                   },
                 });
               } catch (innerError) {
-                console.error("Error in subscription fallback flow:", innerError);
-                toast.error("Payment was successful but there was an issue processing your subscription. Please contact support.");
+                console.error(
+                  "Error in subscription fallback flow:",
+                  innerError
+                );
+                toast.error(
+                  "Payment was successful but there was an issue processing your subscription. Please contact support."
+                );
               }
             }
           },
@@ -494,23 +635,27 @@ export default function BookingPage() {
             onload: function () {
               // Ensure processing state is set when modal loads
               setIsProcessing(true);
-            }
+            },
           },
           callback: function (error) {
             // Handle payment failure
             if (error) {
               console.error("Payment failed:", error);
-              toast.error("Payment failed. Please try again or contact support.");
+              toast.error(
+                "Payment failed. Please try again or contact support."
+              );
               setIsProcessing(false);
             }
-          }
+          },
         };
 
         // Initialize and open Razorpay checkout
-        if (typeof window !== 'undefined' && (window as any).Razorpay) {
+        if (typeof window !== "undefined" && (window as any).Razorpay) {
           // Check if key exists before creating Razorpay instance
           if (!options.key || options.key === "rzp_test_1234567890") {
-            toast.error("Razorpay key is not configured properly. Please contact support.");
+            toast.error(
+              "Razorpay key is not configured properly. Please contact support."
+            );
             setIsProcessing(false);
             return;
           }
@@ -523,13 +668,13 @@ export default function BookingPage() {
           setIsProcessing(false);
         }
       } else {
-        console.log(bookingData)
+        console.log(bookingData);
         const bookingPayload = {
           serviceId: serviceBooking ? bookingData.service.id : null,
           serviceName: serviceBooking ? bookingData.service.name : plan.name,
           therapistId: therapist.id || null,
           therapistName: therapist.name,
-          userId: isGuestUser ? null : localStorage.getItem('user'),
+          userId: isGuestUser ? null : localStorage.getItem("user"),
           clientName: isGuestUser ? guestUserData.name : guestUserData.name,
           date: date,
           time: time,
@@ -542,7 +687,6 @@ export default function BookingPage() {
         // Create the booking - use guest booking if user is not logged in
         let bookingResult;
         if (isGuestUser) {
-
           // Prepare guest booking payload
           const guestBookingPayload = {
             ...bookingPayload,
@@ -551,24 +695,29 @@ export default function BookingPage() {
             clientPhone: guestUserData.phone,
           };
 
-          bookingResult = await dispatch(createGuestBookingAsync(guestBookingPayload));
+          bookingResult = await dispatch(
+            createGuestBookingAsync(guestBookingPayload)
+          );
         } else {
-
           bookingResult = await dispatch(createBookingAsync(bookingPayload));
         }
 
-        if (!createBookingAsync.fulfilled.match(bookingResult) && !createGuestBookingAsync.fulfilled.match(bookingResult)) {
+        if (
+          !createBookingAsync.fulfilled.match(bookingResult) &&
+          !createGuestBookingAsync.fulfilled.match(bookingResult)
+        ) {
           toast.error("Failed to create booking. Please try again.");
           setIsProcessing(false);
           return;
         }
 
-        const bookingId = bookingResult.payload?._id || (bookingResult.payload as any)?.booking?._id;
+        const bookingId =
+          bookingResult.payload?._id ||
+          (bookingResult.payload as any)?.booking?._id;
 
         // Create payment order with booking ID
         let paymentOrderResult;
         if (isGuestUser) {
-
           // Prepare guest payment order payload
           const guestPaymentOrderData = {
             bookingId: bookingId,
@@ -579,19 +728,25 @@ export default function BookingPage() {
             clientPhone: guestUserData.phone,
           };
 
-          paymentOrderResult = await dispatch(createGuestPaymentOrderAsync(guestPaymentOrderData));
+          paymentOrderResult = await dispatch(
+            createGuestPaymentOrderAsync(guestPaymentOrderData)
+          );
         } else {
-
           const paymentOrderData = {
             bookingId: bookingId,
             amount: finalPrice,
-            currency: "INR"
+            currency: "INR",
           };
 
-          paymentOrderResult = await dispatch(createPaymentOrderAsync(paymentOrderData));
+          paymentOrderResult = await dispatch(
+            createPaymentOrderAsync(paymentOrderData)
+          );
         }
 
-        if (!createPaymentOrderAsync.fulfilled.match(paymentOrderResult) && !createGuestPaymentOrderAsync.fulfilled.match(paymentOrderResult)) {
+        if (
+          !createPaymentOrderAsync.fulfilled.match(paymentOrderResult) &&
+          !createGuestPaymentOrderAsync.fulfilled.match(paymentOrderResult)
+        ) {
           toast.error("Failed to create payment order. Please try again.");
           setIsProcessing(false);
           return;
@@ -599,17 +754,24 @@ export default function BookingPage() {
 
         if (!paymentOrderResult.payload) {
           console.error("Payment order creation failed:", paymentOrderResult);
-          toast.error(paymentOrderResult.payload?.message || "Payment order creation failed. Please try again.");
+          toast.error(
+            paymentOrderResult.payload?.message ||
+              "Payment order creation failed. Please try again."
+          );
           setIsProcessing(false);
           return;
         }
         // Extract order details from the response - the structure depends on which API was called
-        const orderData = paymentOrderResult.payload.order || paymentOrderResult.payload;
+        const orderData =
+          paymentOrderResult.payload.order || paymentOrderResult.payload;
         const { orderId, key: razorpayKey } = orderData;
 
         // Razorpay options
         const options = {
-          key: razorpayKey || import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_S250uIjk1rVbsT",
+          key:
+            razorpayKey ||
+            import.meta.env.VITE_RAZORPAY_KEY_ID ||
+            "rzp_test_S250uIjk1rVbsT",
           order_id: orderId, // Use the order ID from the backend
           amount: finalPrice * 100, // Convert to paise (multiply by 100)
           currency: "INR",
@@ -622,7 +784,6 @@ export default function BookingPage() {
               paymentId: response.razorpay_payment_id,
               orderId: response.razorpay_order_id,
               signature: response.razorpay_signature,
-              bookingId: bookingId, // Pass the booking ID for verification
             };
             // Set processing to false as payment was successful and we're moving to verification
             setIsProcessing(false);
@@ -630,28 +791,40 @@ export default function BookingPage() {
             // Dispatch payment verification action
             let verifyResult;
             if (isGuestUser) {
-
-              verifyResult = await dispatch(verifyGuestPaymentAsync(paymentVerificationData));
+              verifyResult = await dispatch(
+                verifyGuestPaymentAsync(paymentVerificationData)
+              );
             } else {
-
-              verifyResult = await dispatch(verifyPaymentAsync(paymentVerificationData));
+              verifyResult = await dispatch(
+                verifyPaymentAsync(paymentVerificationData)
+              );
             }
-            if ((isGuestUser && verifyGuestPaymentAsync.fulfilled.match(verifyResult)) || (!isGuestUser && verifyPaymentAsync.fulfilled.match(verifyResult))) {
+            if (
+              (isGuestUser &&
+                verifyGuestPaymentAsync.fulfilled.match(verifyResult)) ||
+              (!isGuestUser && verifyPaymentAsync.fulfilled.match(verifyResult))
+            ) {
               // Verification successful - update booking status to confirmed
               if (isGuestUser) {
-
                 // For guest users, use guest booking update with client email
-                const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
-                await dispatch(updateGuestBookingAsync({
-                  id: bookingId,
-                  bookingData: { status: 'confirmed' },
-                  clientEmail: guestUser.email
-                }));
-
+                const guestUser = JSON.parse(
+                  sessionStorage.getItem("qw_guest_user") || "{}"
+                );
+                await dispatch(
+                  updateGuestBookingAsync({
+                    id: bookingId,
+                    bookingData: { status: "pending" },
+                    clientEmail: guestUser.email,
+                  })
+                );
               } else {
-
                 // For authenticated users, use regular booking update
-                await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'pending' } }));
+                await dispatch(
+                  updateBookingAsync({
+                    id: bookingId,
+                    bookingData: { status: "pending" },
+                  })
+                );
               }
 
               // Process success flow
@@ -659,7 +832,11 @@ export default function BookingPage() {
                 // Persist plan as active subscription
                 sessionStorage.setItem(
                   "qw_plan",
-                  JSON.stringify({ plan, purchasedAt: Date.now(), active: true })
+                  JSON.stringify({
+                    plan,
+                    purchasedAt: Date.now(),
+                    active: true,
+                  })
                 );
 
                 // Check for existing intake
@@ -691,15 +868,19 @@ export default function BookingPage() {
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
-                    sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan));
-                  } catch (e) { }
-                  navigate("/questionnaire", { state: { planToActivate: plan } });
+                    sessionStorage.setItem(
+                      "qw_pending_plan",
+                      JSON.stringify(plan)
+                    );
+                  } catch (e) {}
+                  navigate("/questionnaire", {
+                    state: { planToActivate: plan },
+                  });
                   return;
                 }
 
                 // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
                 try {
-
                   if (scheduled) {
                     scheduled.locked = false;
                     scheduled.therapist = therapist;
@@ -709,10 +890,10 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
-                  !localStorage.getItem("token")
+                  !localStorage.getItem("token");
 
                 toast.success("Payment successful!.");
                 if (wasGuestUser) {
@@ -722,7 +903,9 @@ export default function BookingPage() {
                       ...bookingData,
                       bookingId: bookingId,
                       finalPrice,
-                      guestUser: JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}"),
+                      guestUser: JSON.parse(
+                        sessionStorage.getItem("qw_guest_user") || "{}"
+                      ),
                       fromServices: true,
                     },
                   });
@@ -740,39 +923,57 @@ export default function BookingPage() {
                 }
               } catch (error) {
                 console.error("Error processing payment success:", error);
-                toast.error("Something went wrong after payment. Please contact support.");
+                toast.error(
+                  "Something went wrong after payment. Please contact support."
+                );
               }
             } else {
-              console.error("Payment verification failed:", verifyResult.payload);
+              console.error(
+                "Payment verification failed:",
+                verifyResult.payload
+              );
 
               if (isGuestUser) {
-
-                const guestUser = JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}");
+                const guestUser = JSON.parse(
+                  sessionStorage.getItem("qw_guest_user") || "{}"
+                );
                 console.log("Guest User:", guestUser);
                 console.log("Client Email:", guestUser.email);
 
                 if (!guestUser.email) {
-                  console.error("Client email is missing from guest user data!");
+                  console.error(
+                    "Client email is missing from guest user data!"
+                  );
                   toast.error("Client email is missing. Please try again.");
                   setIsProcessing(false);
                   return;
                 }
 
-                await dispatch(updateGuestBookingAsync({
-                  id: bookingId,
-                  bookingData: { status: 'pending' },
-                  clientEmail: guestUser.email
-                }));
+                await dispatch(
+                  updateGuestBookingAsync({
+                    id: bookingId,
+                    bookingData: { status: "pending" },
+                    clientEmail: guestUser.email,
+                  })
+                );
               } else {
-
-                await dispatch(updateBookingAsync({ id: bookingId, bookingData: { status: 'confirmed' } }));
+                await dispatch(
+                  updateBookingAsync({
+                    id: bookingId,
+                    bookingData: { status: "pending" },
+                  })
+                );
               }
 
               try {
                 // Persist plan as active subscription
                 sessionStorage.setItem(
                   "qw_plan",
-                  JSON.stringify({ plan, purchasedAt: Date.now(), active: true })
+                  JSON.stringify({
+                    plan,
+                    purchasedAt: Date.now(),
+                    active: true,
+                  })
                 );
 
                 // Check for existing intake
@@ -798,15 +999,19 @@ export default function BookingPage() {
                 }
 
                 if (!stored || !isRecent(stored?.updatedAt)) {
-
                   toast.success(
                     "Payment successful! Please complete a short intake to unlock sessions."
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
-                    sessionStorage.setItem("qw_pending_plan", JSON.stringify(plan));
-                  } catch (e) { }
-                  navigate("/questionnaire", { state: { planToActivate: plan } });
+                    sessionStorage.setItem(
+                      "qw_pending_plan",
+                      JSON.stringify(plan)
+                    );
+                  } catch (e) {}
+                  navigate("/questionnaire", {
+                    state: { planToActivate: plan },
+                  });
                   return;
                 }
 
@@ -818,7 +1023,10 @@ export default function BookingPage() {
                     title: "Matched Specialist",
                     assignedAt: Date.now(),
                   };
-                  sessionStorage.setItem("qw_assigned", JSON.stringify(therapist));
+                  sessionStorage.setItem(
+                    "qw_assigned",
+                    JSON.stringify(therapist)
+                  );
 
                   if (scheduled) {
                     scheduled.locked = false;
@@ -829,12 +1037,12 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
-                  !localStorage.getItem("token")
+                  !localStorage.getItem("token");
 
                 toast.success("Payment successful!.");
                 // Navigate to booking confirmation page for all users
@@ -843,13 +1051,19 @@ export default function BookingPage() {
                     ...bookingData,
                     bookingId: bookingId,
                     finalPrice,
-                    guestUser: wasGuestUser ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "{}") : undefined,
+                    guestUser: wasGuestUser
+                      ? JSON.parse(
+                          sessionStorage.getItem("qw_guest_user") || "{}"
+                        )
+                      : undefined,
                     fromServices: true,
                   },
                 });
               } catch (innerError) {
                 console.error("Error in fallback flow:", innerError);
-                toast.error("Payment was successful but there was an issue processing your booking. Please contact support.");
+                toast.error(
+                  "Payment was successful but there was an issue processing your booking. Please contact support."
+                );
               }
             }
           },
@@ -875,23 +1089,27 @@ export default function BookingPage() {
             onload: function () {
               // Ensure processing state is set when modal loads
               setIsProcessing(true);
-            }
+            },
           },
           callback: function (error) {
             // Handle payment failure
             if (error) {
               console.error("Payment failed:", error);
-              toast.error("Payment failed. Please try again or contact support.");
+              toast.error(
+                "Payment failed. Please try again or contact support."
+              );
               setIsProcessing(false);
             }
-          }
+          },
         };
 
         // Initialize and open Razorpay checkout
-        if (typeof window !== 'undefined' && (window as any).Razorpay) {
+        if (typeof window !== "undefined" && (window as any).Razorpay) {
           // Check if key exists before creating Razorpay instance
           if (!options.key || options.key === "rzp_test_1234567890") {
-            toast.error("Razorpay key is not configured properly. Please contact support.");
+            toast.error(
+              "Razorpay key is not configured properly. Please contact support."
+            );
             setIsProcessing(false);
             return;
           }
@@ -924,22 +1142,28 @@ export default function BookingPage() {
             </div>
             <div className="flex items-center gap-3">
               <div
-                className={`px-3 py-1 rounded-lg text-sm font-black ${intakeIsRecent
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-yellow-50 text-yellow-800"
-                  }`}
+                className={`px-3 py-1 rounded-lg text-sm font-black ${
+                  intakeIsRecent
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-yellow-50 text-yellow-800"
+                }`}
               >
                 {intakeIsRecent ? "Intake: Complete" : "Intake: Required"}
               </div>
               <div
-                className={`px-3 py-1 rounded-lg text-sm font-black ${sessionStorage.getItem("qw_plan")
-                  ? "bg-primary/10 text-primary"
-                  : "bg-slate-100 text-slate-400"
-                  }`}
+                className={`px-3 py-1 rounded-lg text-sm font-black ${
+                  sessionStorage.getItem("qw_plan")
+                    ? "bg-primary/10 text-primary"
+                    : "bg-slate-100 text-slate-400"
+                }`}
               >
                 {sessionStorage.getItem("qw_plan")
-                  ? (subscriptionBooking ? "Subscription: Active" : "Plan: Active")
-                  : (subscriptionBooking ? "Subscription: Not Purchased" : "Plan: Not Purchased")}
+                  ? subscriptionBooking
+                    ? "Subscription: Active"
+                    : "Plan: Active"
+                  : subscriptionBooking
+                  ? "Subscription: Not Purchased"
+                  : "Plan: Not Purchased"}
               </div>
             </div>
           </div>
@@ -950,7 +1174,6 @@ export default function BookingPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Guest User Form and Payment Form */}
           <div className="lg:col-span-2 space-y-6">
-
             <Card variant="elevated">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -963,69 +1186,86 @@ export default function BookingPage() {
                 <div className="space-y-4">
                   {/* Full Name */}
                   <div>
-                    <Label htmlFor="guestName">Full Name</Label>
+                    <Label htmlFor="guestName">Full Name *</Label>
                     <Input
                       id="guestName"
-                      placeholder="Enter your full name"
+                      placeholder="Enter your full name (2-50 letters)"
                       value={guestUserData.name}
                       disabled={!!user}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setGuestUserData({
                           ...guestUserData,
                           name: e.target.value,
-                        })
-                      }
-                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
-
+                        });
+                        // Clear error when user starts typing
+                        if (nameError) setNameError("");
+                      }}
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${nameError ? "border-destructive" : ""}`}
                     />
+                    {nameError && (
+                      <p className="text-destructive text-sm mt-1">{nameError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter 2-50 letters only
+                    </p>
                   </div>
 
                   {/* Email */}
                   <div>
-                    <Label htmlFor="guestEmail">Email Address</Label>
+                    <Label htmlFor="guestEmail">Email Address *</Label>
                     <Input
                       id="guestEmail"
                       type="email"
                       placeholder="Enter your email address"
                       value={guestUserData.email}
                       disabled={!!user}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setGuestUserData({
                           ...guestUserData,
                           email: e.target.value,
-                        })
-                      }
-                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
-
+                        });
+                        // Clear error when user starts typing
+                        if (emailError) setEmailError("");
+                      }}
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${emailError ? "border-destructive" : ""}`}
                     />
+                    {emailError && (
+                      <p className="text-destructive text-sm mt-1">{emailError}</p>
+                    )}
                   </div>
 
                   {/* Phone */}
                   <div>
-                    <Label htmlFor="guestPhone">Phone Number</Label>
+                    <Label htmlFor="guestPhone">Phone Number *</Label>
                     <Input
                       id="guestPhone"
-                      placeholder="Enter your phone number"
+                      placeholder="Enter your phone number (10-15 digits)"
                       value={guestUserData?.phone}
                       disabled={!!user}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, ""); // sirf number
-                        if (value.length <= 10) {
+                        const value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+                        if (value.length <= 15) {
                           setGuestUserData({
                             ...guestUserData,
                             phone: value,
                           });
+                          // Clear error when user starts typing
+                          if (phoneError) setPhoneError("");
                         }
                       }}
-                      maxLength={10}
-                      className="mt-2 disabled:text-black disabled:bg-white disabled:opacity-100"
+                      maxLength={15}
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${phoneError ? "border-destructive" : ""}`}
                     />
-
+                    {phoneError && (
+                      <p className="text-destructive text-sm mt-1">{phoneError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter 10-15 digit mobile number (any country)
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
 
             {/* Security Notice */}
             <Card variant="outline">
@@ -1037,14 +1277,14 @@ export default function BookingPage() {
                   <div>
                     <p className="font-medium text-sm">Secure Payment</p>
                     <p className="text-xs text-muted-foreground">
-                      Your payment is encrypted and secure. We never store your card details.
+                      Your payment is encrypted and secure. We never store your
+                      card details.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-
 
           {/* Order Summary */}
           <div className="space-y-6">
@@ -1056,20 +1296,27 @@ export default function BookingPage() {
                 {/* Therapist or Plan Info depending on flow */}
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                   <img
-                    src={subscriptionBooking
-                      ? "https://placehold.co/100x100?text=SUB"
-                      : (therapist.avatar || "https://placehold.co/100x100?text=DOC")}
+                    src={
+                      subscriptionBooking
+                        ? "https://placehold.co/100x100?text=SUB"
+                        : therapist.avatar ||
+                          "https://placehold.co/100x100?text=DOC"
+                    }
                     alt={subscriptionBooking ? plan.name : therapist.name}
                     className="w-12 h-12 rounded-lg object-cover"
                   />
                   <div>
-                    <p className="font-medium">{subscriptionBooking ? plan.name : therapist.name}</p>
+                    <p className="font-medium">
+                      {subscriptionBooking ? plan.name : therapist.name}
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      {subscriptionBooking ? `Subscription Plan - ${plan.duration}` : therapist.title}
+                      {subscriptionBooking
+                        ? `Subscription Plan - ${plan.duration}`
+                        : therapist.title}
                     </p>
                     {subscriptionBooking && (
                       <p className="text-sm text-muted-foreground">
-                        Sessions: {plan.sessions || 'Unlimited'}
+                        Sessions: {plan.sessions || "Unlimited"}
                       </p>
                     )}
                   </div>
@@ -1079,9 +1326,15 @@ export default function BookingPage() {
                 {/* Plan or Service Info depending on flow */}
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-medium">{subscriptionBooking ? plan.name : (bookingData?.service?.name || plan.name)}</p>
+                    <p className="font-medium">
+                      {subscriptionBooking
+                        ? plan.name
+                        : bookingData?.service?.name || plan.name}
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      {subscriptionBooking ? plan.duration : (bookingData?.service?.duration || plan.duration)}
+                      {subscriptionBooking
+                        ? plan.duration
+                        : bookingData?.service?.duration || plan.duration}
                     </p>
                     {!subscriptionBooking && bookingData?.service && (
                       <p className="text-sm text-muted-foreground">
@@ -1103,7 +1356,9 @@ export default function BookingPage() {
                   <div>
                     <span className="font-semibold text-lg">Total</span>
                     <p className="text-sm text-muted-foreground">
-                      {subscriptionBooking ? "Subscription Payment" : "Service Booking Payment"}
+                      {subscriptionBooking
+                        ? "Subscription Payment"
+                        : "Service Booking Payment"}
                     </p>
                   </div>
                   <span className="font-bold text-2xl text-primary">
@@ -1111,14 +1366,11 @@ export default function BookingPage() {
                   </span>
                 </div>
 
-
-
                 {!intakeIsRecent && (
                   <div className="p-3 rounded-md bg-yellow-50 border border-yellow-100 text-yellow-800 text-sm mb-4">
                     {subscriptionBooking
                       ? "We noticed you don't have a recent intake on file. After payment you'll be prompted to complete the intake to unlock services."
-                      : "We noticed you don't have a recent intake on file. After payment you'll be prompted to complete the intake to unlock sessions."
-                    }
+                      : "We noticed you don't have a recent intake on file. After payment you'll be prompted to complete the intake to unlock sessions."}
                   </div>
                 )}
 
@@ -1130,7 +1382,9 @@ export default function BookingPage() {
                   disabled={
                     isProcessing ||
                     (isGuestUser &&
-                      (!guestUserData.name || !guestUserData.email || !guestUserData.phone))
+                      (!guestUserData.name ||
+                        !guestUserData.email ||
+                        !guestUserData.phone))
                   }
                 >
                   {isProcessing ? (
@@ -1141,28 +1395,33 @@ export default function BookingPage() {
                   ) : (
                     <>
                       <Lock className="h-4 w-4 mr-2" />
-                      {subscriptionBooking ? `Pay ₹${finalPrice} for Subscription` : `Pay ₹${finalPrice} for Booking`}
+                      {subscriptionBooking
+                        ? `Pay ₹${finalPrice} for Subscription`
+                        : `Pay ₹${finalPrice} for Booking`}
                     </>
                   )}
                 </Button>
 
-                {isGuestUser &&
-                  (!guestUserData.name || !guestUserData.email || !guestUserData.phone) && (
-                    <p className="text-xs text-center text-destructive">
-                      Please fill in your name and email to continue
-                    </p>
-                  )}
-                <p className="text-xs text-center text-muted-foreground">
+                {isGuestUser && (nameError || emailError || phoneError) && (
+                  <div className="text-xs text-center text-destructive space-y-1">
+                    {nameError && <p>{nameError}</p>}
+                    {emailError && <p>{emailError}</p>}
+                    {phoneError && <p>{phoneError}</p>}
+                  </div>
+                )}
+                {/* <p className="text-xs text-center text-muted-foreground">
                   By completing this purchase, you agree to our Terms of
                   Service.
-                </p>
+                </p> */}
               </CardContent>
             </Card>
 
             {/* Cancellation Policy */}
-            <Card variant="outline">
+            {/* <Card variant="outline">
               <CardContent className="p-4">
-                <h4 className="font-medium mb-2">{subscriptionBooking ? "Subscription Terms" : "Booking Terms"}</h4>
+                <h4 className="font-medium mb-2">
+                  {subscriptionBooking ? "Subscription Terms" : "Booking Terms"}
+                </h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   {subscriptionBooking ? (
                     <>
@@ -1189,7 +1448,7 @@ export default function BookingPage() {
                   )}
                 </ul>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>

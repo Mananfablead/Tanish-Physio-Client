@@ -160,9 +160,9 @@ export const createGuestSubscriptionPaymentOrder = (paymentData: {
   planId: string;
   amount: number;
   currency: string;
-  clientName: string;
-  clientEmail: string;
-  clientPhone: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
 }) => {
   return api.post("/payments/create-guest-subscription-order", paymentData);
 };
@@ -398,8 +398,7 @@ export const videoCallAPI = {
     api.post("video-call/generate-join-link", { sessionId, userId, role }),
 
   // Verify call token
-  verifyJoinLink: (token) =>
-    api.post("video-call/verify-join-link", { token }),
+  verifyJoinLink: (token) => api.post("video-call/verify-join-link", { token }),
 
   // Get call details for a session
   getCallDetails: (sessionId) => api.get(`video-call/info/${sessionId}`),
@@ -410,6 +409,31 @@ export const videoCallAPI = {
   // Report call issue
   reportCallIssue: (sessionId, issue, description) =>
     api.post("video-call/report-issue", { sessionId, issue, description }),
+};
+
+// Service API functions
+export const getAllServices = () => {
+  return api.get("/services");
+};
+
+export const getServiceById = (id: string) => {
+  return api.get(`/services/${id}`);
+};
+
+export const getServiceBySlug = (slug: string) => {
+  return api.get(`/services/slug/${slug}`);
+};
+
+export const createService = (serviceData: any) => {
+  return api.post("/services", serviceData);
+};
+
+export const updateService = (id: string, serviceData: any) => {
+  return api.put(`/services/${id}`, serviceData);
+};
+
+export const deleteService = (id: string) => {
+  return api.delete(`/services/${id}`);
 };
 
 // Chat API functions

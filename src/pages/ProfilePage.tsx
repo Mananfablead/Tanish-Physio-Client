@@ -46,7 +46,8 @@ import {
   BookingsSection,
   SubscriptionHistorySection,
   PersonalInfoSection,
-  RescheduleModal
+  RescheduleModal,
+  GoogleMeetDisplay,
 } from "@/components/profile";
 
 // Import recorded sessions component
@@ -66,30 +67,31 @@ interface Section {
 // --- Main Component ---
 
 export default function ProfilePage() {
-  const   user = useSelector(selectCurrentUser);
+  const user = useSelector(selectCurrentUser);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [selectedSection, setSelectedSection] = useState<string>(() => {
     // Retrieve the selected section from localStorage, default to 'personal'
-    const savedSection = localStorage.getItem('profileSelectedSection');
+    const savedSection = localStorage.getItem("profileSelectedSection");
     return savedSection || "personal";
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   // Reschedule states
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState<boolean>(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] =
+    useState<boolean>(false);
   const [sessionToReschedule, setSessionToReschedule] = useState<any>(null);
   const [rescheduleDate, setRescheduleDate] = useState<string>("");
   const [rescheduleTime, setRescheduleTime] = useState<string>("");
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
-  
+
   // Calendar states
   const [availability, setAvailability] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  
+
   // Get data from Redux store
   const {
     activePlan,
@@ -106,13 +108,13 @@ export default function ProfilePage() {
     loading: sessionsLoading,
     error: sessionsError,
   } = useSelector((state: { sessions: any }) => state.sessions);
-  
+
   const {
     bookings,
     loading: bookingsLoading,
     error: bookingsError,
   } = useSelector((state: any) => state.bookings);
-  
+
   const bookingList = bookings || [];
   // const activePlan = user?.subscriptionData;
 
@@ -129,71 +131,89 @@ export default function ProfilePage() {
   );
   
   const nextSession =
-    sessions?.find((session: any) => session.status === "live") || null;
+  sessions?.find((session: any) => session.status === "live") || null;
   
   const [sessionCompleted, setSessionCompleted] = useState<any[]>([]);
-  
+
   // Update completed sessions when sessions data changes
   useEffect(() => {
-    const completed = sessions.filter(
-      (s) => s.status === "completed"
-    );
+    const completed = sessions.filter((s) => s.status === "completed");
     setSessionCompleted(completed);
   }, [sessions]);
-  
+
   // Calculate expiration status for subscriptions and services
-  const getExpirationStatus = (item: any, type: 'subscription' | 'service') => {
-    if (type === 'subscription') {
+  const getExpirationStatus = (item: any, type: "subscription" | "service") => {
+    if (type === "subscription") {
       if (item.isExpired) {
-        return { status: 'expired', text: 'Expire', color: 'text-red-600 bg-red-100' };
+        return {
+          status: "expired",
+          text: "Expire",
+          color: "text-red-600 bg-red-100",
+        };
       }
       if (item.endDate) {
         const expiryDate = new Date(item.endDate);
-        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        const daysUntilExpiry = Math.ceil(
+          (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
         if (daysUntilExpiry <= 7) {
-          return { 
-            status: 'expiring-soon', 
-            text: `Expires in ${daysUntilExpiry} days`, 
-            color: 'text-yellow-600 bg-yellow-100' 
+          return {
+            status: "expiring-soon",
+            text: `Expires in ${daysUntilExpiry} days`,
+            color: "text-yellow-600 bg-yellow-100",
           };
         }
-        return { 
-          status: 'active', 
-          text: `Expires ${expiryDate.toLocaleDateString()}`, 
-          color: 'text-green-600 bg-green-100' 
+        return {
+          status: "active",
+          text: `Expires ${expiryDate.toLocaleDateString()}`,
+          color: "text-green-600 bg-green-100",
         };
       }
-      return { status: 'active', text: 'Active', color: 'text-green-600 bg-green-100' };
+      return {
+        status: "active",
+        text: "Active",
+        color: "text-green-600 bg-green-100",
+      };
     } else {
       // Service expiration
       if (item.isExpired) {
-        return { status: 'expired', text: 'Expire', color: 'text-red-600 bg-red-100' };
+        return {
+          status: "expired",
+          text: "Expire",
+          color: "text-red-600 bg-red-100",
+        };
       }
       if (item.expiryDate) {
         const expiryDate = new Date(item.expiryDate);
-        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        const daysUntilExpiry = Math.ceil(
+          (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
         if (daysUntilExpiry <= 7) {
-          return { 
-            status: 'expiring-soon', 
-            text: `Expires in ${daysUntilExpiry} days`, 
-            color: 'text-yellow-600 bg-yellow-100' 
+          return {
+            status: "expiring-soon",
+            text: `Expires in ${daysUntilExpiry} days`,
+            color: "text-yellow-600 bg-yellow-100",
           };
         }
-        return { 
-          status: 'active', 
-          text: `Expires ${expiryDate.toLocaleDateString()}`, 
-          color: 'text-green-600 bg-green-100' 
+        return {
+          status: "active",
+          text: `Expires ${expiryDate.toLocaleDateString()}`,
+          color: "text-green-600 bg-green-100",
         };
       }
-      return { status: 'unlimited', text: 'Unlimited', color: 'text-blue-600 bg-blue-100' };
+      return {
+        status: "unlimited",
+        text: "Unlimited",
+        color: "text-blue-600 bg-blue-100",
+      };
     }
   };
 
   // Save selected section to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('profileSelectedSection', selectedSection);
+    localStorage.setItem("profileSelectedSection", selectedSection);
   }, [selectedSection]);
-  
+
   // Fetch user data when component mounts
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
@@ -218,24 +238,33 @@ export default function ProfilePage() {
         // status: "pending"
       };
 
-      const response: any = await rescheduleSession(sessionToReschedule._id, rescheduleData);
-      
+      const response: any = await rescheduleSession(
+        sessionToReschedule._id,
+        rescheduleData
+      );
+
       if (response.data?.success) {
         // Refresh sessions data
         dispatch(fetchAllSessions());
         dispatch(fetchUpcomingSessions());
-        
+
         setIsRescheduleModalOpen(false);
         setSessionToReschedule(null);
         setRescheduleDate("");
         setRescheduleTime("");
         setRescheduleError(null);
-        toast({ title: "Session rescheduled successfully", variant: "default" });
+        toast({
+          title: "Session rescheduled successfully",
+          variant: "default",
+        });
       } else {
-        setRescheduleError(response.data?.message || "Failed to reschedule session");
+        setRescheduleError(
+          response.data?.message || "Failed to reschedule session"
+        );
       }
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || "Failed to reschedule session";
+      const errorMessage =
+        err?.response?.data?.message || "Failed to reschedule session";
       setRescheduleError(errorMessage);
       setTimeout(() => setRescheduleError(null), 5000);
     }
@@ -282,7 +311,9 @@ export default function ProfilePage() {
       // Get form data
       const nameInput = document.querySelector("#name") as HTMLInputElement;
       const phoneInput = document.querySelector("#phone") as HTMLInputElement;
-      const locationInput = document.querySelector("#location") as HTMLInputElement;
+      const locationInput = document.querySelector(
+        "#location"
+      ) as HTMLInputElement;
 
       const profileData = {
         name: nameInput?.value || user?.name,
@@ -385,21 +416,24 @@ export default function ProfilePage() {
         upcomingSessions={filteredUpcomingSessions}
         sessionCompleted={sessionCompleted}
         onImageChange={handleImageChange}
+        liveSession={nextSession}
       />
 
       <div className="container -mt-16 pb-20 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Navigation */}
-          <SidebarNavigation
-            sections={sections}
-            selectedSection={selectedSection}
-            setSelectedSection={setSelectedSection}
-            isMobileMenuOpen={isMobileMenuOpen}
-            setIsMobileMenuOpen={setIsMobileMenuOpen}
-          />
+          <div className="lg:sticky lg:top-24">
+            <SidebarNavigation
+              sections={sections}
+              selectedSection={selectedSection}
+              setSelectedSection={setSelectedSection}
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
+          </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <div className="bg-slate-200/40 backdrop-blur p-3 rounded-2xl space-y-4 border border-slate-200 shadow-sm">
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
@@ -416,16 +450,29 @@ export default function ProfilePage() {
                 )}
 
                 {selectedSection === "sessionHistory" && (
-                  <SessionHistorySection 
-                    sessions={sessions} 
-                    onReschedule={(session) => {
-                      setSessionToReschedule(session);
-                      setRescheduleDate("");
-                      setRescheduleTime("");
-                      setRescheduleError(null);
-                      setIsRescheduleModalOpen(true);
-                    }} 
-                  />
+                  <div className="space-y-4">
+                    <SessionHistorySection
+                      sessions={sessions}
+                      onReschedule={(session) => {
+                        setSessionToReschedule(session);
+                        setRescheduleDate("");
+                        setRescheduleTime("");
+                        setRescheduleError(null);
+                        setIsRescheduleModalOpen(true);
+                      }}
+                    />
+                    {/* Display Google Meet links for recent sessions */}
+                    {sessions &&
+                      sessions
+                        .slice(0, 3)
+                        .map((session) => (
+                          <GoogleMeetDisplay
+                            key={session._id}
+                            sessionId={session._id}
+                            className="mt-4"
+                          />
+                        ))}
+                  </div>
                 )}
 
                 {selectedSection === "recordedSessions" && (
@@ -437,15 +484,18 @@ export default function ProfilePage() {
                 )}
 
                 {selectedSection === "subscriptionHistory" && (
-                  <SubscriptionHistorySection 
-                    userSubscriptions={userSubscriptions} 
+                  <SubscriptionHistorySection
+                    userSubscriptions={userSubscriptions}
                     loading={subsLoading}
                     error={subsError}
                   />
                 )}
 
                 {selectedSection === "personal" && (
-                  <PersonalInfoSection user={user} onSaveChanges={handleSaveChanges} />
+                  <PersonalInfoSection
+                    user={user}
+                    onSaveChanges={handleSaveChanges}
+                  />
                 )}
               </div>
             </div>

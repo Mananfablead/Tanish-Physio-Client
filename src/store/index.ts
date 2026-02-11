@@ -1,24 +1,23 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
-import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
-import authReducer from './slices/authSlice';
-import questionnaireReducer from './slices/questionnaireSlice';
-import subscriptionReducer from './slices/subscriptionSlice';
-import testimonialReducer from './slices/testimonialSlice';
-import cmsReducer from './slices/cmsSlice';
-// import authReducer from './authSlice';
-import serviceReducer from './slices/serviceSlice.ts';
-import bookingsReducer from './slices/bookingsSlice';
-import sessionReducer from './slices/sessionSlice';
-import paymentReducer from './slices/paymentSlice';
-import adminReducer from './slices/adminSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import { persistStore, persistReducer } from "redux-persist";
+import storage from "redux-persist/lib/storage"; // defaults to localStorage for web
+import { useDispatch, useSelector, TypedUseSelectorHook } from "react-redux";
+import authReducer from "./slices/authSlice";
+import questionnaireReducer from "./slices/questionnaireSlice";
+import subscriptionReducer from "./slices/subscriptionSlice";
+import testimonialReducer from "./slices/testimonialSlice";
+import cmsReducer from "./slices/cmsSlice";
+import serviceReducer from "./slices/serviceSlice.ts";
+import bookingsReducer from "./slices/bookingsSlice";
+import sessionReducer from "./slices/sessionSlice";
+import paymentReducer from "./slices/paymentSlice";
+import adminReducer from "./slices/adminSlice";
 
 // Redux Persist config
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage,
-  whitelist: ['auth'], 
+  whitelist: ["auth"],
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
@@ -39,7 +38,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
       },
     }),
 });

@@ -33,54 +33,63 @@ export function SidebarNavigation({
   return (
     <>
       {/* Desktop Sidebar Nav */}
-      <div className="hidden lg:block space-y-6">
-        <Card className="p-4 rounded-2xl border-slate-200 shadow-sm overflow-hidden relative">
+      <div className="hidden lg:block lg:sticky lg:top-24 space-y-6">
+        <Card className="p-2 rounded-2xl border-slate-200 shadow-sm overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
           <div className="space-y-1">
-            {sections.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === "bookSession") {
-                    navigate("/schedule");
-                  } else {
-                    setSelectedSection(item.id);
-                  }
-                }}
-                className={`w-full text-left p-3.5 rounded-xl transition-all duration-300 group
-    ${
-      selectedSection === item.id
-        ? "bg-primary/10 shadow-inner"
-        : "hover:bg-primary/10"
-    }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`p-2 rounded-lg transition-colors
+          {sections.map((item) => {
+  const isAction = item.id === "bookSession";
+
+  return (
+    <button
+      key={item.id}
+      onClick={() => {
+        if (isAction) navigate("/schedule");
+        else setSelectedSection(item.id);
+      }}
+      className={`w-full text-left p-3.5 rounded-xl transition-all duration-300
         ${
           selectedSection === item.id
-            ? "bg-white shadow-sm"
-            : "bg-primary/5 group-hover:bg-white"
-        }`}
-                  >
-                    <item.icon className={`h-5 w-5  ${item.color}`} />
-                  </div>
+            ? "bg-primary/10"
+            : "hover:bg-primary/10"
+        }
+      `}
+    >
+      <div className="flex items-center gap-4">
+        {/* Left normal content */}
+        <div
+          className={`p-2 rounded-lg ${
+            selectedSection === item.id
+              ? "bg-white shadow-sm"
+              : "bg-primary/5"
+          }`}
+        >
+          <item.icon className={`h-5 w-5 ${item.color}`} />
+        </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className={`font-black text-sm transition-colors
-          ${selectedSection === item.id ? "text-primary" : "text-slate-700"}`}
-                    >
-                      {item.label}
-                    </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-black text-sm text-slate-700">
+            {item.label}
+          </p>
+          <p className="text-[11px] text-slate-500 truncate">
+            {item.sub}
+          </p>
+        </div>
 
-                    <div className="text-[11px] font-medium truncate text-slate-500">
-                      {item.sub}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
+        {/* 👉 RIGHT SIDE CTA ONLY */}
+        {isAction && (
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full
+            bg-primary text-white text-[10px] font-black uppercase
+            group-hover:bg-primary group-hover:text-white transition-all">
+            Book
+            <ChevronRight className="h-4 w-4" />
+          </div>
+        )}
+      </div>
+    </button>
+  );
+})}
+
           </div>
         </Card>
       </div>
@@ -139,55 +148,67 @@ export function SidebarNavigation({
             </div>
 
             <div className="space-y-3 pb-8">
-              {sections.map((section) => {
-                const isSelected =
-                  selectedSection === section.id && !section.isAction;
+           {sections.map((section) => {
+  const isAction = section.id === "bookSession";
+  const isSelected =
+    selectedSection === section.id && !isAction;
 
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      if (section.isAction) {
-                        navigate("/schedule");
-                      } else {
-                        setSelectedSection(section.id);
-                      }
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all
-          ${
-            isSelected
-              ? "bg-primary/10 border-primary/20 shadow-inner"
-              : "bg-slate-50 border-slate-100 hover:bg-white hover:border-primary/30"
+  return (
+    <button
+      key={section.id}
+      onClick={() => {
+        if (isAction) navigate("/schedule");
+        else setSelectedSection(section.id);
+        setIsMobileMenuOpen(false);
+      }}
+      className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all
+        ${
+          isSelected
+            ? "bg-primary/10 border-primary/20"
+            : "bg-slate-50 border-slate-100 hover:bg-white"
+        }
+      `}
+    >
+      {/* Left icon */}
+      <div
+        className={`p-2.5 rounded-xl ${
+          isSelected ? "bg-white shadow-sm" : "bg-white/60"
+        }`}
+      >
+        <section.icon className={`h-5 w-5 ${section.color}`} />
+      </div>
+
+      {/* Center text */}
+      <div className="text-left flex-1">
+        <p
+          className={`font-black text-sm ${
+            isSelected ? "text-primary" : "text-slate-700"
           }`}
-                  >
-                    <div
-                      className={`p-2.5 rounded-xl
-            ${isSelected ? "bg-white shadow-sm" : "bg-white/50"}`}
-                    >
-                      <section.icon className={`h-5 w-5 ${section.color}`} />
-                    </div>
+        >
+          {section.label}
+        </p>
+        <p className="text-[11px] text-slate-500 line-clamp-1">
+          {section.sub}
+        </p>
+      </div>
 
-                    <div className="text-left flex-1">
-                      <p
-                        className={`font-black text-sm
-              ${isSelected ? "text-primary" : "text-slate-700"}`}
-                      >
-                        {section.label}
-                      </p>
+      {/* 👉 MOBILE CTA */}
+      {isAction && (
+        <div className="flex items-center gap-1 px-3 py-1.5
+          rounded-full bg-primary text-white text-[11px] font-black shadow-md">
+          Book
+          <ChevronRight className="h-4 w-4" />
+        </div>
+      )}
 
-                      <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
-                        {section.sub}
-                      </p>
-                    </div>
+      {/* Selected dot only for normal sections */}
+      {isSelected && !isAction && (
+        <div className="h-2 w-2 rounded-full bg-primary" />
+      )}
+    </button>
+  );
+})}
 
-                    {/* Active dot only for real sections */}
-                    {isSelected && (
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    )}
-                  </button>
-                );
-              })}
             </div>
           </div>
         </div>

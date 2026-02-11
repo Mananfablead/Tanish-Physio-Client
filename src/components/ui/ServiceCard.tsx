@@ -15,7 +15,8 @@ interface ServiceCardProps {
   benefits: string[];
   details: ServiceDetails;
   ctaText?: string;
-  serviceId?: number;
+  serviceId?: number | string;
+  slug?: string; // Add slug prop
 }
 
 interface ServiceDetails {
@@ -31,15 +32,19 @@ interface ServiceDetails {
   resultsTimeline: string;
 }
 
-export function ServiceCard({ 
-  icon, 
-  title, 
-  description, 
-  benefits, 
+export function ServiceCard({
+  icon,
+  title,
+  description,
+  benefits,
   details,
   ctaText = "Learn More",
-  serviceId
+  serviceId,
+  slug, // Add slug parameter
 }: ServiceCardProps) {
+  // Use slug if available, otherwise fall back to serviceId
+  const linkPath = slug ? `/service/${slug}` : `/service/${serviceId}`;
+
   return (
     <>
       <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 h-full flex flex-col">
@@ -51,9 +56,9 @@ export function ServiceCard({
             <h3 className="text-lg font-black text-slate-900">{title}</h3>
           </div>
         </div>
-        
+
         <p className="text-slate-600 mb-4 flex-grow">{description}</p>
-        
+
         <div className="space-y-2 mb-6">
           {benefits.map((benefit, index) => (
             <div key={index} className="flex items-start gap-2">
@@ -62,9 +67,12 @@ export function ServiceCard({
             </div>
           ))}
         </div>
-        
-        <Link to={`/service/${serviceId}`}>
-          <Button variant="outline" className="mt-auto w-full rounded-xl border-primary text-primary hover:bg-primary hover:text-white font-bold">
+
+        <Link to={linkPath}>
+          <Button
+            variant="outline"
+            className="mt-auto w-full rounded-xl border-primary text-primary hover:bg-primary hover:text-white font-bold"
+          >
             {ctaText}
           </Button>
         </Link>
