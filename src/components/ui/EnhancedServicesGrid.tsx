@@ -163,17 +163,26 @@ export function EnhancedServicesGrid({
                   />
                 </div>
 
-                <div className="p-6 space-y-3">
-                  <h3 className="text-xl font-bold">{service.title}</h3>
+                {/* Content */}
+                <div className="p-6 flex flex-col flex-grow">
 
-                  <div className="flex justify-between text-sm text-slate-500">
-                    <span>Duration: {service.details.sessionDuration}</span>
+                  <h3 className="text-xl font-bold mb-2 line-clamp-1">
+                    {service.title}
+                  </h3>
+
+                  <div className="flex justify-between text-sm text-slate-500 mb-3">
+                    <span>
+                      Duration: {service.details.sessionDuration}
+                    </span>
                     <span className="font-bold text-primary">
                       {service.details.price}
                     </span>
                   </div>
 
-                  <p className="text-slate-600">{service.description}</p>
+                  {/* Description fixed height */}
+                  <p className="text-slate-600 text-sm line-clamp-3 mb-4">
+                    {service.description}
+                  </p>
 
                   {/* Push button to bottom */}
                   <div className="mt-auto flex flex-col sm:flex-row gap-3">
