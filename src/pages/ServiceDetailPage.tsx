@@ -23,6 +23,7 @@ interface ExtendedService {
   title: string;
   description: string;
   benefits: string[];
+
   details: {
     title: string;
     description: string;
@@ -36,6 +37,7 @@ interface ExtendedService {
     prerequisites: string;
     whatToExpect: string[];
     resultsTimeline: string;
+    sessions: number;
   };
   media?: {
     heroImage?: string;

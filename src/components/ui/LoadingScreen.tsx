@@ -27,7 +27,7 @@ export const LoadingScreen = () => {
             ease: "easeOut",
           }}
         />
-        
+
         {/* Main Icon Container */}
         <motion.div
           className="relative h-20 w-20 rounded-2xl bg-primary flex items-center justify-center shadow-xl"
@@ -50,9 +50,13 @@ export const LoadingScreen = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Tanish Physio</h2>
+        <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+          Tanish Physio & Fitness
+        </h2>
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-slate-500">Preparing your wellness path</span>
+          <span className="text-sm font-medium text-slate-500">
+            Preparing your wellness path
+          </span>
           <motion.div className="flex gap-1">
             {[0, 1, 2].map((i) => (
               <motion.span

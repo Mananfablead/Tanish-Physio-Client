@@ -106,7 +106,7 @@ const LoginPage = () => {
                             <div className="flex items-center gap-3">
                                 <img src={logo} alt="Tanish Physio" className="h-20 w-auto object-contain" />
                                 <span className="text-2xl font-bold tracking-tight text-slate-900">
-                                    Tanish <span className="text-green-600">Physio</span>
+                                    Tanish <span className="text-green-600">Physio & Fitness</span>
                                 </span>
                             </div>
                         </Link>

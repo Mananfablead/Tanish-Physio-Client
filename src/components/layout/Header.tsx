@@ -61,11 +61,10 @@ export function Header() {
         <Link to="/" className="flex items-center gap-5">
           <img
             src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
-            alt="Tanish Physio Logo"
+            alt="Tanish Physio & Fitness Logo"
             className="h-16 md:h-20 w-auto object-contain"
           />
         </Link>
-
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-2">
@@ -118,12 +117,21 @@ export function Header() {
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 md:w-64" align="end" forceMount>
+              <DropdownMenuContent
+                className="w-56 md:w-64"
+                align="end"
+                forceMount
+              >
                 <div className="p-3 border-b border-gray-100">
                   <p className="text-sm font-medium">{user?.name}</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[180px]">{user?.email}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                    {user?.email}
+                  </p>
                 </div>
-                <DropdownMenuItem className="p-3" onClick={() => navigate('/profile')}>
+                <DropdownMenuItem
+                  className="p-3"
+                  onClick={() => navigate("/profile")}
+                >
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     <span>Profile</span>
@@ -147,7 +155,7 @@ export function Header() {
                   <Button
                     variant="ghost"
                     className="hidden md:flex px-4 py-2 text-sm"
-                    onClick={() => navigate('/login')}
+                    onClick={() => navigate("/login")}
                   >
                     Sign In
                   </Button>
@@ -184,7 +192,7 @@ export function Header() {
                 <div className="flex items-center justify-center mb-6">
                   <img
                     src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
-                    alt="Tanish Physio Logo"
+                    alt="Tanish Physio & Fitness Logo"
                     className="h-16 w-auto object-contain"
                   />
                 </div>
@@ -196,7 +204,9 @@ export function Header() {
                     onClick={() => setOpen(false)}
                   >
                     <Button
-                      variant={location.pathname === link.to ? "secondary" : "ghost"}
+                      variant={
+                        location.pathname === link.to ? "secondary" : "ghost"
+                      }
                       className="w-full justify-start py-3 text-base"
                     >
                       {link.label}
@@ -213,7 +223,7 @@ export function Header() {
                           className="w-full py-3"
                           onClick={() => {
                             setOpen(false);
-                            navigate('/profile');
+                            navigate("/profile");
                           }}
                         >
                           <User className="h-4 w-4 mr-2" />
@@ -239,7 +249,7 @@ export function Header() {
                         className="w-full py-3 mb-3"
                         onClick={() => {
                           setOpen(false);
-                          navigate('/login');
+                          navigate("/login");
                         }}
                       >
                         Sign In

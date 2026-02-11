@@ -696,7 +696,10 @@ export default function QuestionnairePage() {
                     Question {activeQuestionIndex + 1} of {totalQuestions}
                   </span>
                 </div>
-                <Badge variant="secondary" className="hidden sm:flex bg-accent/10 text-accent border border-accent/20 font-black px-3 py-1 rounded-lg">
+                <Badge
+                  variant="secondary"
+                  className="hidden sm:flex bg-accent/10 text-accent border border-accent/20 font-black px-3 py-1 rounded-lg"
+                >
                   {progressPercentage}% Complete
                 </Badge>
               </div>
@@ -713,54 +716,75 @@ export default function QuestionnairePage() {
         )}
 
         <div className="container  mx-auto px-6">
-
-
           <div className="flex flex-col lg:flex-row gap-8 mt-4">
             <aside className="hidden lg:block lg:w-2/5 sticky top-20 self-start">
-              <div className="rounded-2xl
+              <div
+                className="rounded-2xl
                   bg-gradient-to-br from-slate-50 to-slate-100
                   border border-slate-200
                   p-6
-                  shadow-sm">
+                  shadow-sm"
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase text-slate-500 tracking-wide">Personalized Care Intake</p>
-                    <h2 className="text-lg font-black text-slate-900">Guided clinical intake</h2>
-                    <p className="text-sm text-slate-500 mt-1">This intake helps clinicians prioritize your needs — ~3 minutes</p>
+                    <p className="text-xs font-black uppercase text-slate-500 tracking-wide">
+                      Personalized Care Intake
+                    </p>
+                    <h2 className="text-lg font-black text-slate-900">
+                      Guided clinical intake
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">
+                      This intake helps clinicians prioritize your needs — ~3
+                      minutes
+                    </p>
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <ol className="space-y-2.5 max-h-[400px] overflow-y-auto pr-2">
-                    {activeQuestionnaire?.questions.map((question: any, index: number) => {
-                      const answered = data.hasOwnProperty(question._id);
-                      const current = activeQuestionIndex === index;
-                      return (
-                        <li 
-                          key={question._id} 
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${current ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100'} ${answered ? '!text-emerald-700' : ''}`} 
-                          aria-current={current ? 'step' : undefined}
-                        >
-                          <div className={`
+                    {activeQuestionnaire?.questions.map(
+                      (question: any, index: number) => {
+                        const answered = data.hasOwnProperty(question._id);
+                        const current = activeQuestionIndex === index;
+                        return (
+                          <li
+                            key={question._id}
+                            className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                              current
+                                ? "bg-primary/10 text-primary"
+                                : "hover:bg-slate-100"
+                            } ${answered ? "!text-emerald-700" : ""}`}
+                            aria-current={current ? "step" : undefined}
+                          >
+                            <div
+                              className={`
                             h-8 w-8 rounded-full flex items-center justify-center
                             text-xs font-bold transition-all
-                            ${current
-                              ? "bg-primary text-white shadow-md shadow-primary/20"
-                              : answered
+                            ${
+                              current
+                                ? "bg-primary text-white shadow-md shadow-primary/20"
+                                : answered
                                 ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                                 : "bg-slate-100 text-slate-400 border border-slate-200"
                             }
                           `}
-                          >
-                            {answered ? <CheckCircle className="h-3.5 w-3.5" /> : index + 1}
-                          </div>
-                          <div className="text-sm font-medium truncate flex-1">{question.question}</div>
-                        </li>
-                      );
-                    })}
+                            >
+                              {answered ? (
+                                <CheckCircle className="h-3.5 w-3.5" />
+                              ) : (
+                                index + 1
+                              )}
+                            </div>
+                            <div className="text-sm font-medium truncate flex-1">
+                              {question.question}
+                            </div>
+                          </li>
+                        );
+                      }
+                    )}
                   </ol>
                 </div>
 
@@ -768,15 +792,21 @@ export default function QuestionnairePage() {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                       <Shield className="h-4 w-4 text-success" />
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Secure</span>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Secure
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Lock className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Encrypted</span>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Encrypted
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-success" />
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Verified</span>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Verified
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -785,73 +815,118 @@ export default function QuestionnairePage() {
 
             <main className="lg:w-3/5 w-full ">
               <div className="">
-
                 {/* Stored intake banner */}
                 {storedIntakeFound && !isReviewing && (
                   <div className="mb-6">
                     <Card className="p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <div className="text-sm font-black">Saved intake found</div>
-                          <div className="text-xs text-slate-500">Last updated: {storedIntakeUpdatedAt ? new Date(storedIntakeUpdatedAt).toLocaleDateString() : 'Unknown'}. You can review or continue with this intake.</div>
+                          <div className="text-sm font-black">
+                            Saved intake found
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            Last updated:{" "}
+                            {storedIntakeUpdatedAt
+                              ? new Date(
+                                  storedIntakeUpdatedAt
+                                ).toLocaleDateString()
+                              : "Unknown"}
+                            . You can review or continue with this intake.
+                          </div>
                         </div>
                         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
-                          <Button variant="outline" className="w-full lg:w-auto" onClick={() => { setIsReviewing(true); }}>Review</Button>
-                          <Button className="w-full lg:w-auto" onClick={async () => {
-                            
-                            const stored = loadStoredQuestionnaire();
-                            if (stored) {
-                              try {
-                               
-                                const healthProfileData = transformQuestionnaireToHealthProfile(
-                                  stored.data,
-                                  activeQuestionnaire?.questions || []
-                                );
-
-                                // Update user profile with health data from stored questionnaire (only for authenticated users)
-                                const profileData = {
-                                  healthProfile: healthProfileData
-                                };
-                                // Only update profile for authenticated users
-                                if (isAuthenticated) {
-                                  await updateProfile(profileData);
-                                }
-                              } catch (error) {
-                                console.error("Error updating profile with stored questionnaire data:", error);
-                              }
-
-                              const assigned = assignTherapist(stored.data);
-                              const pending = pendingPlan || (() => {
-                                try { const raw = sessionStorage.getItem("qw_pending_plan"); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
-                              })();
-                              if (pending) {
-                                savePlanToStorage(pending);
-                                try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
-                                // Get subscription ID from stored plan
-                                let subscriptionId = null;
+                          <Button
+                            variant="outline"
+                            className="w-full lg:w-auto"
+                            onClick={() => {
+                              setIsReviewing(true);
+                            }}
+                          >
+                            Review
+                          </Button>
+                          <Button
+                            className="w-full lg:w-auto"
+                            onClick={async () => {
+                              const stored = loadStoredQuestionnaire();
+                              if (stored) {
                                 try {
-                                  const storedPlan = sessionStorage.getItem("qw_plan");
-                                  if (storedPlan) {
-                                    const planData = JSON.parse(storedPlan);
-                                    subscriptionId = planData.subscriptionId || null;
+                                  const healthProfileData =
+                                    transformQuestionnaireToHealthProfile(
+                                      stored.data,
+                                      activeQuestionnaire?.questions || []
+                                    );
+
+                                  // Update user profile with health data from stored questionnaire (only for authenticated users)
+                                  const profileData = {
+                                    healthProfile: healthProfileData,
+                                  };
+                                  // Only update profile for authenticated users
+                                  if (isAuthenticated) {
+                                    await updateProfile(profileData);
                                   }
-                                } catch (e) {
-                                  console.error("Error getting subscription ID from storage:", e);
+                                } catch (error) {
+                                  console.error(
+                                    "Error updating profile with stored questionnaire data:",
+                                    error
+                                  );
                                 }
-                                
-                                navigate('/booking-confirmation', { state: { 
-                                  fromSubscription: true,
-                                  subscriptionId: subscriptionId,
-                                  plan: pending, 
-                                  questionnaireData: stored.data, 
-                                  therapist: assigned,
-                                  guestUser: guestUser
-                                } });
-                                return;
+
+                                const assigned = assignTherapist(stored.data);
+                                const pending =
+                                  pendingPlan ||
+                                  (() => {
+                                    try {
+                                      const raw =
+                                        sessionStorage.getItem(
+                                          "qw_pending_plan"
+                                        );
+                                      return raw ? JSON.parse(raw) : null;
+                                    } catch (e) {
+                                      return null;
+                                    }
+                                  })();
+                                if (pending) {
+                                  savePlanToStorage(pending);
+                                  try {
+                                    sessionStorage.removeItem(
+                                      "qw_pending_plan"
+                                    );
+                                  } catch (e) {}
+                                  // Get subscription ID from stored plan
+                                  let subscriptionId = null;
+                                  try {
+                                    const storedPlan =
+                                      sessionStorage.getItem("qw_plan");
+                                    if (storedPlan) {
+                                      const planData = JSON.parse(storedPlan);
+                                      subscriptionId =
+                                        planData.subscriptionId || null;
+                                    }
+                                  } catch (e) {
+                                    console.error(
+                                      "Error getting subscription ID from storage:",
+                                      e
+                                    );
+                                  }
+
+                                  navigate("/booking-confirmation", {
+                                    state: {
+                                      fromSubscription: true,
+                                      subscriptionId: subscriptionId,
+                                      plan: pending,
+                                      questionnaireData: stored.data,
+                                      therapist: assigned,
+                                      guestUser: guestUser,
+                                    },
+                                  });
+                                  return;
+                                }
+                                // navigate('/profile', { state: { questionnaireData: stored.data, assigned, guestUser: guestUser } });
                               }
-                              // navigate('/profile', { state: { questionnaireData: stored.data, assigned, guestUser: guestUser } });
-                            }
-                          }}>Use & Continue</Button>
+                            }}
+                          >
+                            Use & Continue
+                          </Button>
                         </div>
                       </div>
                     </Card>
@@ -860,8 +935,18 @@ export default function QuestionnairePage() {
 
                 <AnimatePresence mode="wait">
                   {!isReviewing && currentQuestion ? (
-                    <motion.div key={`question-${currentQuestion._id}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }} >
-                      <div role="region" aria-labelledby={`question-${currentQuestion._id}-title`} className="min-h-[50vh] flex lg:items-center  items-start justify-center pt-6 lg:pt-0">
+                    <motion.div
+                      key={`question-${currentQuestion._id}`}
+                      initial={{ opacity: 0, x: 30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -30 }}
+                      transition={{ duration: 0.45, ease: "easeOut" }}
+                    >
+                      <div
+                        role="region"
+                        aria-labelledby={`question-${currentQuestion._id}-title`}
+                        className="min-h-[50vh] flex lg:items-center  items-start justify-center pt-6 lg:pt-0"
+                      >
                         <Card className="w-full border rounded-2xl border-slate-500 shadow-sm ">
                           <CardContent className="p-2 lg:p-8">
                             <div className="flex items-center gap-4 mb-6">
@@ -869,11 +954,18 @@ export default function QuestionnairePage() {
                                 {activeQuestionIndex + 1}
                               </div>
                               <div>
-                                <h3 id={`question-${currentQuestion._id}-title`} className="font-black text-2xl text-slate-900 tracking-tight">
+                                <h3
+                                  id={`question-${currentQuestion._id}-title`}
+                                  className="font-black text-2xl text-slate-900 tracking-tight"
+                                >
                                   {currentQuestion.question}
-                                  {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
+                                  {currentQuestion.required && (
+                                    <span className="text-red-500 ml-1">*</span>
+                                  )}
                                 </h3>
-                                <p className="text-sm text-slate-500 mt-1">Answer this question to continue</p>
+                                <p className="text-sm text-slate-500 mt-1">
+                                  Answer this question to continue
+                                </p>
                               </div>
                             </div>
 
@@ -882,18 +974,32 @@ export default function QuestionnairePage() {
                             </div>
 
                             <div className="mt-4">
-                              <p className="text-sm text-slate-500 italic">* Indicates required field</p>
+                              <p className="text-sm text-slate-500 italic">
+                                * Indicates required field
+                              </p>
                             </div>
 
                             <div className="mt-4 flex items-center justify-between gap-4">
                               {activeQuestionIndex > 0 ? (
-                                <Button variant="outline" onClick={handlePrevious} className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all">Back</Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={handlePrevious}
+                                  className="h-12 px-4 md:px-6 rounded-xl font-black text-primary border-primary/30 hover:bg-primary transition-all"
+                                >
+                                  Back
+                                </Button>
                               ) : (
                                 <div />
                               )}
 
-                              <Button onClick={handleNext} className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group">
-                                {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
+                              <Button
+                                onClick={handleNext}
+                                className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group"
+                              >
+                                {activeQuestionIndex <
+                                (activeQuestionnaire?.questions.length || 0) - 1
+                                  ? "Continue"
+                                  : "Finish & Review"}
                                 <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                               </Button>
                             </div>
@@ -902,7 +1008,13 @@ export default function QuestionnairePage() {
                       </div>
                     </motion.div>
                   ) : (
-                    <motion.div key="review" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
+                    <motion.div
+                      key="review"
+                      initial={{ opacity: 0, x: 30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -30 }}
+                      transition={{ duration: 0.45, ease: "easeOut" }}
+                    >
                       <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                         <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-1">
                           <CardContent className="p-6 lg:p-8">
@@ -913,33 +1025,48 @@ export default function QuestionnairePage() {
                                     <FileText className="h-5 w-5" />
                                   </div>
                                   <div>
-                                    <h3 className="text-xl font-black text-slate-900">Clinical Intake Summary</h3>
-                                    <p className="text-sm text-slate-500 mt-1">Confirm the clinical details we'll use to match you with the right specialists.</p>
+                                    <h3 className="text-xl font-black text-slate-900">
+                                      Clinical Intake Summary
+                                    </h3>
+                                    <p className="text-sm text-slate-500 mt-1">
+                                      Confirm the clinical details we'll use to
+                                      match you with the right specialists.
+                                    </p>
                                   </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                  {activeQuestionnaire?.questions.map((question: any, index: number) => (
-                                    <div key={question._id} className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
-                                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary flex-shrink-0 mt-1">
-                                        <Edit2 className="h-4 w-4" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-xs uppercase font-black tracking-[0.15em] text-slate-400 mb-1.5">{question.question}</p>
-                                        <p className="text-base font-medium text-slate-800 break-words">{data[question._id] || 'Not answered'}</p>
-                                      </div>
-                                      <button
-                                        onClick={() => {
-                                          setIsReviewing(false);
-                                          setActiveQuestionIndex(index);
-                                        }}
-                                        className="text-slate-400 hover:text-primary transition-colors self-start mt-1.5"
-                                        aria-label="Edit question"
+                                  {activeQuestionnaire?.questions.map(
+                                    (question: any, index: number) => (
+                                      <div
+                                        key={question._id}
+                                        className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors"
                                       >
-                                        <Edit className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  ))}
+                                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary flex-shrink-0 mt-1">
+                                          <Edit2 className="h-4 w-4" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs uppercase font-black tracking-[0.15em] text-slate-400 mb-1.5">
+                                            {question.question}
+                                          </p>
+                                          <p className="text-base font-medium text-slate-800 break-words">
+                                            {data[question._id] ||
+                                              "Not answered"}
+                                          </p>
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            setIsReviewing(false);
+                                            setActiveQuestionIndex(index);
+                                          }}
+                                          className="text-slate-400 hover:text-primary transition-colors self-start mt-1.5"
+                                          aria-label="Edit question"
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    )
+                                  )}
                                 </div>
                               </div>
 
@@ -948,19 +1075,27 @@ export default function QuestionnairePage() {
                                   <div className="p-2 rounded-lg bg-success/10 text-success">
                                     <ArrowRight className="h-5 w-5" />
                                   </div>
-                                  <h4 className="text-base font-black text-slate-900">Next Steps</h4>
+                                  <h4 className="text-base font-black text-slate-900">
+                                    Next Steps
+                                  </h4>
                                 </div>
-                                <p className="text-sm text-slate-600 mb-6">We'll use these details to surface clinicians who best match your needs. You will be able to review profiles and choose a specialist.</p>
+                                <p className="text-sm text-slate-600 mb-6">
+                                  We'll use these details to surface clinicians
+                                  who best match your needs. You will be able to
+                                  review profiles and choose a specialist.
+                                </p>
 
                                 <div className="space-y-4">
                                   <Button
                                     onClick={handleSubmit}
                                     className="w-full h-14 rounded-xl font-black bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
                                   >
-                                    Continue to Specialist Matches <ArrowRight className="ml-2 h-4 w-4" />
+                                    Submit Consultation{" "}
+                                    <ArrowRight className="ml-2 h-4 w-4" />
                                   </Button>
                                   <p className="text-xs text-slate-500 text-center pt-2">
-                                    Your responses are encrypted and shared only with HIPAA-compliant providers
+                                    Your responses are encrypted and shared only
+                                    with HIPAA-compliant providers
                                   </p>
                                 </div>
 
@@ -968,15 +1103,21 @@ export default function QuestionnairePage() {
                                   <div className="flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-2">
                                       <Shield className="h-4 w-4 text-success" />
-                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Secure</span>
+                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                        Secure
+                                      </span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <Lock className="h-4 w-4 text-primary" />
-                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Encrypted</span>
+                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                        Encrypted
+                                      </span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <CheckCircle className="h-4 w-4 text-success" />
-                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Verified</span>
+                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                        Verified
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
@@ -995,12 +1136,21 @@ export default function QuestionnairePage() {
 
         {/* Sticky CTA for mobile & tablet (<lg) */}
         {!isReviewing && currentQuestion && !keyboardVisible && (
-          <div className="lg:hidden fixed inset-x-0 bottom-0 p-4 bg-white border-t shadow z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 1rem)' }}>
+          <div
+            className="lg:hidden fixed inset-x-0 bottom-0 p-4 bg-white border-t shadow z-50"
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 1rem)" }}
+          >
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-slate-500 text-center italic">* Indicates required field</p>
+              <p className="text-xs text-slate-500 text-center italic">
+                * Indicates required field
+              </p>
               <div className="flex gap-3">
                 {activeQuestionIndex > 0 && (
-                  <Button variant="outline" onClick={handlePrevious} className="flex-1 h-12 min-h-[48px] rounded-xl font-black">
+                  <Button
+                    variant="outline"
+                    onClick={handlePrevious}
+                    className="flex-1 h-12 min-h-[48px] rounded-xl font-black"
+                  >
                     Back
                   </Button>
                 )}
@@ -1008,7 +1158,10 @@ export default function QuestionnairePage() {
                   onClick={handleNext}
                   className="flex-1 h-12 min-h-[48px] rounded-xl font-black bg-primary text-white"
                 >
-                  {activeQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1 ? 'Continue' : 'Finish & Review'}
+                  {activeQuestionIndex <
+                  (activeQuestionnaire?.questions.length || 0) - 1
+                    ? "Continue"
+                    : "Finish & Review"}
                 </button>
               </div>
             </div>

@@ -436,6 +436,10 @@ export const deleteService = (id: string) => {
   return api.delete(`/services/${id}`);
 };
 
+export const getFeaturedServices = () => {
+  return api.get("/services/featured");
+};
+
 // Chat API functions
 export const chatAPI = {
   // Join a chat room
