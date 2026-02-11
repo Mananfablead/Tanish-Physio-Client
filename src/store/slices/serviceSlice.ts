@@ -3,6 +3,7 @@ import api from '../../lib/api';
 
 // Import the service type from the shared types
 import { Service } from '../../types/service';
+import { RootState } from '../index';
 
 // Helper function to transform API service data to expected format
 const transformServiceFromAPI = (apiService: any): Service => {
@@ -143,5 +144,11 @@ const serviceSlice = createSlice({
 });
 
 export const { clearSelectedService, resetServices } = serviceSlice.actions;
+
+// Selectors
+export const selectAllServices = (state: RootState) => state.services.services;
+export const selectServicesLoading = (state: RootState) => state.services.loading;
+export const selectServicesError = (state: RootState) => state.services.error;
+export const selectSelectedService = (state: RootState) => state.services.selectedService;
 
 export default serviceSlice.reducer;

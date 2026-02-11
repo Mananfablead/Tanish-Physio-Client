@@ -68,6 +68,7 @@ import { FeaturedTherapist } from "@/components/landing/FeaturedTherapist";
 import { FAQ } from "@/components/landing/FAQ";
 import { TrustDisclaimer } from "@/components/landing/TrustDisclaimer";
 import { CTA } from "@/components/landing/CTA";
+import { Services } from "@/components/landing/Services";
 
 // Import UI components
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,8 @@ import { fetchFeaturedTestimonials } from '@/store/slices/testimonialSlice';
 import { selectFeaturedTestimonials, selectTestimonialsLoading, selectTestimonialsError } from '@/store/slices/testimonialSlice';
 import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic, fetchConditionsPublic } from '@/store/slices/cmsSlice';
 import { fetchPublicAdmins } from '@/store/slices/adminSlice';
+import { fetchAllServices } from '@/store/slices/serviceSlice';
+import { selectAllServices, selectServicesLoading, selectServicesError } from '@/store/slices/serviceSlice';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -210,6 +213,11 @@ export default function LandingPage() {
   // Fetch public admins from Redux store
   const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
   
+  // Fetch services from Redux store
+  const allServices = useSelector(selectAllServices);
+  const servicesLoading = useSelector(selectServicesLoading);
+  const servicesError = useSelector(selectServicesError);
+  
   // Fetch subscription plans when component mounts
   useEffect(() => {
     dispatch(fetchSubscriptionPlans());
@@ -228,6 +236,7 @@ export default function LandingPage() {
     dispatch(fetchFaqsPublic());
     dispatch(fetchConditionsPublic());
     dispatch(fetchPublicAdmins());
+    dispatch(fetchAllServices());
   }, [dispatch]);
   
   useEffect(() => {
@@ -266,6 +275,14 @@ export default function LandingPage() {
       <HeroSection 
         cmsHero={cmsHero}
         heroImage={heroImage}
+      />
+
+      {/* Services Section */}
+      <Services 
+        services={allServices}
+        servicesLoading={servicesLoading}
+        servicesError={servicesError}
+        fadeInUp={fadeInUp}
       />
 
       {/* How It Works */}
