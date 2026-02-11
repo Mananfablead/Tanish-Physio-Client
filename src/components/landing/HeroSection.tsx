@@ -19,9 +19,10 @@ const fadeInUp = {
 
 export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
   return (
-    <section className="relative overflow-hidden gradient-hero border-b border-primary/5">
+    <section className="relative  overflow-hidden gradient-hero border-b border-primary/5">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
-      <div className="container relative py-16 lg:py-4">
+  <div className="container relative py-20 lg:py-6">
+
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
             className="space-y-8"

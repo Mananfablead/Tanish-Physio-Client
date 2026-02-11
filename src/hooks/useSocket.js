@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback,useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useAuthRedux } from '../hooks/useAuthRedux';
 
@@ -11,7 +11,11 @@ const useSocket = (roomId, roomType) => {
     // Initialize socket connection
     useEffect(() => {
         // Don't connect if we don't have required data
-        if (!roomId) {
+        // Exception: Allow connection without roomId for waiting room scenarios
+        console.log('useSocket: Initializing with roomId:', roomId, 'roomType:', roomType);
+        console.log('useSocket: Token available:', !!token);
+        
+        if (!roomId && roomType !== 'waiting-room') {
             console.log('Waiting for roomId...');
             return;
         }
@@ -68,14 +72,57 @@ const useSocket = (roomId, roomType) => {
                 setConnected(true);
                 setError(null);
 
-                // Join the room
-                try {
-                    newSocket.emit('join-room', {
-                        [roomType === 'group' ? 'groupSessionId' : 'sessionId']: roomId
-                    });
-                } catch (err) {
-                    console.error('Error joining room:', err);
-                    setError(err.message);
+                // Join the room (except for waiting-room type)
+                if (roomType !== 'waiting-room' && roomId) {
+                    try {
+                        // Check if this is an approved patient joining after being approved in waiting room
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const isApproved = urlParams.get('approved') === 'true';
+                        const userRole = urlParams.get('userRole') || sessionStorage.getItem('userRole');
+                        
+                        if (isApproved && userRole === 'patient') {
+                            // For approved patients, use join-video-room event which handles approval verification
+                            newSocket.emit('join-video-room', {
+                                [roomType === 'group' ? 'groupSessionId' : 'sessionId']: roomId
+                            });
+                        } else {
+                            // For regular joins (therapists, admins, or non-approved patients)
+                            newSocket.emit('join-room', {
+                                [roomType === 'group' ? 'groupSessionId' : 'sessionId']: roomId,
+                                userType: isApproved ? 'approved-patient' : undefined
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Error joining room:', err);
+                        setError(err.message);
+                    }
+                }
+            });
+
+            // Handle server errors
+            newSocket.on('error', (data) => {
+                console.error('Socket error received:', data);
+                
+                // Check if this is an approved patient encountering a waiting room error
+                const urlParams = new URLSearchParams(window.location.search);
+                const isApproved = urlParams.get('approved') === 'true';
+                const userRole = urlParams.get('userRole') || sessionStorage.getItem('userRole');
+                
+                if (isApproved && userRole === 'patient' && data.message && data.message.includes('waiting room')) {
+                    // This is an approved patient getting redirected back to waiting room
+                    // Instead of redirecting, emit a custom event for the VideoCall component to handle
+                    console.log('Approved patient encountered waiting room error, forwarding to VideoCall component');
+                    // Don't redirect, let VideoCall component handle retries
+                    setError(data.message);
+                    return;
+                }
+                
+                setError(data.message);
+                
+                // Handle redirect for patients (non-approved ones)
+                if (data.redirect && data.message.includes('waiting room')) {
+                    console.log('Redirecting to waiting room:', data.redirect);
+                    window.location.href = data.redirect;
                 }
             });
 
@@ -133,16 +180,23 @@ const useSocket = (roomId, roomType) => {
 
             newSocket.on('disconnect', (reason) => {
                 console.log('❌ Disconnected from video call server:', reason);
+                console.log('🔌 Disconnect reason:', reason);
+                console.log('🏠 Room type:', roomType);
                 setConnected(false);
 
                 // Handle reconnection for temporary network issues
+                // But don't auto-reconnect for waiting-room type
                 if (reason === 'io server disconnect' || reason === 'transport close') {
-                    console.log('🔄 Attempting reconnection...');
-                    setTimeout(() => {
-                        if (newSocket) {
-                            newSocket.connect();
-                        }
-                    }, 3000);
+                    if (roomType !== 'waiting-room') {
+                        console.log('🔄 Attempting reconnection...');
+                        setTimeout(() => {
+                            if (newSocket) {
+                                newSocket.connect();
+                            }
+                        }, 3000);
+                    } else {
+                        console.log('🛑 Not reconnecting for waiting-room type');
+                    }
                 }
             });
 
@@ -196,6 +250,39 @@ const useSocket = (roomId, roomType) => {
 
             newSocket.on('error', (err) => {
                 console.error('❌ Socket error:', err);
+
+                // Check if this is an approved patient encountering a waiting room error
+                const urlParams = new URLSearchParams(window.location.search);
+                const isApproved = urlParams.get('approved') === 'true';
+                const userRole = urlParams.get('userRole') || sessionStorage.getItem('userRole');
+                
+                if (isApproved && userRole === 'patient' && err.message && err.message.includes('waiting room')) {
+                    // This is an approved patient getting redirected back to waiting room
+                    // Instead of redirecting, let the VideoCall component handle this
+                    console.log('Approved patient encountered waiting room error, forwarding to VideoCall component');
+                    setError(err.message);
+                    return;
+                }
+
+                // Handle retry for approved patients
+                if (err.retry && window.__APPROVED_PATIENT__) {
+                    console.log('🔄 Retrying connection for approved patient...');
+                    setTimeout(() => {
+                        if (newSocket.connected && roomId) {
+                            newSocket.emit('join-room', {
+                                [roomType === 'group' ? 'groupSessionId' : 'sessionId']: roomId
+                            });
+                        }
+                    }, 2000);
+                    return;
+                }
+
+                // Handle redirect if provided
+                if (err.redirect) {
+                    console.log('Redirecting to:', err.redirect);
+                    window.location.href = err.redirect;
+                    return;
+                }
 
                 // Handle specific session not active error
                 if (err.message && err.message.includes('Session is not active at this time')) {
@@ -255,7 +342,7 @@ const useSocket = (roomId, roomType) => {
                 }, 3000);
             }
         }
-    }, [roomId, roomType, token]);
+    }, [roomId, roomType, token]); // Note: For waiting-room, roomId can be null
 
     // Reconnect when token becomes available
     useEffect(() => {

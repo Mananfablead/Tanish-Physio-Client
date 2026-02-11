@@ -104,13 +104,13 @@ const LoginPage = () => {
                     <div>
                         <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
                             <div className="flex items-center gap-3">
-                                <img src={logo} alt="Tanish Physio" className="h-14 w-auto object-contain" />
+                                <img src={logo} alt="Tanish Physio" className="h-20 w-auto object-contain" />
                                 <span className="text-2xl font-bold tracking-tight text-slate-900">
                                     Tanish <span className="text-green-600">Physio</span>
                                 </span>
                             </div>
                         </Link>
-                        <h1 className="mt-8 text-4xl font-extrabold text-slate-900 leading-tight">
+                        <h1 className="mt-8 text-3xl font-extrabold text-slate-900 leading-tight">
                             Premium Healthcare <br />
                             <span className="text-green-600">At Your Fingertips</span>
                         </h1>

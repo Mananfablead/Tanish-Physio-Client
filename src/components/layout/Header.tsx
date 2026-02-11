@@ -57,14 +57,15 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex  h-28 items-center justify-between">
         <Link to="/" className="flex items-center gap-5">
           <img
             src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
             alt="Tanish Physio Logo"
-            className="h-10 w-auto object-contain"
+            className="h-24 w-auto object-contain"
           />
         </Link>
+
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
@@ -72,7 +73,7 @@ export function Header() {
             <Link key={link.to} to={link.to}>
               <Button
                 variant={location.pathname === link.to ? "secondary" : "ghost"}
-                size="sm"
+                size="lg"
               >
                 {link.label}
               </Button>
@@ -85,21 +86,41 @@ export function Header() {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative h-8 rounded-full flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className="relative h-16 w-16 md:w-auto md:px-4 rounded-full
+                  flex items-center gap-3
+                  hover:bg-transparent
+                  focus:bg-transparent
+                  active:bg-transparent
+  "
+                >
                   {user?.profilePicture ? (
                     <img
-                      src={user?.profilePicture || "http://localhost:5000/uploads/profile-pictures/profile-1768805561664-504464305.jpg"}
-                      alt={user.name || "User"}
-                      className="h-8 w-8 rounded-full object-cover"
+                      src={`data:image/jpeg;base64,${user.profilePicture}`}
+                      alt={user?.name || "User profile"}
+                      className="h-14 w-14 rounded-full object-cover border border-slate-200"
                     />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
-                      <User className="h-4 w-4" />
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white">
+                      <User className="h-8 w-8" />
                     </div>
                   )}
 
-                  <span className="hidden md:inline text-sm font-medium truncate max-w-[100px]">{user?.name || user?.email?.split('@')[0]}</span>
+                  {/* Name / Email (desktop only) */}
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="hidden md:inline text-sm font-medium truncate max-w-[120px]">
+                      {user?.name || user?.email?.split("@")[0]}
+                    </span>
+
+                    <span className="hidden md:inline text-xs text-slate-500 truncate max-w-[120px]">
+                      {user?.email}
+                    </span>
+                  </div>
+
                 </Button>
+
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="p-2 border-b border-gray-100">
@@ -129,7 +150,7 @@ export function Header() {
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="lg"
                     className="hidden md:flex"
                     onClick={() => navigate('/login')}
                   >
@@ -142,8 +163,8 @@ export function Header() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link to="/questionnaire" className="hidden md:block">
-                    <Button variant="hero" size="sm">
+                  <Link to="/register" className="hidden md:block">
+                    <Button variant="hero" size="lg">
                       Get Started
                     </Button>
                   </Link>

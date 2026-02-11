@@ -36,7 +36,7 @@ if (typeof window !== 'undefined') {
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Peer from 'simple-peer';
 
-const useWebRTC = (roomId, socket, userRole = 'patient') => {
+const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) => {
     const [peers, setPeers] = useState({});
     const [localStream, setLocalStream] = useState(null);
     const [remoteStreams, setRemoteStreams] = useState({});
@@ -348,6 +348,25 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
 
     // Create peer connection
     const createPeer = useCallback((userId, initiator, stream) => {
+        // Prevent peer creation in waiting room
+        if (isWaitingRoom) {
+            console.log("⚠️ Peer creation blocked - user is in waiting room");
+            return null;
+        }
+
+        // Force admin as initiator for security
+        const isInitiator = userRole === 'admin' || userRole === 'therapist';
+        const finalInitiator = isInitiator;
+
+        console.log("=== CLIENT CREATING PEER CONNECTION ===");
+        console.log("User ID:", userId);
+        console.log("Role-based Initiator:", finalInitiator, "(userRole:", userRole, ")");
+        console.log("Local stream available:", !!localStream);
+        console.log("Local stream tracks:", localStream ? localStream.getTracks().length : 0);
+        console.log("Provided stream:", !!stream);
+        console.log("Socket connected:", socket?.connected);
+        console.log("Socket ID:", socket?.id);
+        console.log("Participants count:", Object.keys(peerRefs.current).length);
         console.log("=== CLIENT CREATING PEER CONNECTION ===");
         console.log("User ID:", userId);
         console.log("Initiator:", initiator);
@@ -397,7 +416,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
             }
 
             peer = new Peer({
-                initiator,
+                initiator: finalInitiator,
                 trickle: false, // Set to false for more reliable connection
                 stream: finalStream,
                 config: {
@@ -1309,30 +1328,30 @@ const useWebRTC = (roomId, socket, userRole = 'patient') => {
                 return updatedParticipants;
             });
 
-            // If the participant is an admin/therapist, create offer
-            if (data.role === 'admin' || data.role === 'therapist' || data.isTherapist) {
+            // If the participant is an admin/therapist, create offer (only if not in waiting room)
+            if ((data.role === 'admin' || data.role === 'therapist' || data.isTherapist) && !isWaitingRoom) {
                 console.log('CLIENT: Admin/Therapist joined, creating offer');
                 setTimeout(async () => {
                     // Use the ref to get the current localStream value
                     let currentLocalStream = localStreamRef.current;
-
+            
                     if (!currentLocalStream) {
                         console.log('CLIENT: Initializing local media for admin connection...');
                         await initLocalMedia();
                         // Get the updated stream after initialization
                         currentLocalStream = localStreamRef.current;
                     }
-
+            
                     // Ensure local stream is available before creating peer
                     if (!currentLocalStream) {
                         console.error('❌ Local stream still not available after init for admin/therapist:', data.socketId);
                         return;
                     }
-
+            
                     console.log('CLIENT: Creating peer connection for admin/therapist:', data.socketId);
                     console.log('CLIENT: Local stream tracks:', currentLocalStream.getTracks().length);
-
-                    // Create offer for the admin/therapist
+            
+                    // Create offer for the admin/therapist (admin always initiates)
                     const peer = createPeer(data.socketId, true, currentLocalStream);
                     if (!peer) {
                         console.error('Failed to create peer connection for admin/therapist:', data.socketId);

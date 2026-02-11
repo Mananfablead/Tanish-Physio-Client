@@ -167,9 +167,9 @@ export function RecordedSessionsSection({
                     <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                       Duration
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    {/* <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                       File Size
-                    </th>
+                    </th> */}
                     <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">
                       Status
                     </th>
@@ -212,9 +212,9 @@ export function RecordedSessionsSection({
                       </td>
 
                       {/* File Size */}
-                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                      {/* <td className="px-6 py-4 text-sm text-slate-600 font-medium">
                         {formatFileSize(recording.recordingSize)}
-                      </td>
+                      </td> */}
 
                       {/* Status */}
                       <td className="px-6 py-4 text-center">

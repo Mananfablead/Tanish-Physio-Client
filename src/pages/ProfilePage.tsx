@@ -118,10 +118,21 @@ export default function ProfilePage() {
   const bookingList = bookings || [];
   // const activePlan = user?.subscriptionData;
 
-  // Set state based on Redux data
+  
+  // Set state based on Redux data - separate sessions by current status
+  // Filtered upcoming sessions: pending and scheduled sessions
+  const filteredUpcomingSessions = sessions.filter((session: any) => 
+    (session.status === "pending" || session.status === "scheduled")
+  );
+  
+  // Live sessions: currently live sessions
+  const liveSessions = sessions.filter((session: any) => 
+    session.status === "live"
+  );
+  
   const nextSession =
-    upcomingSessions?.find((session: any) => session.status === "live") || null;
-
+    sessions?.find((session: any) => session.status === "live") || null;
+  
   const [sessionCompleted, setSessionCompleted] = useState<any[]>([]);
 
   // Update completed sessions when sessions data changes
@@ -207,8 +218,7 @@ export default function ProfilePage() {
   useEffect(() => {
     dispatch(fetchUserSubscriptions());
     dispatch(fetchUserPayments());
-    dispatch(fetchUpcomingSessions());
-    dispatch(fetchAllSessions());
+    dispatch(fetchAllSessions()); // Fetch all sessions to show upcoming and live sessions
     dispatch(getAllBookingsAsync());
     dispatch(fetchProfile());
   }, []);
@@ -403,7 +413,7 @@ export default function ProfilePage() {
       <ProfileHeader
         user={user}
         activePlan={activePlan}
-        upcomingSessions={upcomingSessions}
+        upcomingSessions={filteredUpcomingSessions}
         sessionCompleted={sessionCompleted}
         onImageChange={handleImageChange}
       />
@@ -429,23 +439,11 @@ export default function ProfilePage() {
                 )}
 
                 {selectedSection === "upcoming" && (
-                  <div className="space-y-4">
-                    <UpcomingSessionsSection
-                      upcomingSessions={upcomingSessions}
-                      nextSession={nextSession}
-                    />
-                    {/* Display Google Meet links for upcoming sessions */}
-                    {upcomingSessions &&
-                      upcomingSessions
-                        .slice(0, 2)
-                        .map((session) => (
-                          <GoogleMeetDisplay
-                            key={session._id}
-                            sessionId={session._id}
-                            className="mt-4"
-                          />
-                        ))}
-                  </div>
+                  <UpcomingSessionsSection 
+                    upcomingSessions={filteredUpcomingSessions} 
+                    liveSessions={liveSessions}
+                    nextSession={nextSession} 
+                  />
                 )}
 
                 {selectedSection === "sessionHistory" && (
