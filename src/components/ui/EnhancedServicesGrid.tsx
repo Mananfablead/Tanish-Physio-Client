@@ -89,7 +89,6 @@ export function EnhancedServicesGrid({
     <div className="space-y-8 py-6">
       {/* Filters */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
-
         {/* Categories */}
         <div className="flex flex-wrap gap-3">
           {categories.map((category) => {
@@ -100,10 +99,11 @@ export function EnhancedServicesGrid({
                 key={category}
                 variant={isActive ? "default" : "outline"}
                 className={`cursor-pointer px-4 py-2 rounded-full transition-all duration-200
-            ${isActive
-                    ? "bg-primary text-white shadow-md scale-105"
-                    : "hover:bg-secondary/60 hover:scale-105"
-                  }`}
+            ${
+              isActive
+                ? "bg-primary text-white shadow-md scale-105"
+                : "hover:bg-secondary/60 hover:scale-105"
+            }`}
                 onClick={() => {
                   setCategoryFilter(category);
                   setCurrentPage(1);
@@ -135,9 +135,7 @@ export function EnhancedServicesGrid({
             className="pl-10 rounded-full shadow-sm focus:ring-2 focus:ring-primary"
           />
         </div>
-
       </div>
-
 
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -179,18 +177,19 @@ export function EnhancedServicesGrid({
 
                   {/* Push button to bottom */}
                   <div className="mt-auto flex flex-col sm:flex-row gap-3">
-
                     <Button
                       className="flex-1 rounded-xl font-semibold bg-primary text-white hover:bg-primary/90 transition-all duration-200"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        
+
                         const bookingData = {
                           service: {
                             id: service.id,
                             name: service.title,
-                            price: service.details.price.replace("₹", "").split("-")[0],
+                            price: service.details.price
+                              .replace("₹", "")
+                              .split("-")[0],
                             duration: service.details.sessionDuration,
                           },
                           fromServices: true,
@@ -202,15 +201,23 @@ export function EnhancedServicesGrid({
                           session: {
                             type: "1-on-1",
                             duration: service.details.sessionDuration,
-                            price: parseInt(service.details.price.replace("₹", "").split("-")[0]),
+                            price: parseInt(
+                              service.details.price
+                                .replace("₹", "")
+                                .split("-")[0]
+                            ),
                           },
                           plan: {
                             name: `${service.title} Plan`,
-                            price: parseInt(service.details.price.replace("₹", "").split("-")[0]),
+                            price: parseInt(
+                              service.details.price
+                                .replace("₹", "")
+                                .split("-")[0]
+                            ),
                             duration: service.details.sessionDuration,
-                          }
+                          },
                         };
-                        
+
                         console.log("Booking Data:", bookingData);
                         navigate("/booking", { state: bookingData });
                       }}
@@ -223,14 +230,17 @@ export function EnhancedServicesGrid({
                       className="flex-1 rounded-xl border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200"
                       asChild
                     >
-                      <Link to={`/service/${service.id}`}>
+                      <Link
+                        to={
+                          service.slug
+                            ? `/service/${service.slug}`
+                            : `service/${service.id}`
+                        }
+                      >
                         View Details
                       </Link>
                     </Button>
-
                   </div>
-
-
                 </div>
               </div>
             </Link>
