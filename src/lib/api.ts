@@ -416,6 +416,10 @@ export const getAllServices = () => {
   return api.get("/services");
 };
 
+export const getFeaturedServices = () => {
+  return api.get("/services/featured");
+};
+
 export const getServiceById = (id: string) => {
   return api.get(`/services/${id}`);
 };
@@ -434,10 +438,6 @@ export const updateService = (id: string, serviceData: any) => {
 
 export const deleteService = (id: string) => {
   return api.delete(`/services/${id}`);
-};
-
-export const getFeaturedServices = () => {
-  return api.get("/services/featured");
 };
 
 // Chat API functions

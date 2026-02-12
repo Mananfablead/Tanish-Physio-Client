@@ -96,30 +96,44 @@ import { fetchFeaturedTestimonials } from '@/store/slices/testimonialSlice';
 import { selectFeaturedTestimonials, selectTestimonialsLoading, selectTestimonialsError } from '@/store/slices/testimonialSlice';
 import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic, fetchConditionsPublic } from '@/store/slices/cmsSlice';
 import { fetchPublicAdmins } from '@/store/slices/adminSlice';
-import { fetchAllServices } from '@/store/slices/serviceSlice';
-import { selectAllServices, selectServicesLoading, selectServicesError } from '@/store/slices/serviceSlice';
+import {
+  fetchAllServices,
+  fetchFeaturedServices,
+} from "@/store/slices/serviceSlice";
+import {
+  selectAllServices,
+  selectFeaturedServices,
+  selectServicesLoading,
+  selectServicesError,
+} from "@/store/slices/serviceSlice";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
+  transition: { duration: 0.5 },
 };
 
 const stagger = {
   animate: {
     transition: {
-      staggerChildren: 0.1
-    }
-  }
+      staggerChildren: 0.1,
+    },
+  },
 };
 
-const CountUp = ({ value, duration = 2 }: { value: string; duration?: number }) => {
+const CountUp = ({
+  value,
+  duration = 2,
+}: {
+  value: string;
+  duration?: number;
+}) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
   const [displayValue, setDisplayValue] = useState("0");
 
   useEffect(() => {
-    if (inView && value && typeof value === 'string') {
+    if (inView && value && typeof value === "string") {
       const match = value.match(/(\d+\.?\d*)(.*)/);
       if (match) {
         const target = parseFloat(match[1]);
@@ -128,7 +142,8 @@ const CountUp = ({ value, duration = 2 }: { value: string; duration?: number }) 
           duration,
           onUpdate: (latest) => {
             setDisplayValue(
-              (target % 1 === 0 ? Math.floor(latest) : latest.toFixed(1)) + suffix
+              (target % 1 === 0 ? Math.floor(latest) : latest.toFixed(1)) +
+                suffix
             );
           },
         });
@@ -190,44 +205,61 @@ const getIconComponent = (iconName: string) => {
     Plus: Plus,
     Minus: Minus,
   };
-  
+
   return iconMap[iconName] || ClipboardList;
 };
 
 export default function LandingPage() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
-  
+
   // Fetch subscription plans from Redux store
   const dispatch = useAppDispatch();
-  const { plans: subscriptionPlans, loading: subscriptionLoading, error: subscriptionError } = useSelector((state: RootState) => state.subscriptions);
-  
+  const {
+    plans: subscriptionPlans,
+    loading: subscriptionLoading,
+    error: subscriptionError,
+  } = useSelector((state: RootState) => state.subscriptions);
+
   // Fetch testimonials from Redux store
   const featuredTestimonials = useSelector(selectFeaturedTestimonials);
   const testimonialsLoading = useSelector(selectTestimonialsLoading);
   const testimonialsError = useSelector(selectTestimonialsError);
-  
+
   // Fetch CMS hero and steps data from Redux store
-  const { hero: cmsHero, steps: cmsSteps, whyUs: cmsWhyUs, faqs: cmsFaqs, conditions: cmsConditions, loading: cmsHeroLoading, error: cmsHeroError } = useSelector((state: RootState) => state.cms);
-  
+  const {
+    hero: cmsHero,
+    steps: cmsSteps,
+    whyUs: cmsWhyUs,
+    faqs: cmsFaqs,
+    conditions: cmsConditions,
+    loading: cmsHeroLoading,
+    error: cmsHeroError,
+  } = useSelector((state: RootState) => state.cms);
+
   // Fetch public admins from Redux store
-  const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
-  
+  const {
+    admins: publicAdmins,
+    loading: adminsLoading,
+    error: adminsError,
+  } = useSelector((state: RootState) => state.admins);
+
   // Fetch services from Redux store
   const allServices = useSelector(selectAllServices);
+  const featuredServices = useSelector(selectFeaturedServices);
   const servicesLoading = useSelector(selectServicesLoading);
   const servicesError = useSelector(selectServicesError);
-  
+
   // Fetch subscription plans when component mounts
   useEffect(() => {
     dispatch(fetchSubscriptionPlans());
   }, [dispatch]);
-  
+
   // Fetch featured testimonials when component mounts
   useEffect(() => {
     dispatch(fetchFeaturedTestimonials());
   }, [dispatch]);
-  
+
   // Fetch CMS hero and steps data when component mounts
   useEffect(() => {
     dispatch(fetchHeroPublic());
@@ -237,8 +269,9 @@ export default function LandingPage() {
     dispatch(fetchConditionsPublic());
     dispatch(fetchPublicAdmins());
     dispatch(fetchAllServices());
+    dispatch(fetchFeaturedServices());
   }, [dispatch]);
-  
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 600) {
@@ -255,45 +288,41 @@ export default function LandingPage() {
   return (
     <Layout>
       {/* Sticky Floating CTA */}
-      <motion.div 
+      <motion.div
         className="fixed bottom-6 right-6 z-50 pointer-events-none"
         initial={{ opacity: 0, y: 100 }}
-        animate={{ 
-          opacity: showStickyCTA ? 1 : 0, 
-          y: showStickyCTA ? 0 : 100 
+        animate={{
+          opacity: showStickyCTA ? 1 : 0,
+          y: showStickyCTA ? 0 : 100,
         }}
         transition={{ duration: 0.3 }}
       >
         <Link to="/questionnaire" className="pointer-events-auto">
-          <Button size="lg" className="rounded-full shadow-2xl h-14 px-8 text-lg group">
+          <Button
+            size="lg"
+            className="rounded-full shadow-2xl h-14 px-8 text-lg group"
+          >
             Start Assessment
             <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
         </Link>
       </motion.div>
       {/* Hero Section */}
-      <HeroSection 
-        cmsHero={cmsHero}
-        heroImage={heroImage}
-      />
+      <HeroSection cmsHero={cmsHero} heroImage={heroImage} />
 
       {/* Services Section */}
-      <Services 
-        services={allServices}
+      <Services
+        services={featuredServices.length > 0 ? featuredServices : allServices}
         servicesLoading={servicesLoading}
         servicesError={servicesError}
         fadeInUp={fadeInUp}
       />
 
       {/* How It Works */}
-      <HowItWorks 
-        cmsSteps={cmsSteps}
-        stagger={stagger}
-        fadeInUp={fadeInUp}
-      />
+      <HowItWorks cmsSteps={cmsSteps} stagger={stagger} fadeInUp={fadeInUp} />
 
       {/* Patient Testimonials */}
-      <Testimonials 
+      <Testimonials
         featuredTestimonials={featuredTestimonials}
         testimonialsLoading={testimonialsLoading}
         testimonialsError={testimonialsError}
@@ -301,14 +330,14 @@ export default function LandingPage() {
       />
 
       {/* Conditions We Treat */}
-      <ConditionsWeTreat 
+      <ConditionsWeTreat
         cmsConditions={cmsConditions}
         fadeInUp={fadeInUp}
         getIconComponent={getIconComponent}
       />
 
       {/* Features */}
-      <Features 
+      <Features
         cmsWhyUs={cmsWhyUs}
         fadeInUp={fadeInUp}
         CountUp={CountUp}
@@ -317,7 +346,7 @@ export default function LandingPage() {
       />
 
       {/* Subscription Plans Preview */}
-      <SubscriptionPlans 
+      <SubscriptionPlans
         subscriptionPlans={subscriptionPlans}
         subscriptionLoading={subscriptionLoading}
         subscriptionError={subscriptionError}
@@ -326,17 +355,14 @@ export default function LandingPage() {
       />
 
       {/* Featured Therapist – Single */}
-      <FeaturedTherapist 
+      <FeaturedTherapist
         publicAdmins={publicAdmins}
         adminsLoading={adminsLoading}
         adminsError={adminsError}
       />
 
-
       {/* FAQ Section */}
-      <FAQ 
-        cmsFaqs={cmsFaqs}
-      />
+      <FAQ cmsFaqs={cmsFaqs} />
 
       {/* Trust & Disclaimer */}
       <TrustDisclaimer />

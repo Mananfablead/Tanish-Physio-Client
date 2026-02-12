@@ -86,6 +86,22 @@ export const fetchAllServices = createAsyncThunk(
   }
 );
 
+export const fetchFeaturedServices = createAsyncThunk(
+  "services/fetchFeatured",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/services/featured");
+      // Transform the API response to match the expected format
+      const responseData: any = response.data;
+      const apiServices = responseData.data?.services || responseData;
+      const transformedServices = apiServices.map(transformServiceFromAPI);
+      return transformedServices;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const fetchServiceById = createAsyncThunk(
   "services/fetchById",
   async (id: string, { rejectWithValue }) => {
@@ -119,6 +135,7 @@ export const fetchServiceBySlug = createAsyncThunk(
 // Initial state
 interface ServiceState {
   services: Service[];
+  featuredServices: Service[];
   selectedService: Service | null;
   loading: boolean;
   error: string | null;
@@ -126,6 +143,7 @@ interface ServiceState {
 
 const initialState: ServiceState = {
   services: [],
+  featuredServices: [],
   selectedService: null,
   loading: false,
   error: null,
@@ -133,7 +151,7 @@ const initialState: ServiceState = {
 
 // Service slice
 const serviceSlice = createSlice({
-  name: 'services',
+  name: "services",
   initialState,
   reducers: {
     clearSelectedService: (state) => {
@@ -157,6 +175,18 @@ const serviceSlice = createSlice({
         state.services = action.payload as any[];
       })
       .addCase(fetchAllServices.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchFeaturedServices.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchFeaturedServices.fulfilled, (state, action) => {
+        state.loading = false;
+        state.featuredServices = action.payload as any[];
+      })
+      .addCase(fetchFeaturedServices.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
@@ -191,6 +221,8 @@ export const { clearSelectedService, resetServices } = serviceSlice.actions;
 
 // Selectors
 export const selectAllServices = (state: RootState) => state.services.services;
+export const selectFeaturedServices = (state: RootState) =>
+  state.services.featuredServices;
 export const selectServicesLoading = (state: RootState) => state.services.loading;
 export const selectServicesError = (state: RootState) => state.services.error;
 export const selectSelectedService = (state: RootState) => state.services.selectedService;

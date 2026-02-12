@@ -13,7 +13,12 @@ interface ServicesProps {
   fadeInUp: any;
 }
 
-export function Services({ services, servicesLoading, servicesError, fadeInUp }: ServicesProps) {
+export function Services({
+  services,
+  servicesLoading,
+  servicesError,
+  fadeInUp,
+}: ServicesProps) {
   if (servicesLoading) {
     return (
       <section className="py-12 bg-muted/30">
@@ -38,12 +43,12 @@ export function Services({ services, servicesLoading, servicesError, fadeInUp }:
     );
   }
 
-  const displayedServices = services.slice(0, 6);
+  const displayedServices = services.slice(0, 5);
 
   return (
     <section className="py-12 bg-muted/30">
       <div className="container">
-        <motion.div 
+        <motion.div
           className="text-center max-w-2xl mx-auto mb-12"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -72,40 +77,48 @@ export function Services({ services, servicesLoading, servicesError, fadeInUp }:
                 {/* Service Image */}
                 {service.media?.heroImage && (
                   <div className="relative h-40 overflow-hidden">
-                    <img
-                      src={service.media.heroImage}
-                      alt={service.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = "none";
-                      }}
-                    />
+                    <Link to={`/service/${service.slug || service.id}`}>
+                      <img
+                        src={service.media.heroImage}
+                        alt={service.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
+                        }}
+                      />
+                    </Link>
                   </div>
                 )}
-                
+
                 {/* Service Info */}
                 <div className="p-4">
-                  <h3 className="font-bold mb-1 group-hover:text-primary transition-colors truncate">
-                    {service.title}
-                  </h3>
-                  
-                  <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                    {service.description}
-                  </p>
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <IndianRupee className="h-4 w-4" />
-                      <span className="font-semibold text-primary">{service.details.price.replace("₹", "")}</span>
+                  <Link to={`/service/${service.slug || service.id}`}>
+                    <h3 className="font-bold mb-1 group-hover:text-primary transition-colors truncate">
+                      {service.title}
+                    </h3>
+
+                    <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                      {service.description}
+                    </p>
+
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <IndianRupee className="h-4 w-4" />
+                        <span className="font-semibold text-primary">
+                          {service.details.price.replace("₹", "")}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  
+                  </Link>
                   {/* CTA Buttons */}
                   <div className="flex gap-2">
-                    <Link to={`/service/${service.id}`} className="flex-1">
-                      <Button 
-                        variant="outline" 
+                    <Link
+                      to={`/service/${service.slug || service.id}`}
+                      className="flex-1"
+                    >
+                      <Button
+                        variant="outline"
                         size="sm"
                         className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                       >
@@ -113,12 +126,15 @@ export function Services({ services, servicesLoading, servicesError, fadeInUp }:
                         <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
-                    <Button 
+                    <Button
                       size="sm"
                       className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                       onClick={() => {
                         // Add booking logic here
-                        console.log("Buy Now clicked for service:", service.id);
+                        console.log(
+                          "Book session clicked for service:",
+                          service.slug || service.id
+                        );
                       }}
                     >
                       {/* <ShoppingCart className="h-3 w-3 mr-1" /> */}
