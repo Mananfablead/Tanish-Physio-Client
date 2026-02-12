@@ -73,7 +73,7 @@ export const Features = ({ cmsWhyUs, fadeInUp, CountUp, setHoveredStat, hoveredS
           </motion.div>
 
           <motion.div 
-            className="grid grid-cols-2 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}

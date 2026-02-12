@@ -282,7 +282,7 @@ export default function LandingPage() {
   return (
     <Layout>
       {/* Sticky Floating CTA */}
-      <motion.div
+      {/* <motion.div
         className="fixed bottom-6 right-6 z-50 pointer-events-none"
         initial={{ opacity: 0, y: 100 }}
         animate={{
@@ -300,7 +300,7 @@ export default function LandingPage() {
             <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
         </Link>
-      </motion.div>
+      </motion.div> */}
       {/* Hero Section */}
       <HeroSection cmsHero={cmsHero} heroImage={heroImage} />
 

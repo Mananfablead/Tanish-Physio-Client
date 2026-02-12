@@ -120,6 +120,13 @@ export default function BookingConfirmationPage() {
         day: "numeric",
         year: "numeric",
       })
+    : bookingData?.scheduleDate
+    ? new Date(bookingData.scheduleDate).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
     : new Date().toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
@@ -127,7 +134,7 @@ export default function BookingConfirmationPage() {
         year: "numeric",
       });
 
-  const sessionTime = bookingDetails?.time || "Scheduled";
+  const sessionTime = bookingDetails?.time || bookingData?.scheduleTime || "Scheduled";
 
   const therapist = {
     name: bookingDetails?.therapistName || 
@@ -186,8 +193,46 @@ export default function BookingConfirmationPage() {
     confirmBooking();
   }, [bookingData, guestUser]);
 
+  /* ---------------- Handle Guest to Auth Transition ---------------- */
+  useEffect(() => {
+    // If user was a guest but is now authenticated, clear guest user data from state
+    if (isAuthenticated && guestUser) {
+      // Remove guest user from session storage if user is now logged in
+      sessionStorage.removeItem("qw_guest_user");
+    }
+  }, [isAuthenticated, guestUser]);
+
   /* ---------------- Action Buttons ---------------- */
   const renderActionButtons = () => {
+    // Show login option for guests who just completed payment
+    if (!isAuthenticated && guestUser) {
+      return (
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button
+            variant="hero"
+            size="lg"
+            className="w-full"
+            onClick={() => {
+              // Store booking info in session storage before login
+              if (bookingData) {
+                sessionStorage.setItem("qw_pending_booking", JSON.stringify(bookingData));
+              }
+              navigate("/login");
+            }}
+          >
+            <User className="h-5 w-5 mr-2" />
+            Login to Your Account
+          </Button>
+
+          <Link to="/">
+            <Button variant="outline" size="lg" className="w-full">
+              Explore More Services
+            </Button>
+          </Link>
+        </div>
+      );
+    }
+
     if (!isAuthenticated) {
       return (
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -379,7 +424,9 @@ export default function BookingConfirmationPage() {
             Session Booking
           </p>
           <p className="font-medium">
-            Sessions can be booked from your profile
+            {bookingData?.scheduleOption === 'later' 
+              ? 'Sessions can be booked later from your profile'
+              : 'Sessions can be booked from your profile'}
           </p>
         </div>
         
