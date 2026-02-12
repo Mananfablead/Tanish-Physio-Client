@@ -15,17 +15,20 @@ import {
   Calendar,
   Clock,
   User,
-  Wallet
+  Wallet,
+  CalendarClock
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync } from '@/store/slices/bookingsSlice';
+import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync } from '@/store/slices/bookingsSlice';
 import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
 import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
-import { useAppDispatch, useAppSelector } from '@/store';
+import { useAppDispatch, useAppSelector, RootState } from '@/store';
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
-
+import { ScheduleModal } from "@/components/profile/ScheduleModal";
+import { fetchPublicAdmins } from '@/store/slices/adminSlice';
+import { getAvailability } from '@/lib/api';
 export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,6 +36,8 @@ export default function BookingPage() {
   const bookingData = location.state;
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
+  const { admins: publicAdmins } = useSelector((state: RootState) => state.admins);
+  console.log("publicAdmins", publicAdmins)
 
   const [guestUserData, setGuestUserData] = useState({
     name: "",
@@ -44,6 +49,19 @@ export default function BookingPage() {
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
+
+  // Scheduling states
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ start: string, end: string } | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<any[]>([]);
+  console.log("availabilitylllllllll", availability)
+  const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(null);
   useEffect(() => {
     if (user) {
       setGuestUserData({
@@ -53,7 +71,10 @@ export default function BookingPage() {
       });
     }
   }, [user]);
-
+  useEffect(() => {
+   
+    dispatch(fetchPublicAdmins());
+  }, [dispatch]);
   // Check if user is a guest (not logged in)
   // User is considered logged in if either qw_user exists in sessionStorage OR token exists in localStorage
   const isGuestUser =
@@ -216,11 +237,95 @@ export default function BookingPage() {
     return phoneRegex.test(phone);
   };
 
+  // Scheduling functions
+  const openScheduleModal = async () => {
+    // Select "Schedule Now" option
+    setScheduleOption("now");
+
+    try {
+      // Fetch real availability data from API
+      const response: any = await getAvailability();
+      const fetchedAvailability = response.data?.data?.availability || [];
+      console.log("fetchedAvailability", fetchedAvailability)
+      
+      setAvailability(fetchedAvailability);
+      setIsScheduleModalOpen(true);
+      setScheduleError(null);
+    } catch (error) {
+      console.error("Failed to fetch availability:", error);
+      setScheduleError("Failed to load availability. Please try again.");
+      
+      // Set empty availability on error
+      setAvailability([]);
+      setIsScheduleModalOpen(true);
+    }
+  };
+
+  const closeScheduleModal = () => {
+    setIsScheduleModalOpen(false);
+    setSelectedDate(null);
+    setScheduleError(null);
+  };
+
+  const handleScheduleConfirm = (date: string, time: string, timeSlot?: { start: string, end: string }) => {
+    // Save the scheduled session to sessionStorage
+    const scheduledSession = {
+      date,
+      time,
+      timeSlot, // Store complete time slot info
+      therapist: { ...therapist, id: publicAdmins?.[0]?.id }, // Use the correct therapist ID
+      service: bookingData?.service || plan,
+      locked: true, // Will be unlocked after payment
+      createdAt: Date.now()
+    };
+
+    sessionStorage.setItem("qw_scheduled_session", JSON.stringify(scheduledSession));
+
+    // Update the schedule state
+    setScheduleDate(date);
+    setScheduleTime(time);
+    if (timeSlot) {
+      setSelectedTimeSlot(timeSlot);
+    }
+
+    const timeDisplay = timeSlot ? `${timeSlot.start} - ${timeSlot.end}` : time;
+    toast.success(`Session scheduled for ${new Date(date).toLocaleDateString()} at ${timeDisplay}`);
+    closeScheduleModal();
+  };
+
+  const clearSchedule = () => {
+    setScheduleDate("");
+    setScheduleTime("");
+    setSelectedTimeSlot(null);
+    sessionStorage.removeItem("qw_scheduled_session");
+    setScheduleOption(null);
+    toast.info("Schedule cleared");
+  };
+
+  const selectScheduleLater = () => {
+    // Clear any existing date/time selection
+    setScheduleDate("");
+    setScheduleTime("");
+    sessionStorage.removeItem("qw_scheduled_session");
+
+    setScheduleOption("later");
+    toast.info("You can schedule your session after payment completion");
+  };
+
+  const clearSelection = () => {
+    setScheduleOption(null);
+    setScheduleDate("");
+    setScheduleTime("");
+    setSelectedTimeSlot(null);
+    sessionStorage.removeItem("qw_scheduled_session");
+    toast.info("Selection cleared");
+  };
+
   const handlePayment = async () => {
     // Validate guest user data if applicable
     if (isGuestUser) {
       let hasError = false;
-      
+
       // Name validation
       if (!guestUserData.name.trim()) {
         setNameError("Name is required");
@@ -231,7 +336,7 @@ export default function BookingPage() {
       } else {
         setNameError("");
       }
-      
+
       // Email validation
       if (!guestUserData.email.trim()) {
         setEmailError("Email is required");
@@ -242,7 +347,7 @@ export default function BookingPage() {
       } else {
         setEmailError("");
       }
-      
+
       // Phone validation
       if (!guestUserData.phone.trim()) {
         setPhoneError("Phone number is required");
@@ -259,7 +364,7 @@ export default function BookingPage() {
       } else {
         setPhoneError("");
       }
-      
+
       if (hasError) {
         return;
       }
@@ -332,7 +437,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-              "Payment order creation failed. Please try again."
+            "Payment order creation failed. Please try again."
           );
           setIsProcessing(false);
           return;
@@ -436,7 +541,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) {}
+                  } catch (e) { }
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -464,7 +569,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) {}
+                } catch (e) { }
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -479,10 +584,14 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                          sessionStorage.getItem("qw_guest_user") || "{}"
-                        )
+                        sessionStorage.getItem("qw_guest_user") || "{}"
+                      )
                       : undefined,
                     fromSubscription: true,
+                    scheduleOption: scheduleOption,
+                    scheduleDate: scheduleOption === "now" ? scheduleDate : null,
+                    scheduleTime: scheduleOption === "now" ? scheduleTime : null,
+                    timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
                   },
                 });
               } catch (error) {
@@ -552,7 +661,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) {}
+                  } catch (e) { }
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -581,7 +690,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) {}
+                } catch (e) { }
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -596,10 +705,14 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                          sessionStorage.getItem("qw_guest_user") || "{}"
-                        )
+                        sessionStorage.getItem("qw_guest_user") || "{}"
+                      )
                       : undefined,
                     fromSubscription: true,
+                    scheduleOption: scheduleOption,
+                    scheduleDate: scheduleOption === "now" ? scheduleDate : null,
+                    scheduleTime: scheduleOption === "now" ? scheduleTime : null,
+                    timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
                   },
                 });
               } catch (innerError) {
@@ -678,11 +791,15 @@ export default function BookingPage() {
           clientName: isGuestUser ? guestUserData.name : guestUserData.name,
           date: date,
           time: time,
-          status: "pending",
+          status: scheduleOption === "later" ? "pending" : "scheduled",
           notes: "Session booking from frontend",
           paymentStatus: "pending",
           amount: finalPrice,
           bookingId: serviceBooking ? bookingData.service.bookingId : null,
+          scheduleType: scheduleOption || "now",
+          scheduledDate: scheduleOption === "now" ? scheduleDate : null,
+          scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+          timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
         };
         // Create the booking - use guest booking if user is not logged in
         let bookingResult;
@@ -756,7 +873,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-              "Payment order creation failed. Please try again."
+            "Payment order creation failed. Please try again."
           );
           setIsProcessing(false);
           return;
@@ -804,7 +921,7 @@ export default function BookingPage() {
                 verifyGuestPaymentAsync.fulfilled.match(verifyResult)) ||
               (!isGuestUser && verifyPaymentAsync.fulfilled.match(verifyResult))
             ) {
-              // Verification successful - update booking status to confirmed
+              // Verification successful - update booking status based on schedule option
               if (isGuestUser) {
                 // For guest users, use guest booking update with client email
                 const guestUser = JSON.parse(
@@ -813,7 +930,10 @@ export default function BookingPage() {
                 await dispatch(
                   updateGuestBookingAsync({
                     id: bookingId,
-                    bookingData: { status: "pending" },
+                    bookingData: { 
+                      status: scheduleOption === "later" ? "pending" : "scheduled",
+                      paymentStatus: "paid"
+                    },
                     clientEmail: guestUser.email,
                   })
                 );
@@ -822,7 +942,10 @@ export default function BookingPage() {
                 await dispatch(
                   updateBookingAsync({
                     id: bookingId,
-                    bookingData: { status: "pending" },
+                    bookingData: { 
+                      status: scheduleOption === "later" ? "pending" : "scheduled",
+                      paymentStatus: "paid"
+                    },
                   })
                 );
               }
@@ -872,7 +995,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) {}
+                  } catch (e) { }
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -890,7 +1013,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) {}
+                } catch (e) { }
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
                   !localStorage.getItem("token");
@@ -907,6 +1030,10 @@ export default function BookingPage() {
                         sessionStorage.getItem("qw_guest_user") || "{}"
                       ),
                       fromServices: true,
+                      scheduleOption: scheduleOption,
+                      scheduleDate: scheduleOption === "now" ? scheduleDate : null,
+                      scheduleTime: scheduleOption === "now" ? scheduleTime : null,
+                      timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
                     },
                   });
                 } else {
@@ -918,6 +1045,10 @@ export default function BookingPage() {
                       finalPrice,
                       guestUser: undefined,
                       fromServices: true,
+                      scheduleOption: scheduleOption,
+                      scheduleDate: scheduleOption === "now" ? scheduleDate : null,
+                      scheduleTime: scheduleOption === "now" ? scheduleTime : null,
+                      timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
                     },
                   });
                 }
@@ -1008,7 +1139,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) {}
+                  } catch (e) { }
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -1037,7 +1168,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) {}
+                } catch (e) { }
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -1053,8 +1184,8 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                          sessionStorage.getItem("qw_guest_user") || "{}"
-                        )
+                        sessionStorage.getItem("qw_guest_user") || "{}"
+                      )
                       : undefined,
                     fromServices: true,
                   },
@@ -1142,28 +1273,26 @@ export default function BookingPage() {
             </div>
             <div className="flex items-center gap-3">
               <div
-                className={`px-3 py-1 rounded-lg text-sm font-black ${
-                  intakeIsRecent
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-yellow-50 text-yellow-800"
-                }`}
+                className={`px-3 py-1 rounded-lg text-sm font-black ${intakeIsRecent
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-yellow-50 text-yellow-800"
+                  }`}
               >
                 {intakeIsRecent ? "Intake: Complete" : "Intake: Required"}
               </div>
               <div
-                className={`px-3 py-1 rounded-lg text-sm font-black ${
-                  sessionStorage.getItem("qw_plan")
-                    ? "bg-primary/10 text-primary"
-                    : "bg-slate-100 text-slate-400"
-                }`}
+                className={`px-3 py-1 rounded-lg text-sm font-black ${sessionStorage.getItem("qw_plan")
+                  ? "bg-primary/10 text-primary"
+                  : "bg-slate-100 text-slate-400"
+                  }`}
               >
                 {sessionStorage.getItem("qw_plan")
                   ? subscriptionBooking
                     ? "Subscription: Active"
                     : "Plan: Active"
                   : subscriptionBooking
-                  ? "Subscription: Not Purchased"
-                  : "Plan: Not Purchased"}
+                    ? "Subscription: Not Purchased"
+                    : "Plan: Not Purchased"}
               </div>
             </div>
           </div>
@@ -1210,62 +1339,152 @@ export default function BookingPage() {
                     </p>
                   </div>
 
-                  {/* Email */}
-                  <div>
-                    <Label htmlFor="guestEmail">Email Address *</Label>
-                    <Input
-                      id="guestEmail"
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={guestUserData.email}
-                      disabled={!!user}
-                      onChange={(e) => {
-                        setGuestUserData({
-                          ...guestUserData,
-                          email: e.target.value,
-                        });
-                        // Clear error when user starts typing
-                        if (emailError) setEmailError("");
-                      }}
-                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${emailError ? "border-destructive" : ""}`}
-                    />
-                    {emailError && (
-                      <p className="text-destructive text-sm mt-1">{emailError}</p>
-                    )}
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
 
-                  {/* Phone */}
-                  <div>
-                    <Label htmlFor="guestPhone">Phone Number *</Label>
-                    <Input
-                      id="guestPhone"
-                      placeholder="Enter your phone number (10-15 digits)"
-                      value={guestUserData?.phone}
-                      disabled={!!user}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, ""); // Remove non-digits
-                        if (value.length <= 15) {
+                    {/* Email */}
+                    <div>
+                      <Label htmlFor="guestEmail">Email Address *</Label>
+                      <Input
+                        id="guestEmail"
+                        type="email"
+                        placeholder="Enter your email address"
+                        value={guestUserData.email}
+                        disabled={!!user}
+                        onChange={(e) => {
                           setGuestUserData({
                             ...guestUserData,
-                            phone: value,
+                            email: e.target.value,
                           });
                           // Clear error when user starts typing
-                          if (phoneError) setPhoneError("");
-                        }
-                      }}
-                      maxLength={15}
-                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${phoneError ? "border-destructive" : ""}`}
-                    />
-                    {phoneError && (
-                      <p className="text-destructive text-sm mt-1">{phoneError}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter 10-15 digit mobile number (any country)
-                    </p>
+                          if (emailError) setEmailError("");
+                        }}
+                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${emailError ? "border-destructive" : ""}`}
+                      />
+                      {emailError && (
+                        <p className="text-destructive text-sm mt-1">{emailError}</p>
+                      )}
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <Label htmlFor="guestPhone">Phone Number *</Label>
+                      <Input
+                        id="guestPhone"
+                        placeholder="Enter your phone number (10-15 digits)"
+                        value={guestUserData?.phone}
+                        disabled={!!user}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+                          if (value.length <= 15) {
+                            setGuestUserData({
+                              ...guestUserData,
+                              phone: value,
+                            });
+                            // Clear error when user starts typing
+                            if (phoneError) setPhoneError("");
+                          }
+                        }}
+                        maxLength={15}
+                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${phoneError ? "border-destructive" : ""}`}
+                      />
+                      {phoneError && (
+                        <p className="text-destructive text-sm mt-1">{phoneError}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter 10-15 digit mobile number (any country)
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Scheduling Options */}
+            <Card variant="elevated">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-primary" />
+                  Schedule Session
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Select your preferred option:
+                  </p>
+
+                  <RadioGroup
+                    value={scheduleOption || ""}
+                    onValueChange={(value: "now" | "later" | "") => {
+                      if (value === "") {
+                        clearSelection();
+                      } else {
+                        value === "now" ? openScheduleModal() : selectScheduleLater();
+                      }
+                    }}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                  >
+                    {/* Column 1 */}
+                    <div className="flex items-start space-x-3 border rounded-lg p-4">
+                      <RadioGroupItem value="now" id="schedule-now" className="mt-1" />
+                      <div className="flex-1">
+                        <Label
+                          htmlFor="schedule-now"
+                          className="font-medium cursor-pointer"
+                        >
+                          Schedule Now
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Pick date & time
+                        </p>
+
+                        {scheduleOption === "now" && scheduleDate && scheduleTime && (
+                          <div className="mt-2 text-xs text-primary font-medium">
+                            {new Date(scheduleDate).toLocaleDateString()} | {
+                              selectedTimeSlot 
+                                ? `${selectedTimeSlot.start} - ${selectedTimeSlot.end}`
+                                : scheduleTime
+                            }
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Column 2 */}
+                    <div className="flex items-start space-x-3 border rounded-lg p-4">
+                      <RadioGroupItem value="later" id="schedule-later" className="mt-1" />
+                      <div className="flex-1">
+                        <Label
+                          htmlFor="schedule-later"
+                          className="font-medium cursor-pointer"
+                        >
+                          Schedule Later
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          After payment
+                        </p>
+
+                        {scheduleOption === "later" && (
+                          <div className="mt-2 text-xs text-primary font-medium">
+                            Will schedule later
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </RadioGroup>
+
+                  {scheduleOption && (
+                    <div className="pt-2">
+                      <Button variant="outline" size="sm" onClick={clearSelection}>
+                        Clear
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
 
             {/* Security Notice */}
             <Card variant="outline">
@@ -1299,24 +1518,31 @@ export default function BookingPage() {
                     src={
                       subscriptionBooking
                         ? "https://placehold.co/100x100?text=SUB"
-                        : therapist.avatar ||
-                          "https://placehold.co/100x100?text=DOC"
+                        : publicAdmins?.[0]?.profilePicture ||
+                        "https://placehold.co/100x100?text=DOC"
                     }
-                    alt={subscriptionBooking ? plan.name : therapist.name}
+                    alt={subscriptionBooking ? plan.name : publicAdmins?.[0]?.name || "Doctor"}
                     className="w-12 h-12 rounded-lg object-cover"
                   />
                   <div>
                     <p className="font-medium">
-                      {subscriptionBooking ? plan.name : therapist.name}
+                      {subscriptionBooking 
+                        ? plan.name 
+                        : publicAdmins?.[0]?.name || therapist.name || "Doctor"}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {subscriptionBooking
                         ? `Subscription Plan - ${plan.duration}`
-                        : therapist.title}
+                        : publicAdmins?.[0]?.doctorProfile?.specialization || therapist.title || "Physiotherapist"}
                     </p>
                     {subscriptionBooking && (
                       <p className="text-sm text-muted-foreground">
                         Sessions: {plan.sessions || "Unlimited"}
+                      </p>
+                    )}
+                    {!subscriptionBooking && publicAdmins?.[0]?.doctorProfile?.experience && (
+                      <p className="text-sm text-muted-foreground">
+                        Experience: {publicAdmins[0].doctorProfile.experience} years
                       </p>
                     )}
                   </div>
@@ -1452,6 +1678,25 @@ export default function BookingPage() {
           </div>
         </div>
       </div>
+
+      {/* Schedule Modal */}
+      <ScheduleModal
+        isOpen={isScheduleModalOpen}
+        onClose={closeScheduleModal}
+        onConfirm={handleScheduleConfirm}
+        availability={availability}
+        currentMonth={currentMonth}
+        currentYear={currentYear}
+        setCurrentMonth={setCurrentMonth}
+        setCurrentYear={setCurrentYear}
+        scheduleError={scheduleError}
+        scheduleDate={scheduleDate}
+        scheduleTime={scheduleTime}
+        setScheduleDate={setScheduleDate}
+        setScheduleTime={setScheduleTime}
+        setSelectedDate={setSelectedDate}
+        therapistName={therapist?.name || "your therapist"}
+      />
     </Layout>
   );
 }

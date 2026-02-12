@@ -391,6 +391,22 @@ export const getBookingDetails = (id: string, clientEmail: string) => {
   return api.post(`/bookings/details/${id}`, { clientEmail });
 };
 
+// Slot availability API functions
+export const checkSlotAvailability = (slotData: {
+  therapistId: string;
+  date: string;
+  timeSlot: {
+    start: string;
+    end: string;
+  };
+}) => {
+  return api.post(`/bookings/check-slot-availability`, slotData);
+};
+
+export const updateBookingSchedule = (id: string, scheduleData: any) => {
+  return api.put(`/bookings/${id}/schedule`, scheduleData);
+};
+
 // Video Call API functions
 export const videoCallAPI = {
   // Generate secure JWT token for joining call

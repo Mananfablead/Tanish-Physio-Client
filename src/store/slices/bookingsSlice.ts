@@ -14,7 +14,9 @@ import {
   createGuestPaymentOrder,
   verifyGuestPayment,
   createGuestSubscriptionPaymentOrder,
-  verifyGuestSubscriptionPayment
+  verifyGuestSubscriptionPayment,
+  checkSlotAvailability,
+  updateBookingSchedule
 } from '../../lib/api';
 
 interface Booking {
@@ -439,6 +441,37 @@ export const verifyGuestSubscriptionPaymentAsync = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to verify guest subscription payment'
+      );
+    }
+  }
+);
+
+// Slot availability async thunks
+export const checkSlotAvailabilityAsync = createAsyncThunk(
+  'bookings/checkSlotAvailability',
+  async (slotData: any, { rejectWithValue }) => {
+    try {
+      const response = await checkSlotAvailability(slotData);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to check slot availability'
+      );
+    }
+  }
+);
+
+export const updateBookingScheduleAsync = createAsyncThunk(
+  'bookings/updateBookingSchedule',
+  async ({ id, scheduleData }: { id: string; scheduleData: any }, { rejectWithValue }) => {
+    try {
+      const response = await updateBookingSchedule(id, scheduleData);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update booking schedule'
       );
     }
   }

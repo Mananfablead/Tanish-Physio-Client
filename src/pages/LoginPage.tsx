@@ -184,15 +184,24 @@ const LoginPage = () => {
                                                 description: `Welcome back, ${data.email}!`,
                                             });
                                             
-                                            // Check for redirect after login in sessionStorage
-                                            const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
-                                            if (redirectAfterLogin) {
-                                                sessionStorage.removeItem('redirect_after_login'); // Clean up
-                                                navigate(redirectAfterLogin, { replace: true });
+                                            // Check if there was a pending booking from guest checkout
+                                            const pendingBooking = sessionStorage.getItem('qw_pending_booking');
+                                            if (pendingBooking) {
+                                                // Remove the pending booking data
+                                                sessionStorage.removeItem('qw_pending_booking');
+                                                // Navigate to profile where they can manage their booking
+                                                navigate('/profile', { replace: true });
                                             } else {
-                                                // Redirect to intended location or home
-                                                const from = location.state?.from?.pathname || '/';
-                                                navigate(from, { replace: true });
+                                                // Check for redirect after login in sessionStorage
+                                                const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
+                                                if (redirectAfterLogin) {
+                                                    sessionStorage.removeItem('redirect_after_login'); // Clean up
+                                                    navigate(redirectAfterLogin, { replace: true });
+                                                } else {
+                                                    // Redirect to intended location or home
+                                                    const from = location.state?.from?.pathname || '/';
+                                                    navigate(from, { replace: true });
+                                                }
                                             }
                                         } else {
                                             // Handle error
