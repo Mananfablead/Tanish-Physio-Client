@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mail, Calendar, CheckCircle, ArrowRight, Heart } from "lucide-react";
+import { Calendar, ArrowRight, Heart } from "lucide-react";
 import logo from "../assets/logo.webp";
 
 let confetti: any;
