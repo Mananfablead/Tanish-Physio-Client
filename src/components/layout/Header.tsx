@@ -88,7 +88,8 @@ shadow-sm">
         <div className="flex items-center gap-2 md:gap-3">
 
           {/* Show profile dropdown when authenticated */}
-          {/* {isAuthenticated ? (
+          <div className="hidden md:flex">
+          {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div
@@ -197,7 +198,8 @@ shadow-sm">
                 </TooltipContent>
               </Tooltip>
             </>
-          )} */}
+          )}
+          </div>
 
           {/* Mobile Navigation */}
           <Sheet open={open} onOpenChange={setOpen}>
