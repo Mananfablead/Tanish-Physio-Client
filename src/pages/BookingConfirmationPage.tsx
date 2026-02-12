@@ -19,6 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
+import { register } from "@/store/slices/authSlice";
 
 export default function BookingConfirmationPage() {
   const location = useLocation();
@@ -200,7 +201,35 @@ export default function BookingConfirmationPage() {
       // Remove guest user from session storage if user is now logged in
       sessionStorage.removeItem("qw_guest_user");
     }
-  }, [isAuthenticated, guestUser]);
+    
+    // If user is a guest and hasn't registered yet, register them automatically
+    if (!isAuthenticated && guestUser && guestUser.email) {
+      const registerGuestUser = async () => {
+        try {
+          // Attempt to register the guest user with a default password
+          await dispatch(register({
+            name: guestUser.name || "Guest User",
+            email: guestUser.email,
+            password: "1234",
+            phone: guestUser.phone
+          }));
+          
+          toast.success("Account created successfully!");
+        } catch (error: any) {
+          console.error("Auto-registration failed:", error);
+          // Continue anyway since this is just for convenience
+          toast.info("Please log in to access your account.");
+        }
+      };
+      
+      // Delay the registration slightly to allow other UI updates to complete
+      const timer = setTimeout(() => {
+        registerGuestUser();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, guestUser, dispatch]);
 
   /* ---------------- Action Buttons ---------------- */
   const renderActionButtons = () => {

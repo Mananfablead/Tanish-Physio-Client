@@ -354,6 +354,64 @@ export default function ProfilePage() {
     fetchAvailability();
   }, [isRescheduleModalOpen]);
 
+  // Handle payment for plan selection
+  const handlePayment = async (selectedPlan: any) => {
+    try {
+      // For guest users, we'll use a different approach
+      // Instead of calling guest API, we'll navigate directly to booking
+      const isGuestUser = !user || !localStorage.getItem("token");
+      
+      if (isGuestUser) {
+        // For guest users, store plan info and navigate to booking
+        sessionStorage.setItem("qw_selected_plan", JSON.stringify({
+          plan: selectedPlan,
+          selectedAt: Date.now()
+        }));
+        
+        // Navigate to booking page with plan parameter
+        navigate("/booking", {
+          state: {
+            service: {
+              id: selectedPlan.planId || selectedPlan.id,
+              name: selectedPlan.name,
+              price: String(selectedPlan.price),
+              duration: selectedPlan.duration,
+            },
+            fromSubscription: true,
+            isGuestFlow: true
+          }
+        });
+      } else {
+        // For logged-in users, proceed with normal subscription flow
+        // Navigate to booking page with subscription flow
+        navigate("/booking", {
+          state: {
+            service: {
+              id: selectedPlan.planId || selectedPlan.id,
+              name: selectedPlan.name,
+              price: String(selectedPlan.price),
+              duration: selectedPlan.duration,
+            },
+            fromSubscription: true,
+            isGuestFlow: false
+          }
+        });
+      }
+      
+      toast({
+        title: "Plan Selected",
+        description: `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`,
+      });
+    } catch (error) {
+      console.error("Error handling plan selection:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process plan selection. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Define sections for sidebar navigation
   const sections: Section[] = [
     {
@@ -446,7 +504,10 @@ export default function ProfilePage() {
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
                 {selectedSection === "activePlan" && (
-                  <ActivePlanSection activePlan={activePlan} />
+                  <ActivePlanSection 
+                    activePlan={activePlan} 
+                    onPlanSelect={handlePayment}
+                  />
                 )}
 
                 {selectedSection === "upcoming" && (

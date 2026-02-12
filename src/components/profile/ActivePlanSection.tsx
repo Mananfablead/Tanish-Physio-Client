@@ -1,13 +1,38 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, Clock, Calendar, Activity, BarChart3, RefreshCw, CreditCard, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, Clock, Calendar, Activity, BarChart3, RefreshCw, CreditCard, FileText, CheckCircle, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { useAppDispatch } from "@/store";
+import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
+import { useSelector } from "react-redux";
+import { Check } from "lucide-react";
 
 interface ActivePlanSectionProps {
   activePlan: any;
+  onPlanSelect?: (plan: any) => void;
 }
 
-export function ActivePlanSection({ activePlan }: ActivePlanSectionProps) {
+export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectionProps) {
+  const dispatch = useAppDispatch();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const { plans, loading, error } = useSelector(
+    (state: any) => state.subscriptions
+  );
+
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlans());
+  }, [dispatch]);
+
   const InfoBlock = ({
     label,
     value,
@@ -38,9 +63,9 @@ export function ActivePlanSection({ activePlan }: ActivePlanSectionProps) {
       </div>
     </div>
   );
-const isExpired =
-  activePlan?.endDate &&
-  new Date(activePlan.endDate).getTime() < Date.now();
+  const isExpired =
+    activePlan?.endDate &&
+    new Date(activePlan.endDate).getTime() < Date.now();
 
   return (
     <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
@@ -49,20 +74,19 @@ const isExpired =
           <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
             Active Plan
           </h3>
-     {activePlan && (
-  <Badge
-    className={`border-none font-bold ${
-      isExpired
-        ? "bg-destructive/10 text-destructive"
-        : "bg-success/10 text-success"
-    }`}
-  >
-    {isExpired ? "EXPIRED" : "ACTIVE"}
-  </Badge>
-)}
+          {activePlan && (
+            <Badge
+              className={`border-none font-bold ${isExpired
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-success/10 text-success"
+                }`}
+            >
+              {isExpired ? "EXPIRED" : "ACTIVE"}
+            </Badge>
+          )}
 
         </div>
-        
+
         {activePlan ? (
           <div className="space-y-6">
             {/* Header with enhanced design */}
@@ -77,18 +101,18 @@ const isExpired =
                       {activePlan?.planName || "Subscription Plan"}
                     </h2>
                   </div>
-                  
+
                   <div className="flex flex-wrap items-center gap-3 text-sm">
-                   <Badge
-  variant="secondary"
-  className={
-    isExpired
-      ? "bg-red-100 text-red-800"
-      : "bg-green-100 text-green-800"
-  }
->
-  {isExpired ? "Expired" : "Active"}
-</Badge>
+                    <Badge
+                      variant="secondary"
+                      className={
+                        isExpired
+                          ? "bg-red-100 text-red-800"
+                          : "bg-green-100 text-green-800"
+                      }
+                    >
+                      {isExpired ? "Expired" : "Active"}
+                    </Badge>
 
                     <span className="text-slate-500 font-medium">
                       Payment via {activePlan?.paymentGateway || "Razorpay"}
@@ -121,7 +145,7 @@ const isExpired =
                   <BarChart3 className="w-5 h-5 text-primary" />
                   Session Usage
                 </h3>
-                
+
                 <div className="space-y-4">
                   {/* Progress bar */}
                   <div>
@@ -134,14 +158,13 @@ const isExpired =
                       </span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-3">
-                      <div 
-                        className={`h-3 rounded-full transition-all duration-500 ${
-                          activePlan.availableSessions.percentageUsed >= 90 
-                            ? "bg-destructive" 
-                            : activePlan.availableSessions.percentageUsed >= 70 
-                            ? "bg-warning" 
-                            : "bg-primary"
-                        }`}
+                      <div
+                        className={`h-3 rounded-full transition-all duration-500 ${activePlan.availableSessions.percentageUsed >= 90
+                            ? "bg-destructive"
+                            : activePlan.availableSessions.percentageUsed >= 70
+                              ? "bg-warning"
+                              : "bg-primary"
+                          }`}
                         style={{ width: `${activePlan.availableSessions.percentageUsed}%` }}
                       ></div>
                     </div>
@@ -184,10 +207,10 @@ const isExpired =
                 value={
                   activePlan?.startDate
                     ? new Date(activePlan.startDate).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    })
                     : "-"
                 }
                 icon={Clock}
@@ -199,10 +222,10 @@ const isExpired =
                 value={
                   activePlan?.endDate
                     ? new Date(activePlan.endDate).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    })
                     : "-"
                 }
                 icon={Calendar}
@@ -227,10 +250,10 @@ const isExpired =
                 value={
                   activePlan?.nextBillingDate
                     ? new Date(activePlan.nextBillingDate).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    })
                     : "-"
                 }
                 icon={RefreshCw}
@@ -277,12 +300,109 @@ const isExpired =
             </div>
             <button
               className="h-11 rounded-xl bg-primary hover:bg-primary/90 px-8 font-black text-white"
+              onClick={() => setIsModalOpen(true)}
             >
-              <Link to="/plans">Explore Our Plans</Link>
+              Explore Our Plans
             </button>
           </div>
         )}
+          {/* Subscription Plans Modal */}
+    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="p-6 pb-4 border-b">
+          <DialogTitle className="text-2xl font-bold text-center">Choose Your Wellness Plan</DialogTitle>
+          <DialogDescription className="text-center text-slate-600">
+            Select the perfect plan for your recovery journey
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="p-6">
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500 font-medium">Failed to load plans: {error}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => dispatch(fetchSubscriptionPlans())}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : plans && plans.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plans.map((plan: any) => (
+                <Card key={plan._id || plan.id} className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300">
+                  <div className="p-6 flex-1">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                      {/* {plan.popular && (
+                        <Badge className="bg-primary text-white">Popular</Badge>
+                      )} */}
+                    </div>
+                    
+                    <div className="mb-6">
+                      <div className="text-3xl font-black text-primary mb-1">
+                        ₹{plan.price?.toLocaleString()}
+                      </div>
+                      <div className="text-slate-500 text-sm">{plan.duration}</div>
+                    </div>
+                    
+                    <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                      {plan.description}
+                    </p>
+                    
+                    <ul className="space-y-3 mb-6 flex-1">
+                      {plan.features?.slice(0, 5).map((feature: string, index: number) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-slate-700">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div className="p-6 pt-0">
+                    <Button 
+                      className="w-full h-12 text-base font-semibold rounded-xl"
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        // Call the provided callback or fallback to default navigation
+                        if (onPlanSelect) {
+                          onPlanSelect(plan);
+                        } else {
+                          // Fallback navigation if no callback provided
+                          window.location.href = `/booking?plan=${plan.planId || plan.id}`;
+                        }
+                      }}
+                    >
+                      Select Plan
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                <Star className="h-8 w-8 text-slate-300" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">No Plans Available</h3>
+              <p className="text-slate-500">Please check back later or contact support.</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
       </div>
     </Card>
+    
   );
+
+
+  
 }

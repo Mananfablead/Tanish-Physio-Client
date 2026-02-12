@@ -390,7 +390,7 @@ const ServiceSidebar = ({
         </Button>
 
         {/* Trust Indicators */}
-        <div className="mt-4 space-y-3 pt-4 border-t border-slate-200">
+        {/* <div className="mt-4 space-y-3 pt-4 border-t border-slate-200">
           <div className="flex items-start gap-2">
             <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <span className="text-sm text-slate-600">Certified therapists</span>
@@ -405,7 +405,7 @@ const ServiceSidebar = ({
             <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <span className="text-sm text-slate-600">Home visit available</span>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Testimonial */}

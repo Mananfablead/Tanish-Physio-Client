@@ -134,7 +134,7 @@ export function ProfileHeader({
         bg: "bg-primary/10",
       },
       {
-        label: "Done",
+        label: "Completed",
         value: sessionCompleted.length,
         icon: Calendar,
         color: "text-accent",
