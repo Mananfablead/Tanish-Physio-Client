@@ -59,7 +59,7 @@ const transformServiceFromAPI = (apiService: any): Service => {
         ? apiService.features
         : [],
       resultsTimeline: apiService.resultsTimeline || "2-4 weeks",
-      sessions: apiService.sessions,
+      sessions: apiService.sessions || apiService.totalSessions || 0,
     },
     media: {
       heroImage: heroImage,

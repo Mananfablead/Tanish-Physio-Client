@@ -351,7 +351,7 @@ export default function BookingPage() {
           order_id: orderId, // Use the order ID from the backend
           amount: finalPrice * 100, // Convert to paise (multiply by 100)
           currency: "INR",
-          name: "Tanish physio",
+          name: "Tanish physio & fitness",
           description: `Subscription Payment - Plan: ${bookingData.service.name}`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
@@ -775,7 +775,7 @@ export default function BookingPage() {
           order_id: orderId, // Use the order ID from the backend
           amount: finalPrice * 100, // Convert to paise (multiply by 100)
           currency: "INR",
-          name: "Tanish physio",
+          name: "Tanish physio & fitness",
           description: `Session Booking Payment - Booking ID: ${bookingId}`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
