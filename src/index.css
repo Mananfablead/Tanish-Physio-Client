@@ -72,6 +72,9 @@
   .dark {
     --background: 210 40% 8%;
     --foreground: 180 20% 95%;
+    
+    /* Dark mode patterns */
+    --pattern-opacity: 0.05;
 
     --card: 210 35% 12%;
     --card-foreground: 180 20% 95%;
@@ -119,7 +122,26 @@
     --sidebar-border: 210 30% 18%;
     --sidebar-ring: 174 62% 45%;
   }
-}
+  
+  .dark .bg-grid-pattern {
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+  
+  .dark .bg-dots-pattern {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+  
+  .dark .bg-diagonal-lines {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.05) 10px,
+      rgba(255, 255, 255, 0.05) 11px
+    );
+  }
 
 @layer base {
   * {
@@ -172,4 +194,6 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+}
 }

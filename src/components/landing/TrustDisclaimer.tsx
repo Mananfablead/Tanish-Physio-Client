@@ -10,8 +10,8 @@ export const TrustDisclaimer = () => {
               <ShieldCheck className="h-5 w-5 text-success" />
             </div>
             <div>
-              <h5 className="font-bold text-sm mb-1">Data Privacy</h5>
-              <p className="text-xs text-muted-foreground">We follow industry-standard healthcare data security and privacy practices.</p>
+              <h5 className="font-bold text-base mb-1">Data Privacy</h5>
+              <p className="text-sm text-muted-foreground">We follow industry-standard healthcare data security and privacy practices.</p>
             </div>
           </div>
           <div className="flex gap-4">
@@ -19,8 +19,8 @@ export const TrustDisclaimer = () => {
               <Lock className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h5 className="font-bold text-sm mb-1">Secure Encryption</h5>
-              <p className="text-xs text-muted-foreground">End-to-end encryption for all video calls and messaging.</p>
+              <h5 className="font-bold text-base mb-1">Secure Encryption</h5>
+              <p className="text-sm text-muted-foreground">End-to-end encryption for all video calls and messaging.</p>
             </div>
           </div>
           <div className="flex gap-4">
@@ -28,8 +28,8 @@ export const TrustDisclaimer = () => {
               <AlertCircle className="h-5 w-5 text-warning" />
             </div>
             <div>
-              <h5 className="font-bold text-sm mb-1">Medical Disclaimer</h5>
-              <p className="text-xs text-muted-foreground">Not a replacement for emergency care. If in crisis, call local emergency services.</p>
+              <h5 className="font-bold text-base mb-1">Medical Disclaimer</h5>
+              <p className="text-sm text-muted-foreground">Not a replacement for emergency care. If in crisis, call local emergency services.</p>
             </div>
           </div>
         </div>

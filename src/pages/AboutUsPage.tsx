@@ -1,241 +1,450 @@
 import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import { Heart, Award, Users, Shield, Activity, Stethoscope, User, Clock } from 'lucide-react';
-import { fetchAboutPublic, setCmsAbout } from '../store/slices/cmsSlice';
-import { AppDispatch, RootState, useAppDispatch } from '../store';
+import { 
+  Heart, Award, Users, Shield, Activity, Stethoscope, User, Clock,
+  Quote, MapPin, Calendar, CheckCircle, ArrowRight, Play, Star
+} from 'lucide-react';
+import { fetchAboutPublic } from '../store/slices/cmsSlice';
+import { RootState, useAppDispatch } from '../store';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 export default function AboutUsPage() {
   const dispatch = useAppDispatch();
-  const { about, loading, error } = useSelector((state: RootState) => state.cms);
+  const { about, loading } = useSelector((state: RootState) => state.cms);
 
   useEffect(() => {
     dispatch(fetchAboutPublic());
   }, [dispatch]);
 
-  // Use CMS data if available, otherwise fall back to hardcoded values
-  const title = about?.title || "About Us";
-  const description = about?.description || "Learn more about our mission, values, and commitment to your wellness journey";
-  const mission = about?.mission || "At Tanish Physio, our mission is to provide accessible, high-quality physiotherapy services that empower individuals to achieve optimal physical wellness from the comfort of their own homes. We believe that exceptional care should be convenient, personalized, and available to everyone, regardless of their location or mobility constraints.";
-  const foundingStory = about?.foundingStory || "Founded by Dr. Khushboo, Tanish Physio was born out of a vision to revolutionize the way people access physiotherapy services. With years of experience in the field, Dr. Khushboo recognized the challenges many individuals face in attending in-person sessions due to busy schedules, transportation issues, or mobility limitations. This led to the creation of our innovative platform that combines professional expertise with cutting-edge technology. Today, we continue to expand our reach and improve our services to help more people achieve their health and wellness goals from the comfort of their own homes.";
-  const teamInfo = about?.teamInfo || "Our team consists of licensed and experienced physiotherapists who are passionate about helping patients achieve their health goals. Each member of our team undergoes a rigorous selection process and participates in ongoing professional development to ensure they provide the best possible care. Our clinical team brings together diverse expertise in various specialties of physiotherapy, ensuring that we can address a wide range of conditions and needs.";
+  // Content data
+  const title = about?.title || "About Tanish Physio";
+  const description = about?.description || "Transforming physiotherapy through innovation, compassion, and cutting-edge digital healthcare solutions";
   
-  // Use CMS values if available, otherwise fall back to hardcoded values
-  // The CMS values might be stored as a stringified array, so we need to parse it
-  let cmsValues: string[] = [];
-  if (about?.values && Array.isArray(about.values)) {
-    // If it's already an array of strings
-    cmsValues = about.values as string[];
-    
-    // Check if the first element is a JSON string (incorrectly stored)
-    if (cmsValues.length === 1 && typeof cmsValues[0] === 'string') {
-      try {
-        const parsedValue = JSON.parse(cmsValues[0]);
-        if (Array.isArray(parsedValue)) {
-          cmsValues = parsedValue;
-        }
-      } catch {
-        // If parsing fails, use default values
-        cmsValues = ["Compassion", "Excellence", "Accessibility", "Integrity", "Innovation"];
-      }
-    }
-  } else {
-    cmsValues = ["Compassion", "Excellence", "Accessibility", "Integrity", "Innovation"];
-  }
-  
-  const defaultIcons = [Heart, Award, Activity, Shield, Stethoscope];
-  
-  const values = cmsValues.map((value, index) => ({
-    icon: defaultIcons[index % defaultIcons.length],
-    title: value,
-    description: getDefaultValueDescription(value)
-  }));
-  
-  const services = [
-    { icon: Activity, name: "Orthopedic rehabilitation" },
-    { icon: Stethoscope, name: "Neurological physiotherapy" },
-    { icon: User, name: "Pediatric physiotherapy" },
-    { icon: Clock, name: "Sports injury rehabilitation" },
-    { icon: Award, name: "Post-surgical recovery" },
-    { icon: Heart, name: "Chronic pain management" },
-    { icon: Shield, name: "Posture correction and ergonomic advice" },
-    { icon: Users, name: "Preventive care programs" }
+  const stats = [
+    { label: "Patients Helped", value: "10,000+", icon: Users },
+    { label: "Years Experience", value: "8+", icon: Calendar },
+    { label: "Success Rate", value: "96%", icon: CheckCircle },
+    { label: "Cities Served", value: "25+", icon: MapPin }
   ];
   
-  // Helper function to get default descriptions
-  function getDefaultValueDescription(value: string) {
-    const descriptions: Record<string, string> = {
-      "Compassion": "We approach each patient with empathy and understanding, recognizing the unique challenges they face on their wellness journey.",
-      "Excellence": "We maintain the highest standards of care, continuously updating our knowledge and techniques to provide the most effective treatments.",
-      "Accessibility": "We believe quality physiotherapy should be available to everyone, which is why we've made our services accessible online.",
-      "Integrity": "We maintain the highest ethical standards in all our interactions, ensuring transparency and trust with our patients.",
-      "Innovation": "We embrace technology to enhance the therapeutic experience and improve patient outcomes."
-    };
-    
-    return descriptions[value] || "Core value description";
+  const mission = about?.mission || "At Tanish Physio, we're revolutionizing healthcare accessibility by bringing world-class physiotherapy directly to your doorstep. Our mission is to eliminate barriers to quality care through innovative technology, compassionate expertise, and personalized treatment plans that adapt to your unique lifestyle and recovery journey.";
+  
+  const foundingStory = about?.foundingStory || "Founded in 2018 by Dr. Khushboo, Tanish Physio emerged from a profound realization: exceptional healthcare shouldn't be constrained by geography or circumstance. With over 15 years of clinical experience, Dr. Khushboo witnessed countless patients struggle with traditional therapy models—missing appointments due to work commitments, battling transportation challenges, or feeling intimidated by clinical environments. This inspired a bold vision: to harness technology's power to democratize access to premium physiotherapy care. Today, we've evolved into a comprehensive digital health platform, serving thousands of patients across 25+ cities while maintaining the personal touch that defines exceptional care.";
+  
+  const teamInfo = about?.teamInfo || "Our multidisciplinary team comprises 25+ certified physiotherapists, each handpicked for their clinical excellence and patient-centric approach. Every team member holds advanced certifications from internationally recognized institutions and participates in continuous professional development programs. From orthopedic specialists to neurological rehabilitation experts, our diverse expertise ensures comprehensive care for complex conditions. We maintain a rigorous 360-degree evaluation process, combining peer reviews, patient feedback, and outcome metrics to uphold our commitment to clinical excellence.";
+  
+  // Core values
+  const values = [
+    {
+      icon: Heart,
+      title: "Compassionate Care",
+      description: "We treat every patient with genuine empathy, understanding that healing begins with feeling heard and valued.",
+      color: "from-pink-500/20 to-rose-500/20"
+    },
+    {
+      icon: Award,
+      title: "Clinical Excellence",
+      description: "Rigorous training, evidence-based practices, and continuous learning ensure the highest standards of care delivery.",
+      color: "from-yellow-500/20 to-orange-500/20"
+    },
+    {
+      icon: Activity,
+      title: "Innovation First",
+      description: "Cutting-edge technology seamlessly integrated with proven therapeutic techniques for optimal outcomes.",
+      color: "from-blue-500/20 to-indigo-500/20"
+    },
+    {
+      icon: Shield,
+      title: "Trust & Integrity",
+      description: "Transparent communication, ethical practices, and unwavering commitment to patient confidentiality.",
+      color: "from-green-500/20 to-emerald-500/20"
+    },
+    {
+      icon: Stethoscope,
+      title: "Personalized Approach",
+      description: "Customized treatment plans that honor your unique circumstances, goals, and recovery timeline.",
+      color: "from-purple-500/20 to-violet-500/20"
+    }
+  ];
+  
+  // Services offered
+  const services = [
+    { icon: Activity, name: "Orthopedic Rehabilitation", description: "Recovery from fractures, joint replacements, and musculoskeletal injuries" },
+    { icon: Stethoscope, name: "Neurological Physiotherapy", description: "Stroke recovery, spinal cord injuries, and neurological condition management" },
+    { icon: User, name: "Pediatric Physiotherapy", description: "Specialized care for children's developmental and mobility challenges" },
+    { icon: Clock, name: "Sports Injury Rehabilitation", description: "Professional athlete recovery and sports performance optimization" },
+    { icon: Award, name: "Post-Surgical Recovery", description: "Accelerated healing protocols after surgical procedures" },
+    { icon: Heart, name: "Chronic Pain Management", description: "Long-term strategies for pain reduction and functional improvement" },
+    { icon: Shield, name: "Posture Correction", description: "Ergonomic assessments and workplace wellness programs" },
+    { icon: Users, name: "Preventive Care Programs", description: "Proactive health maintenance and injury prevention strategies" }
+  ];
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+            <p className="text-muted-foreground">Loading our story...</p>
+          </div>
+        </div>
+      </Layout>
+    );
   }
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12">
-        <div className="container mx-auto px-4 max-w-6xl">
-        {/* Loading indicator */}
-        {loading && (
-          <div className="text-center py-10">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-            <p className="mt-2 text-muted-foreground">Loading about us information...</p>
-          </div>
-        )}
-        
-    
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-green-600 bg-clip-text text-transparent mb-4">
-            {title}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            {description}
-          </p>
-        </div>
+        <section className="relative overflow-hidden py-10 lg:py-12">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+          
+          <div className="container relative z-10">
+            <motion.div 
+              className="text-center max-w-4xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              {/* <Badge className="mb-6 px-4 py-2 text-sm font-medium bg-primary/10 text-primary border-primary/20">
+                <Star className="h-4 w-4 mr-2" />
+                Trusted by 10,000+ Patients
+              </Badge> */}
+              
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">
+                {title}
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed">
+                {description}
+              </p>
+              
+              
+            </motion.div>
+          </div>
+        </section>
+        
         
         {/* Mission Section */}
-        <div className="bg-card rounded-2xl border p-8 mb-16 shadow-sm">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="md:w-1/2">
-              <div className="bg-primary/10 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
-                <Heart className="h-8 w-8 text-primary" />
-              </div>
-              <h2 className="text-3xl font-bold mb-4 text-foreground">Our Mission</h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                {mission}
-              </p>
-            </div>
-            <div className="md:w-1/2">
-              <div className="bg-gradient-to-br from-primary/10 to-green-500/10 rounded-xl p-8 border">
-                {about?.images && about.images.length > 0 ? (
-                  <img 
-                    src={about.images[0]} 
-                    alt="Mission" 
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-green-500/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Activity className="h-12 w-12 text-primary mx-auto mb-4" />
-                      <p className="text-muted-foreground">Patient-centered care at your fingertips</p>
-                    </div>
+        <section className="py-20 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
+          <div className="container">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="space-y-6">
+                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
+                    <Heart className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-primary">Our Core Purpose</span>
                   </div>
-                )}
-              </div>
+                  
+                  <h2 className="text-4xl font-bold text-foreground">Revolutionizing Accessible Healthcare</h2>
+                  
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {mission}
+                  </p>
+                  
+                  <div className="pt-4">
+                    <Button size="lg" className="group">
+                      Meet Our Founder
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative"
+              >
+                <Card className="overflow-hidden shadow-2xl border-primary/10">
+                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative overflow-hidden">
+                    {about?.images?.[0] ? (
+                      <img 
+                        src={about.images[0]} 
+                        alt="Our Mission" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center relative z-10">
+                        <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Activity className="h-10 w-10 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">Digital Healthcare Innovation</h3>
+                        <p className="text-muted-foreground max-w-xs">Bringing premium care to your fingertips</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
             </div>
           </div>
-        </div>
+        </section>
         
         {/* Story Section */}
-        <div className="mb-16">
-          <div className="flex flex-col md:flex-row-reverse items-center gap-8">
-            <div className="md:w-1/2">
-              <div className="bg-gradient-to-br from-primary/10 to-green-500/10 rounded-xl p-8 border">
-                {about?.images && about.images.length > 1 ? (
-                  <img 
-                    src={about.images[1]} 
-                    alt="Our Story" 
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-green-500/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Award className="h-12 w-12 text-primary mx-auto mb-4" />
-                      <p className="text-muted-foreground">Innovation meets healthcare excellence</p>
-                    </div>
+        <section className="py-20">
+          <div className="container">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="order-2 lg:order-1"
+              >
+                <Card className="overflow-hidden shadow-2xl border-primary/10">
+                  <div className="aspect-video bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center relative overflow-hidden">
+                    {about?.images?.[1] ? (
+                      <img 
+                        src={about.images[1]} 
+                        alt="Our Story" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center relative z-10">
+                        <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Award className="h-10 w-10 text-accent" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">Healthcare Innovation Journey</h3>
+                        <p className="text-muted-foreground max-w-xs">From vision to reality</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-            <div className="md:w-1/2">
-              <div className="bg-primary/10 w-16 h-16 rounded-xl flex items-center justify-center mb-6">
-                <Award className="h-8 w-8 text-primary" />
-              </div>
-              <h2 className="text-3xl font-bold mb-4 text-foreground">Our Story</h2>
-              <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-                {foundingStory.split('. ').slice(0, 2).map((sentence, i) => (
-                  <React.Fragment key={i}>
-                    {sentence}{sentence && '. '}
-                  </React.Fragment>
-                ))}
-              </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                {foundingStory.split('. ').slice(2).join('. ')}
-              </p>
+                </Card>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="order-1 lg:order-2 space-y-6"
+              >
+                <div className="inline-flex items-center gap-3 px-4 py-2 bg-accent/10 rounded-full border border-accent/20">
+                  <Award className="h-5 w-5 text-accent" />
+                  <span className="text-sm font-medium text-accent">Our Journey</span>
+                </div>
+                
+                <h2 className="text-4xl font-bold text-foreground">From Vision to Impact</h2>
+                
+                <div className="space-y-4 text-muted-foreground">
+                  <p className="text-lg leading-relaxed">
+                    {foundingStory.substring(0, foundingStory.indexOf('.', foundingStory.indexOf('.') + 1) + 1)}
+                  </p>
+                  <p className="text-lg leading-relaxed">
+                    {foundingStory.substring(foundingStory.indexOf('.', foundingStory.indexOf('.') + 1) + 1).trim()}
+                  </p>
+                </div>
+              </motion.div>
             </div>
           </div>
-        </div>
+        </section>
         
         {/* Values Section */}
-        <div className="mb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-foreground">Our Core Values</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              The principles that guide our commitment to excellence in patient care
-            </p>
+        <section className="py-20 bg-gradient-to-br from-muted/30 to-background border-y border-border/50">
+          <div className="container">
+            <motion.div 
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-4xl font-bold text-foreground mb-4">Our Guiding Principles</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                The foundational values that shape every interaction and decision
+              </p>
+            </motion.div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {values.map((value, index) => (
+                <motion.div
+                  key={value.title}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <Card className="h-full border-primary/10 hover:border-primary/30 transition-all duration-300 hover:shadow-lg group">
+                    <CardHeader>
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br ${value.color} group-hover:scale-110 transition-transform duration-300`}>
+                        <value.icon className="h-7 w-7 text-primary" />
+                      </div>
+                      <CardTitle className="text-xl">{value.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">{value.description}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {values.map((value, index) => (
-              <div 
-                key={index}
-                className="bg-card rounded-xl border p-6 hover:shadow-md transition-shadow duration-300"
-              >
-                <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                  <value.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2 text-foreground">{value.title}</h3>
-                <p className="text-muted-foreground">{value.description}</p>
-              </div>
-            ))}
+        </section>
+        
+        {/* Services Section */}
+        <section className="py-20">
+          <div className="container">
+            <motion.div 
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-4xl font-bold text-foreground mb-4">Comprehensive Care Services</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Specialized treatments tailored to your unique recovery needs
+              </p>
+            </motion.div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {services.map((service, index) => (
+                <motion.div
+                  key={service.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                >
+                  <Card className="h-full border-border/50 hover:border-primary/30 transition-all duration-300 group hover:shadow-md">
+                    <CardContent className="p-6">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                        <service.icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2 text-foreground">{service.name}</h3>
+                      <p className="text-sm text-muted-foreground">{service.description}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
         
         {/* Team Section */}
-        <div className="bg-card rounded-2xl border p-8 mb-16 shadow-sm">
-          <div className="text-center mb-12">
-            <div className="bg-primary/10 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6">
-              <Users className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="text-3xl font-bold mb-4 text-foreground">Our Team</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Led by Dr. Khushboo, our team consists of licensed and experienced physiotherapists who are passionate about helping patients achieve their health goals.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div>
-              <p className="text-lg text-muted-foreground mb-4">
-                {teamInfo}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-primary/10 to-green-500/10 rounded-xl p-8 border">
-              {about?.images && about.images.length > 2 ? (
-                <img 
-                  src={about.images[2]} 
-                  alt="Our Team" 
-                  className="w-full h-full object-cover rounded-lg aspect-square"
-                />
-              ) : (
-                <div className="aspect-square bg-gradient-to-br from-primary/20 to-green-500/20 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <Users className="h-16 w-16 text-primary mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">Expert Physiotherapy Team</p>
+        <section className="py-20 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
+          <div className="container">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="space-y-6">
+                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
+                    <Users className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-primary">Meet Our Experts</span>
+                  </div>
+                  
+                  <h2 className="text-4xl font-bold text-foreground">Exceptional Clinical Team</h2>
+                  
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {teamInfo}
+                  </p>
+                  
+                  <div className="pt-4">
+                    <Button variant="outline" size="lg">
+                      <Play className="mr-2 h-4 w-4" />
+                      Meet Our Therapists
+                    </Button>
                   </div>
                 </div>
-              )}
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative"
+              >
+                <Card className="overflow-hidden shadow-2xl border-primary/10">
+                  <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative overflow-hidden">
+                    {about?.images?.[2] ? (
+                      <img 
+                        src={about.images[2]} 
+                        alt="Our Team" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center relative z-10">
+                        <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <Users className="h-12 w-12 text-primary" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-foreground mb-2">Expert Team</h3>
+                        <p className="text-muted-foreground">25+ Certified Professionals</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
             </div>
           </div>
-        </div>
+        </section>
         
-  
+        {/* CTA Section */}
+        <section className="py-20">
+          <div className="container">
+            <motion.div 
+              className="text-center max-w-3xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <Quote className="h-12 w-12 text-primary mx-auto mb-6" />
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+                Ready to Begin Your Healing Journey?
+              </h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                Join thousands of patients who've transformed their lives with our personalized care approach
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" className="px-8">
+                  Start Your Assessment
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button size="lg" variant="outline" className="px-8">
+                  Book Consultation
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
       </div>
-    </div>
     </Layout>
   );
 }
+
+{/* <div className="flex flex-wrap justify-center gap-8 mt-12">
+                {stats.map((stat, index) => (
+                  <motion.div 
+                    key={stat.label}
+                    className="text-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
+                      <stat.icon className="h-7 w-7 text-primary" />
+                    </div>
+                    <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  </motion.div>
+                ))}
+              </div> */}

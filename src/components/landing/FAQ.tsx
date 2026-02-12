@@ -3,12 +3,14 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { HelpCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface FAQProps {
   cmsFaqs: any[];
 }
 
 export const FAQ = ({ cmsFaqs }: FAQProps) => {
+  const navigate = useNavigate();
   return (
     <section className="py-10 bg-muted/30">
       <div className="container">
@@ -33,7 +35,7 @@ export const FAQ = ({ cmsFaqs }: FAQProps) => {
               <p className="text-sm text-muted-foreground mb-4">
                 Our team is available 24/7 to answer your questions and help you with any issues.
               </p>
-              <Button variant="outline" className="w-full sm:w-auto">Contact Support</Button>
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate('/contact')}>Contact Support</Button>
             </div>
           </motion.div>
 

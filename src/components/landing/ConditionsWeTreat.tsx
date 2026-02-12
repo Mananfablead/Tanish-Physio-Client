@@ -281,14 +281,14 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
           {selectedCondition?.title}
         </DialogTitle>
 
-        <Button
+        {/* <Button
           variant="ghost"
           size="icon"
           onClick={closeModal}
           className="h-8 w-8 flex-shrink-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           
-        </Button>
+        </Button> */}
       </div>
     </DialogHeader>
 

@@ -39,7 +39,6 @@ const navLinks = [
 ];
 
 export function Header() {
-
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -86,7 +85,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
-        <div className="flex items-center gap-2 md:gap-3">
+        
           {/* Show profile dropdown when authenticated */}
           {isAuthenticated ? (
             <DropdownMenu>
@@ -96,7 +95,7 @@ export function Header() {
                   size="sm"
                   className="relative h-12 w-12 md:h-14 md:w-auto md:px-3 rounded-full
                   flex items-center gap-2 md:gap-3
-                  hover:bg-accent hover:text-accent-foreground
+                  hover:bg-primary/10 hover:text-primary-foreground
                   focus:ring-2 focus:ring-ring focus:ring-offset-2
                   transition-all duration-200
                   border border-transparent hover:border-border"
@@ -150,7 +149,7 @@ export function Header() {
                   </div>
                 </div>
                 <DropdownMenuItem 
-                  className="px-4 py-3 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+                  className="px-4 py-3 cursor-pointer hover:bg-primary/10 hover:text-primary-foreground transition-colors"
                   onClick={() => navigate('/profile')}
                 >
                   <div className="flex items-center gap-3 w-full">
@@ -159,7 +158,7 @@ export function Header() {
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="px-4 py-3 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors text-destructive hover:text-destructive focus:text-destructive"
+                  className="px-4 py-3 cursor-pointer hover:bg-primary/10 hover:text-primary-foreground transition-colors text-destructive hover:text-destructive focus:text-destructive"
                   onClick={handleLogout}
                 >
                   <div className="flex items-center gap-3 w-full">
