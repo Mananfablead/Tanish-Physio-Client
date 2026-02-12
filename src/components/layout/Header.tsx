@@ -147,7 +147,7 @@ export function Header() {
                   </div>
                 </div>
                 <DropdownMenuItem 
-                  className="px-4 py-3 cursor-pointer hover:bg-primary/10 hover:text-primary-foreground transition-colors"
+                  className="px-4 py-3 cursor-pointer hover:bg-primary/10 hover:text-black-foreground transition-colors"
                   onClick={() => navigate('/profile')}
                 >
                   <div className="flex items-center gap-3 w-full">

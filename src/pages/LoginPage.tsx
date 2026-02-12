@@ -1,334 +1,374 @@
-import React from "react";
-import logo from '../assets/logo.webp';
+import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import { Layout } from "@/components/layout/Layout";
 import { 
-  Mail, 
-  Lock, 
-  ArrowLeft, 
-  KeyRound, 
+  ClipboardList, 
+  UserCheck, 
+  Video, 
+  Star, 
   Shield, 
-  CheckCircle2,
-  LogIn,
-  UserPlus,
-  AlertCircle,
-  Stethoscope,
-  Activity,
+  Award,
+  ArrowRight,
+  CheckCircle,
+  Users,
   Clock,
-  ClipboardList,
-  ShieldAlert,
-  ArrowRight
-} from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
-import { login } from '@/store/slices/authSlice';
-import { selectAuthLoading, selectCurrentUser } from '@/store/slices/authSlice';
-import { useToast } from '@/hooks/use-toast';
+  Activity,
+  HeartPulse,
+  Stethoscope,
+  Bone,
+  Dumbbell,
+  Zap,
+  Quote,
+  HelpCircle,
+  Lock,
+  ShieldCheck,
+  AlertCircle,
+  MapPin,
+  Calendar,
+  Check,
+  FileText,
+  User,
+  Phone,
+  Mail,
+  Home,
+  Briefcase,
+  GraduationCap,
+  Heart,
+  Eye,
+  Settings,
+  Search,
+  Filter,
+  Grid,
+  List,
+  Map,
+  Navigation,
+  Package,
+  ShoppingCart,
+  Tag,
+  Truck,
+  Wrench,
+  X,
+  Plus,
+  Minus,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+} from "lucide-react";
+import { motion, useInView, animate } from "framer-motion";
 
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider
-} from "@/components/ui/tooltip";
+// Import components
+import { HeroSection } from "@/components/landing/HeroSection";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { ConditionsWeTreat } from "@/components/landing/ConditionsWeTreat";
+import { Features } from "@/components/landing/Features";
+import { SubscriptionPlans } from "@/components/landing/SubscriptionPlans";
+import { FeaturedTherapist } from "@/components/landing/FeaturedTherapist";
+import { FAQ } from "@/components/landing/FAQ";
+import { TrustDisclaimer } from "@/components/landing/TrustDisclaimer";
+import { CTA } from "@/components/landing/CTA";
+import { Services } from "@/components/landing/Services";
 
-const loginSchema = z.object({
-    email: z.string().email('Invalid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    rememberMe: z.string().optional(),
-});
+// Import UI components
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
-type LoginForm = z.infer<typeof loginSchema>;
+// Import images
+import heroImage from "@/assets/hero-physio.jpg";
 
-const LoginPage = () => {
-    const dispatch: any = useDispatch();
-    const navigate = useNavigate();
-    const loading = useSelector(selectAuthLoading);
-    const error = useSelector((state: any) => state.auth.error);
-    const user = useSelector(selectCurrentUser);
-    const { toast } = useToast();
-    
-    const location = useLocation() as any;
-    
-    // Redirect if already logged in
-    if (user) {
-        // Check for redirect after login in sessionStorage
-        const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
-        if (redirectAfterLogin) {
-            sessionStorage.removeItem('redirect_after_login'); // Clean up
-            navigate(redirectAfterLogin, { replace: true });
-        } else {
-            // Check if there's a redirect location in state
-            const from = location.state?.from?.pathname || '/';
-            navigate(from, { replace: true });
-        }
-    }
+import { useSelector } from 'react-redux';
+import { RootState, useAppDispatch } from '@/store';
+import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
+import { fetchFeaturedTestimonials } from '@/store/slices/testimonialSlice';
+import { selectFeaturedTestimonials, selectTestimonialsLoading, selectTestimonialsError } from '@/store/slices/testimonialSlice';
+import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic, fetchConditionsPublic } from '@/store/slices/cmsSlice';
+import { fetchPublicAdmins } from '@/store/slices/adminSlice';
+import {
+  fetchAllServices,
+  fetchFeaturedServices,
+} from "@/store/slices/serviceSlice";
+import {
+  selectAllServices,
+  selectFeaturedServices,
+  selectServicesLoading,
+  selectServicesError,
+} from "@/store/slices/serviceSlice";
 
-    const loginForm = useForm<LoginForm>({
-        resolver: zodResolver(loginSchema),
-        defaultValues: { email: '', password: '', rememberMe: 'false' },
-    });
-
-    const valuePoints = [
-        // {
-        //     icon: ShieldCheck,
-        //     title: "Clinical Grade Security",
-        //     description: "Encrypted, HIPAA-compliant patient data handling."
-        // },
-        {
-            icon: Stethoscope,
-            title: "Professional Oversight",
-            description: "Direct connection with certified physiotherapy experts."
-        },
-        {
-            icon: Activity,
-            title: "Evidence-Based Plans",
-            description: "Personalized recovery paths based on clinical assessments."
-        },
-        {
-            icon: Clock,
-            title: "Seamless Access",
-            description: "Manage your appointments and exercises from any device."
-        }
-    ];
-
-    return (
-        <TooltipProvider>
-            <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50/30 flex items-center justify-center p-4 md:p-6 lg:p-8">
-            <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                
-                {/* Left Column: Brand & Value Props (Hidden on mobile) */}
-                <div className="hidden lg:flex lg:col-span-5 flex-col space-y-12 pr-8 animate-in fade-in slide-in-from-left-8 duration-700">
-                    <div>
-                        <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
-                            <div className="flex items-center gap-3">
-                                <img src={logo} alt="Tanish Physio" className="h-20 w-auto object-contain" />
-                                <span className="text-2xl font-bold tracking-tight text-slate-900">
-                                    Tanish <span className="text-green-600">Physio & Fitness</span>
-                                </span>
-                            </div>
-                        </Link>
-                        <h1 className="mt-8 text-3xl font-extrabold text-slate-900 leading-tight">
-                            Premium Healthcare <br />
-                            <span className="text-green-600">At Your Fingertips</span>
-                        </h1>
-                        <p className="mt-4 text-lg text-slate-600 font-medium max-w-md">
-                            Join thousands of patients who have accelerated their recovery through our clinically-backed digital platform.
-                        </p>
-                    </div>
-
-                    <div className="space-y-8">
-                        {valuePoints.map((point, index) => (
-                            <div key={index} className="flex gap-4 group">
-                                <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white shadow-sm border border-green-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                    <point.icon className="h-6 w-6 text-green-600" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{point.title}</h3>
-                                    <p className="text-slate-500 text-sm mt-1 font-medium">{point.description}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="pt-4 flex items-center gap-2 text-slate-400">
-                        <ShieldAlert className="h-4 w-4 text-green-500" />
-                        <span className="text-xs font-semibold tracking-wide">Trusted by leading clinical practitioners worldwide.</span>
-                    </div>
-                </div>
-
-                {/* Right Column: Login Card */}
-                <div className="lg:col-span-7 flex justify-center lg:justify-start">
-                    <div className="w-full max-w-[520px] bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100 p-8 md:p-12 relative animate-in fade-in zoom-in-95 duration-700">
-                        
-                        {/* Mobile Logo */}
-                        <div className="lg:hidden flex justify-center mb-8">
-                            <img src={logo} alt="Tanish Physio" className="h-16 w-auto" />
-                        </div>
-
-                        {/* Header */}
-                        <div className="text-center lg:text-left mb-8">
-                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-                                Welcome back
-                            </h2>
-                            <p className="text-slate-500 mt-2 font-medium">
-                                Access your personalized clinical dashboard
-                            </p>
-                        </div>
-
-                        {/* Form Content */}
-                        <div className="space-y-6">
-                            {error && (
-                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                                    <div className="flex items-center gap-2 text-red-700">
-                                        <AlertCircle className="h-4 w-4" />
-                                        <span className="text-sm font-medium">{error}</span>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            <Form {...loginForm}>
-                                <form onSubmit={loginForm.handleSubmit(async (data) => { 
-                                    try {
-                                        const result = await dispatch(login({
-                                            email: data.email,
-                                            password: data.password
-                                        }));
-                                        
-                                        if (login.fulfilled.match(result)) {
-                                            // Show success toast
-                                            toast({
-                                                title: "Login Successful",
-                                                description: `Welcome back, ${data.email}!`,
-                                            });
-                                            
-                                            // Check for redirect after login in sessionStorage
-                                            const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
-                                            if (redirectAfterLogin) {
-                                                sessionStorage.removeItem('redirect_after_login'); // Clean up
-                                                navigate(redirectAfterLogin, { replace: true });
-                                            } else {
-                                                // Redirect to intended location or home
-                                                const from = location.state?.from?.pathname || '/';
-                                                navigate(from, { replace: true });
-                                            }
-                                        } else {
-                                            // Handle error
-                                            throw result.payload;
-                                        }
-                                    } catch (error) {
-                                        // Error is handled by Redux and displayed through useSelector
-                                    }
-                                })} className="space-y-5" noValidate>
-                                    <FormField
-                                        control={loginForm.control}
-                                        name="email"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</FormLabel>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <input
-                                                            {...field}
-                                                            type="email"
-                                                            placeholder="name@clinical.com"
-                                                            className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium placeholder:text-slate-400"
-                                                        />
-                                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage className="text-xs font-medium text-red-500" />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={loginForm.control}
-                                        name="password"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <div className="flex justify-between items-center ml-1">
-                                                    <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Password</FormLabel>
-                                                    <Link 
-                                                        to="/forgot-password"
-                                                        className="text-[11px] font-bold text-primary hover:text-green-700 uppercase tracking-wider transition-colors"
-                                                    >
-                                                        Forgot?
-                                                    </Link>
-                                                </div>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <input
-                                                            {...field}
-                                                            type="password"
-                                                            placeholder="••••••••"
-                                                            className="w-full bg-green-50/30 border border-slate-200 rounded-xl px-4 py-4 pl-12 focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none font-medium placeholder:text-slate-400"
-                                                        />
-                                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage className="text-xs font-medium text-red-500" />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={loginForm.control}
-                                        name="rememberMe"
-                                        render={({ field }) => (
-                                            <FormItem className="flex items-center space-x-2 space-y-0 py-1 ml-1">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={!!field.value}
-                                                    onChange={field.onChange}
-                                                    id="rememberMe"
-                                                    className="h-4 w-4 rounded border-slate-300 text-green-600 focus:ring-green-500 transition-all cursor-pointer"
-                                                />
-                                                <label htmlFor="rememberMe" className="text-sm text-slate-600 font-medium cursor-pointer select-none">
-                                                    Keep me signed in for 30 days
-                                                </label>
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button 
-                                                type="submit" 
-                                                disabled={loading}
-                                                className="w-full bg-primary text-white font-bold py-4 rounded-xl  active:scale-[0.99] transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
-                                            >
-                                                {loading ? (
-                                                    <>
-                                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                        </svg>
-                                                        Signing In...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        Sign In to Account
-                                                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                                    </>
-                                                )}
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Securely log in to your clinical dashboard</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </form>
-                            </Form>
-                            
-                            <div className="text-center mt-6">
-                                <p className="text-sm text-slate-600 font-medium">
-                                    Don't have an account?{' '}
-                                    <Link to="/register" className="text-primary font-bold hover:text-green-700 transition-colors">
-                                        Sign up here
-                                    </Link>
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Trust Microcopy */}
-                        {/* <div className="mt-8 pt-8 border-t border-slate-100 text-center">
-                            <div className="flex items-center justify-center gap-2 text-slate-400 mb-1">
-                                <ShieldCheck className="h-4 w-4 text-green-500" />
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Secure Patient Portal</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 font-medium">
-                                Your clinical data is protected by hospital-grade AES-256 encryption.
-                            </p>
-                        </div> */}
-                    </div>
-                </div>
-            </div>
-            </div>
-        </TooltipProvider>
-    );
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 },
 };
 
-export default LoginPage;
+const stagger = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const CountUp = ({
+  value,
+  duration = 2,
+}: {
+  value: string;
+  duration?: number;
+}) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  const [displayValue, setDisplayValue] = useState("0");
+
+  useEffect(() => {
+    if (inView && value && typeof value === "string") {
+      const match = value.match(/(\d+\.?\d*)(.*)/);
+      if (match) {
+        const target = parseFloat(match[1]);
+        const suffix = match[2];
+        const controls = animate(0, target, {
+          duration,
+          onUpdate: (latest) => {
+            setDisplayValue(
+              (target % 1 === 0 ? Math.floor(latest) : latest.toFixed(1)) +
+                suffix
+            );
+          },
+        });
+        return () => controls.stop();
+      }
+    }
+  }, [inView, value, duration]);
+
+  return <span ref={ref}>{value ? displayValue : "0"}</span>;
+};
+
+// Helper function to map icon names to components
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, any> = {
+    ClipboardList: ClipboardList,
+    UserCheck: UserCheck,
+    Video: Video,
+    Star: Star,
+    Shield: Shield,
+    Award: Award,
+    CheckCircle: CheckCircle,
+    Users: Users,
+    Clock: Clock,
+    Activity: Activity,
+    HeartPulse: HeartPulse,
+    Stethoscope: Stethoscope,
+    Bone: Bone,
+    Dumbbell: Dumbbell,
+    Zap: Zap,
+    Quote: Quote,
+    HelpCircle: HelpCircle,
+    Lock: Lock,
+    ShieldCheck: ShieldCheck,
+    AlertCircle: AlertCircle,
+    MapPin: MapPin,
+    Calendar: Calendar,
+    Check: Check,
+    FileText: FileText,
+    User: User,
+    Phone: Phone,
+    Mail: Mail,
+    Home: Home,
+    Briefcase: Briefcase,
+    GraduationCap: GraduationCap,
+    Heart: Heart,
+    Eye: Eye,
+    Settings: Settings,
+    Search: Search,
+    Filter: Filter,
+    Grid: Grid,
+    List: List,
+    Map: Map,
+    Navigation: Navigation,
+    Package: Package,
+    ShoppingCart: ShoppingCart,
+    Tag: Tag,
+    Truck: Truck,
+    Wrench: Wrench,
+    Plus: Plus,
+    Minus: Minus,
+  };
+
+  return iconMap[iconName] || ClipboardList;
+};
+
+export default function LandingPage() {
+  const [showStickyCTA, setShowStickyCTA] = useState(false);
+  const [hoveredStat, setHoveredStat] = useState<number | null>(null);
+
+  // Fetch subscription plans from Redux store
+  const dispatch = useAppDispatch();
+  const {
+    plans: subscriptionPlans,
+    loading: subscriptionLoading,
+    error: subscriptionError,
+  } = useSelector((state: RootState) => state.subscriptions);
+
+  // Fetch testimonials from Redux store
+  const featuredTestimonials = useSelector(selectFeaturedTestimonials);
+  const testimonialsLoading = useSelector(selectTestimonialsLoading);
+  const testimonialsError = useSelector(selectTestimonialsError);
+
+  // Fetch CMS hero and steps data from Redux store
+  const {
+    hero: cmsHero,
+    steps: cmsSteps,
+    whyUs: cmsWhyUs,
+    faqs: cmsFaqs,
+    conditions: cmsConditions,
+    loading: cmsHeroLoading,
+    error: cmsHeroError,
+  } = useSelector((state: RootState) => state.cms);
+
+  // Fetch public admins from Redux store
+  const {
+    admins: publicAdmins,
+    loading: adminsLoading,
+    error: adminsError,
+  } = useSelector((state: RootState) => state.admins);
+
+  // Fetch services from Redux store
+  const allServices = useSelector(selectAllServices);
+  const featuredServices = useSelector(selectFeaturedServices);
+  const servicesLoading = useSelector(selectServicesLoading);
+  const servicesError = useSelector(selectServicesError);
+
+  // Fetch subscription plans when component mounts
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlans());
+  }, [dispatch]);
+
+  // Fetch featured testimonials when component mounts
+  useEffect(() => {
+    dispatch(fetchFeaturedTestimonials());
+  }, [dispatch]);
+
+  // Fetch CMS hero and steps data when component mounts
+  useEffect(() => {
+    dispatch(fetchHeroPublic());
+    dispatch(fetchStepsPublic());
+    dispatch(fetchWhyUsPublic());
+    dispatch(fetchFaqsPublic());
+    dispatch(fetchConditionsPublic());
+    dispatch(fetchPublicAdmins());
+    dispatch(fetchAllServices());
+    dispatch(fetchFeaturedServices());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 600) {
+        setShowStickyCTA(true);
+      } else {
+        setShowStickyCTA(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <Layout>
+      {/* Sticky Floating CTA */}
+      <motion.div
+        className="fixed bottom-6 right-6 z-50 pointer-events-none"
+        initial={{ opacity: 0, y: 100 }}
+        animate={{
+          opacity: showStickyCTA ? 1 : 0,
+          y: showStickyCTA ? 0 : 100,
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        <Link to="/questionnaire" className="pointer-events-auto">
+          <Button
+            size="lg"
+            className="rounded-full shadow-2xl h-14 px-8 text-lg group"
+          >
+            Start Assessment
+            <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </Link>
+      </motion.div>
+      {/* Hero Section */}
+      <HeroSection cmsHero={cmsHero} heroImage={heroImage} />
+
+      {/* Services Section */}
+      <Services
+        services={featuredServices.length > 0 ? featuredServices : allServices}
+        servicesLoading={servicesLoading}
+        servicesError={servicesError}
+        fadeInUp={fadeInUp}
+      />
+
+      {/* How It Works */}
+      <HowItWorks cmsSteps={cmsSteps} stagger={stagger} fadeInUp={fadeInUp} />
+
+      {/* Patient Testimonials */}
+      <Testimonials
+        featuredTestimonials={featuredTestimonials}
+        testimonialsLoading={testimonialsLoading}
+        testimonialsError={testimonialsError}
+        fadeInUp={fadeInUp}
+      />
+
+      {/* Conditions We Treat */}
+      <ConditionsWeTreat
+        cmsConditions={cmsConditions}
+        fadeInUp={fadeInUp}
+        getIconComponent={getIconComponent}
+      />
+
+      {/* Features */}
+      <Features
+        cmsWhyUs={cmsWhyUs}
+        fadeInUp={fadeInUp}
+        CountUp={CountUp}
+        setHoveredStat={setHoveredStat}
+        hoveredStat={hoveredStat}
+      />
+
+      {/* Subscription Plans Preview */}
+      <SubscriptionPlans
+        subscriptionPlans={subscriptionPlans}
+        subscriptionLoading={subscriptionLoading}
+        subscriptionError={subscriptionError}
+        stagger={stagger}
+        fadeInUp={fadeInUp}
+      />
+
+      {/* Featured Therapist – Single */}
+      <FeaturedTherapist
+        publicAdmins={publicAdmins}
+        adminsLoading={adminsLoading}
+        adminsError={adminsError}
+      />
+
+      {/* FAQ Section */}
+      <FAQ cmsFaqs={cmsFaqs} />
+
+      {/* Trust & Disclaimer */}
+      <TrustDisclaimer />
+
+      {/* CTA Section */}
+      <CTA />
+    </Layout>
+  );
+}

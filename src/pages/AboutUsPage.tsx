@@ -6,19 +6,23 @@ import {
   Quote, MapPin, Calendar, CheckCircle, ArrowRight, Play, Star
 } from 'lucide-react';
 import { fetchAboutPublic } from '../store/slices/cmsSlice';
+import { fetchFeaturedServices } from '../store/slices/serviceSlice';
 import { RootState, useAppDispatch } from '../store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { Service } from '@/types/service';
 
 export default function AboutUsPage() {
   const dispatch = useAppDispatch();
-  const { about, loading } = useSelector((state: RootState) => state.cms);
+  const { about, loading: cmsLoading } = useSelector((state: RootState) => state.cms);
+  const { featuredServices, loading: servicesLoading } = useSelector((state: RootState) => state.services);
 
   useEffect(() => {
     dispatch(fetchAboutPublic());
+    dispatch(fetchFeaturedServices());
   }, [dispatch]);
 
   // Content data
@@ -34,57 +38,34 @@ export default function AboutUsPage() {
   
   const mission = about?.mission || "At Tanish Physio, we're revolutionizing healthcare accessibility by bringing world-class physiotherapy directly to your doorstep. Our mission is to eliminate barriers to quality care through innovative technology, compassionate expertise, and personalized treatment plans that adapt to your unique lifestyle and recovery journey.";
   
+  const vision = about?.vision || "To become the most trusted digital healthcare platform, transforming lives through accessible, personalized, and technology-driven physiotherapy solutions that empower individuals to achieve optimal wellness and mobility.";
+  
   const foundingStory = about?.foundingStory || "Founded in 2018 by Dr. Khushboo, Tanish Physio emerged from a profound realization: exceptional healthcare shouldn't be constrained by geography or circumstance. With over 15 years of clinical experience, Dr. Khushboo witnessed countless patients struggle with traditional therapy models—missing appointments due to work commitments, battling transportation challenges, or feeling intimidated by clinical environments. This inspired a bold vision: to harness technology's power to democratize access to premium physiotherapy care. Today, we've evolved into a comprehensive digital health platform, serving thousands of patients across 25+ cities while maintaining the personal touch that defines exceptional care.";
   
   const teamInfo = about?.teamInfo || "Our multidisciplinary team comprises 25+ certified physiotherapists, each handpicked for their clinical excellence and patient-centric approach. Every team member holds advanced certifications from internationally recognized institutions and participates in continuous professional development programs. From orthopedic specialists to neurological rehabilitation experts, our diverse expertise ensures comprehensive care for complex conditions. We maintain a rigorous 360-degree evaluation process, combining peer reviews, patient feedback, and outcome metrics to uphold our commitment to clinical excellence.";
   
-  // Core values
-  const values = [
-    {
-      icon: Heart,
-      title: "Compassionate Care",
-      description: "We treat every patient with genuine empathy, understanding that healing begins with feeling heard and valued.",
-      color: "from-pink-500/20 to-rose-500/20"
-    },
-    {
-      icon: Award,
-      title: "Clinical Excellence",
-      description: "Rigorous training, evidence-based practices, and continuous learning ensure the highest standards of care delivery.",
-      color: "from-yellow-500/20 to-orange-500/20"
-    },
-    {
-      icon: Activity,
-      title: "Innovation First",
-      description: "Cutting-edge technology seamlessly integrated with proven therapeutic techniques for optimal outcomes.",
-      color: "from-blue-500/20 to-indigo-500/20"
-    },
-    {
-      icon: Shield,
-      title: "Trust & Integrity",
-      description: "Transparent communication, ethical practices, and unwavering commitment to patient confidentiality.",
-      color: "from-green-500/20 to-emerald-500/20"
-    },
-    {
-      icon: Stethoscope,
-      title: "Personalized Approach",
-      description: "Customized treatment plans that honor your unique circumstances, goals, and recovery timeline.",
-      color: "from-purple-500/20 to-violet-500/20"
-    }
-  ];
+  // Use values from API if available, otherwise hide the section
+  const valuesToShow = about?.values && about.values.length > 0 ? about.values : null;
   
-  // Services offered
-  const services = [
-    { icon: Activity, name: "Orthopedic Rehabilitation", description: "Recovery from fractures, joint replacements, and musculoskeletal injuries" },
-    { icon: Stethoscope, name: "Neurological Physiotherapy", description: "Stroke recovery, spinal cord injuries, and neurological condition management" },
-    { icon: User, name: "Pediatric Physiotherapy", description: "Specialized care for children's developmental and mobility challenges" },
-    { icon: Clock, name: "Sports Injury Rehabilitation", description: "Professional athlete recovery and sports performance optimization" },
-    { icon: Award, name: "Post-Surgical Recovery", description: "Accelerated healing protocols after surgical procedures" },
-    { icon: Heart, name: "Chronic Pain Management", description: "Long-term strategies for pain reduction and functional improvement" },
-    { icon: Shield, name: "Posture Correction", description: "Ergonomic assessments and workplace wellness programs" },
-    { icon: Users, name: "Preventive Care Programs", description: "Proactive health maintenance and injury prevention strategies" }
-  ];
+  // Use featured services from API if available, otherwise fallback to static data
+  const servicesToShow = featuredServices.length > 0 
+    ? featuredServices.slice(0, 8).map((service: Service) => ({
+        icon: Activity, // You might want to map specific icons based on service category
+        name: service.title,
+        description: service.description
+      }))
+    : [
+        { icon: Activity, name: "Orthopedic Rehabilitation", description: "Recovery from fractures, joint replacements, and musculoskeletal injuries" },
+        { icon: Stethoscope, name: "Neurological Physiotherapy", description: "Stroke recovery, spinal cord injuries, and neurological condition management" },
+        { icon: User, name: "Pediatric Physiotherapy", description: "Specialized care for children's developmental and mobility challenges" },
+        { icon: Clock, name: "Sports Injury Rehabilitation", description: "Professional athlete recovery and sports performance optimization" },
+        { icon: Award, name: "Post-Surgical Recovery", description: "Accelerated healing protocols after surgical procedures" },
+        { icon: Heart, name: "Chronic Pain Management", description: "Long-term strategies for pain reduction and functional improvement" },
+        { icon: Shield, name: "Posture Correction", description: "Ergonomic assessments and workplace wellness programs" },
+        { icon: Users, name: "Preventive Care Programs", description: "Proactive health maintenance and injury prevention strategies" }
+      ];
 
-  if (loading) {
+  if (cmsLoading || servicesLoading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
@@ -101,32 +82,22 @@ export default function AboutUsPage() {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
         {/* Hero Section */}
-        <section className="relative overflow-hidden py-10 lg:py-12">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-6 pt-8 pb-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>
           
-          <div className="container relative z-10">
+          <div className="container relative z-10 text-center space-y-4">
             <motion.div 
-              className="text-center max-w-4xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {/* <Badge className="mb-6 px-4 py-2 text-sm font-medium bg-primary/10 text-primary border-primary/20">
-                <Star className="h-4 w-4 mr-2" />
-                Trusted by 10,000+ Patients
-              </Badge> */}
-              
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
                 {title}
               </h1>
               
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed">
+              <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
                 {description}
               </p>
-              
-              
             </motion.div>
           </div>
         </section>
@@ -253,47 +224,104 @@ export default function AboutUsPage() {
           </div>
         </section>
         
-        {/* Values Section */}
-        <section className="py-20 bg-gradient-to-br from-muted/30 to-background border-y border-border/50">
+        {/* Vision Section */}
+        <section className="py-20 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
           <div className="container">
-            <motion.div 
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-4xl font-bold text-foreground mb-4">Our Guiding Principles</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                The foundational values that shape every interaction and decision
-              </p>
-            </motion.div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {values.map((value, index) => (
-                <motion.div
-                  key={value.title}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <Card className="h-full border-primary/10 hover:border-primary/30 transition-all duration-300 hover:shadow-lg group">
-                    <CardHeader>
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br ${value.color} group-hover:scale-110 transition-transform duration-300`}>
-                        <value.icon className="h-7 w-7 text-primary" />
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="space-y-6">
+                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-accent/10 rounded-full border border-accent/20">
+                    <Star className="h-5 w-5 text-accent" />
+                    <span className="text-sm font-medium text-accent">Our Vision</span>
+                  </div>
+                  
+                  <h2 className="text-4xl font-bold text-foreground">Shaping Tomorrow's Healthcare</h2>
+                  
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {vision}
+                  </p>
+                </div>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative"
+              >
+                <Card className="overflow-hidden shadow-2xl border-primary/10">
+                  <div className="aspect-video bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center relative overflow-hidden">
+                    {about?.images?.[3] ? (
+                      <img 
+                        src={about.images[3]} 
+                        alt="Our Vision" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center relative z-10">
+                        <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Star className="h-10 w-10 text-accent" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">Future Healthcare</h3>
+                        <p className="text-muted-foreground max-w-xs">Innovating for tomorrow</p>
                       </div>
-                      <CardTitle className="text-xl">{value.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">{value.description}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
             </div>
           </div>
         </section>
+        
+        {/* Values Section - Only show if values exist in API */}
+        {/* {valuesToShow && (
+          <section className="py-20 bg-gradient-to-br from-muted/30 to-background border-y border-border/50">
+            <div className="container">
+              <motion.div 
+                className="text-center mb-16"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              >
+                <h2 className="text-4xl font-bold text-foreground mb-4">Our Guiding Principles</h2>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                  The foundational values that shape every interaction and decision
+                </p>
+              </motion.div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {valuesToShow.map((value: string, index: number) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Card className="h-full border-primary/10 hover:border-primary/30 transition-all duration-300 hover:shadow-lg group">
+                      <CardHeader>
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform duration-300">
+                          <Heart className="h-7 w-7 text-primary" />
+                        </div>
+                        <CardTitle className="text-xl">{value}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground">Core principle guiding our healthcare mission</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )} */}
         
         {/* Services Section */}
         <section className="py-20">
@@ -312,7 +340,7 @@ export default function AboutUsPage() {
             </motion.div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {services.map((service, index) => (
+              {servicesToShow.map((service, index) => (
                 <motion.div
                   key={service.name}
                   initial={{ opacity: 0, y: 20 }}
@@ -358,10 +386,10 @@ export default function AboutUsPage() {
                   </p>
                   
                   <div className="pt-4">
-                    <Button variant="outline" size="lg">
+                    {/* <Button variant="outline" size="lg">
                       <Play className="mr-2 h-4 w-4" />
                       Meet Our Therapists
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </motion.div>
@@ -398,7 +426,7 @@ export default function AboutUsPage() {
         </section>
         
         {/* CTA Section */}
-        <section className="py-20">
+        <section className="py-20 bg-primary">
           <div className="container">
             <motion.div 
               className="text-center max-w-3xl mx-auto"
@@ -407,19 +435,19 @@ export default function AboutUsPage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <Quote className="h-12 w-12 text-primary mx-auto mb-6" />
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+              <Quote className="h-12 w-12 text-white mx-auto mb-6" />
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
                 Ready to Begin Your Healing Journey?
               </h2>
-              <p className="text-lg text-muted-foreground mb-8">
+              <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
                 Join thousands of patients who've transformed their lives with our personalized care approach
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="px-8">
+                <Button size="lg" className="px-8 bg-white text-primary hover:bg-white/90">
                   Start Your Assessment
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-                <Button size="lg" variant="outline" className="px-8">
+                <Button size="lg" variant="outline" className="px-8 border-white text-white hover:bg-white/10">
                   Book Consultation
                 </Button>
               </div>
