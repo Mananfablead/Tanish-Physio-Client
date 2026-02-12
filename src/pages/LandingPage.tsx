@@ -96,12 +96,8 @@ import { fetchFeaturedTestimonials } from '@/store/slices/testimonialSlice';
 import { selectFeaturedTestimonials, selectTestimonialsLoading, selectTestimonialsError } from '@/store/slices/testimonialSlice';
 import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic, fetchConditionsPublic } from '@/store/slices/cmsSlice';
 import { fetchPublicAdmins } from '@/store/slices/adminSlice';
+import { fetchFeaturedServices } from "@/store/slices/serviceSlice";
 import {
-  fetchAllServices,
-  fetchFeaturedServices,
-} from "@/store/slices/serviceSlice";
-import {
-  selectAllServices,
   selectFeaturedServices,
   selectServicesLoading,
   selectServicesError,
@@ -245,7 +241,6 @@ export default function LandingPage() {
   } = useSelector((state: RootState) => state.admins);
 
   // Fetch services from Redux store
-  const allServices = useSelector(selectAllServices);
   const featuredServices = useSelector(selectFeaturedServices);
   const servicesLoading = useSelector(selectServicesLoading);
   const servicesError = useSelector(selectServicesError);
@@ -268,7 +263,6 @@ export default function LandingPage() {
     dispatch(fetchFaqsPublic());
     dispatch(fetchConditionsPublic());
     dispatch(fetchPublicAdmins());
-    dispatch(fetchAllServices());
     dispatch(fetchFeaturedServices());
   }, [dispatch]);
 
@@ -310,13 +304,15 @@ export default function LandingPage() {
       {/* Hero Section */}
       <HeroSection cmsHero={cmsHero} heroImage={heroImage} />
 
-      {/* Services Section */}
-      <Services
-        services={featuredServices.length > 0 ? featuredServices : allServices}
-        servicesLoading={servicesLoading}
-        servicesError={servicesError}
-        fadeInUp={fadeInUp}
-      />
+      {/* Services Section - Only show if we have featured services */}
+      {featuredServices && featuredServices.length > 0 && (
+        <Services
+          services={featuredServices}
+          servicesLoading={servicesLoading}
+          servicesError={servicesError}
+          fadeInUp={fadeInUp}
+        />
+      )}
 
       {/* How It Works */}
       <HowItWorks cmsSteps={cmsSteps} stagger={stagger} fadeInUp={fadeInUp} />
