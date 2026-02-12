@@ -88,7 +88,7 @@ shadow-sm">
         <div className="flex items-center gap-2 md:gap-3">
 
           {/* Show profile dropdown when authenticated */}
-          {isAuthenticated ? (
+          {/* {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div
@@ -197,7 +197,7 @@ shadow-sm">
                 </TooltipContent>
               </Tooltip>
             </>
-          )}
+          )} */}
 
           {/* Mobile Navigation */}
           <Sheet open={open} onOpenChange={setOpen}>
@@ -205,9 +205,9 @@ shadow-sm">
               <Button
 
                 size="icon"
-                className="h-12 w-12 rounded-lg md:hidden [&_svg]:size-6"
+                className="h-12 w-12 rounded-lg md:hidden [&_svg]:size-8"
               >
-                <Menu size="24" className="h-6 w-6" />
+                <Menu  className="h-5 w-5" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>

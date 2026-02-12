@@ -47,7 +47,7 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
           </p>
         </motion.div>
 
-        <div className="px-4 md:px-12">
+        <div className=" md:px-12">
           <Carousel
             opts={{
               align: "start",
@@ -115,8 +115,8 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
                 </CarouselItem>
               )}
             </CarouselContent>
-            <CarouselPrevious className="-left-4 md:-left-12 border-white/30 text-white hover:bg-white/20" />
-            <CarouselNext className="-right-4 md:-right-12 border-white/30 text-white hover:bg-white/20" />
+            <CarouselPrevious className="hidden md:flex -left-4 md:-left-12 border-white/30 text-white hover:bg-white/20" />
+            <CarouselNext className="hidden md:flex -right-4 md:-right-12 border-white/30 text-white hover:bg-white/20" />
           </Carousel>
         </div>
       </div>

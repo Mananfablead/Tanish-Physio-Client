@@ -207,7 +207,7 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
         </motion.div>
 
         {/* Carousel */}
-        <div className="px-12">
+        <div className="md:px-12">
           <Carousel
             opts={{ align: "start", loop: true }}
             plugins={[Autoplay({ delay: 3000 })]}
@@ -218,7 +218,7 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                 (condition: any, index: number) => (
                   <CarouselItem
                     key={condition._id || index}
-                    className="pl-4 basis-1/2 md:basis-1/3 lg:basis-1/6"
+                    className="pl-4 basis-full md:basis-1/2 lg:basis-1/6"
                   >
                     <motion.div
                       variants={fadeInUp}
@@ -226,9 +226,9 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                       className="group cursor-pointer py-2"
                       onClick={() => handleConditionClick(condition)}
                     >
-                      <div className="bg-background rounded-2xl p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 hover:border-primary hover:shadow-xl">
+                      <div className="bg-background rounded-2xl p-6 sm:p-8 text-center shadow-soft border-2 border-transparent transition-all duration-500 hover:border-primary hover:shadow-xl">
                         {/* Icon / Image */}
-                        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                        <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 sm:mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-500">
                           <ConditionalIconRenderer
                             imageUrl={condition.image}
                             altText={condition.title}
@@ -236,7 +236,7 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                         </div>
 
                         {/* Title */}
-                        <span className="font-bold text-sm tracking-wide">
+                        <span className="font-bold text-base sm:text-sm tracking-wide">
                           {condition.title}
                         </span>
 
@@ -249,8 +249,8 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
               )}
             </CarouselContent>
 
-            <CarouselPrevious className="-left-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
-            <CarouselNext className="-right-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
+            <CarouselPrevious className="hidden md:flex -left-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
+            <CarouselNext className="hidden md:flex -right-12 border-primary/20 text-primary hover:bg-primary hover:text-white" />
           </Carousel>
         </div>
       </div>
