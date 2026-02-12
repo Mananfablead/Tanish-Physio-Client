@@ -14,7 +14,15 @@ import {
   X,
   PlusCircle,
   CalendarDays,
-  CheckCircle
+  CheckCircle,
+  UserRound,
+  BadgeCheck,
+  Stethoscope,
+  Clock3,
+  Video,
+  Camera,
+  ReceiptText,
+  NotebookTabs
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useToast } from "@/hooks/use-toast";
@@ -352,14 +360,14 @@ export default function ProfilePage() {
       id: "personal",
       label: "Personal Info",
       sub: "Manage your personal details",
-      icon: User,
+      icon: UserRound,
       color: "text-primary",
     },
     {
       id: "activePlan",
       label: "Active Plan",
       sub: "Your current subscription",
-      icon: Award,
+      icon: BadgeCheck,
       color: "text-primary",
     },
     {
@@ -367,42 +375,42 @@ export default function ProfilePage() {
       label: "Book Session Now",
       sub: "Schedule a new session",
       color: "text-primary",
-      icon: PlusCircle,
+      icon: Stethoscope,
       isAction: true,
     },
     {
       id: "upcoming",
       label: "Upcoming Sessions",
       sub: "Your scheduled sessions",
-      icon: Clock,
+      icon: Clock3,
       color: "text-primary",
     },
     {
       id: "sessionHistory",
       label: "Session History",
       sub: "Your past sessions",
-      icon: Play,
+      icon: Video,
       color: "text-primary",
     },
     {
       id: "recordedSessions",
       label: "Recorded Sessions",
       sub: "Your recorded therapy sessions",
-      icon: Play,
+      icon: Camera,
       color: "text-primary",
     },
     {
       id: "subscriptionHistory",
       label: "Subscription History",
       sub: "Your plan & payment history",
-      icon: Calendar,
+      icon: ReceiptText,
       color: "text-primary",
     },
     {
       id: "bookings",
       label: "Service Bookings",
       sub: "All your booked services",
-      icon: Calendar,
+      icon: NotebookTabs,
       color: "text-primary",
     },
   ];

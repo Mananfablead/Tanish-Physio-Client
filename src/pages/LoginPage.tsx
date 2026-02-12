@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { 
   ClipboardList, 
@@ -23,19 +23,14 @@ import {
   Lock,
   ShieldCheck,
   AlertCircle,
-  Stethoscope,
-  Activity,
-  Clock,
-  ClipboardList,
   ShieldAlert,
-  ArrowRight
+  Mail
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { login } from '@/store/slices/authSlice';
 import { selectAuthLoading, selectCurrentUser } from '@/store/slices/authSlice';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +49,8 @@ const loginSchema = z.object({
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+
+const logo = "https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png";
 
 const LoginPage = () => {
     const dispatch: any = useDispatch();
