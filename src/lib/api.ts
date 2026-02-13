@@ -412,6 +412,11 @@ export const getPublicAdmins = () => {
   return api.get("/auth/admins/public");
 };
 
+// User check API function
+export const checkUserExists = (email: string) => {
+  return api.post("/users/check-exists", { email });
+};
+
 // Booking details API function
 export const getBookingDetails = (id: string, clientEmail: string) => {
   return api.post(`/bookings/details/${id}`, { clientEmail });

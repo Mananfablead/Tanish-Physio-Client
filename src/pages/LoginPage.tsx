@@ -4,7 +4,7 @@ import { Layout } from "@/components/layout/Layout";
 import React from "react";
 import logo from "../assets/logo.webp";
 import {
-  Mail,
+    Mail,
   Lock,
   ArrowLeft,
   KeyRound,

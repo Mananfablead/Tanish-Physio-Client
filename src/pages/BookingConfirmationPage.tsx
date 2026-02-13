@@ -19,7 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { register } from "@/store/slices/authSlice";
+import { register, fetchProfile, setCredentials } from "@/store/slices/authSlice";
 
 export default function BookingConfirmationPage() {
   const location = useLocation();
@@ -202,6 +202,36 @@ export default function BookingConfirmationPage() {
       sessionStorage.removeItem("qw_guest_user");
     }
     
+    // Check if we have an auto-login token from payment verification
+    const autoLoginToken = localStorage.getItem("qw_auto_login_token");
+    console.log("Auto-login token found:", autoLoginToken);
+    console.log("Is authenticated:", isAuthenticated);
+    if (autoLoginToken && !isAuthenticated) {
+      console.log("Processing auto-login...");
+      // Set the token in the main storage location
+      localStorage.setItem("token", autoLoginToken);
+      localStorage.removeItem("qw_auto_login_token"); // Clean up
+      
+      // Refresh user data
+      dispatch(fetchProfile())
+        .unwrap()
+        .then((userData) => {
+          console.log("Profile fetched successfully:", userData);
+          // Manually update Redux store since fetchProfile doesn't do it automatically
+          dispatch(setCredentials({ 
+            user: userData, 
+            token: autoLoginToken 
+          }));
+          toast.success("Account created and logged in successfully!");
+        })
+        .catch((error) => {
+          console.error("Failed to fetch profile:", error);
+          toast.error("Login failed. Please try again.");
+        });
+      
+      return;
+    }
+    
     // If user is a guest and hasn't registered yet, register them automatically
     if (!isAuthenticated && guestUser && guestUser.email) {
       const registerGuestUser = async () => {
@@ -210,7 +240,7 @@ export default function BookingConfirmationPage() {
           await dispatch(register({
             name: guestUser.name || "Guest User",
             email: guestUser.email,
-            password: "1234",
+            password: "123456",
             phone: guestUser.phone
           }));
           
