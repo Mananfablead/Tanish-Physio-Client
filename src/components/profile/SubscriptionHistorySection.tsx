@@ -165,12 +165,21 @@ const getDaysUntilExpiry = (endDate?: string) => {
 
                       {/* Amount */}
                       <td className="px-6 py-4 text-right">
-                        <span className="font-black text-slate-900">
-                          ₹{p.amount?.toLocaleString() || 0}
-                        </span>
-                        {/* <div className="text-xs text-slate-500">
-                          {p.currency || "INR"}
-                        </div> */}
+                        <div className="text-right">
+                          <span className="font-black text-slate-900">
+                            ₹{(p.finalAmount?.toLocaleString() ?? p.amount?.toLocaleString()) || 0}
+                          </span>
+                          {p.discountAmount > 0 && (
+                            <div className="text-slate-500 text-sm line-through">
+                              ₹{p.amount?.toLocaleString()}
+                            </div>
+                          )}
+                          {p.couponCode && (
+                            <div className="text-success text-xs font-medium mt-1">
+                              Coupon: {p.couponCode}
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* Sessions */}

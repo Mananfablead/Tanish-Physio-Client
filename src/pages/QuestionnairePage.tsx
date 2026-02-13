@@ -231,13 +231,35 @@ export default function QuestionnairePage() {
   // Transform questionnaire data to healthProfile structure
   const transformQuestionnaireToHealthProfile = (questionnaireData: any, questions: any[]) => {
     const healthProfile: any = {};
+    
+    // Initialize questionnaire metadata
+    const questionnaireMetadata = {
+      questionnaireId: activeQuestionnaire?._id,
+      completedAt: new Date(),
+      responses: [] as any[]
+    };
+    
+    // Initialize questionnaire responses map
+    const questionnaireResponses = new Map<string, string>();
 
     // Map questionnaire responses to healthProfile fields
     Object.entries(questionnaireData).forEach(([questionId, answer]) => {
       const question = questions.find(q => q._id === questionId);
-      if (!question) return;
+      if (!question || !answer) return;
 
-      // Map based on question content or type
+      // Store in questionnaire responses map
+      questionnaireResponses.set(questionId, answer as string);
+      
+      // Store detailed response metadata
+      questionnaireMetadata.responses.push({
+        questionId: question._id,
+        questionText: question.question,
+        answer: answer as string,
+        questionType: question.type,
+        timestamp: new Date()
+      });
+
+      // Map based on question content or type (for backward compatibility)
       const questionText = question.question.toLowerCase();
 
       if (questionText.includes('name') || questionText.includes('full name')) {
@@ -262,13 +284,17 @@ export default function QuestionnairePage() {
       } else if (questionText.includes('emergency') || questionText.includes('contact')) {
         healthProfile.emergencyContact = answer;
       } else {
-        // For other questions, add to additional notes
+        // For other questions, add to additional notes (backward compatibility)
         if (!healthProfile.additionalNotes) {
           healthProfile.additionalNotes = '';
         }
         healthProfile.additionalNotes += `${question.question}: ${answer}\n`;
       }
     });
+
+    // Add questionnaire data to healthProfile
+    healthProfile.questionnaireResponses = Object.fromEntries(questionnaireResponses);
+    healthProfile.questionnaireMetadata = questionnaireMetadata;
 
     return healthProfile;
   };

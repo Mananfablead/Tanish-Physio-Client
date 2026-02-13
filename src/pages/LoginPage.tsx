@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import {
-  ClipboardList,
-  UserCheck,
-  Video,
-  Star,
-  Shield,
+import { 
+  ClipboardList, 
+  UserCheck, 
+  Video, 
+  Star, 
+  Shield, 
   Award,
   ArrowRight,
   CheckCircle,
@@ -24,8 +24,8 @@ import {
   ShieldCheck,
   AlertCircle,
   ShieldAlert,
-  Mail,
-} from "lucide-react";
+  Mail
+} from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';

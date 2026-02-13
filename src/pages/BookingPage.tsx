@@ -24,7 +24,8 @@ import {
   Clock,
   User,
   Wallet,
-  CalendarClock
+  CalendarClock,
+  CircleAlert
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -44,6 +45,8 @@ export default function BookingPage() {
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
   const bookingData = location.state;
+
+  console.log("bookingData", bookingData);
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
   const { admins: publicAdmins } = useSelector((state: RootState) => state.admins);
@@ -241,8 +244,9 @@ export default function BookingPage() {
   // Calculate final price with coupon discount
   const basePrice = plan.price;
   const discountAmount = isCouponApplied ? couponDiscount : (promoApplied ? Math.round(basePrice * 0.2) : 0);
+  console.log("discountAmount", discountAmount);
   const finalPrice = basePrice - discountAmount;
-
+  console.log("finalPrice", finalPrice);
   // Check stored intake
   let storedIntake = null;
   try {
@@ -319,7 +323,7 @@ export default function BookingPage() {
         let calculatedDiscount = 0;
 
         if (offer.type === "percentage") {
-          calculatedDiscount = Math.round(plan.price * offer.value);
+          calculatedDiscount = Math.round(plan.price * (offer.value / 100));
           // Apply max discount limit if set
           if (offer.maxDiscountAmount && calculatedDiscount > offer.maxDiscountAmount) {
             calculatedDiscount = offer.maxDiscountAmount;
@@ -362,9 +366,8 @@ export default function BookingPage() {
 
   // Scheduling functions
   const openScheduleModal = async () => {
-    // Select "Schedule Now" option
-    setScheduleOption("now");
-
+    // Don't set scheduleOption yet, wait for actual selection
+    
     try {
       // Fetch real availability data from API
       const response: any = await getAvailability();
@@ -388,6 +391,11 @@ export default function BookingPage() {
     setIsScheduleModalOpen(false);
     setSelectedDate(null);
     setScheduleError(null);
+    
+    // If no date/time is selected, clear the schedule option
+    if (!scheduleDate || !scheduleTime) {
+      setScheduleOption(null);
+    }
   };
 
   const handleScheduleConfirm = (date: string, time: string, timeSlot?: { start: string, end: string }) => {
@@ -405,6 +413,7 @@ export default function BookingPage() {
     sessionStorage.setItem("qw_scheduled_session", JSON.stringify(scheduledSession));
 
     // Update the schedule state
+    setScheduleOption("now"); // Set the schedule option when confirmed
     setScheduleDate(date);
     setScheduleTime(time);
     if (timeSlot) {
@@ -412,7 +421,7 @@ export default function BookingPage() {
     }
 
     const timeDisplay = timeSlot ? `${timeSlot.start} - ${timeSlot.end}` : time;
-    toast.success(`Session scheduled for ${new Date(date).toLocaleDateString()} at ${timeDisplay}`);
+    // toast.success(`Session scheduled for ${new Date(date).toLocaleDateString()} at ${timeDisplay}`);
     closeScheduleModal();
   };
 
@@ -432,7 +441,7 @@ export default function BookingPage() {
     sessionStorage.removeItem("qw_scheduled_session");
 
     setScheduleOption("later");
-    toast.info("You can schedule your session after payment completion");
+    // toast.info("You can schedule your session after payment completion");
   };
 
   const clearSelection = () => {
@@ -492,6 +501,20 @@ export default function BookingPage() {
         return;
       }
 
+      // Schedule option validation
+      if (!scheduleOption) {
+        setScheduleError("Please select a scheduling option");
+        return;
+      } else {
+        setScheduleError("");
+      }
+
+      // For "Schedule Now", validate that date and time are selected
+      if (scheduleOption === "now" && (!scheduleDate || !scheduleTime)) {
+        setScheduleError("Please select a date and time for your session");
+        return;
+      }
+
       // 🔹 2. Backend Email Check Kare
       try {
         const checkResult = await dispatch(checkUserExistsAsync(guestUserData.email));
@@ -537,6 +560,20 @@ export default function BookingPage() {
       }
     }
 
+    // Schedule option validation for all users
+    if (!scheduleOption) {
+      setScheduleError("Please select a scheduling option");
+      return;
+    } else {
+      setScheduleError("");
+    }
+
+    // For "Schedule Now", validate that date and time are selected
+    if (scheduleOption === "now" && (!scheduleDate || !scheduleTime)) {
+      setScheduleError("Please select a date and time for your session");
+      return;
+    }
+
     // Create booking before initiating payment
     try {
       setIsProcessing(true);
@@ -564,6 +601,13 @@ export default function BookingPage() {
             )
           );
         } else {
+          console.log('📤 Sending subscription payment order:', {
+            planId: bookingData.service.id || bookingData.service.planId,
+            amount: finalPrice,
+            originalPrice: plan.price,
+            discountAmount: isCouponApplied ? couponDiscount : 0,
+            couponCode: isCouponApplied ? couponCode : undefined
+          });
           const subscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
@@ -612,7 +656,7 @@ export default function BookingPage() {
             import.meta.env.VITE_RAZORPAY_KEY_ID ||
             "rzp_test_S250uIjk1rVbsT",
           order_id: orderId, // Use the order ID from the backend
-          amount: finalPrice * 100, // Convert to paise (multiply by 100)
+          amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
           currency: "INR",
           name: "Tanish physio & fitness",
           description: `Subscription Payment - Plan: ${bookingData.service.name}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ''}`,
@@ -938,6 +982,7 @@ export default function BookingPage() {
         // Initialize and open Razorpay checkout
         if (typeof window !== "undefined" && (window as any).Razorpay) {
           // Check if key exists before creating Razorpay instance
+          console.log("Razorpay key:", options);
           if (!options.key || options.key === "rzp_test_1234567890") {
             toast.error(
               "Razorpay key is not configured properly. Please contact support."
@@ -964,10 +1009,13 @@ export default function BookingPage() {
           clientName: isGuestUser ? guestUserData.name : guestUserData.name,
           date: date,
           time: time,
-          status: scheduleOption === "later" ? "pending" : "scheduled",
+          status: "pending",
           notes: "Session booking from frontend",
           paymentStatus: "pending",
-          amount: finalPrice,
+          amount: plan.price,
+          finalAmount: finalPrice,
+          couponCode: isCouponApplied ? couponCode : undefined,
+          discountAmount: isCouponApplied ? couponDiscount : 0,
           bookingId: serviceBooking ? bookingData.service.bookingId : null,
           scheduleType: scheduleOption || "now",
           scheduledDate: scheduleOption === "now" ? scheduleDate : null,
@@ -1067,7 +1115,7 @@ export default function BookingPage() {
             import.meta.env.VITE_RAZORPAY_KEY_ID ||
             "rzp_test_S250uIjk1rVbsT",
           order_id: orderId, // Use the order ID from the backend
-          amount: finalPrice * 100, // Convert to paise (multiply by 100)
+          amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
           currency: "INR",
           name: "Tanish physio & fitness",
           description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ''}`,
@@ -1130,8 +1178,11 @@ export default function BookingPage() {
                   updateGuestBookingAsync({
                     id: bookingId,
                     bookingData: {
-                      status: scheduleOption === "later" ? "pending" : "scheduled",
-                      paymentStatus: "paid"
+                      status: "pending",
+                      paymentStatus: "paid",
+                      couponCode: isCouponApplied ? couponCode : undefined,
+                      discountAmount: isCouponApplied ? couponDiscount : 0,
+                      finalAmount: finalPrice
                     },
                     clientEmail: guestUser.email,
                   })
@@ -1142,8 +1193,11 @@ export default function BookingPage() {
                   updateBookingAsync({
                     id: bookingId,
                     bookingData: {
-                      status: scheduleOption === "later" ? "pending" : "scheduled",
-                      paymentStatus: "paid"
+                      status: "pending",
+                      paymentStatus: "paid",
+                      couponCode: isCouponApplied ? couponCode : undefined,
+                      discountAmount: isCouponApplied ? couponDiscount : 0,
+                      finalAmount: finalPrice
                     },
                   })
                 );
@@ -1521,15 +1575,15 @@ export default function BookingPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div
+              {/* <div
                 className={`px-3 py-1 rounded-lg text-sm font-black ${intakeIsRecent
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-yellow-50 text-yellow-800"
                   }`}
               >
                 {intakeIsRecent ? "Intake: Complete" : "Intake: Required"}
-              </div>
-              <div
+              </div> */}
+              {/* <div
                 className={`px-3 py-1 rounded-lg text-sm font-black ${sessionStorage.getItem("qw_plan")
                   ? "bg-primary/10 text-primary"
                   : "bg-slate-100 text-slate-400"
@@ -1542,16 +1596,16 @@ export default function BookingPage() {
                   : subscriptionBooking
                     ? "Subscription: Not Purchased"
                     : "Plan: Not Purchased"}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container py-8">
+      <div className="container pb-8">
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Guest User Form and Payment Form */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Guest User Form and Payment Form - Sticky on larger screens */}
+          <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-8 lg:self-start lg:h-fit">
             <Card variant="elevated">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1723,6 +1777,15 @@ export default function BookingPage() {
                     </div>
                   </RadioGroup>
 
+                  {scheduleError && (
+                    <div className="mt-2 p-2 rounded-md bg-destructive/10 border border-destructive/20">
+                      <p className="text-sm text-destructive flex items-center gap-2">
+                        <CircleAlert className="h-4 w-4" />
+                        {scheduleError}
+                      </p>
+                    </div>
+                  )}
+
                   {scheduleOption && (
                     <div className="pt-2">
                       <Button variant="outline" size="sm" onClick={clearSelection}>
@@ -1778,7 +1841,7 @@ export default function BookingPage() {
                       {publicAdmins?.[0]?.name || "Doctor"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {publicAdmins?.[0]?.doctorProfile?.specialization || therapist.title || "Physiotherapist"}
+                      {publicAdmins?.[0]?.doctorProfile?.specialization || bookingData?.therapist?.title || "Physiotherapist"}
                     </p>
                     {publicAdmins?.[0]?.doctorProfile?.experience && (
                       <p className="text-sm text-muted-foreground">
@@ -1868,8 +1931,9 @@ export default function BookingPage() {
                                   onClick={() => {
                                     if (!isCouponApplied) {
                                       setCouponCode(offer.code);
+                                      
                                       setTimeout(() => {
-                                        handleApplyCoupon();
+                                        
                                         setIsOffersDialogOpen(false);
                                       }, 100);
                                     }
@@ -2101,11 +2165,14 @@ export default function BookingPage() {
                   onClick={handlePayment}
                   disabled={
                     isProcessing ||
+                    !scheduleOption ||
+                    (scheduleOption === "now" && (!scheduleDate || !scheduleTime)) ||
                     (isGuestUser &&
                       (!guestUserData.name ||
                         !guestUserData.email ||
                         !guestUserData.phone))
                   }
+
                 >
                   {isProcessing ? (
                     <>

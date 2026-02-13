@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -23,6 +24,9 @@ import {
   MoreHorizontal,
   Package,
   RefreshCw,
+  Star,
+  Check,
+  ArrowRight,
 } from "lucide-react";
 import {
   format,
@@ -45,12 +49,16 @@ import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { RootState } from "@/store";
-
+import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
 export default function SchedulePage() {
   const location = useLocation();
   const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
   const user = useSelector(selectCurrentUser);
 
+  const { userSubscriptions, loading: subscriptionLoading, error: subscriptionError } = useSelector((state: RootState) => state.subscriptions);
+  const { plans } = useSelector(
+    (state: any) => state.subscriptions
+  );
 
   // Helper function to get service duration from booking data
   const getServiceDuration = () => {
@@ -246,6 +254,7 @@ export default function SchedulePage() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState<boolean>(false);
+  const [isPlansModalOpen, setIsPlansModalOpen] = useState<boolean>(false);
 
   // UI Control States for Session Creation
   const [sessionTypeValue, setSessionTypeValue] = useState<string>("1-on-1");
@@ -299,6 +308,19 @@ export default function SchedulePage() {
     dispatch(fetchPublicAdmins());
 
   }, [dispatch]);
+ useEffect(() => {
+    dispatch(fetchSubscriptionPlans());
+  }, [dispatch]);
+  // Show subscription plans modal when user has no services or subscriptions
+  useEffect(() => {
+    const hasNoServices = !user?.purchasedServices || user.purchasedServices.length === 0;
+    const hasNoSubscription = !user?.subscriptionData;
+    
+    if (isBookingModalOpen && hasNoServices && hasNoSubscription) {
+      setIsPlansModalOpen(true);
+      setIsBookingModalOpen(false);
+    }
+  }, [isBookingModalOpen, user?.purchasedServices, user?.subscriptionData, userSubscriptions]);
   
   // Debug effect to see what booking data is available
   useEffect(() => {
@@ -998,6 +1020,91 @@ export default function SchedulePage() {
           </div>
         </div>
       )}
+
+      {/* Subscription Plans Modal */}
+      <Dialog open={isPlansModalOpen} onOpenChange={setIsPlansModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle className="text-2xl font-bold text-center">Choose Your Wellness Plan</DialogTitle>
+            <DialogDescription className="text-center text-slate-600">
+              Select the perfect plan for your recovery journey
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="p-6">
+            {subscriptionLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : subscriptionError ? (
+              <div className="text-center py-8">
+                <p className="text-red-500 font-medium">Failed to load plans: {subscriptionError}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => dispatch(fetchUserSubscriptions())}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : plans && plans.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {plans.map((plan: any) => (
+                  <Card key={plan._id || plan.id} className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300">
+                    <div className="p-6 flex-1">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <div className="text-3xl font-black text-primary mb-1">
+                          ₹{plan.price?.toLocaleString()}
+                        </div>
+                        <div className="text-slate-500 text-sm">{plan.duration}</div>
+                      </div>
+                      
+                      <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                        {plan.description}
+                      </p>
+                      
+                      <ul className="space-y-3 mb-6 flex-1">
+                        {plan.features?.slice(0, 5).map((feature: string, index: number) => (
+                          <li key={index} className="flex items-start gap-3">
+                            <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-slate-700">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div className="p-6 pt-0">
+                      <Button 
+                        className="w-full h-12 text-base font-semibold rounded-xl"
+                        onClick={() => {
+                          setIsPlansModalOpen(false);
+                          // Navigate to subscription plans page with selected plan
+                          navigate(`/subscription-plans?plan=${plan.planId || plan.id}`);
+                        }}
+                      >
+                        Select Plan
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                  <Star className="h-8 w-8 text-slate-300" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">No Plans Available</h3>
+                <p className="text-slate-500">Please check back later or contact support.</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Success Dialog */}
       {isSuccessDialogOpen && (

@@ -33,6 +33,9 @@ export interface SubscriptionWithExpiration {
     bookingsMade: number;
   };
   purchasedServices?: ServiceWithExpiration[];
+  finalAmount?: number;
+  discountAmount?: number;
+  couponCode?: string;
 }
 
 export interface ServiceWithExpiration {
@@ -61,4 +64,7 @@ export interface ServiceWithExpiration {
     remaining: number | 'unlimited';
     percentageUsed: number;
   };
+  finalAmount?: number;
+  discountAmount?: number;
+  couponCode?: string;
 }
