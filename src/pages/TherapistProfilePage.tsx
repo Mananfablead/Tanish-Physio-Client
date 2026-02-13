@@ -79,6 +79,47 @@ export default function TherapistProfilePage() {
     return ["English"];
   };
 
+  // Parse certification names - handle both array and JSON string formats
+  const parseCertificationNames = (certNames: any): string[] => {
+    if (!certNames) return [];
+    
+    // If it's already an array
+    if (Array.isArray(certNames)) {
+      return certNames.map(name => {
+        // If name is a JSON string, parse it
+        if (typeof name === 'string' && (name.startsWith('[') || name.startsWith('{'))) {
+          try {
+            const parsed = JSON.parse(name);
+            // If parsed result is an array, return it flattened
+            if (Array.isArray(parsed)) {
+              return parsed;
+            }
+            // If parsed result is a string, return it
+            return parsed;
+          } catch {
+            return name;
+          }
+        }
+        return name;
+      }).flat().filter(name => name && typeof name === 'string');
+    }
+    
+    // If it's a single string
+    if (typeof certNames === 'string') {
+      // Check if it's a JSON string
+      if (certNames.startsWith('[')) {
+        try {
+          return JSON.parse(certNames);
+        } catch {
+          return [certNames];
+        }
+      }
+      return [certNames];
+    }
+    
+    return [];
+  };
+
   // Map the API data to match the expected structure
   const therapistData = therapist ? {
     id: therapist.id,
@@ -91,6 +132,7 @@ export default function TherapistProfilePage() {
     reviews: 0, // Will be calculated from reviews or set to 0
     languages: parseLanguages(therapist.doctorProfile?.languages),
     certifications: therapist.doctorProfile?.certifications || [],
+    certificationNames: parseCertificationNames(therapist.doctorProfile?.certificationNames),
     expertise: therapist.doctorProfile?.specialization ? [therapist.doctorProfile.specialization] : [],
   } : null;
 
@@ -211,56 +253,87 @@ export default function TherapistProfilePage() {
 
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Certifications</h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {therapistData.certifications.map((certUrl, index) => {
-                      // Extract filename from URL
-                      const filename = certUrl.split("/").pop() || `Certification ${index + 1}`;
-                      // Clean filename by removing timestamp prefix
-                      const cleanFilename = filename.replace(/^cert-\d+-\d+\./, "Certification.");
-                      
-                      return (
-                        <div key={certUrl} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
-                              <div className="bg-primary/10 rounded-lg p-2">
-                                <Award className="h-6 w-6 text-primary" />
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <a 
-                                href={certUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-sm font-medium text-primary hover:underline block mb-1"
-                                title={filename}
-                              >
-                                {cleanFilename}
-                              </a>
-                              <p className="text-xs text-muted-foreground">
-                                Click to view certificate
-                              </p>
-                            </div>
+                  
+                  {/* Certification Names */}
+                  {therapistData.certificationNames && therapistData.certificationNames.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-md font-medium mb-3">Certification Names:</h4>
+                      <div className="space-y-2">
+                        {therapistData.certificationNames.map((name, index) => (
+                          <div key={`name-${index}`} className="flex items-center gap-2 bg-secondary/50 px-3 py-2 rounded-md border">
+                            <Award className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-sm font-medium">{name}</span>
                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Uploaded Certification Files */}
+                  {therapistData.certifications && therapistData.certifications.length > 0 && (
+                    <div>
+                      <h4 className="text-md font-medium mb-3">Uploaded Certifications:</h4>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {therapistData.certifications.map((certUrl, index) => {
+                          // Extract filename from URL
+                          const filename = certUrl.split("/").pop() || `Certification ${index + 1}`;
+                          // Clean filename by removing timestamp prefix
+                          const cleanFilename = filename.replace(/^cert-\d+-\d+\./, "Certification.");
                           
-                          {/* PDF Thumbnail Preview */}
-                          <div className="mt-3 relative">
-                            <div className="border rounded bg-muted/20 h-32 flex items-center justify-center overflow-hidden">
-                              <div className="text-center p-2">
-                                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                <p className="text-xs text-muted-foreground">PDF Document</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {Math.floor(Math.random() * 200 + 50)} KB
-                                </p>
+                          return (
+                            <div key={certUrl} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0">
+                                  <div className="bg-primary/10 rounded-lg p-2">
+                                    <Award className="h-6 w-6 text-primary" />
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <a 
+                                    href={certUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-primary hover:underline block mb-1"
+                                    title={filename}
+                                  >
+                                    {cleanFilename}
+                                  </a>
+                                  <p className="text-xs text-muted-foreground">
+                                    Click to view certificate
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* PDF Thumbnail Preview */}
+                              <div className="mt-3 relative">
+                                <div className="border rounded bg-muted/20 h-32 flex items-center justify-center overflow-hidden">
+                                  <div className="text-center p-2">
+                                    <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                    <p className="text-xs text-muted-foreground">PDF Document</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {Math.floor(Math.random() * 200 + 50)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="absolute inset-0 bg-black/5 rounded flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                  <Eye className="h-6 w-6 text-white" />
+                                </div>
                               </div>
                             </div>
-                            <div className="absolute inset-0 bg-black/5 rounded flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                              <Eye className="h-6 w-6 text-white" />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show message if no certifications */}
+                  {(!therapistData.certificationNames || therapistData.certificationNames.length === 0) && 
+                   (!therapistData.certifications || therapistData.certifications.length === 0) && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Award className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                      <p>No certifications available</p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

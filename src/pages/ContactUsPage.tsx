@@ -38,16 +38,25 @@ export default function ContactUsPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-background py-12">
-        <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">
-          {contact?.title || 'Contact Us'}
-        </h1>
-        <p className="text-center text-muted-foreground mb-12">
-          {contact?.description || 'Get in touch with our support team'}
-        </p>
+      <div className="min-h-screen bg-background">
+        {/* Header Section with Gradient Background */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-8 pb-10">
+          
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>
+          
+          <div className="container relative z-10 text-center space-y-4 px-4 max-w-6xl mx-auto">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
+              {contact?.title || 'Contact Us'}
+            </h1>
+            
+            <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
+              {contact?.description || 'Get in touch with our support team'}
+            </p>
+          
+          </div>
+        </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 container px-4 max-w-6xl mx-auto mt-6">
           {/* Contact Information */}
           <div>
             <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
@@ -161,7 +170,7 @@ export default function ContactUsPage() {
         </div>
         
         {/* Map Section - Full Width */}
-        <div className="mt-12">
+        <div className="mt-12 container px-4 max-w-6xl mx-auto">
           <h3 className="text-xl font-semibold mb-4 text-center">Find Us Here</h3>
           <div className="rounded-lg overflow-hidden border">
             <iframe
@@ -177,7 +186,6 @@ export default function ContactUsPage() {
           </div>
         </div>
       </div>
-    </div>
     </Layout>
   );
 }

@@ -6,6 +6,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 console.log("API_BASE_URL", API_BASE_URL)
 
+// Export API_BASE_URL for use in other files
+export { API_BASE_URL };
+
 // Fallback URL if environment variable is not set
 const baseURL = API_BASE_URL || "http://localhost:5000/api";
 
@@ -234,6 +237,29 @@ export const processPaymentWebhook = (webhookData: any) => {
 // Testimonial API functions
 export const getFeaturedTestimonials = () => {
   return api.get("/testimonials/public/featured");
+};
+
+// Get testimonials by current user
+export const getUserTestimonials = () => {
+  return api.get("/testimonials/user");
+};
+
+export const createTestimonial = (testimonialData: any) => {
+  return api.post("/testimonials/create", testimonialData);
+};
+
+// Create testimonial with video upload capability
+export const createTestimonialWithVideo = (testimonialData: any) => {
+  const formData = new FormData();
+  
+  // Add all fields to formData
+  Object.keys(testimonialData).forEach(key => {
+    if (testimonialData[key] !== null && testimonialData[key] !== undefined) {
+      formData.append(key, testimonialData[key]);
+    }
+  });
+  
+  return api.post("/testimonials/create", formData); // Browser automatically sets correct content-type with boundary
 };
 
 // Session API functions

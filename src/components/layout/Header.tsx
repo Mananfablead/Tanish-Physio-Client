@@ -35,7 +35,7 @@ const navLinks = [
   // { to: "/schedule", label: "Schedule" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
-  // { to: "/testimonials", label: "Testimonials" },
+  { to: "/testimonials", label: "Testimonials" },
 ];
 
 export function Header() {

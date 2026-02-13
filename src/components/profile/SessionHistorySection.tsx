@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,17 +12,74 @@ import {
   Video,
   Calendar,
   MapPin,
+  MessageSquare,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Star } from "lucide-react";
+import { createTestimonial, createTestimonialWithVideo, getUserTestimonials } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface SessionHistorySectionProps {
   sessions: any[];
   onReschedule: (session: any) => void;
 }
 
+interface FeedbackForm {
+  rating: number;
+  content: string;
+  problem: string;
+  serviceUsed: string;
+  video: File | null;
+  videoPreview: string | null;
+}
+
 const ITEMS_PER_PAGE = 5; // Adjust this number as needed
 
 export function SessionHistorySection({ sessions, onReschedule }: SessionHistorySectionProps) {
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchUserTestimonials = async () => {
+      try {
+        const response = await getUserTestimonials();
+        if (response.data.success) {
+          const testimonials = response.data.data;
+          // Extract session IDs from testimonials and add to the set
+          const sessionIds = testimonials
+            .filter((testimonial: any) => testimonial.sessionId) // Only include testimonials with a sessionId
+            .map((testimonial: any) => testimonial.sessionId);
+          setSubmittedFeedbackSessions(new Set(sessionIds));
+        }
+      } catch (error) {
+        console.error('Error fetching user testimonials:', error);
+      }
+    };
+    
+    fetchUserTestimonials();
+  }, []);
+  const [feedbackSession, setFeedbackSession] = useState<any>(null);
+  const [feedbackForm, setFeedbackForm] = useState<FeedbackForm>({
+    rating: 5,
+    content: "",
+    problem: "",
+    serviceUsed: "",
+    video: null,
+    videoPreview: null,
+  });
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [submittedFeedbackSessions, setSubmittedFeedbackSessions] = useState<Set<string>>(new Set());
+
   const isSessionTimeArrived = (session: any) => {
     if (!session?.startTime) return true; // If no startTime, assume it's available
 
@@ -32,6 +89,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
     // Enable join if current time is past or equal to session start time
     return now >= sessionStartTime;
   };
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil(sessions?.length / ITEMS_PER_PAGE || 0);
@@ -62,6 +120,112 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
       default:
         return "bg-amber-100 text-amber-700";
     }
+  };
+
+  const handleLeaveFeedback = (session: any) => {
+    setFeedbackSession(session);
+    setFeedbackForm({
+      rating: 5,
+      content: "",
+      problem: "",
+      serviceUsed: session.bookingId?.serviceName || "",
+      video: null,
+      videoPreview: null,
+    });
+    setIsFeedbackModalOpen(true);
+  };
+
+  const submitFeedback = async () => {
+    if (!feedbackForm.content.trim() || !feedbackForm.problem.trim() || !feedbackForm.serviceUsed.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmittingFeedback(true);
+    try {
+      // Prepare testimonial data
+      const { serviceUsed, rating, content, problem, video } = feedbackForm;
+      let response;
+      
+      if (video) {
+        // If there's a video, use the video upload function
+        const testimonialData = {
+          serviceUsed: feedbackSession.bookingId?.serviceName || serviceUsed,
+          rating,
+          content,
+          problem,
+          video: video,
+          sessionId: feedbackSession._id, // Include session ID for tracking
+        };
+        
+        response = await createTestimonialWithVideo(testimonialData);
+      } else {
+        // If no video, use regular function
+        const testimonialData = {
+          serviceUsed: feedbackSession.bookingId?.serviceName || serviceUsed,
+          rating,
+          content,
+          problem,
+          sessionId: feedbackSession._id, // Include session ID for tracking
+        };
+        
+        response = await createTestimonial(testimonialData);
+      }
+      
+      if (response.data.success) {
+        toast({
+          title: "Success",
+          description: "Your feedback has been submitted successfully!",
+        });
+        setIsFeedbackModalOpen(false);
+        // Add the session ID to the set of submitted feedback sessions
+        if (feedbackSession?._id) {
+          setSubmittedFeedbackSessions(prev => new Set([...prev, feedbackSession._id]));
+        }
+        setFeedbackForm({
+          rating: 5,
+          content: "",
+          problem: "",
+          serviceUsed: "",
+          video: null,
+          videoPreview: null,
+        });
+      } else {
+        throw new Error(response.data.message || "Failed to submit feedback");
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit feedback. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const renderStars = (rating: number, interactive: boolean = false) => {
+    return (
+      <div className="flex">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={`w-4 h-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+            onClick={() => {
+              if (interactive) {
+                setFeedbackForm({ ...feedbackForm, rating: i + 1 });
+              }
+            }}
+            style={{ cursor: interactive ? "pointer" : "default" }}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -217,6 +381,29 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                             Reschedule
                           </Button>
                         )}
+                      {s.status === "completed" && (
+                        submittedFeedbackSessions.has(s._id) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="font-bold border-green-500 text-green-500 cursor-default"
+                            disabled
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Feedback Submitted
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
+                            onClick={() => handleLeaveFeedback(s)}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            Leave Feedback
+                          </Button>
+                        )
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -282,7 +469,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                                   : s.status === "missed"
                                     ? "bg-destructive/10 text-destructive"
                                     : "bg-amber-100 text-amber-700"
-                            }`}
+                          }`}
                         >
                           {s.status}
                         </span>
@@ -309,16 +496,39 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                     {(s.status === "scheduled" ||
                       s.status === "pending" ||
                       s.status === "missed") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="font-bold border-primary text-primary hover:bg-primary hover:text-white w-full"
+                        onClick={() => onReschedule(s)}
+                      >
+                        <CalendarDays className="h-4 w-4 mr-1" />
+                        Reschedule
+                      </Button>
+                    )}
+                    {s.status === "completed" && (
+                      submittedFeedbackSessions.has(s._id) ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="font-bold border-green-500 text-green-500 cursor-default w-full"
+                          disabled
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Feedback Submitted
+                        </Button>
+                      ) : (
                         <Button
                           variant="outline"
                           size="sm"
                           className="font-bold border-primary text-primary hover:bg-primary hover:text-white w-full"
-                          onClick={() => onReschedule(s)}
+                          onClick={() => handleLeaveFeedback(s)}
                         >
-                          <CalendarDays className="h-4 w-4 mr-1" />
-                          Reschedule
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          Leave Feedback
                         </Button>
-                      )}
+                      )
+                    )}
                   </div>
                 </div>
               </Card>
@@ -419,6 +629,116 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
           </div>
         </Card>
       )}
+
+      {/* Feedback Modal */}
+      <Dialog open={isFeedbackModalOpen} onOpenChange={setIsFeedbackModalOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Share Your Feedback</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="rating">Rating</Label>
+              <div className="flex items-center gap-2 mt-1">
+                {renderStars(feedbackForm.rating, true)}
+                <span className="ml-2 font-medium">{feedbackForm.rating}/5</span>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="problem">What problem did you have? *</Label>
+              <Input
+                id="problem"
+                value={feedbackForm.problem}
+                onChange={(e) => setFeedbackForm({...feedbackForm, problem: e.target.value})}
+                placeholder="Describe the problem you had"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="serviceUsed">Service Used *</Label>
+              <Input
+                id="serviceUsed"
+                value={feedbackForm.serviceUsed}
+                onChange={(e) => setFeedbackForm({...feedbackForm, serviceUsed: e.target.value})}
+                placeholder="Enter the service you received"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="content">Your Feedback *</Label>
+              <Textarea
+                id="content"
+                value={feedbackForm.content}
+                onChange={(e) => setFeedbackForm({...feedbackForm, content: e.target.value})}
+                placeholder="Share your experience and how we helped you..."
+                rows={4}
+              />
+            </div>
+          </div>
+          
+          {/* Video Upload Section */}
+          <div className="space-y-2">
+            <Label htmlFor="video">Upload Video (optional)</Label>
+            <Input
+              id="video"
+              type="file"
+              accept="video/*"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  const file = e.target.files[0];
+                  setFeedbackForm({
+                    ...feedbackForm,
+                    video: file,
+                    videoPreview: URL.createObjectURL(file)
+                  });
+                }
+              }}
+            />
+            {feedbackForm.videoPreview && (
+              <div className="mt-2">
+                <video 
+                  src={feedbackForm.videoPreview} 
+                  controls 
+                  className="max-w-full h-32 rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    setFeedbackForm({
+                      ...feedbackForm,
+                      video: null,
+                      videoPreview: null
+                    });
+                  }}
+                >
+                  Remove Video
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsFeedbackModalOpen(false)}
+              disabled={submittingFeedback}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={submitFeedback}
+              disabled={submittingFeedback}
+            >
+              {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
