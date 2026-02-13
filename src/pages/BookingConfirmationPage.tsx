@@ -181,7 +181,7 @@ export default function BookingConfirmationPage() {
         ) {
           await updateGuestBookingStatus(
             bookingData.bookingId,
-            "confirmed",
+            "pending",
             guestUser.email
           );
           toast.success("Booking confirmed successfully!");
@@ -368,9 +368,7 @@ export default function BookingConfirmationPage() {
                   <CheckCircle className="h-10 w-10 text-success" />
                 </div>
 
-                <h1 className="text-3xl font-bold mb-2">
-                  Booking Confirmed!
-                </h1>
+                <h1 className="text-3xl font-bold mb-2">Booking Confirmed!</h1>
 
                 <p className="text-muted-foreground mb-8">
                   Your <strong>{serviceName}</strong> session has been booked
@@ -379,173 +377,233 @@ export default function BookingConfirmationPage() {
 
                 {loadingDetails && (
                   <div className="text-center mb-4">
-                    <p className="text-muted-foreground">Loading booking details...</p>
+                    <p className="text-muted-foreground">
+                      Loading booking details...
+                    </p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-  
-  {/* ================= LEFT : SESSION DETAILS ================= */}
-  {isServiceBooking && (
-    <div className="bg-muted/50 rounded-xl p-6 text-left space-y-4">
-      <h3 className="font-semibold text-center mb-4">
-        Session Details
-      </h3>
+                  {/* ================= LEFT : SESSION DETAILS ================= */}
+                  {isServiceBooking && (
+                    <div className="bg-muted/50 rounded-xl p-6 text-left space-y-4">
+                      <h3 className="font-semibold text-center mb-4">
+                        Session Details
+                      </h3>
 
-      <div className="flex items-center gap-3">
-        <img
-          src={therapist.avatar}
-          alt={therapist.name}
-          className="w-12 h-12 rounded-lg"
-        />
-        <div>
-          <p className="font-medium">{therapist.name}</p>
-          <p className="text-sm text-muted-foreground">
-            {therapist.title}
-          </p>
-        </div>
-      </div>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={therapist.avatar}
+                          alt={therapist.name}
+                          className="w-12 h-12 rounded-lg"
+                        />
+                        <div>
+                          <p className="font-medium">{therapist.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {therapist.title}
+                          </p>
+                        </div>
+                      </div>
 
-      <div className="grid grid-cols-2 gap-4 pt-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-primary" />
-          <div>
-            <p className="text-sm text-muted-foreground">Date</p>
-            <p className="font-medium">{sessionDate}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Video className="h-4 w-4 text-primary" />
-          <div>
-            <p className="text-sm text-muted-foreground">Time</p>
-            <p className="font-medium">{sessionTime}</p>
-          </div>
-        </div>
-      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-4">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Date
+                            </p>
+                            <p className="font-medium">{sessionDate}</p>
+                          </div>
+                        </div>
 
-      <div className="pt-4 space-y-2">
-        <p>
-          <span className="text-muted-foreground">Duration:</span>{" "}
-          <span className="font-medium">{serviceDuration || "60 mins"}</span>
-        </p>
+                        <div className="flex items-center gap-2">
+                          <Video className="h-4 w-4 text-primary" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Time
+                            </p>
+                            <p className="font-medium">{sessionTime}</p>
+                          </div>
+                        </div>
+                      </div>
 
-        <p>
-          <span className="text-muted-foreground">Price:</span>{" "}
-          <span className="font-medium">₹{servicePrice}</span>
-        </p>
+                      <div className="pt-4 space-y-2">
+                        <p>
+                          <span className="text-muted-foreground">
+                            Duration:
+                          </span>{" "}
+                          <span className="font-medium">
+                            {serviceDuration || "60 mins"}
+                          </span>
+                        </p>
 
-        <p className="text-xs text-muted-foreground">
-          Booking ID: {bookingData?.bookingId}
-        </p>
-        
-        {bookingDetails?.status && (
-          <p className="text-xs">
-            Status: <span className="font-medium capitalize">{bookingDetails.status}</span>
-          </p>
-        )}
-        
-        {bookingDetails?.paymentStatus && (
-          <p className="text-xs">
-            Payment: <span className="font-medium capitalize">{bookingDetails.paymentStatus}</span>
-          </p>
-        )}
-      </div>
-    </div>
-  )}
+                        <p>
+                          <span className="text-muted-foreground">Price:</span>{" "}
+                          <span className="font-medium">₹{servicePrice}</span>
+                        </p>
 
-  {isSubscription && (
-    <div className="bg-muted/50 rounded-xl p-6 text-left space-y-4">
-      <h3 className="font-semibold text-center mb-4">
-        Session Details
-      </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Booking ID: {bookingData?.bookingId}
+                        </p>
 
-      <div className="space-y-3">
-        <div>
-          <p className="text-sm text-muted-foreground">Plan Name</p>
-          <p className="font-medium">{serviceName}</p>
-        </div>
+                        {bookingDetails?.status && (
+                          <p className="text-xs">
+                            Status:{" "}
+                            <span className="font-medium capitalize">
+                              {bookingDetails.status}
+                            </span>
+                          </p>
+                        )}
 
-        <div>
-          <p className="text-sm text-muted-foreground">Plan Duration</p>
-          <p className="font-medium capitalize">
-            {bookingData?.service?.duration}
-          </p>
-        </div>
+                        {bookingDetails?.paymentStatus && (
+                          <p className="text-xs">
+                            Payment:{" "}
+                            <span className="font-medium capitalize">
+                              {bookingDetails.paymentStatus}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-        <div>
-          <p className="text-sm text-muted-foreground">Amount Paid</p>
-          <p className="font-medium">₹{servicePrice}</p>
-        </div>
+                  {isSubscription && (
+                    <div className="bg-muted/50 rounded-xl p-6 text-left space-y-4">
+                      <h3 className="font-semibold text-center mb-4">
+                        Session Details
+                      </h3>
 
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Session Booking
-          </p>
-          <p className="font-medium">
-            {bookingData?.scheduleOption === 'later' 
-              ? 'Sessions can be booked later from your profile'
-              : 'Sessions can be booked from your profile'}
-          </p>
-        </div>
-        
-        {bookingDetails?.status && (
-          <div>
-            <p className="text-sm text-muted-foreground">Status</p>
-            <p className="font-medium capitalize">{bookingDetails.status}</p>
-          </div>
-        )}
-      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Plan Name
+                          </p>
+                          <p className="font-medium">{serviceName}</p>
+                        </div>
 
-      <p className="text-xs text-muted-foreground pt-3">
-        You can book multiple sessions during the active subscription period.
-      </p>
-    </div>
-  )}
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Plan Duration
+                          </p>
+                          <p className="font-medium capitalize">
+                            {bookingData?.service?.duration}
+                          </p>
+                        </div>
 
-  {/* ================= RIGHT : USER INFO ================= */}
-  {!isAuthenticated && guestUser && (
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-left">
-      <h3 className="font-semibold text-lg mb-3 text-blue-800 flex items-center gap-2">
-        <Mail className="h-5 w-5 text-blue-600" />
-        Account Information
-      </h3>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Amount Paid
+                          </p>
+                          <p className="font-medium">₹{servicePrice}</p>
+                        </div>
 
-      <p className="text-blue-700 mb-3">
-        Your account has been <strong>successfully created</strong>.
-      </p>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Session Booking
+                          </p>
+                          <p className="font-medium">
+                            {bookingData?.scheduleOption === "later"
+                              ? "Sessions can be booked later from your profile"
+                              : "Sessions can be booked from your profile"}
+                          </p>
+                        </div>
 
-      <p className="text-blue-700 text-sm">
-        Login Email: <strong>{guestUser.email}</strong>
-      </p>
+                        {/* Scheduling Information */}
+                        {bookingData?.scheduleOption && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Scheduling Option
+                            </p>
+                            <p className="font-medium capitalize">
+                              {bookingData.scheduleOption === "later"
+                                ? "Schedule Later"
+                                : "Book Now"}
+                            </p>
+                          </div>
+                        )}
 
-      <p className="text-sm text-blue-700 mt-2">
-        A temporary password has been sent to your email address.
-      </p>
-    </div>
-  )}
+                        {bookingData?.scheduleDate &&
+                          bookingData?.scheduleTime && (
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Scheduled Session
+                              </p>
+                              <p className="font-medium">
+                                {new Date(
+                                  bookingData.scheduleDate
+                                ).toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                })}{" "}
+                                at {bookingData.scheduleTime}
+                              </p>
+                            </div>
+                          )}
 
-  {isAuthenticated && (
-    <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-left">
-      <h3 className="font-semibold text-lg mb-3 text-green-800">
-        Session Booking Information
-      </h3>
+                        {bookingDetails?.status && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              Status
+                            </p>
+                            <p className="font-medium capitalize">
+                              {bookingDetails.status}
+                            </p>
+                          </div>
+                        )}
+                      </div>
 
-      <ul className="list-disc pl-5 space-y-2 text-green-800 text-sm">
-        <li>View upcoming sessions in your profile</li>
-        <li>Book new sessions from the Book Session section</li>
-        <li>Select service, date & time slot</li>
-        <li>Confirm to complete booking</li>
-      </ul>
+                      <p className="text-xs text-muted-foreground pt-3">
+                        You can book multiple sessions during the active
+                        subscription period.
+                      </p>
+                    </div>
+                  )}
 
-      <p className="text-xs text-green-700 mt-4">
-        You can join sessions 5 minutes before the scheduled time.
-      </p>
-    </div>
-  )}
+                  {/* ================= RIGHT : USER INFO ================= */}
+                  {!isAuthenticated && guestUser && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-left">
+                      <h3 className="font-semibold text-lg mb-3 text-blue-800 flex items-center gap-2">
+                        <Mail className="h-5 w-5 text-blue-600" />
+                        Account Information
+                      </h3>
 
-</div>
+                      <p className="text-blue-700 mb-3">
+                        Your account has been{" "}
+                        <strong>successfully created</strong>.
+                      </p>
 
+                      <p className="text-blue-700 text-sm">
+                        Login Email: <strong>{guestUser.email}</strong>
+                      </p>
+
+                      <p className="text-sm text-blue-700 mt-2">
+                        A temporary password has been sent to your email
+                        address.
+                      </p>
+                    </div>
+                  )}
+
+                  {isAuthenticated && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-left">
+                      <h3 className="font-semibold text-lg mb-3 text-green-800">
+                        Session Booking Information
+                      </h3>
+
+                      <ul className="list-disc pl-5 space-y-2 text-green-800 text-sm">
+                        <li>View upcoming sessions in your profile</li>
+                        <li>Book new sessions from the Book Session section</li>
+                        <li>Select service, date & time slot</li>
+                        <li>Confirm to complete booking</li>
+                      </ul>
+
+                      <p className="text-xs text-green-700 mt-4">
+                        You can join sessions 5 minutes before the scheduled
+                        time.
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {renderActionButtons()}
 

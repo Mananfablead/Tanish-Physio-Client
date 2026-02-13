@@ -1823,8 +1823,8 @@ export default function BookingPage() {
                     }}
                     className="grid grid-cols-1 md:grid-cols-2 gap-6"
                   >
-                    {/* Column 1 */}
-                    <div className="flex items-start space-x-3 border rounded-lg p-4">
+                    {/* Immediate Booking Option */}
+                    <div className="flex items-start space-x-3 border rounded-lg p-4 hover:border-primary/50 transition-colors">
                       <RadioGroupItem
                         value="now"
                         id="schedule-now"
@@ -1833,29 +1833,46 @@ export default function BookingPage() {
                       <div className="flex-1">
                         <Label
                           htmlFor="schedule-now"
-                          className="font-medium cursor-pointer"
+                          className="font-medium cursor-pointer text-base"
                         >
-                          Schedule Now
+                          Book Session Now
                         </Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Pick date & time
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Select a date and time for your session immediately
                         </p>
 
                         {scheduleOption === "now" &&
                           scheduleDate &&
                           scheduleTime && (
-                            <div className="mt-2 text-xs text-primary font-medium">
-                              {new Date(scheduleDate).toLocaleDateString()} |{" "}
-                              {selectedTimeSlot
-                                ? `${selectedTimeSlot.start} - ${selectedTimeSlot.end}`
-                                : scheduleTime}
+                            <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                              <div className="flex items-center gap-2 text-primary font-medium">
+                                <Calendar className="h-4 w-4" />
+                                <span className="text-sm">
+                                  {new Date(scheduleDate).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      weekday: "short",
+                                      month: "short",
+                                      day: "numeric",
+                                    }
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-primary font-medium mt-1">
+                                <Clock className="h-4 w-4" />
+                                <span className="text-sm">
+                                  {selectedTimeSlot
+                                    ? `${selectedTimeSlot.start} - ${selectedTimeSlot.end}`
+                                    : scheduleTime}
+                                </span>
+                              </div>
                             </div>
                           )}
                       </div>
                     </div>
 
-                    {/* Column 2 */}
-                    <div className="flex items-start space-x-3 border rounded-lg p-4">
+                    {/* Schedule Later Option */}
+                    <div className="flex items-start space-x-3 border rounded-lg p-4 hover:border-primary/50 transition-colors">
                       <RadioGroupItem
                         value="later"
                         id="schedule-later"
@@ -1864,17 +1881,26 @@ export default function BookingPage() {
                       <div className="flex-1">
                         <Label
                           htmlFor="schedule-later"
-                          className="font-medium cursor-pointer"
+                          className="font-medium cursor-pointer text-base"
                         >
                           Schedule Later
                         </Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          After payment
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Book now, schedule your session after payment
                         </p>
 
                         {scheduleOption === "later" && (
-                          <div className="mt-2 text-xs text-primary font-medium">
-                            Will schedule later
+                          <div className="mt-3 p-3 rounded-lg bg-secondary/50 border border-secondary/20">
+                            <div className="flex items-center gap-2 text-secondary-foreground font-medium">
+                              <Clock className="h-4 w-4" />
+                              <span className="text-sm">
+                                Session will be scheduled later
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              You can schedule your session from your profile
+                              after payment
+                            </p>
                           </div>
                         )}
                       </div>

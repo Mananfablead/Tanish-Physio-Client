@@ -254,11 +254,12 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
           </Carousel>
         </div>
       </div>
-      
+
       {/* Condition Detail Modal */}
- {/* Condition Detail Modal */}
-<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-  <DialogContent className="
+      {/* Condition Detail Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent
+          className="
     w-[95vw]
     max-w-2xl
     max-h-[85vh]
@@ -272,16 +273,16 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
     shadow-2xl
     flex
     flex-col
-  ">
-    
-    {/* HEADER */}
-    <DialogHeader className="border-b border-border/30 px-4 sm:px-6 py-4">
-      <div className="flex justify-between items-center">
-        <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          {selectedCondition?.title}
-        </DialogTitle>
+  "
+        >
+          {/* HEADER */}
+          <DialogHeader className="border-b border-border/30 px-4 sm:px-6 py-4">
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                {selectedCondition?.title}
+              </DialogTitle>
 
-        {/* <Button
+              {/* <Button
           variant="ghost"
           size="icon"
           onClick={closeModal}
@@ -289,34 +290,33 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
         >
           
         </Button> */}
-      </div>
-    </DialogHeader>
-
-    {/* SCROLLABLE BODY */}
-    <div className="overflow-y-auto px-4 sm:px-6 py-4">
-      <div className="space-y-6">
-        
-        {/* Main Content Area */}
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          
-          {/* Image */}
-          {selectedCondition?.image && (
-            <div className="flex-shrink-0 md:sticky md:top-4">
-              <div className="h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-40 lg:w-40 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shadow-lg border border-primary/10 mx-auto md:mx-0">
-                <img
-                  src={selectedCondition.image}
-                  alt={selectedCondition.title}
-                  className="h-full w-full object-contain p-3 sm:p-4 transition-transform hover:scale-105 duration-300"
-                />
-              </div>
             </div>
-          )}
+          </DialogHeader>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            {selectedCondition?.content && (
-              <div className="prose max-w-none">
-                <div className="
+          {/* SCROLLABLE BODY */}
+          <div className="overflow-y-auto px-4 sm:px-6 py-4">
+            <div className="space-y-6">
+              {/* Main Content Area */}
+              <div className="flex flex-col md:flex-row gap-6 items-start">
+                {/* Image */}
+                {selectedCondition?.image && (
+                  <div className="flex-shrink-0 md:sticky md:top-4">
+                    <div className="h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-40 lg:w-40 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden shadow-lg border border-primary/10 mx-auto md:mx-0">
+                      <img
+                        src={selectedCondition.image}
+                        alt={selectedCondition.title}
+                        className="h-full w-full object-contain p-3 sm:p-4 transition-transform hover:scale-105 duration-300"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {selectedCondition?.content && (
+                    <div className="prose max-w-none">
+                      <div
+                        className="
                   bg-muted/30
                   rounded-xl
                   p-4 sm:p-5
@@ -324,45 +324,42 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                   shadow-sm
                   max-h-[45vh]
                   overflow-y-auto
-                ">
-                  <p className="
+                "
+                      >
+                        <p
+                          className="
                     text-foreground
                     text-base sm:text-lg
                     leading-relaxed
                     break-words
                     whitespace-pre-wrap
-                  ">
-                    {selectedCondition.content}
-                  </p>
+                  "
+                        >
+                          {selectedCondition.content}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+
+              {/* Button */}
+              <div className="flex justify-center pt-2">
+                <Button
+                  size="lg"
+                  className="rounded-full px-8 sm:px-12 py-4 text-base sm:text-lg group w-full sm:w-auto h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  onClick={closeModal}
+                >
+                  <span className="flex items-center font-semibold">
+                    Book Consultation
+                    <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                  </span>
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Button */}
-        <div className="flex justify-center pt-2">
-          <Button 
-            size="lg" 
-            className="rounded-full px-8 sm:px-12 py-4 text-base sm:text-lg group w-full sm:w-auto h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-            onClick={() => {
-              closeModal();
-              console.log("Book consultation clicked for:", selectedCondition?.title);
-            }}
-          >
-            <span className="flex items-center font-semibold">
-              Book Consultation
-              <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-            </span>
-          </Button>
-        </div>
-
-      </div>
-    </div>
-
-  </DialogContent>
-</Dialog>
-
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
