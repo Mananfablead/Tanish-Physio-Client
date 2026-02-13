@@ -126,11 +126,21 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
 
                 <div className="text-right">
                   <div className="text-3xl md:text-4xl font-black text-primary mb-1">
-                    ₹{activePlan?.amount?.toLocaleString() ?? 0}
+                    ₹{(activePlan?.finalAmount?.toLocaleString() ?? activePlan?.amount?.toLocaleString()) ?? 0}
                   </div>
+                  {/* {activePlan?.discountAmount > 0 && (
+                    <div className="text-slate-500 text-sm line-through">
+                      ₹{activePlan?.amount?.toLocaleString()}
+                    </div>
+                  )} */}
                   <div className="text-slate-500 font-semibold uppercase tracking-wider text-xs">
                     {activePlan?.currency || "INR"}
                   </div>
+                  {activePlan?.couponCode && (
+                    <div className="text-success text-xs font-medium mt-1">
+                      Coupon: {activePlan.couponCode}
+                    </div>
+                  )}
                   <div className="text-slate-400 text-xs mt-1">
                     {activePlan?.planId || "Plan ID"}
                   </div>

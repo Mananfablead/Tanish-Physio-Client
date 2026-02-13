@@ -183,9 +183,21 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
                       {/* AMOUNT */}
                       <td className="px-6 py-4 text-right">
-                        <span className="font-black text-slate-900">
-                          ₹{booking.amount || 0}
-                        </span>
+                        <div className="text-right">
+                          <span className="font-black text-slate-900">
+                            ₹{(booking.finalAmount?.toLocaleString() ?? booking.amount?.toLocaleString()) ?? 0}
+                          </span>
+                          {booking.discountAmount > 0 && (
+                            <div className="text-slate-500 text-sm line-through">
+                              ₹{booking.amount?.toLocaleString()}
+                            </div>
+                          )}
+                          {booking.couponCode && (
+                            <div className="text-success text-xs font-medium mt-1">
+                              Coupon: {booking.couponCode}
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* STATUS */}
