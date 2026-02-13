@@ -45,17 +45,42 @@ export const chatApi = {
     },
 
     // Send a chat message
-    sendMessage: async (sessionId, message) => {
-        const response = await apiClient.post(`/send/${sessionId}`, {
-            message,
-        });
-        return response.data;
+    sendMessage: async (sessionId, messageData) => {
+        // Handle both formats: string message or object with content
+        const message = typeof messageData === 'string' ? messageData : messageData.content || messageData.message;
+
+        // For default live chat, use special endpoint
+        if (sessionId === 'default-live-chat') {
+            const response = await apiClient.post('/send/default-live-chat', {
+                message,
+            });
+            return response.data;
+        } else {
+            // For regular sessions
+            const response = await apiClient.post(`/send/${sessionId}`, {
+                message,
+            });
+            return response.data;
+        }
     },
 
     // Get chat messages for a session
     getMessages: async (sessionId) => {
-        const response = await apiClient.get(`/${sessionId}`);
-        return response.data;
+        // For default live chat, use the new dedicated endpoint
+        if (sessionId === 'default-live-chat') {
+            try {
+                const response = await apiClient.get('/default/messages');
+                return response.data;
+            } catch (error) {
+                console.error('Error fetching default chat messages:', error);
+                // Return empty response structure
+                return { success: false, data: { messages: [] } };
+            }
+        } else {
+        // For regular sessions
+            const response = await apiClient.get(`/${sessionId}`);
+            return response.data;
+        }
     },
 
     // Send typing indicator

@@ -1,27 +1,14 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
+import React from "react";
+import logo from '../assets/logo.webp';
 import { 
-  ClipboardList, 
-  UserCheck, 
-  Video, 
-  Star, 
+  Mail, 
+  Lock, 
+  ArrowLeft, 
+  KeyRound, 
   Shield, 
-  Award,
-  ArrowRight,
-  CheckCircle,
-  Users,
-  Clock,
-  Activity,
-  HeartPulse,
-  Stethoscope,
-  Bone,
-  Dumbbell,
-  Zap,
-  Quote,
-  HelpCircle,
-  Lock,
-  ShieldCheck,
+  CheckCircle2,
+  LogIn,
+  UserPlus,
   AlertCircle,
   Stethoscope,
   Activity,

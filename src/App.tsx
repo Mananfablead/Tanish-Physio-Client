@@ -8,8 +8,10 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AuthProvider } from "@/context/AuthContext";
-import { store, persistor } from './store';
+import { SocketProvider } from "@/context/SocketContext";
+import { store, persistor } from "./store";
 import ScrollToTop from "@/components/ScrollToTop";
+import ChatWidget from "@/components/ChatWidget";
 
 // Lazy load pages for better performance and loading states
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -44,6 +46,7 @@ const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 const RecordedSessionsPage = lazy(() => import("./pages/RecordedSessionsPage"));
 const TestimonialsPage = lazy(() => import("./pages/TestimonialsPage"));
+const LiveChatHistoryPage = lazy(() => import("./pages/LiveChatHistory"));
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
@@ -55,154 +58,170 @@ const App = () => (
     <PersistGate loading={<LoadingScreen />} persistor={persistor}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Suspense fallback={<LoadingScreen />}>
-                <ScrollToTop />
-                <Routes>
-                  {/* <Route path="/" element={<ComingSoonPage />} /> */}
-                  <Route path="/" element={<LandingPage />} />
+          <SocketProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Suspense fallback={<LoadingScreen />}>
+                  <ScrollToTop />
+                  <Routes>
+                    {/* <Route path="/" element={<ComingSoonPage />} /> */}
+                    <Route path="/" element={<LandingPage />} />
 
-                  <Route
-                    path="/questionnaire"
-                    element={<QuestionnairePage />}
-                  />
-                  <Route
-                    path="/therapists"
-                    element={
-                      <ProtectedRoute>
-                        <TherapistDiscoveryPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/therapist/:id"
-                    element={
-                      // <ProtectedRoute>
-                      <TherapistProfilePage />
-                      // </ProtectedRoute>
-                    }
-                  />
+                    <Route
+                      path="/questionnaire"
+                      element={<QuestionnairePage />}
+                    />
+                    <Route
+                      path="/therapists"
+                      element={
+                        <ProtectedRoute>
+                          <TherapistDiscoveryPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/therapist/:id"
+                      element={
+                        // <ProtectedRoute>
+                        <TherapistProfilePage />
+                        // </ProtectedRoute>
+                      }
+                    />
 
-                  <Route path="/plans" element={<SubscriptionPlansPage />} />
+                    <Route path="/plans" element={<SubscriptionPlansPage />} />
 
-                  <Route
-                    path="/login"
-                    element={
-                      <PublicRoute>
-                        <LoginPage />
-                      </PublicRoute>
-                    }
-                  />
+                    <Route
+                      path="/login"
+                      element={
+                        <PublicRoute>
+                          <LoginPage />
+                        </PublicRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/register"
-                    element={
-                      <PublicRoute>
-                        <RegisterPage />
-                      </PublicRoute>
-                    }
-                  />
+                    <Route
+                      path="/register"
+                      element={
+                        <PublicRoute>
+                          <RegisterPage />
+                        </PublicRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/forgot-password"
-                    element={
-                      <PublicRoute>
-                        <ForgotPasswordPage />
-                      </PublicRoute>
-                    }
-                  />
+                    <Route
+                      path="/forgot-password"
+                      element={
+                        <PublicRoute>
+                          <ForgotPasswordPage />
+                        </PublicRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/reset-password/:token"
-                    element={
-                      <PublicRoute>
-                        <ResetPasswordPage />
-                      </PublicRoute>
-                    }
-                  />
+                    <Route
+                      path="/reset-password/:token"
+                      element={
+                        <PublicRoute>
+                          <ResetPasswordPage />
+                        </PublicRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/booking"
-                    element={
-                      <PublicRoute>
-                        <BookingPage />
-                      </PublicRoute>
-                    }
-                  />
-                  {/* Booking confirmation page - accessible to both authenticated and guest users */}
-                  <Route
-                    path="/booking-confirmation"
-                    element={<BookingConfirmationPage />}
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      // <ProtectedRoute>
-                      <ProfilePage />
-                      // </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/video-call"
-                    element={
-                      <ProtectedRoute>
-                        <VideoCallPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/waiting-room"
-                    element={
-                      <ProtectedRoute>
-                        <WaitingRoomPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/group-video-call/:id"
-                    element={
-                      <ProtectedRoute>
-                        <GroupVideoCallPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                    <Route
+                      path="/booking"
+                      element={
+                        <PublicRoute>
+                          <BookingPage />
+                        </PublicRoute>
+                      }
+                    />
+                    {/* Booking confirmation page - accessible to both authenticated and guest users */}
+                    <Route
+                      path="/booking-confirmation"
+                      element={<BookingConfirmationPage />}
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        // <ProtectedRoute>
+                        <ProfilePage />
+                        // </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/video-call"
+                      element={
+                        <ProtectedRoute>
+                          <VideoCallPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/waiting-room"
+                      element={
+                        <ProtectedRoute>
+                          <WaitingRoomPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/group-video-call/:id"
+                      element={
+                        <ProtectedRoute>
+                          <GroupVideoCallPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* Support pages */}
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/about" element={<AboutUsPage />} />
-                  <Route path="/terms" element={<TermsOfServicePage />} />
-                  <Route path="/contact" element={<ContactUsPage />} />
-                  <Route path="/services" element={<ServicesPage />} />
-                  <Route path="/testimonials" element={<TestimonialsPage />} />
-                  <Route
-                    path="/service/:slug"
-                    element={<ServiceDetailPage />}
-                  />
-                  <Route
-                    path="/schedule"
-                    element={
-                      // <ProtectedRoute>
-                      <SchedulePage />
-                      // </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/recorded-sessions"
-                    element={
-                      <ProtectedRoute>
-                        <RecordedSessionsPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Support pages */}
+                    <Route path="/faq" element={<FAQPage />} />
+                    <Route path="/about" element={<AboutUsPage />} />
+                    <Route path="/terms" element={<TermsOfServicePage />} />
+                    <Route path="/contact" element={<ContactUsPage />} />
+                    <Route path="/services" element={<ServicesPage />} />
+                    <Route
+                      path="/testimonials"
+                      element={<TestimonialsPage />}
+                    />
+                    <Route
+                      path="/service/:slug"
+                      element={<ServiceDetailPage />}
+                    />
+                    <Route
+                      path="/schedule"
+                      element={
+                        // <ProtectedRoute>
+                        <SchedulePage />
+                        // </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/recorded-sessions"
+                      element={
+                        <ProtectedRoute>
+                          <RecordedSessionsPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </TooltipProvider>
+                    <Route
+                      path="/live-chat-history"
+                      element={
+                        <ProtectedRoute>
+                          <LiveChatHistoryPage />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  {/* Add the ChatWidget here - it now has access to SocketProvider */}
+                  <ChatWidget />
+                </Suspense>
+              </BrowserRouter>
+            </TooltipProvider>
+          </SocketProvider>
         </AuthProvider>
       </QueryClientProvider>
     </PersistGate>

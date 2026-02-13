@@ -108,6 +108,8 @@ interface ContactSection {
   email: string;
   phone: string;
   address: string;
+  latitude: number;
+  longitude: number;
   hours: string;
   socialLinks: SocialLink[];
   isPublic: boolean;
