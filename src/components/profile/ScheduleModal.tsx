@@ -247,39 +247,40 @@ export function ScheduleModal({
                 Available Time Slots
               </h4>
 
-              {scheduleDate ? (
-                <div className="space-y-2 max-h-48 md:max-h-80 overflow-y-auto">
-                  {availability
-                    .find((a: any) => a.date === scheduleDate)
-                    ?.timeSlots?.map((slot: any, i: number) => (
-                      <button
-                        key={i}
-                        disabled={slot.status !== "available"}
-                        onClick={() =>
-                          slot.status === "available" &&
-                          handleTimeSlotClick(scheduleDate, slot)
-                        }
-                        className={`
-                        w-full p-2 rounded-lg border text-left text-sm
-                        ${slot.status === "available"
-                          ? "border-green-300 hover:bg-green-50"
-                          : slot.status === "booked"
-                          ? "border-red-300 opacity-50"
-                          : "border-gray-300 opacity-50"}
-                        ${scheduleTime === slot.start
-                          ? "ring-2 ring-primary bg-primary/10"
-                          : ""}
-                      `}
-                      >
-                        {formatTime(slot.start)} – {formatTime(slot.end)}
-                      </button>
-                    ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500">
-                  Select a date to see time slots
-                </p>
-              )}
+           {scheduleDate ? (
+  <div className="grid grid-cols-2 gap-2 max-h-48 md:max-h-80 overflow-y-auto">
+    {availability
+      .find((a: any) => a.date === scheduleDate)
+      ?.timeSlots?.map((slot: any, i: number) => (
+        <button
+          key={i}
+          disabled={slot.status !== "available"}
+          onClick={() =>
+            slot.status === "available" &&
+            handleTimeSlotClick(scheduleDate, slot)
+          }
+          className={`
+            w-full p-2 rounded-lg border text-left text-sm
+            ${slot.status === "available"
+              ? "border-green-300 hover:bg-green-50"
+              : slot.status === "booked"
+              ? "border-red-300 opacity-50"
+              : "border-gray-300 opacity-50"}
+            ${scheduleTime === slot.start
+              ? "ring-2 ring-primary bg-primary/10"
+              : ""}
+          `}
+        >
+          {formatTime(slot.start)} – {formatTime(slot.end)}
+        </button>
+      ))}
+  </div>
+) : (
+  <p className="text-xs text-slate-500">
+    Select a date to see time slots
+  </p>
+)}
+
             </div>
           </div>
 

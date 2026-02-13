@@ -93,7 +93,7 @@ export function ProfileHeader({
     </div>
 
     {/* User Info */}
-    <div className="space-y-1 flex flex-col mt-16 md:ms-4">
+    <div className="space-y-1 flex flex-col  md:ms-4">
      <div className="hidden md:flex items-center gap-2 flex-wrap ">
 
         <h1 className="text-xl sm:text-4xl font-black text-white tracking-tight">
@@ -111,67 +111,80 @@ export function ProfileHeader({
         )}
       </div>
 
-      <div className="hidden sm:flex flex-wrap items-center gap-4 text-white font-bold text-sm">
-        <p className="flex items-center gap-1 text-base">
-          <Mail className="h-5 w-5" /> {user?.email}
-        </p>
-        <p className="flex items-center gap-1 text-base">
-          <Phone className="h-5 w-5" /> {user?.phone}
-        </p>
-      </div>
+    <div className="hidden sm:flex flex-col gap-1 text-white font-semibold 
+                text-xs sm:text-sm md:text-sm lg:text-base">
+  <p className="flex items-center gap-1">
+    <Mail className="h-4 w-4 md:h-5 md:w-5" /> 
+    {user?.email}
+  </p>
+  <p className="flex items-center gap-1">
+    <Phone className="h-4 w-4 md:h-5 md:w-5" /> 
+    {user?.phone}
+  </p>
+</div>
+
+
     </div>
   </div>
 
   {/* Right Section → Stats */}
-  <div className="flex gap-2 sm:gap-4">
+ <div className="grid grid-cols-3 gap-2 sm:gap-4 ">
 
-    {[
-      {
-        label: "Active",
-        value: activePlan ? "1" : "0",
-        icon: Activity,
-        color: "text-primary",
-        bg: "bg-primary/10",
-      },
-      {
-        label: "Completed",
-        value: sessionCompleted.length,
-        icon: Calendar,
-        color: "text-accent",
-        bg: "bg-accent/10",
-      },
-      {
-        label: "Upcoming",
-        value: upcomingSessions.length,
-        icon: Clock,
-        color: "text-success",
-        bg: "bg-success/10",
-      },
-    ].map((stat, i) => (
+  {[
+    {
+      label: "Active",
+      value: activePlan ? "1" : "0",
+      icon: Activity,
+      color: "text-primary",
+      bg: "bg-primary/10",
+    },
+    {
+      label: "Completed",
+      value: sessionCompleted.length,
+      icon: Calendar,
+      color: "text-accent",
+      bg: "bg-accent/10",
+    },
+    {
+      label: "Upcoming",
+      value: upcomingSessions.length,
+      icon: Clock,
+      color: "text-success",
+      bg: "bg-success/10",
+    },
+  ].map((stat, i) => (
+    <div
+      key={i}
+      className="bg-white/95 backdrop-blur-md 
+      p-2 sm:p-4 
+      rounded-lg sm:rounded-xl 
+      border border-slate-200 
+      hover:shadow-md transition-all group shadow-sm
+      flex flex-col items-center justify-center text-center
+      min-w-[70px] sm:min-w-[120px]
+      "
+    >
       <div
-        key={i}
-        className="bg-white/95 backdrop-blur-md p-2 sm:p-4 rounded-xl border border-slate-200 
-        hover:shadow-md transition-all group shadow-sm
-        flex flex-col items-center text-center min-w-[70px] sm:min-w-[120px]"
+        className={`h-6 w-6 sm:h-10 sm:w-10 rounded-lg ${stat.bg} 
+        flex items-center justify-center 
+        mb-1 sm:mb-3
+        group-hover:scale-110 transition-transform`}
       >
-        <div
-          className={`h-6 w-6 sm:h-10 sm:w-10 rounded-lg ${stat.bg} flex items-center justify-center mb-1 sm:mb-3
-          group-hover:scale-110 transition-transform`}
-        >
-          <stat.icon className={`h-3 w-3 sm:h-5 sm:w-5 ${stat.color}`} />
-        </div>
-
-        <p className="text-lg sm:text-2xl font-black text-primary leading-none">
-          {stat.value}
-        </p>
-
-        <p className="text-[7px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
-          {stat.label}
-        </p>
+        <stat.icon className={`h-3 w-3 sm:h-5 sm:w-5 ${stat.color}`} />
       </div>
-    ))}
 
-  </div>
+      <p className="text-base sm:text-2xl font-black text-primary leading-none">
+        {stat.value}
+      </p>
+
+      <p className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wide mt-1">
+        {stat.label}
+      </p>
+    </div>
+  ))}
+
+</div>
+
 </div>
 
       </div>
