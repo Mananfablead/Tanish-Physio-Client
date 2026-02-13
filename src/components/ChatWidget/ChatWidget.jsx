@@ -89,38 +89,81 @@ const ChatWidget = () => {
 
     console.log("Setting up socket listeners");
 
-    const cleanupFunctions = [];
-
-    // Listen for new messages from other users
+    // Listen for new messages from other users (single source of truth)
     const cleanupNewMessage = on("message-received", (data) => {
       console.log("Received message:", data);
-      setMessages((prev) => [
-        ...prev,
-        {
-          _id: Date.now(),
-          content: data.content,
-          senderId: data.senderId,
-          senderName: data.senderName,
-          timestamp: data.timestamp || new Date(),
-          senderType: data.senderType || "user",
-        },
-      ]);
+      setMessages((prev) => {
+        // Primary deduplication by messageId
+        if (data.messageId && prev.some(m => m.messageId === data.messageId)) {
+          console.log("Duplicate message ignored by messageId:", data.messageId);
+          return prev;
+        }
+        
+        // Secondary deduplication by _id (for backward compatibility)
+        if (data._id && prev.some(m => m._id === data._id)) {
+          console.log("Duplicate message ignored by _id:", data._id);
+          return prev;
+        }
+        
+        // Tertiary deduplication by content + timestamp (fallback)
+        const isContentDuplicate = prev.some(m => 
+          m.content === data.content && 
+          new Date(m.timestamp).getTime() === new Date(data.timestamp).getTime()
+        );
+        
+        if (isContentDuplicate) {
+          console.log("Duplicate message ignored by content+timestamp");
+          return prev;
+        }
+        
+        // Add new message
+        return [
+          ...prev,
+          {
+            _id: data._id || Date.now(),
+            messageId: data.messageId,
+            content: data.content,
+            senderId: data.senderId,
+            senderName: data.senderName,
+            timestamp: data.timestamp || new Date(),
+            senderType: data.senderType || "user",
+          },
+        ];
+      });
+      
+      // Auto-scroll to bottom for new messages
+      setTimeout(() => {
+        scrollToBottom();
+      }, 10);
     });
 
     // Listen for admin replies specifically
     const cleanupAdminReply = on("admin-reply-received", (data) => {
       console.log("Received admin reply:", data);
-      setMessages((prev) => [
-        ...prev,
-        {
-          _id: Date.now(),
-          content: data.message.message,
-          senderId: data.message.senderId,
-          senderName: data.message.senderId.name || "Admin",
-          timestamp: data.message.createdAt,
-          senderType: "admin",
-        },
-      ]);
+      setMessages((prev) => {
+        // Check for duplicate by messageId or _id
+        const messageData = data.message || data;
+        if (messageData.messageId && prev.some(m => m.messageId === messageData.messageId)) {
+          console.log("Duplicate admin message ignored:", messageData.messageId);
+          return prev;
+        }
+        if (messageData._id && prev.some(m => m._id === messageData._id)) {
+          console.log("Duplicate admin message ignored by _id:", messageData._id);
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            _id: messageData._id || Date.now(),
+            messageId: messageData.messageId,
+            content: messageData.message,
+            senderId: messageData.senderId,
+            senderName: messageData.senderId?.name || "Admin",
+            timestamp: messageData.createdAt,
+            senderType: "admin",
+          },
+        ];
+      });
     });
 
     // Listen for admin replies in default chat
@@ -128,17 +171,29 @@ const ChatWidget = () => {
       console.log("Received admin message:", data);
       // Only show admin messages in the chat
       if (data.senderType === "admin" || data.senderType === "therapist") {
-        setMessages((prev) => [
-          ...prev,
-          {
-            _id: Date.now(),
-            content: data.content || data.message?.message || "",
-            senderId: data.senderId || "admin",
-            senderName: data.senderName || data.userName || "Support Team",
-            timestamp: data.timestamp || data.message?.createdAt || new Date(),
-            senderType: "admin",
-          },
-        ]);
+        setMessages((prev) => {
+          // Check for duplicate by messageId or _id
+          if (data.messageId && prev.some(m => m.messageId === data.messageId)) {
+            console.log("Duplicate admin new message ignored:", data.messageId);
+            return prev;
+          }
+          if (data._id && prev.some(m => m._id === data._id)) {
+            console.log("Duplicate admin new message ignored by _id:", data._id);
+            return prev;
+          }
+          return [
+            ...prev,
+            {
+              _id: data._id || Date.now(),
+              messageId: data.messageId,
+              content: data.content || data.message?.message || "",
+              senderId: data.senderId || "admin",
+              senderName: data.senderName || data.userName || "Support Team",
+              timestamp: data.timestamp || data.message?.createdAt || new Date(),
+              senderType: "admin",
+            },
+          ];
+        });
       }
     });
 
@@ -169,15 +224,14 @@ const ChatWidget = () => {
     }
 
     // Clean up listeners on unmount
-    if (cleanupNewMessage) cleanupFunctions.push(cleanupNewMessage);
-    if (cleanupAdminReply) cleanupFunctions.push(cleanupAdminReply);
-    if (cleanupAdminNewMessage) cleanupFunctions.push(cleanupAdminNewMessage);
-    if (cleanupTyping) cleanupFunctions.push(cleanupTyping);
-    if (cleanupAdminStatus) cleanupFunctions.push(cleanupAdminStatus);
-    if (cleanupAdminPresence) cleanupFunctions.push(cleanupAdminPresence);
-
     return () => {
-      cleanupFunctions.forEach((cleanup) => cleanup());
+      console.log("Cleaning up socket listeners");
+      if (cleanupNewMessage) cleanupNewMessage();
+      if (cleanupAdminReply) cleanupAdminReply();
+      if (cleanupAdminNewMessage) cleanupAdminNewMessage();
+      if (cleanupTyping) cleanupTyping();
+      if (cleanupAdminStatus) cleanupAdminStatus();
+      if (cleanupAdminPresence) cleanupAdminPresence();
     };
   }, [socket, connected, on, emit, sessionId]);
 
@@ -272,50 +326,31 @@ const ChatWidget = () => {
     if (!newMessage.trim() || !sessionId) return;
 
     try {
-      // Add message to UI immediately
-      const messageObj = {
-        _id: Date.now(),
-        content: newMessage,
-        senderId: user._id,
-        senderName: user.name,
-        timestamp: new Date(),
-        senderType: "user",
-      };
-
-      setMessages((prev) => [...prev, messageObj]);
-      setNewMessage("");
-
-      // Always scroll to bottom when user sends a message
-      setTimeout(() => {
-        scrollToBottom();
-      }, 50);
-
-      // Send to server
-      const response = await chatApi.sendMessage(sessionId, {
-        content: newMessage,
-        messageType: "live-chat",
+      // Generate UUID for message deduplication
+      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
       });
 
-      // Handle the response properly
-      if (response.success) {
-        // Message sent successfully, keep the UI update
-        console.log(
-          "Message sent successfully:",
-          response.data?.message || response.message
-        );
-      } else {
-        // Remove the message if sending failed
-        setMessages((prev) => prev.slice(0, -1));
-        throw new Error(response.message || "Failed to send message");
-      }
+      const originalMessage = newMessage;
+      setNewMessage("");
+
+      // Send via socket only (no REST API call, no optimistic update)
+      socket.emit("send-message", {
+        roomId: sessionId,
+        roomType: sessionId.includes('group') ? 'group' : 'individual',
+        message: {
+          content: originalMessage,
+          messageId: messageId
+        }
+      });
 
       // Emit typing stopped event
       emit("stop-typing", { sessionId });
     } catch (error) {
       console.error("Error sending message:", error);
-      // Remove the message if sending failed
-      setMessages((prev) => prev.slice(0, -1));
-
+      
       // Show user-friendly error message
       const errorMessage =
         error.response?.data?.message ||

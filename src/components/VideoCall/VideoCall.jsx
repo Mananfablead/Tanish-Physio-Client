@@ -729,10 +729,22 @@ const VideoCall = ({
       socket.emit("join-video-session", {
         sessionId: sessionId,
       });
+      
+      // Listen for join confirmation
+      socket.on("joined-video-session", (data) => {
+        console.log("✅ Successfully joined video session:", data);
+      });
+      
+      socket.on("error", (data) => {
+        console.error("❌ Error joining video session:", data);
+      });
 
-      // Listen for incoming messages
-      socket.on("receive-video-message", (data) => {
-        console.log("📥 Client received video message:", data);
+      // Listen for incoming messages (single source - message-received only)
+      socket.on("message-received", (data) => {
+        console.log("📥 Client received message-received:", data);
+        console.log("📥 Message content:", data.content);
+        console.log("📥 Message ID:", data.messageId);
+        console.log("📥 Timestamp:", data.timestamp);
 
         // Prevent duplicate processing of own messages
         if (data.senderId === socket.user?.userId) {
@@ -740,19 +752,51 @@ const VideoCall = ({
           return;
         }
 
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            text: data.message,
-            sender: "them",
-            senderId: data.senderId,
-            timestamp: data.timestamp || new Date().toISOString(),
-            senderName:
-              data.senderName ||
-              `User ${data.senderId?.substring(0, 5) || "Unknown"}`,
-          },
-        ]);
+        // Comprehensive deduplication
+        setChatMessages((prev) => {
+          console.log("💬 Current messages count:", prev.length);
+          
+          // Primary: Check by messageId if available
+          if (data.messageId && prev.some(m => m.messageId === data.messageId)) {
+            console.log("💬 Duplicate message ignored by messageId:", data.messageId);
+            return prev;
+          }
+          
+          // Secondary: Check by id/_id
+          if (data._id && prev.some(m => m.id === data._id)) {
+            console.log("💬 Duplicate message ignored by id:", data._id);
+            return prev;
+          }
+          
+          // Tertiary: Check by content and timestamp (fallback)
+          const messageContent = data.content;
+          const messageTimestamp = data.timestamp || new Date().toISOString();
+          
+          const isDuplicate = prev.some(m => 
+            m.text === messageContent && 
+            new Date(m.timestamp).getTime() === new Date(messageTimestamp).getTime()
+          );
+          
+          if (isDuplicate) {
+            console.log("💬 Duplicate message ignored by content+timestamp");
+            console.log("💬 Existing messages:", prev.map(m => ({text: m.text, timestamp: m.timestamp})));
+            return prev;
+          }
+
+          console.log("💬 Adding new message to chat");
+          return [
+            ...prev,
+            {
+              id: data._id || Date.now(),
+              messageId: data.messageId,
+              text: messageContent,
+              sender: "them",
+              senderId: data.senderId,
+              timestamp: messageTimestamp,
+              senderName: data.senderName || "Clinician",
+            },
+          ];
+        });
       });
 
       // Load existing messages
@@ -761,7 +805,9 @@ const VideoCall = ({
 
     return () => {
       if (socket) {
-        socket.off("receive-video-message");
+        socket.off("message-received");
+        socket.off("joined-video-session");
+        socket.off("error");
       }
     };
   }, [sessionId, externalConnected, connected, socket]);
@@ -792,35 +838,40 @@ const VideoCall = ({
 
   const sendChatMessage = async () => {
     console.log(`📤 Sending chat message: ${newMessage}`);
+    console.log(`📤 Session ID: ${sessionId}`);
+    console.log(`📤 Socket connected: ${socket?.connected}`);
+    
     if (!newMessage.trim() || !sessionId || !externalConnected || !connected)
       return;
 
     try {
-      const senderName = user?.name || userName || "You";
+      // Generate UUID for message deduplication
+      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
 
-      // Send message ONLY via socket (no API call)
+      console.log(`📤 Generated messageId: ${messageId}`);
+      
+      const originalMessage = newMessage.trim();
+      setNewMessage("");
+
+      // Send message ONLY via socket (no API call, no optimistic update)
       if (socket) {
-        console.log(`📤 Emitting send-video-message event`);
-        socket.emit("send-video-message", {
-          sessionId: sessionId,
-          message: newMessage.trim(),
-          senderId: socket.user?.userId,
+        console.log(`📤 Emitting send-message event`);
+        console.log(`📤 Room ID: ${sessionId}`);
+        console.log(`📤 Room Type: ${sessionId.includes('group') ? 'group' : 'individual'}`);
+        
+        socket.emit("send-message", {
+          roomId: sessionId,
+          roomType: sessionId.includes('group') ? 'group' : 'individual',
+          message: {
+            content: originalMessage,
+            messageId: messageId
+          }
         });
-
-        // Add to local chat messages immediately for better UX
-        console.log(`📤 Adding message to local state`);
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            text: newMessage.trim(),
-            sender: "me",
-            senderId: socket.user?.userId,
-            timestamp: new Date().toISOString(),
-            senderName: senderName,
-          },
-        ]);
-        setNewMessage("");
+        console.log("📤 Message sent via socket");
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -1359,65 +1410,9 @@ const VideoCall = ({
       }
     };
 
-    // Handle chat message (from API)
-    const chatMessageListener = (data) => {
-      console.log("Client received chat message:", data);
 
-      // Determine sender name - use provided name or fallback
-      const senderName =
-        data.senderName ||
-        data.message?.senderName ||
-        (data.senderId === socket?.id
-          ? user?.name || userName || "You"
-          : "Clinician");
 
-      // Add the received message to chat messages
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          ...data.message,
-          senderId: data.senderId || data.message.senderId,
-          senderName: senderName,
-          content:
-            data.message.content || data.message.message || data.message.text,
-          timestamp:
-            data.message.timestamp ||
-            data.message.createdAt ||
-            new Date().toISOString(),
-        },
-      ]);
-    };
 
-    // Handle real-time message broadcast
-    const messageReceivedListener = (data) => {
-      console.log("Client received real-time message:", data);
-
-      // Determine sender name - use provided name or fallback
-      const senderName =
-        data.senderName ||
-        data.message?.senderName ||
-        (data.senderId === socket?.id
-          ? user?.name || userName || "You"
-          : "Clinician");
-
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          content:
-            data.message.content ||
-            data.message.message ||
-            data.message.text ||
-            data.content,
-          senderId: data.senderId || data.message?.senderId || socket?.id,
-          senderName: senderName,
-          timestamp:
-            data.timestamp ||
-            data.message?.timestamp ||
-            data.createdAt ||
-            new Date().toISOString(),
-        },
-      ]);
-    };
 
     // Handle typing indicator
     const typingListener = (data) => {
@@ -1434,11 +1429,65 @@ const VideoCall = ({
       setTypingUsers((prev) => prev.filter((id) => id !== data.userId));
     };
 
-    // Add listeners
+    // Handle real-time message broadcast via message-received event
+    socket.on("message-received", (data) => {
+      console.log("Client received real-time message:", data);
+    
+      // Determine sender name - use provided name or fallback
+      const senderName =
+        data.senderName ||
+        (data.senderId === socket?.id
+          ? user?.name || userName || "You"
+          : "Clinician");
+    
+      // Add the received message to chat messages with proper deduplication
+      setChatMessages((prev) => {
+        // Primary: Check by messageId if available
+        if (data.messageId && prev.some(m => m.messageId === data.messageId)) {
+          console.log("Duplicate message ignored by messageId:", data.messageId);
+          return prev;
+        }
+            
+        // Secondary: Check by id/_id
+        if (data._id && prev.some(m => m.id === data._id)) {
+          console.log("Duplicate message ignored by id:", data._id);
+          return prev;
+        }
+            
+        // Tertiary: Check by content and timestamp (fallback)
+        const messageContent = data.content;
+        const messageTimestamp = data.timestamp || new Date().toISOString();
+            
+        const isDuplicate = prev.some(m => 
+          m.text === messageContent && 
+          new Date(m.timestamp).getTime() === new Date(messageTimestamp).getTime()
+        );
+            
+        if (isDuplicate) {
+          console.log("Duplicate message ignored by content+timestamp");
+          return prev;
+        }
+    
+        return [
+          ...prev,
+          {
+            id: data._id || Date.now(),
+            messageId: data.messageId,
+            text: messageContent,
+            sender: data.senderId === socket?.id ? "me" : "them",
+            senderId: data.senderId,
+            senderName: senderName,
+            timestamp: messageTimestamp,
+          },
+        ];
+      });
+    });
+    
+    // Add WebRTC signaling listeners
     on("offer", offerListener);
     on("answer", answerListener);
     on("ice-candidate", iceCandidateListener);
-    // Add WebRTC signaling listeners
+    // Add WebRTC signaling listeners for modern events
     on("webrtc-offer-received", webRTCOfferListener);
     on("webrtc-answer-received", webRTCAnswerListener);
     on("webrtc-ice-candidate-received", webRTCIceCandidateListener);
@@ -1452,8 +1501,6 @@ const VideoCall = ({
     on("video-toggle", videoToggleListener);
     on("screen-share-toggle", screenShareToggleListener);
     on("user-muted", userMutedListener);
-    on("new-message", chatMessageListener);
-    on("message-received", messageReceivedListener);
     on("typing", typingListener);
     on("stop-typing", stopTypingListener);
 
@@ -1481,8 +1528,7 @@ const VideoCall = ({
           socket.off("video-toggle", videoToggleListener);
           socket.off("screen-share-toggle", screenShareToggleListener);
           socket.off("user-muted", userMutedListener);
-          socket.off("new-message", chatMessageListener);
-          socket.off("message-received", messageReceivedListener);
+          socket.off("message-received"); // Remove the single message listener
           socket.off("typing", typingListener);
           socket.off("stop-typing", stopTypingListener);
         } catch (err) {
