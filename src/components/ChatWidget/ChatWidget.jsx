@@ -378,20 +378,39 @@ const ChatWidget = () => {
         </button>
       ) : (
         // Chat window
-        <div className="w-80 h-96 bg-white rounded-lg shadow-xl flex flex-col border border-gray-200">
+        <div className="w-80 h-96 bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 overflow-hidden">
           {/* Header */}
-          <div className="bg-blue-600 text-white p-3 rounded-t-lg flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <span className="font-semibold">Live Support</span>
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  connected ? "bg-green-400" : "bg-red-400"
-                }`}
-              ></span>
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 rounded-t-2xl flex justify-between items-center shadow-md">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
+                </svg>
+                <span
+                  className={`absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${
+                    connected ? "bg-green-400 animate-pulse" : "bg-red-400"
+                  }`}
+                ></span>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">Live Support</h3>
+                <p className="text-xs opacity-80">We're here to help</p>
+              </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-white hover:text-gray-200"
+              className="text-white hover:bg-white/20 p-2 rounded-full transition-all duration-200"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

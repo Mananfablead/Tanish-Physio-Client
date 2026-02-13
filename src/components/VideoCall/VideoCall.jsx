@@ -718,15 +718,52 @@ const VideoCall = ({
 
   // Load chat messages and join chat room
   useEffect(() => {
+    console.log(
+      `🔄 Chat useEffect triggered - sessionId: ${sessionId}, connected: ${connected}, externalConnected: ${externalConnected}`
+    );
     if (sessionId && externalConnected && connected && socket) {
-      // Join the chat room
-      socket.emit("join-room", {
+      console.log(`📱 Client joining video call room and loading messages`);
+      // Join the unified video call room for messaging
+      const videoRoomId = `video-call-${sessionId}`;
+      console.log(`📱 Client joining video call room: ${videoRoomId}`);
+      socket.emit("join-video-session", {
         sessionId: sessionId,
+      });
+
+      // Listen for incoming messages
+      socket.on("receive-video-message", (data) => {
+        console.log("📥 Client received video message:", data);
+
+        // Prevent duplicate processing of own messages
+        if (data.senderId === socket.user?.userId) {
+          console.log("💬 Skipping own message to prevent duplication");
+          return;
+        }
+
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            text: data.message,
+            sender: "them",
+            senderId: data.senderId,
+            timestamp: data.timestamp || new Date().toISOString(),
+            senderName:
+              data.senderName ||
+              `User ${data.senderId?.substring(0, 5) || "Unknown"}`,
+          },
+        ]);
       });
 
       // Load existing messages
       loadChatMessages();
     }
+
+    return () => {
+      if (socket) {
+        socket.off("receive-video-message");
+      }
+    };
   }, [sessionId, externalConnected, connected, socket]);
 
   // Auto-scroll to bottom when new messages arrive
@@ -739,8 +776,13 @@ const VideoCall = ({
 
   const loadChatMessages = async () => {
     try {
+      console.log(`📥 Loading chat messages for session: ${sessionId}`);
       const response = await chatApi.getMessages(sessionId);
+      console.log(`📥 Chat API response:`, response);
       if (response.success) {
+        console.log(
+          `📥 Loaded ${response.data.messages?.length || 0} messages`
+        );
         setChatMessages(response.data.messages || []);
       }
     } catch (error) {
@@ -749,32 +791,36 @@ const VideoCall = ({
   };
 
   const sendChatMessage = async () => {
+    console.log(`📤 Sending chat message: ${newMessage}`);
     if (!newMessage.trim() || !sessionId || !externalConnected || !connected)
       return;
 
     try {
       const senderName = user?.name || userName || "You";
-      const messageData = {
-        content: newMessage.trim(),
-        senderId: socket?.id,
-        senderName: senderName,
-        timestamp: new Date().toISOString(),
-      };
 
-      // Send message via API
-      await chatApi.sendMessage(sessionId, newMessage.trim());
-
-      // Add to local chat messages immediately for better UX
-      setChatMessages((prev) => [...prev, messageData]);
-      setNewMessage("");
-
-      // Also broadcast via socket if available
+      // Send message ONLY via socket (no API call)
       if (socket) {
-        socket.emit("send-message", {
-          roomId,
-          roomType,
-          message: messageData,
+        console.log(`📤 Emitting send-video-message event`);
+        socket.emit("send-video-message", {
+          sessionId: sessionId,
+          message: newMessage.trim(),
+          senderId: socket.user?.userId,
         });
+
+        // Add to local chat messages immediately for better UX
+        console.log(`📤 Adding message to local state`);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            text: newMessage.trim(),
+            sender: "me",
+            senderId: socket.user?.userId,
+            timestamp: new Date().toISOString(),
+            senderName: senderName,
+          },
+        ]);
+        setNewMessage("");
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -2405,7 +2451,9 @@ const VideoCall = ({
                           ? message.senderName
                           : "Clinician"}
                       </p>
-                      <p>{message.content || message.message}</p>
+                      <p>
+                        {message.text || message.content || message.message}
+                      </p>
                       <p
                         className={`text-[10px] mt-1 ${
                           message.senderId === socket?.id
