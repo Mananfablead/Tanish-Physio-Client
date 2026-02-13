@@ -133,7 +133,8 @@ export default function TherapistProfilePage() {
     languages: parseLanguages(therapist.doctorProfile?.languages),
     certifications: therapist.doctorProfile?.certifications || [],
     certificationNames: parseCertificationNames(therapist.doctorProfile?.certificationNames),
-    expertise: therapist.doctorProfile?.specialization ? [therapist.doctorProfile.specialization] : [],
+    expertise: therapist.doctorProfile?.specialization ? therapist.doctorProfile.specialization.split(',').map(item => item.trim()) : [],
+    education: therapist.doctorProfile?.education || "Not specified",
   } : null;
 
   if (adminsLoading && !therapist) {
@@ -216,6 +217,11 @@ export default function TherapistProfilePage() {
                   {therapistData.languages.join(", ")}
                 </div>
               </div>
+              
+              <div className="space-y-2 mb-6">
+                <p className="text-sm font-semibold text-primary">Education:</p>
+                <p className="text-muted-foreground">{therapistData.education}</p>
+              </div>
 
               <div className="flex flex-wrap gap-2">
                 {therapistData.expertise.map((tag) => (
@@ -241,6 +247,18 @@ export default function TherapistProfilePage() {
                 >
                   About
                 </TabsTrigger>
+                <TabsTrigger
+                  value="education"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
+                  Education
+                </TabsTrigger>
+                <TabsTrigger
+                  value="certifications"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
+                  Certifications
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="about" className="pt-6 space-y-8">
@@ -250,7 +268,39 @@ export default function TherapistProfilePage() {
                     {therapistData.bio}
                   </p>
                 </div>
-
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Expertise Areas</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {therapistData.expertise.map((area) => (
+                      <Badge key={area} variant="secondary">
+                        {area}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="education" className="pt-6 space-y-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Education</h3>
+                  <div className="prose max-w-none">
+                    <p className="text-muted-foreground">
+                      {therapistData.education}
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Experience</h3>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-5 w-5" />
+                    <span>{therapistData.experience} years of professional experience</span>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="certifications" className="pt-6 space-y-8">
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Certifications</h3>
                   

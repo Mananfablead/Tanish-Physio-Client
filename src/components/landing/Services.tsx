@@ -122,7 +122,7 @@ export function Services({
                         size="sm"
                         className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                       >
-                        Learn More
+                        View Details
                         <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>

@@ -44,7 +44,7 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
                 <img
                   src={publicAdmins[0].profilePicture || "https://images.unsplash.com/photo-1622253692010-333f2da6031d"}
                   alt={publicAdmins[0].name}
-                  className="w-full h-[420px] object-cover rounded-3xl"
+                  className="w-full h-[500px] object-cover rounded-3xl"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <Badge className="absolute top-6 right-6 bg-success text-success-foreground shadow-lg">
@@ -58,7 +58,7 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-6"
+              className="space-y-4"
             >
               <Badge variant="secondary" className="border border-primary/20 w-fit">
                 Featured Therapist
@@ -69,15 +69,15 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
               </h2>
 
               <p className="text-primary font-semibold text-lg">
-                <p>Specialization:</p>
-                {publicAdmins[0].doctorProfile?.specialization ? publicAdmins[0].doctorProfile.specialization.substring(0, publicAdmins[0].doctorProfile.specialization.indexOf(',') !== -1 ? publicAdmins[0].doctorProfile.specialization.indexOf(',') : publicAdmins[0].doctorProfile.specialization.length) : "Certified Physiotherapist"}
+                <span className="block">Specialization:</span>
+                {publicAdmins[0].doctorProfile?.specialization || "Certified Physiotherapist"}
               </p>
 
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <p>Experience:</p>
-                  <span>{publicAdmins[0].doctorProfile?.experience || 'Experienced Professional'}</span>
+                  <span>Experience:</span>
+                  <span>{publicAdmins[0].doctorProfile?.experience ? `${publicAdmins[0].doctorProfile.experience}+ Years` : 'Experienced Professional'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-warning text-warning" />
@@ -88,6 +88,16 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
               <p className="text-muted-foreground leading-relaxed max-w-xl">
                 {publicAdmins[0].doctorProfile?.bio || "Specialized in sports injuries, post-surgery rehabilitation, and chronic pain management. Known for personalized recovery plans and fast results through virtual physiotherapy."}
               </p>
+              
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground font-semibold">Education:</p>
+                <p className="text-sm text-muted-foreground">{publicAdmins[0].doctorProfile?.education || "Not specified"}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground font-semibold">Languages:</p>
+                <p className="text-sm text-muted-foreground">{publicAdmins[0].doctorProfile?.languages || "Not specified"}</p>
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link to="/questionnaire">

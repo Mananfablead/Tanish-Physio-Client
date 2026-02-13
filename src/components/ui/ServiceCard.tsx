@@ -38,7 +38,7 @@ export function ServiceCard({
   description,
   benefits,
   details,
-  ctaText = "Learn More",
+  ctaText = "View Details",
   serviceId,
   slug, // Add slug parameter
 }: ServiceCardProps) {

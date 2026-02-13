@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import { toast } from "sonner";
 import {
   Calendar,
@@ -39,7 +39,7 @@ import {
   subMonths,
   parseISO,
 } from "date-fns";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { getAvailability, getAllSessions, getUpcomingSessions, getSessionById, createSession, updateSession, deleteSession, getSessionsByUserId, getSessionsByTherapistId, getCompletedSessions, getScheduledSessions, cancelSession, rescheduleSession, getSessionNotes, addSessionNotes, getPastSessions, getTodaySessions } from "@/lib/api";
 import { fetchAllSessions, fetchUpcomingSessions, fetchPastSessions, fetchCompletedSessions, fetchScheduledSessions, fetchTodaySessions, fetchSessionById, fetchSessionsByUserId, createNewSession, updateExistingSession, deleteExistingSession, cancelSessionById, rescheduleSessionById, fetchSessionNotes, addSessionNote } from '@/store/slices/sessionSlice';
@@ -376,7 +376,7 @@ export default function SchedulePage() {
       direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1)
     );
   };
-
+console.log("user?.purchasedServices",user?.purchasedServices)
   const getCalendarDays = () => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
@@ -754,9 +754,22 @@ export default function SchedulePage() {
       </div>
 
       {/* Booking Modal */}
-      {isBookingModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden">
+      <AnimatePresence>
+        {isBookingModalOpen && (
+          <motion.div 
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, type: "spring", damping: 25 }}
+            >
 
             {/* HEADER */}
             <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -1017,21 +1030,184 @@ export default function SchedulePage() {
               </div>
             </div>
 
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Subscription Plans Modal */}
-      <Dialog open={isPlansModalOpen} onOpenChange={setIsPlansModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-          <DialogHeader className="p-6 pb-4 border-b">
-            <DialogTitle className="text-2xl font-bold text-center">Choose Your Wellness Plan</DialogTitle>
-            <DialogDescription className="text-center text-slate-600">
-              Select the perfect plan for your recovery journey
-            </DialogDescription>
-          </DialogHeader>
+      <AnimatePresence>
+        {isPlansModalOpen && (
+          <motion.div 
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, type: "spring", damping: 25 }}
+            >
+              <div className="p-0">
+                <div className="p-6 pb-4 border-b">
+                  <h2 className="text-2xl font-bold text-center text-slate-900">Choose Your Wellness Plan</h2>
+                  <p className="text-center text-slate-600 mt-2">Select the perfect plan for your recovery journey</p>
+                </div>
+                
+                <div className="p-6">
+                  {subscriptionLoading ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                  ) : subscriptionError ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500 font-medium">Failed to load plans: {subscriptionError}</p>
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => dispatch(fetchUserSubscriptions())}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  ) : plans && plans.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {plans.map((plan: any) => (
+                        <Card key={plan._id || plan.id} className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300">
+                          <div className="p-6 flex-1">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                            </div>
 
-          <div className="p-6">
+                            <div className="mb-6">
+                              <div className="text-3xl font-black text-primary mb-1">
+                                ₹{plan.price?.toLocaleString()}
+                              </div>
+                              <div className="text-slate-500 text-sm">{plan.duration}</div>
+                            </div>
+
+                            <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                              {plan.description}
+                            </p>
+
+                            <ul className="space-y-3 mb-6 flex-1">
+                              {plan.features?.slice(0, 5).map((feature: string, index: number) => (
+                                <li key={index} className="flex items-start gap-3">
+                                  <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                  <span className="text-sm text-slate-700">{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="p-6 pt-0">
+                            <Button
+                              className="w-full h-12 text-base font-semibold rounded-xl"
+                              onClick={() => {
+                                setIsPlansModalOpen(false);
+
+                                if (plan.planId || plan.id) {
+                                  const handlePayment = async (selectedPlan: any) => {
+                                    try {
+                                      // For guest users, we'll use a different approach
+                                      // Instead of calling guest API, we'll navigate directly to booking
+                                      const isGuestUser = !user || !localStorage.getItem("token");
+
+                                      if (isGuestUser) {
+                                        // For guest users, store plan info and navigate to booking
+                                        sessionStorage.setItem("qw_selected_plan", JSON.stringify({
+                                          plan: selectedPlan,
+                                          selectedAt: Date.now()
+                                        }));
+
+                                        // Navigate to booking page with plan parameter
+                                        navigate("/booking", {
+                                          state: {
+                                            service: {
+                                              id: selectedPlan.planId || selectedPlan.id,
+                                              name: selectedPlan.name,
+                                              price: String(selectedPlan.price),
+                                              duration: selectedPlan.duration,
+                                            },
+                                            fromSubscription: true,
+                                            isGuestFlow: true
+                                          }
+                                        });
+                                      } else {
+                                        // For logged-in users, proceed with normal subscription flow
+                                        // Navigate to booking page with subscription flow
+                                        navigate("/booking", {
+                                          state: {
+                                            service: {
+                                              id: selectedPlan.planId || selectedPlan.id,
+                                              name: selectedPlan.name,
+                                              price: String(selectedPlan.price),
+                                              duration: selectedPlan.duration,
+                                            },
+                                            fromSubscription: true,
+                                            isGuestFlow: false
+                                          }
+                                        });
+                                      }
+
+                                      toast.success(
+                                        `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
+                                      );
+                                    } catch (error) {
+                                      console.error("Error handling plan selection:", error);
+                                      toast.error(
+                                        "Failed to process plan selection. Please try again."
+                                      );
+                                    }
+                                  };
+
+                                  // Actually call the handlePayment function
+                                  handlePayment(plan);
+                                }
+                              }}
+                            >
+                              Select Plan
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                        <Star className="h-8 w-8 text-slate-300" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">No Plans Available</h3>
+                      <p className="text-slate-500">Please check back later or contact support.</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="px-6 py-4 border-t bg-slate-50 flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsPlansModalOpen(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+        <div className="p-0">
+            <div className="p-6 pb-4 border-b">
+              <h2 className="text-2xl font-bold text-center text-slate-900">Choose Your Wellness Plan</h2>
+              <p className="text-center text-slate-600 mt-2">Select the perfect plan for your recovery journey</p>
+            </div>
+            
+            <div className="p-6">
             {subscriptionLoading ? (
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -1159,42 +1335,65 @@ export default function SchedulePage() {
                 <p className="text-slate-500">Please check back later or contact support.</p>
               </div>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Dialog */}
-      {isSuccessDialogOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-            <div className="p-6 text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                Booking Successful!
-              </h3>
-              <p className="text-slate-600 mb-6">
-                Your session for {format(selectedDate, "MMMM d, yyyy")} at {selectedTime} has been successfully booked.
-              </p>
-              <p className="text-sm text-slate-500">
-                You will be redirected to your profile page in a moment...
-              </p>
-              <div className="mt-6">
-                <Button
-                  className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                  onClick={() => {
-                    setIsSuccessDialogOpen(false);
-                    navigate("/profile");
-                  }}
-                >
-                  Go to Profile Now
-                </Button>
-              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t bg-slate-50 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setIsPlansModalOpen(false)}
+              >
+                Close
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+
+
+      {/* Success Dialog */}
+      <AnimatePresence>
+        {isSuccessDialogOpen && (
+          <motion.div 
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, type: "spring", damping: 25 }}
+            >
+              <div className="p-6 text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                  Booking Successful!
+                </h3>
+                <p className="text-slate-600 mb-6">
+                  Your session for {format(selectedDate, "MMMM d, yyyy")} at {selectedTime} has been successfully booked.
+                </p>
+                <p className="text-sm text-slate-500">
+                  You will be redirected to your profile page in a moment...
+                </p>
+                <div className="mt-6">
+                  <Button
+                    className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                    onClick={() => {
+                      setIsSuccessDialogOpen(false);
+                      navigate("/profile");
+                    }}
+                  >
+                    Go to Profile Now
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Layout>
   );
 }

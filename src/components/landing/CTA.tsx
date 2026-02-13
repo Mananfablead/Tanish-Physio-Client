@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 export const CTA = () => {
   return (
-    <section className="py-20 gradient-primary">
+    <section className="py-12 gradient-primary">
       <div className="container">
         <motion.div 
           className="text-center max-w-2xl mx-auto"
