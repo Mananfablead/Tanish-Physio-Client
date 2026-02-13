@@ -383,10 +383,7 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
                         // Call the provided callback or fallback to default navigation
                         if (onPlanSelect) {
                           onPlanSelect(plan);
-                        } else {
-                          // Fallback navigation if no callback provided
-                          window.location.href = `/booking?plan=${plan.planId || plan.id}`;
-                        }
+                        } 
                       }}
                     >
                       Select Plan

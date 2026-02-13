@@ -68,7 +68,7 @@ export default function SchedulePage() {
       const durationMatch = bookingData.service.duration.match(/(\d+)/);
       if (durationMatch) return parseInt(durationMatch[1]);
     }
-    
+
     if (bookingData?.bookingId && user?.purchasedServices) {
       const service = user.purchasedServices.find((s: any) => s.bookingId === bookingData.bookingId);
       if (service && service.duration) {
@@ -76,17 +76,17 @@ export default function SchedulePage() {
         if (durationMatch) return parseInt(durationMatch[1]);
       }
     }
-    
+
     if (bookingData?.fromServices && bookingData?.serviceId?.duration) {
       const durationMatch = bookingData.serviceId.duration.match(/(\d+)/);
       if (durationMatch) return parseInt(durationMatch[1]);
     }
-    
+
     if (bookingData?.bookingSummary?.duration) {
       const durationMatch = bookingData.bookingSummary.duration.match(/(\d+)/);
       if (durationMatch) return parseInt(durationMatch[1]);
     }
-    
+
     // Fallback: try to get from session storage or other sources
     try {
       const storedPlan = sessionStorage.getItem("qw_plan");
@@ -100,7 +100,7 @@ export default function SchedulePage() {
     } catch (e) {
       console.error('Error getting service duration from storage:', e);
     }
-    
+
     return null;
   };
 
@@ -152,13 +152,13 @@ export default function SchedulePage() {
       // Determine bookingId and subscriptionId based on user selection
       let finalBookingId = null;
       let finalSubscriptionId = subscriptionIdValue; // Start with existing subscriptionIdValue
-      
+
       // Priority: Use selected service/subscription from dropdowns
       if (selectedServiceOrSubscription) {
         // Check if it's a service or subscription
         const isService = user?.purchasedServices?.some((service: any) => service.id === selectedServiceOrSubscription);
         const isSubscription = user?.subscriptionData?.id === selectedServiceOrSubscription;
-        
+
         if (isService) {
           // Find the selected service and use its bookingId
           const selectedServiceData = user?.purchasedServices?.find((service: any) => service.id === selectedServiceOrSubscription);
@@ -308,20 +308,20 @@ export default function SchedulePage() {
     dispatch(fetchPublicAdmins());
 
   }, [dispatch]);
- useEffect(() => {
+  useEffect(() => {
     dispatch(fetchSubscriptionPlans());
   }, [dispatch]);
   // Show subscription plans modal when user has no services or subscriptions
   useEffect(() => {
     const hasNoServices = !user?.purchasedServices || user.purchasedServices.length === 0;
     const hasNoSubscription = !user?.subscriptionData;
-    
+
     if (isBookingModalOpen && hasNoServices && hasNoSubscription) {
       setIsPlansModalOpen(true);
       setIsBookingModalOpen(false);
     }
   }, [isBookingModalOpen, user?.purchasedServices, user?.subscriptionData, userSubscriptions]);
-  
+
   // Debug effect to see what booking data is available
   useEffect(() => {
     if (bookingData) {
@@ -659,13 +659,13 @@ export default function SchedulePage() {
                                       {session.type}
                                     </Badge>
 
-                                  
+
 
                                   </div>
                                 </div>
-  <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
-                                      {session.status}
-                                    </Badge>
+                                <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
+                                  {session.status}
+                                </Badge>
                                 {/* <Button variant="ghost" size="icon">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button> */}
@@ -689,7 +689,7 @@ export default function SchedulePage() {
 
                           {/* ACTIONS */}
                           {/* ACTIONS */}
-                         
+
 
                         </motion.div>
                       ))}
@@ -768,7 +768,7 @@ export default function SchedulePage() {
                 size="icon"
                 onClick={() => {
                   setIsBookingModalOpen(false);
-                  setBookingError(null); 
+                  setBookingError(null);
                   setSessionTypeValue("");
                   setSelectedTime("");
                   setSelectedServiceOrSubscription("");
@@ -806,14 +806,14 @@ export default function SchedulePage() {
                     className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="">Select a service or subscription</option>
-                    
+
                     {/* Purchased Services */}
                     {user?.purchasedServices?.map((service: any) => (
                       <option key={service.id} value={service.id}>
                         Service: {service.name} - {service.duration}
                       </option>
                     ))}
-                    
+
                     {/* Subscription Plan */}
                     {user?.subscriptionData && (
                       <option value={user.subscriptionData.id}>
@@ -822,25 +822,25 @@ export default function SchedulePage() {
                     )}
                   </select>
                 </div>
-                   <div className="w-40">
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      Session Type
-                    </label>
-                    <select
-                      value={sessionTypeValue}
-                      onChange={(e) => setSessionTypeValue(e.target.value)}
-                      className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <option value="1-on-1">1-on-1</option>
-                      {/* <option value="group">Group</option> */}
-                    </select>
-                  </div>
+                <div className="w-40">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Session Type
+                  </label>
+                  <select
+                    value={sessionTypeValue}
+                    onChange={(e) => setSessionTypeValue(e.target.value)}
+                    className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="1-on-1">1-on-1</option>
+                    {/* <option value="group">Group</option> */}
+                  </select>
+                </div>
               </div>
 
 
               {/* AVAILABLE TIMES WITH SESSION TYPE */}
               <div>
-              
+
                 <div>
                   <h4 className="font-bold text-slate-800 mb-3">
                     Available Times
@@ -853,7 +853,7 @@ export default function SchedulePage() {
                       <span className="text-slate-600">Available</span>
                     </div>
 
-                 
+
 
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-gray-400"></span>
@@ -871,85 +871,85 @@ export default function SchedulePage() {
 
                 {availableTimes.length > 0 ? (
                   <div>
-                 
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {availableTimes.map((slot: any) => {
-                      const timeValue = `${slot.start} - ${slot.end}`;
 
-                      const isAvailable = slot.status === "available";
-                      const isBooked = slot.status === "booked";
-                      const isUnavailable = slot.status === "unavailable";
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                      {availableTimes.map((slot: any) => {
+                        const timeValue = `${slot.start} - ${slot.end}`;
 
-                      // Check if this time slot is in the past
-                      const isPastTime = () => {
-                        const now = new Date();
-                        const selectedDateWithoutTime = new Date(selectedDate);
-                        
-                        // Create a date object with the selected date and the slot's start time
-                        const slotDateTime = new Date(selectedDateWithoutTime);
+                        const isAvailable = slot.status === "available";
+                        const isBooked = slot.status === "booked";
+                        const isUnavailable = slot.status === "unavailable";
+
+                        // Check if this time slot is in the past
+                        const isPastTime = () => {
+                          const now = new Date();
+                          const selectedDateWithoutTime = new Date(selectedDate);
+
+                          // Create a date object with the selected date and the slot's start time
+                          const slotDateTime = new Date(selectedDateWithoutTime);
+                          const [startHour, startMinute] = slot.start.split(':').map(Number);
+                          slotDateTime.setHours(startHour, startMinute, 0, 0);
+
+                          // Check if the slot time is in the past compared to now
+                          return slotDateTime < now;
+                        };
+
+                        const isSelected = selectedTime === timeValue;
+
+                        // Calculate slot duration in minutes
                         const [startHour, startMinute] = slot.start.split(':').map(Number);
-                        slotDateTime.setHours(startHour, startMinute, 0, 0);
-                        
-                        // Check if the slot time is in the past compared to now
-                        return slotDateTime < now;
-                      };
+                        const [endHour, endMinute] = slot.end.split(':').map(Number);
+                        const slotStart = new Date();
+                        slotStart.setHours(startHour, startMinute, 0, 0);
+                        const slotEnd = new Date();
+                        slotEnd.setHours(endHour, endMinute, 0, 0);
+                        const slotDurationMinutes = Math.round((slotEnd.getTime() - slotStart.getTime()) / (1000 * 60));
 
-                      const isSelected = selectedTime === timeValue;
+                        // Check if this slot can accommodate the service duration
+                        const serviceDuration = getServiceDuration();
+                        const isSuitableForService = serviceDuration ? slotDurationMinutes >= serviceDuration : true;
 
-                      // Calculate slot duration in minutes
-                      const [startHour, startMinute] = slot.start.split(':').map(Number);
-                      const [endHour, endMinute] = slot.end.split(':').map(Number);
-                      const slotStart = new Date();
-                      slotStart.setHours(startHour, startMinute, 0, 0);
-                      const slotEnd = new Date();
-                      slotEnd.setHours(endHour, endMinute, 0, 0);
-                      const slotDurationMinutes = Math.round((slotEnd.getTime() - slotStart.getTime()) / (1000 * 60));
+                        // Determine if the slot should be disabled (if it's past time)
+                        const isPast = isPastTime();
+                        const isActuallyAvailable = isAvailable && !isPast;
 
-                      // Check if this slot can accommodate the service duration
-                      const serviceDuration = getServiceDuration();
-                      const isSuitableForService = serviceDuration ? slotDurationMinutes >= serviceDuration : true;
-                      
-                      // Determine if the slot should be disabled (if it's past time)
-                      const isPast = isPastTime();
-                      const isActuallyAvailable = isAvailable && !isPast;
-                      
-                      // Debug logging to see what's happening
-                      // console.log('Slot:', slot, 'Duration:', slotDurationMinutes, 'Service Duration:', serviceDuration, 'Suitable:', isSuitableForService);
+                        // Debug logging to see what's happening
+                        // console.log('Slot:', slot, 'Duration:', slotDurationMinutes, 'Service Duration:', serviceDuration, 'Suitable:', isSuitableForService);
 
-                      return (
-                        <Button
-                          key={slot._id}
-                          size="sm"
-                          disabled={!isActuallyAvailable}
-                          onClick={() => {
-                            if (isActuallyAvailable) {
-                              setSelectedTime(timeValue);
-                              setBookingError(null); // Clear any previous error when selecting a new time
-                            }
-                          }}
-                          className={`
+                        return (
+                          <Button
+                            key={slot._id}
+                            size="sm"
+                            disabled={!isActuallyAvailable}
+                            onClick={() => {
+                              if (isActuallyAvailable) {
+                                setSelectedTime(timeValue);
+                                setBookingError(null); // Clear any previous error when selecting a new time
+                              }
+                            }}
+                            className={`
           py-2 text-sm font-medium transition-all 
           ${isSelected
-                              ? "bg-green-600 text-white hover:bg-green-600"
-                              : isActuallyAvailable
-                                ? isSuitableForService
-                                  ? "border border-green-500 text-green-600 bg-green-50"
-                                  : "border border-yellow-500 text-yellow-600 bg-yellow-50"
-                                : isBooked
-                                  ? " text-red-500 cursor-not-allowed border border-red-500"
-                                  : isPast
-                                    ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
-                                    : " text-gray-400 cursor-not-allowed border border-gray-400"
-                            }
+                                ? "bg-green-600 text-white hover:bg-green-600"
+                                : isActuallyAvailable
+                                  ? isSuitableForService
+                                    ? "border border-green-500 text-green-600 bg-green-50"
+                                    : "border border-yellow-500 text-yellow-600 bg-yellow-50"
+                                  : isBooked
+                                    ? " text-red-500 cursor-not-allowed border border-red-500"
+                                    : isPast
+                                      ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
+                                      : " text-gray-400 cursor-not-allowed border border-gray-400"
+                              }
         `}
-                          variant="outline"
-                        >
-                          {timeValue}
-                        </Button>
-                      );
-                    })}
+                            variant="outline"
+                          >
+                            {timeValue}
+                          </Button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
 
                 ) : (
                   <div className="text-center py-0">
@@ -966,7 +966,7 @@ export default function SchedulePage() {
                     </p>
                   </div>
                 )}
-    {bookingError && (
+                {bookingError && (
                   <div className="mb-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-600 text-sm font-medium">{bookingError}</p>
                     {/* <p className="text-red-600 text-xs mt-1 font-semibold">💡 Tip: Select a time slot that matches or exceeds your service duration.</p> */}
@@ -1006,7 +1006,7 @@ export default function SchedulePage() {
               </Button>
 
               <div className="flex-1">
-            
+
                 <Button
                   className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                   disabled={!selectedTime || !selectedServiceOrSubscription}
@@ -1030,7 +1030,7 @@ export default function SchedulePage() {
               Select the perfect plan for your recovery journey
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="p-6">
             {subscriptionLoading ? (
               <div className="flex justify-center items-center py-12">
@@ -1039,8 +1039,8 @@ export default function SchedulePage() {
             ) : subscriptionError ? (
               <div className="text-center py-8">
                 <p className="text-red-500 font-medium">Failed to load plans: {subscriptionError}</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-4"
                   onClick={() => dispatch(fetchUserSubscriptions())}
                 >
@@ -1055,18 +1055,18 @@ export default function SchedulePage() {
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
                       </div>
-                      
+
                       <div className="mb-6">
                         <div className="text-3xl font-black text-primary mb-1">
                           ₹{plan.price?.toLocaleString()}
                         </div>
                         <div className="text-slate-500 text-sm">{plan.duration}</div>
                       </div>
-                      
+
                       <p className="text-slate-600 text-sm mb-6 line-clamp-2">
                         {plan.description}
                       </p>
-                      
+
                       <ul className="space-y-3 mb-6 flex-1">
                         {plan.features?.slice(0, 5).map((feature: string, index: number) => (
                           <li key={index} className="flex items-start gap-3">
@@ -1076,14 +1076,71 @@ export default function SchedulePage() {
                         ))}
                       </ul>
                     </div>
-                    
+
                     <div className="p-6 pt-0">
-                      <Button 
+                      <Button
                         className="w-full h-12 text-base font-semibold rounded-xl"
                         onClick={() => {
                           setIsPlansModalOpen(false);
-                          // Navigate to subscription plans page with selected plan
-                          navigate(`/subscription-plans?plan=${plan.planId || plan.id}`);
+
+                          if (plan.planId || plan.id) {
+                            const handlePayment = async (selectedPlan: any) => {
+                              try {
+                                // For guest users, we'll use a different approach
+                                // Instead of calling guest API, we'll navigate directly to booking
+                                const isGuestUser = !user || !localStorage.getItem("token");
+
+                                if (isGuestUser) {
+                                  // For guest users, store plan info and navigate to booking
+                                  sessionStorage.setItem("qw_selected_plan", JSON.stringify({
+                                    plan: selectedPlan,
+                                    selectedAt: Date.now()
+                                  }));
+
+                                  // Navigate to booking page with plan parameter
+                                  navigate("/booking", {
+                                    state: {
+                                      service: {
+                                        id: selectedPlan.planId || selectedPlan.id,
+                                        name: selectedPlan.name,
+                                        price: String(selectedPlan.price),
+                                        duration: selectedPlan.duration,
+                                      },
+                                      fromSubscription: true,
+                                      isGuestFlow: true
+                                    }
+                                  });
+                                } else {
+                                  // For logged-in users, proceed with normal subscription flow
+                                  // Navigate to booking page with subscription flow
+                                  navigate("/booking", {
+                                    state: {
+                                      service: {
+                                        id: selectedPlan.planId || selectedPlan.id,
+                                        name: selectedPlan.name,
+                                        price: String(selectedPlan.price),
+                                        duration: selectedPlan.duration,
+                                      },
+                                      fromSubscription: true,
+                                      isGuestFlow: false
+                                    }
+                                  });
+                                }
+
+                                toast.success(
+                                  `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
+                                );
+                              } catch (error) {
+                                console.error("Error handling plan selection:", error);
+                                toast.error(
+                                  "Failed to process plan selection. Please try again."
+                                );
+                              }
+                            };
+
+                            // Actually call the handlePayment function
+                            handlePayment(plan);
+                          }
                         }}
                       >
                         Select Plan
