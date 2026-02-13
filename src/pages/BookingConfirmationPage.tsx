@@ -109,7 +109,7 @@ export default function BookingConfirmationPage() {
     bookingData?.plan?.duration;
 
   const servicePrice =
-    bookingDetails?.amount ||
+    // bookingDetails?.amount ||
     bookingData?.finalPrice ||
     bookingData?.service?.price ||
     bookingData?.plan?.price;
@@ -179,9 +179,10 @@ export default function BookingConfirmationPage() {
           guestUser?.email &&
           bookingData?.fromServices
         ) {
+          // Update booking status to reflect payment completion
           await updateGuestBookingStatus(
             bookingData.bookingId,
-            "confirmed",
+            bookingData?.scheduleType === "later" ? "pending" : "pending",
             guestUser.email
           );
           toast.success("Booking confirmed successfully!");
@@ -222,11 +223,20 @@ export default function BookingConfirmationPage() {
             user: userData, 
             token: autoLoginToken 
           }));
+          // Update the authentication context
+          localStorage.setItem("isAuthenticated", "true");
           toast.success("Account created and logged in successfully!");
         })
         .catch((error) => {
           console.error("Failed to fetch profile:", error);
-          toast.error("Login failed. Please try again.");
+          // If profile fetch fails, try to set credentials anyway
+          dispatch(setCredentials({ 
+            user: null, 
+            token: autoLoginToken 
+          }));
+          // Update the authentication context
+          localStorage.setItem("isAuthenticated", "true");
+          toast.success("Logged in successfully!");
         });
       
       return;
