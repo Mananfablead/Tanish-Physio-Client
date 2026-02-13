@@ -362,7 +362,11 @@ const ChatWidget = () => {
   }
 
   return (
-    <div className={`${isMobile ? 'bottom-16 right-4' : 'bottom-6 right-6'} fixed z-50`}>
+    <div
+      className={`${
+        isMobile ? "bottom-16 right-4" : "bottom-6 right-6"
+      } fixed z-50`}
+    >
       {!isOpen ? (
         // Floating chat button
         <button
@@ -392,40 +396,24 @@ const ChatWidget = () => {
         </button>
       ) : (
         // Chat window
-        <div className="w-80 h-96 bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 overflow-hidden">
-        <div className={`${isMobile ? 'w-full h-[80vh] max-w-[95vw] mx-2' : 'w-80 h-96'} bg-white rounded-lg shadow-xl flex flex-col border border-gray-200`}>
+        <div
+          className={`${
+            isMobile ? "w-full h-[80vh] max-w-[95vw] mx-2" : "w-80 h-96"
+          } bg-white rounded-lg shadow-xl flex flex-col border border-gray-200`}
+        >
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 rounded-t-2xl flex justify-between items-center shadow-md">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                  />
-                </svg>
-                <span
-                  className={`absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${
-                    connected ? "bg-green-400 animate-pulse" : "bg-red-400"
-                  }`}
-                ></span>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">Live Support</h3>
-                <p className="text-xs opacity-80">We're here to help</p>
-              </div>
+          <div className="bg-blue-600 text-white p-3 rounded-t-lg flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <span className="font-semibold">Live Support</span>
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  connected ? "bg-green-400" : "bg-red-400"
+                }`}
+              ></span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-white hover:bg-white/20 p-2 rounded-full transition-all duration-200"
+              className="text-white hover:text-gray-200"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -481,7 +469,9 @@ const ChatWidget = () => {
                   }`}
                 >
                   <div
-                    className={`max-w-xs ${isMobile ? 'max-w-[85%]' : 'lg:max-w-md'} px-3 py-2 rounded-lg ${
+                    className={`max-w-xs ${
+                      isMobile ? "max-w-[85%]" : "lg:max-w-md"
+                    } px-3 py-2 rounded-lg ${
                       msg.senderType === "user"
                         ? "bg-blue-500 text-white"
                         : msg.senderType === "admin"
@@ -517,7 +507,7 @@ const ChatWidget = () => {
           </div>
 
           {/* Input area */}
-          <div className={`border-t p-2 bg-white ${isMobile ? 'p-3' : ''}`}>
+          <div className={`border-t p-2 bg-white ${isMobile ? "p-3" : ""}`}>
             <div className="flex items-center space-x-2">
               <textarea
                 value={newMessage}
@@ -527,7 +517,9 @@ const ChatWidget = () => {
                 }}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 ${isMobile ? 'text-base py-3' : ''}`}
+                className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  isMobile ? "text-base py-3" : ""
+                }`}
                 rows="1"
                 style={{ minHeight: "40px", maxHeight: "80px" }}
                 autoFocus={isMobile}
@@ -535,7 +527,7 @@ const ChatWidget = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim()}
-                className={`p-2 rounded-lg ${isMobile ? 'p-3' : ''} ${
+                className={`p-2 rounded-lg ${isMobile ? "p-3" : ""} ${
                   newMessage.trim()
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -543,7 +535,7 @@ const ChatWidget = () => {
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`h-5 w-5 ${isMobile ? 'h-6 w-6' : ''}`}
+                  className={`h-5 w-5 ${isMobile ? "h-6 w-6" : ""}`}
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
