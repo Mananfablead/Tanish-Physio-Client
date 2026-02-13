@@ -104,7 +104,7 @@ export default function AboutUsPage() {
         
         
         {/* Mission Section */}
-        <section className="py-20 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
+        <section className="py-10 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
           <div className="container">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div
@@ -113,7 +113,7 @@ export default function AboutUsPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="inline-flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
                     <Heart className="h-5 w-5 text-primary" />
                     <span className="text-sm font-medium text-primary">Our Core Purpose</span>
@@ -166,7 +166,7 @@ export default function AboutUsPage() {
         </section>
         
         {/* Story Section */}
-        <section className="py-20">
+        <section className="py-10">
           <div className="container">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div
@@ -225,7 +225,7 @@ export default function AboutUsPage() {
         </section>
         
         {/* Vision Section */}
-        <section className="py-20 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
+        <section className="py-10 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
           <div className="container">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div
@@ -364,7 +364,7 @@ export default function AboutUsPage() {
         </section>
         
         {/* Team Section */}
-        <section className="py-20 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
+        <section className="py-10 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
           <div className="container">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div

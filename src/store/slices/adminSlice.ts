@@ -8,8 +8,9 @@ interface DoctorProfile {
   specialization: string;
   bio: string;
   education: string;
-  languages: string[];
+  languages: string;
   certifications: string[];
+  certificationNames: string[];
 }
 
 interface Admin {

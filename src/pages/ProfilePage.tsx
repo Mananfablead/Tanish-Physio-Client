@@ -14,7 +14,15 @@ import {
   X,
   PlusCircle,
   CalendarDays,
-  CheckCircle
+  CheckCircle,
+  UserRound,
+  BadgeCheck,
+  Stethoscope,
+  Clock3,
+  Video,
+  Camera,
+  ReceiptText,
+  NotebookTabs
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useToast } from "@/hooks/use-toast";
@@ -346,20 +354,78 @@ export default function ProfilePage() {
     fetchAvailability();
   }, [isRescheduleModalOpen]);
 
+  // Handle payment for plan selection
+  const handlePayment = async (selectedPlan: any) => {
+    try {
+      // For guest users, we'll use a different approach
+      // Instead of calling guest API, we'll navigate directly to booking
+      const isGuestUser = !user || !localStorage.getItem("token");
+      
+      if (isGuestUser) {
+        // For guest users, store plan info and navigate to booking
+        sessionStorage.setItem("qw_selected_plan", JSON.stringify({
+          plan: selectedPlan,
+          selectedAt: Date.now()
+        }));
+        
+        // Navigate to booking page with plan parameter
+        navigate("/booking", {
+          state: {
+            service: {
+              id: selectedPlan.planId || selectedPlan.id,
+              name: selectedPlan.name,
+              price: String(selectedPlan.price),
+              duration: selectedPlan.duration,
+            },
+            fromSubscription: true,
+            isGuestFlow: true
+          }
+        });
+      } else {
+        // For logged-in users, proceed with normal subscription flow
+        // Navigate to booking page with subscription flow
+        navigate("/booking", {
+          state: {
+            service: {
+              id: selectedPlan.planId || selectedPlan.id,
+              name: selectedPlan.name,
+              price: String(selectedPlan.price),
+              duration: selectedPlan.duration,
+            },
+            fromSubscription: true,
+            isGuestFlow: false
+          }
+        });
+      }
+      
+      toast({
+        title: "Plan Selected",
+        description: `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`,
+      });
+    } catch (error) {
+      console.error("Error handling plan selection:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process plan selection. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Define sections for sidebar navigation
   const sections: Section[] = [
     {
       id: "personal",
       label: "Personal Info",
       sub: "Manage your personal details",
-      icon: User,
+      icon: UserRound,
       color: "text-primary",
     },
     {
       id: "activePlan",
       label: "Active Plan",
       sub: "Your current subscription",
-      icon: Award,
+      icon: BadgeCheck,
       color: "text-primary",
     },
     {
@@ -367,42 +433,42 @@ export default function ProfilePage() {
       label: "Book Session Now",
       sub: "Schedule a new session",
       color: "text-primary",
-      icon: PlusCircle,
+      icon: Stethoscope,
       isAction: true,
     },
     {
       id: "upcoming",
       label: "Upcoming Sessions",
       sub: "Your scheduled sessions",
-      icon: Clock,
+      icon: Clock3,
       color: "text-primary",
     },
     {
       id: "sessionHistory",
       label: "Session History",
       sub: "Your past sessions",
-      icon: Play,
+      icon: Video,
       color: "text-primary",
     },
     {
       id: "recordedSessions",
       label: "Recorded Sessions",
       sub: "Your recorded therapy sessions",
-      icon: Play,
+      icon: Camera,
       color: "text-primary",
     },
     {
       id: "subscriptionHistory",
       label: "Subscription History",
       sub: "Your plan & payment history",
-      icon: Calendar,
+      icon: ReceiptText,
       color: "text-primary",
     },
     {
       id: "bookings",
       label: "Service Bookings",
       sub: "All your booked services",
-      icon: Calendar,
+      icon: NotebookTabs,
       color: "text-primary",
     },
   ];
@@ -438,7 +504,10 @@ export default function ProfilePage() {
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
                 {selectedSection === "activePlan" && (
-                  <ActivePlanSection activePlan={activePlan} />
+                  <ActivePlanSection 
+                    activePlan={activePlan} 
+                    onPlanSelect={handlePayment}
+                  />
                 )}
 
                 {selectedSection === "upcoming" && (

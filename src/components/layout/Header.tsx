@@ -35,7 +35,7 @@ const navLinks = [
   // { to: "/schedule", label: "Schedule" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
-  // { to: "/testimonials", label: "Testimonials" },
+  { to: "/testimonials", label: "Testimonials" },
 ];
 
 export function Header() {
@@ -58,27 +58,23 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 left-0 right-0 z-50 w-full
-border-b border-border
-bg-background/95 backdrop-blur-md
-shadow-sm">
-      <div className="container flex h-20 md:h-28 items-center justify-between px-4 md:px-6">
+    <header className="sticky top-0 left-0 right-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md shadow-sm">
+      <div className="container flex items-center justify-between px-4 py-3 sm:py-3 md:py-3 lg:py-4">
         <Link to="/" className="flex items-center gap-3 md:gap-5 flex-shrink-0">
           <img
             src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
             alt="Tanish Physio Logo"
-            className="h-16 md:h-24 w-auto object-contain"
+            className="h-12 sm:h-14 md:h-16 lg:h-16 w-auto object-contain"
           />
         </Link>
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-2 lg:gap-3">
+        <nav className="hidden md:hidden lg:flex items-center gap-2 lg:gap-3">
           {navLinks.map((link) => (
             <Link key={link.to} to={link.to}>
               <Button
                 variant={location.pathname === link.to ? "secondary" : "ghost"}
                 size="sm"
-                className="px-4 py-2 text-base font-medium"
-              >
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium">
                 {link.label}
               </Button>
             </Link>
@@ -93,7 +89,7 @@ shadow-sm">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div
-                  className="relative h-12 w-12 md:h-14 md:w-14 rounded-full
+                  className="relative h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-full
     cursor-pointer
     hover:ring-2 hover:ring-primary/40
     transition-all duration-200"
@@ -106,7 +102,7 @@ shadow-sm">
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                      <User className="h-5 w-5 md:h-6 md:w-6" />
+                      <User className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                     </div>
                   )}
 
@@ -114,7 +110,7 @@ shadow-sm">
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
-                className="w-64 md:w-72 mt-2 shadow-lg rounded-lg border border-border bg-popover text-popover-foreground"
+                className="w-56 sm:w-64 md:w-72 mt-2 shadow-lg rounded-lg border border-border bg-popover text-popover-foreground"
                 align="end"
                 sideOffset={5}
                 forceMount
@@ -175,7 +171,7 @@ shadow-sm">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hidden md:flex px-4 py-2 text-sm font-medium"
+                    className="hidden md:flex px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium"
                     onClick={() => navigate('/login')}
                   >
                     Sign In
@@ -188,7 +184,7 @@ shadow-sm">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link to="/register" className="hidden md:block">
-                    <Button variant="default" size="sm" className="px-4 py-2 text-sm font-medium">
+                    <Button variant="default" size="sm" className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium">
                       Get Started
                     </Button>
                   </Link>
@@ -207,7 +203,7 @@ shadow-sm">
               <Button
 
                 size="icon"
-                className="h-12 w-12 rounded-lg md:hidden [&_svg]:size-8"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg md:flex lg:hidden [&_svg]:size-8"
               >
                 <Menu  className="h-5 w-5" />
                 <span className="sr-only">Toggle menu</span>
@@ -216,7 +212,7 @@ shadow-sm">
 
             <SheetContent
               side="right"
-              className="w-[300px] sm:w-[320px] p-0 flex flex-col"
+              className="w-[280px] sm:w-[300px] md:w-[320px] p-0 flex flex-col"
             >
               <div className="flex flex-col h-full">
                 {/* Mobile Header with User Info */}
@@ -278,7 +274,7 @@ shadow-sm">
                               ? "secondary"
                               : "ghost"
                           }
-                          className="w-full justify-start h-12 px-4 text-left"
+                          className="w-full justify-start h-10 sm:h-12 px-4 text-left"
                         >
                           {link.label}
                         </Button>

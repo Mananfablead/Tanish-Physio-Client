@@ -69,12 +69,14 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
               </h2>
 
               <p className="text-primary font-semibold text-lg">
+                <p>Specialization:</p>
                 {publicAdmins[0].doctorProfile?.specialization ? publicAdmins[0].doctorProfile.specialization.substring(0, publicAdmins[0].doctorProfile.specialization.indexOf(',') !== -1 ? publicAdmins[0].doctorProfile.specialization.indexOf(',') : publicAdmins[0].doctorProfile.specialization.length) : "Certified Physiotherapist"}
               </p>
 
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
+                  <p>Experience:</p>
                   <span>{publicAdmins[0].doctorProfile?.experience || 'Experienced Professional'}</span>
                 </div>
                 <div className="flex items-center gap-1">
