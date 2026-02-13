@@ -97,7 +97,7 @@ export default function BookingPage() {
 
   // Update local state when store offers change
   useEffect(() => {
-    if (!offersStoreLoading && storeOffers.length > 0) {
+    if (!offersStoreLoading) {
       setAvailableOffers(storeOffers);
       setOffersLoading(false);
     }
@@ -113,7 +113,6 @@ export default function BookingPage() {
     }
   }, [user]);
   useEffect(() => {
-
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
   // Check if user is a guest (not logged in)
@@ -124,8 +123,7 @@ export default function BookingPage() {
   // Handle service-based booking data
   // Handle subscription-based booking data
 
-  const therapist = bookingData?.therapist
-
+  const therapist = bookingData?.therapist;
 
   const serviceBooking = bookingData?.fromServices === true;
   const subscriptionBooking = bookingData?.fromSubscription === true;
@@ -138,10 +136,9 @@ export default function BookingPage() {
     price: Number(bookingData.service.price),
 
     duration: subscriptionBooking
-      ? bookingData.service.duration   // "monthly", "quarterly"
-      : bookingData.service.duration,  // "52 min"
+      ? bookingData.service.duration // "monthly", "quarterly"
+      : bookingData.service.duration, // "52 min"
   };
-
 
   // Format date to YYYY-MM-DD
   const formatDate = (dateString: string) => {
@@ -149,8 +146,8 @@ export default function BookingPage() {
       // Return current date if no date provided
       const now = new Date();
       const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     }
 
@@ -166,22 +163,22 @@ export default function BookingPage() {
         // Return current date if parsing fails
         const now = new Date();
         const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       }
 
       const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
 
       return `${year}-${month}-${day}`;
     } catch (e) {
       // Return current date if exception occurs
       const now = new Date();
       const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     }
   };
@@ -195,7 +192,9 @@ export default function BookingPage() {
       const hours = now.getHours();
       const minutes = now.getMinutes();
 
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      return `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`;
     }
 
     // If already in HH:MM format, return as is
@@ -206,25 +205,25 @@ export default function BookingPage() {
     // Try to parse various time formats
     try {
       // Handle "10:00 AM" or "10:00 AM (45 min)" formats
-      if (timeString.includes('AM') || timeString.includes('PM')) {
-        const timePart = timeString.split(' ')[0];
-        const [hours, minutes] = timePart.split(':');
+      if (timeString.includes("AM") || timeString.includes("PM")) {
+        const timePart = timeString.split(" ")[0];
+        const [hours, minutes] = timePart.split(":");
 
         let hour = parseInt(hours, 10);
-        const period = timeString.split(' ')[1];
+        const period = timeString.split(" ")[1];
 
-        if (period === 'AM' && hour === 12) {
+        if (period === "AM" && hour === 12) {
           hour = 0;
-        } else if (period === 'PM' && hour !== 12) {
+        } else if (period === "PM" && hour !== 12) {
           hour += 12;
         }
 
-        return `${hour.toString().padStart(2, '0')}:${minutes}`;
+        return `${hour.toString().padStart(2, "0")}:${minutes}`;
       }
 
       // If it's just HH format, add :00
       if (/^\d{1,2}$/.test(timeString.trim())) {
-        return `${timeString.padStart(2, '0')}:00`;
+        return `${timeString.padStart(2, "0")}:00`;
       }
 
       return timeString;
@@ -234,7 +233,9 @@ export default function BookingPage() {
       const hours = now.getHours();
       const minutes = now.getMinutes();
 
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      return `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`;
     }
   };
 
@@ -243,7 +244,11 @@ export default function BookingPage() {
 
   // Calculate final price with coupon discount
   const basePrice = plan.price;
-  const discountAmount = isCouponApplied ? couponDiscount : (promoApplied ? Math.round(basePrice * 0.2) : 0);
+  const discountAmount = isCouponApplied
+    ? couponDiscount
+    : promoApplied
+    ? Math.round(basePrice * 0.2)
+    : 0;
   console.log("discountAmount", discountAmount);
   const finalPrice = basePrice - discountAmount;
   console.log("finalPrice", finalPrice);
@@ -294,28 +299,30 @@ export default function BookingPage() {
 
     try {
       // Determine booking type
-      const bookingType = subscriptionBooking ? 'subscription' : 'booking';
+      const bookingType = subscriptionBooking ? "subscription" : "booking";
 
       // Get user ID if available
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       let userId = null;
       if (token) {
         try {
           // Decode JWT token to get user ID
-          const payload = JSON.parse(atob(token.split('.')[1]));
+          const payload = JSON.parse(atob(token.split(".")[1]));
           userId = payload.userId || payload.sub;
         } catch (e) {
-          console.warn('Could not decode token to get user ID:', e);
+          console.warn("Could not decode token to get user ID:", e);
         }
       }
 
       // Call Redux store to validate coupon
-      const actionResult = await dispatch(validateCoupon({
-        code: code,
-        amount: plan.price,
-        bookingType,
-        userId
-      }));
+      const actionResult = await dispatch(
+        validateCoupon({
+          code: code,
+          amount: plan.price,
+          bookingType,
+          userId,
+        })
+      );
 
       if (validateCoupon.fulfilled.match(actionResult)) {
         // If validation successful, apply the coupon
@@ -325,7 +332,10 @@ export default function BookingPage() {
         if (offer.type === "percentage") {
           calculatedDiscount = Math.round(plan.price * (offer.value / 100));
           // Apply max discount limit if set
-          if (offer.maxDiscountAmount && calculatedDiscount > offer.maxDiscountAmount) {
+          if (
+            offer.maxDiscountAmount &&
+            calculatedDiscount > offer.maxDiscountAmount
+          ) {
             calculatedDiscount = offer.maxDiscountAmount;
           }
         } else {
@@ -339,7 +349,8 @@ export default function BookingPage() {
         return true;
       } else {
         // Handle rejection
-        const errorMessage = actionResult.payload as string || "Invalid coupon code";
+        const errorMessage =
+          (actionResult.payload as string) || "Invalid coupon code";
         setCouponError(errorMessage);
         return false;
       }
@@ -367,12 +378,12 @@ export default function BookingPage() {
   // Scheduling functions
   const openScheduleModal = async () => {
     // Don't set scheduleOption yet, wait for actual selection
-    
+
     try {
       // Fetch real availability data from API
       const response: any = await getAvailability();
       const fetchedAvailability = response.data?.data?.availability || [];
-      console.log("fetchedAvailability", fetchedAvailability)
+      console.log("fetchedAvailability", fetchedAvailability);
 
       setAvailability(fetchedAvailability);
       setIsScheduleModalOpen(true);
@@ -391,14 +402,18 @@ export default function BookingPage() {
     setIsScheduleModalOpen(false);
     setSelectedDate(null);
     setScheduleError(null);
-    
+
     // If no date/time is selected, clear the schedule option
     if (!scheduleDate || !scheduleTime) {
       setScheduleOption(null);
     }
   };
 
-  const handleScheduleConfirm = (date: string, time: string, timeSlot?: { start: string, end: string }) => {
+  const handleScheduleConfirm = (
+    date: string,
+    time: string,
+    timeSlot?: { start: string; end: string }
+  ) => {
     // Save the scheduled session to sessionStorage
     const scheduledSession = {
       date,
@@ -407,10 +422,13 @@ export default function BookingPage() {
       therapist: { ...therapist, id: publicAdmins?.[0]?.id }, // Use the correct therapist ID
       service: bookingData?.service || plan,
       locked: true, // Will be unlocked after payment
-      createdAt: Date.now()
+      createdAt: Date.now(),
     };
 
-    sessionStorage.setItem("qw_scheduled_session", JSON.stringify(scheduledSession));
+    sessionStorage.setItem(
+      "qw_scheduled_session",
+      JSON.stringify(scheduledSession)
+    );
 
     // Update the schedule state
     setScheduleOption("now"); // Set the schedule option when confirmed
@@ -517,7 +535,9 @@ export default function BookingPage() {
 
       // 🔹 2. Backend Email Check Kare
       try {
-        const checkResult = await dispatch(checkUserExistsAsync(guestUserData.email));
+        const checkResult = await dispatch(
+          checkUserExistsAsync(guestUserData.email)
+        );
         if (checkUserExistsAsync.fulfilled.match(checkResult)) {
           const userData = checkResult.payload;
           if (userData.exists) {
@@ -528,10 +548,12 @@ export default function BookingPage() {
               localStorage.setItem("token", userData.token);
               localStorage.setItem("user", JSON.stringify(userData.user));
               // Update the Redux store
-              dispatch(setCredentials({ 
-                user: userData.user, 
-                token: userData.token 
-              }));
+              dispatch(
+                setCredentials({
+                  user: userData.user,
+                  token: userData.token,
+                })
+              );
               // Set isGuestUser to false since user is now authenticated
               // This will be handled in the useEffect that checks for token
             }
@@ -592,7 +614,7 @@ export default function BookingPage() {
             clientEmail: guestUserData.email,
             clientPhone: guestUserData.phone,
             couponCode: isCouponApplied ? couponCode : undefined,
-            discountAmount: isCouponApplied ? couponDiscount : 0
+            discountAmount: isCouponApplied ? couponDiscount : 0,
           };
 
           paymentOrderResult = await dispatch(
@@ -601,19 +623,19 @@ export default function BookingPage() {
             )
           );
         } else {
-          console.log('📤 Sending subscription payment order:', {
+          console.log("📤 Sending subscription payment order:", {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
             originalPrice: plan.price,
             discountAmount: isCouponApplied ? couponDiscount : 0,
-            couponCode: isCouponApplied ? couponCode : undefined
+            couponCode: isCouponApplied ? couponCode : undefined,
           });
           const subscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
             currency: "INR",
             couponCode: isCouponApplied ? couponCode : undefined,
-            discountAmount: isCouponApplied ? couponDiscount : 0
+            discountAmount: isCouponApplied ? couponDiscount : 0,
           };
           paymentOrderResult = await dispatch(
             createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData)
@@ -639,7 +661,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-            "Payment order creation failed. Please try again."
+              "Payment order creation failed. Please try again."
           );
           setIsProcessing(false);
           return;
@@ -659,7 +681,9 @@ export default function BookingPage() {
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
           currency: "INR",
           name: "Tanish physio & fitness",
-          description: `Subscription Payment - Plan: ${bookingData.service.name}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ''}`,
+          description: `Subscription Payment - Plan: ${
+            bookingData.service.name
+          }${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""}`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
             // Payment successful - send response to backend for verification
@@ -696,15 +720,24 @@ export default function BookingPage() {
               // Handle auto-login token if provided
               if (verifyResult.payload?.token) {
                 // Store token for auto-login on confirmation page
-                localStorage.setItem("qw_auto_login_token", verifyResult.payload.token);
+                localStorage.setItem(
+                  "qw_auto_login_token",
+                  verifyResult.payload.token
+                );
                 if (verifyResult.payload?.userId) {
-                  localStorage.setItem("user", JSON.stringify({
-                    id: verifyResult.payload.userId,
-                    // User data will be fetched in useEffect
-                  }));
+                  localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                      id: verifyResult.payload.userId,
+                      // User data will be fetched in useEffect
+                    })
+                  );
                 }
                 // Update Redux store
-                dispatch({ type: 'auth/setUser', payload: { id: verifyResult.payload.userId } });
+                dispatch({
+                  type: "auth/setUser",
+                  payload: { id: verifyResult.payload.userId },
+                });
               }
 
               // Verification successful - process subscription
@@ -758,7 +791,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -786,7 +819,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -801,14 +834,17 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                        sessionStorage.getItem("qw_guest_user") || "{}"
-                      )
+                          sessionStorage.getItem("qw_guest_user") || "{}"
+                        )
                       : undefined,
                     fromSubscription: true,
                     scheduleOption: scheduleOption,
-                    scheduleDate: scheduleOption === "now" ? scheduleDate : null,
-                    scheduleTime: scheduleOption === "now" ? scheduleTime : null,
-                    timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+                    scheduleDate:
+                      scheduleOption === "now" ? scheduleDate : null,
+                    scheduleTime:
+                      scheduleOption === "now" ? scheduleTime : null,
+                    timeSlot:
+                      scheduleOption === "now" ? selectedTimeSlot : null,
                   },
                 });
               } catch (error) {
@@ -878,7 +914,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -907,7 +943,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -922,14 +958,17 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                        sessionStorage.getItem("qw_guest_user") || "{}"
-                      )
+                          sessionStorage.getItem("qw_guest_user") || "{}"
+                        )
                       : undefined,
                     fromSubscription: true,
                     scheduleOption: scheduleOption,
-                    scheduleDate: scheduleOption === "now" ? scheduleDate : null,
-                    scheduleTime: scheduleOption === "now" ? scheduleTime : null,
-                    timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+                    scheduleDate:
+                      scheduleOption === "now" ? scheduleDate : null,
+                    scheduleTime:
+                      scheduleOption === "now" ? scheduleTime : null,
+                    timeSlot:
+                      scheduleOption === "now" ? selectedTimeSlot : null,
                   },
                 });
               } catch (innerError) {
@@ -1065,7 +1104,7 @@ export default function BookingPage() {
             clientEmail: guestUserData.email,
             clientPhone: guestUserData.phone,
             couponCode: isCouponApplied ? couponCode : undefined,
-            discountAmount: isCouponApplied ? couponDiscount : 0
+            discountAmount: isCouponApplied ? couponDiscount : 0,
           };
 
           paymentOrderResult = await dispatch(
@@ -1077,7 +1116,7 @@ export default function BookingPage() {
             amount: finalPrice,
             currency: "INR",
             couponCode: isCouponApplied ? couponCode : undefined,
-            discountAmount: isCouponApplied ? couponDiscount : 0
+            discountAmount: isCouponApplied ? couponDiscount : 0,
           };
 
           paymentOrderResult = await dispatch(
@@ -1098,7 +1137,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-            "Payment order creation failed. Please try again."
+              "Payment order creation failed. Please try again."
           );
           setIsProcessing(false);
           return;
@@ -1118,7 +1157,9 @@ export default function BookingPage() {
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
           currency: "INR",
           name: "Tanish physio & fitness",
-          description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ''}`,
+          description: `Session Booking Payment - Booking ID: ${bookingId}${
+            publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""
+          }`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
             // Payment successful - send response to backend for verification
@@ -1150,22 +1191,30 @@ export default function BookingPage() {
               // Handle auto-login token if provided
               if (verifyResult.payload?.token) {
                 // Store token for auto-login on confirmation page
-                localStorage.setItem("qw_auto_login_token", verifyResult.payload.token);
+                localStorage.setItem(
+                  "qw_auto_login_token",
+                  verifyResult.payload.token
+                );
                 if (verifyResult.payload?.userId) {
-                  localStorage.setItem("user", JSON.stringify({
-                    id: verifyResult.payload.userId,
-                    // User data will be fetched in useEffect
-                  }));
+                  localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                      id: verifyResult.payload.userId,
+                      // User data will be fetched in useEffect
+                    })
+                  );
                 }
                 // Update Redux store
-                dispatch(setCredentials({ 
-                  user: { 
-                    id: verifyResult.payload.userId,
-                    email: guestUserData.email,
-                    name: guestUserData.name || "Guest User"
-                  }, 
-                  token: verifyResult.payload.token 
-                }));
+                dispatch(
+                  setCredentials({
+                    user: {
+                      id: verifyResult.payload.userId,
+                      email: guestUserData.email,
+                      name: guestUserData.name || "Guest User",
+                    },
+                    token: verifyResult.payload.token,
+                  })
+                );
               }
 
               // Verification successful - update booking status based on schedule option
@@ -1182,7 +1231,7 @@ export default function BookingPage() {
                       paymentStatus: "paid",
                       couponCode: isCouponApplied ? couponCode : undefined,
                       discountAmount: isCouponApplied ? couponDiscount : 0,
-                      finalAmount: finalPrice
+                      finalAmount: finalPrice,
                     },
                     clientEmail: guestUser.email,
                   })
@@ -1197,7 +1246,7 @@ export default function BookingPage() {
                       paymentStatus: "paid",
                       couponCode: isCouponApplied ? couponCode : undefined,
                       discountAmount: isCouponApplied ? couponDiscount : 0,
-                      finalAmount: finalPrice
+                      finalAmount: finalPrice,
                     },
                   })
                 );
@@ -1248,7 +1297,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -1266,52 +1315,79 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
                   !localStorage.getItem("token");
-                
+
                 // Auto-register guest user after successful payment
                 if (isGuestUser && guestUserData.email) {
                   try {
-                    await dispatch(register({
-                      name: guestUserData.name || "Guest User",
-                      email: guestUserData.email,
-                      password: "123456",
-                      phone: guestUserData.phone
-                    }));
+                    await dispatch(
+                      register({
+                        name: guestUserData.name || "Guest User",
+                        email: guestUserData.email,
+                        password: "123456",
+                        phone: guestUserData.phone,
+                      })
+                    );
                     toast.success("Account created successfully!");
-                    
+
                     // 🔹 Check user existence again after account creation for auto-login
                     try {
-                      const postRegisterCheck = await dispatch(checkUserExistsAsync(guestUserData.email));
-                      if (checkUserExistsAsync.fulfilled.match(postRegisterCheck)) {
+                      const postRegisterCheck = await dispatch(
+                        checkUserExistsAsync(guestUserData.email)
+                      );
+                      if (
+                        checkUserExistsAsync.fulfilled.match(postRegisterCheck)
+                      ) {
                         const postRegisterData = postRegisterCheck.payload;
                         if (postRegisterData.exists && postRegisterData.token) {
                           // Auto-login the newly created user
                           localStorage.setItem("token", postRegisterData.token);
-                          localStorage.setItem("user", JSON.stringify(postRegisterData.user));
-                          dispatch(setCredentials({ 
-                            user: postRegisterData.user, 
-                            token: postRegisterData.token 
-                          }));
-                          toast.success("Account created and logged in successfully!");
+                          localStorage.setItem(
+                            "user",
+                            JSON.stringify(postRegisterData.user)
+                          );
+                          dispatch(
+                            setCredentials({
+                              user: postRegisterData.user,
+                              token: postRegisterData.token,
+                            })
+                          );
+                          toast.success(
+                            "Account created and logged in successfully!"
+                          );
                         }
                       }
                     } catch (checkError) {
-                      console.error("Post-registration user check failed:", checkError);
+                      console.error(
+                        "Post-registration user check failed:",
+                        checkError
+                      );
                     }
                   } catch (registrationError: any) {
-                    console.error("Auto-registration failed:", registrationError);
+                    console.error(
+                      "Auto-registration failed:",
+                      registrationError
+                    );
                     // If user already exists, try to log them in
-                    if (registrationError.message?.includes("User already exists with this email")) {
+                    if (
+                      registrationError.message?.includes(
+                        "User already exists with this email"
+                      )
+                    ) {
                       try {
                         // Import the login action
-                        const { login } = await import('@/store/slices/authSlice');
-                        await dispatch(login({
-                          email: guestUserData.email,
-                          password: "123456"
-                        }));
+                        const { login } = await import(
+                          "@/store/slices/authSlice"
+                        );
+                        await dispatch(
+                          login({
+                            email: guestUserData.email,
+                            password: "123456",
+                          })
+                        );
                         toast.success("Successfully logged in!");
                       } catch (loginError: any) {
                         console.error("Auto-login failed:", loginError);
@@ -1320,7 +1396,7 @@ export default function BookingPage() {
                     // Continue anyway since this is just for convenience
                   }
                 }
-                
+
                 toast.success("Payment successful!.");
                 if (wasGuestUser) {
                   // For guest users, navigate to booking confirmation page
@@ -1334,9 +1410,12 @@ export default function BookingPage() {
                       ),
                       fromServices: true,
                       scheduleOption: scheduleOption,
-                      scheduleDate: scheduleOption === "now" ? scheduleDate : null,
-                      scheduleTime: scheduleOption === "now" ? scheduleTime : null,
-                      timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+                      scheduleDate:
+                        scheduleOption === "now" ? scheduleDate : null,
+                      scheduleTime:
+                        scheduleOption === "now" ? scheduleTime : null,
+                      timeSlot:
+                        scheduleOption === "now" ? selectedTimeSlot : null,
                     },
                   });
                 } else {
@@ -1349,9 +1428,12 @@ export default function BookingPage() {
                       guestUser: undefined,
                       fromServices: true,
                       scheduleOption: scheduleOption,
-                      scheduleDate: scheduleOption === "now" ? scheduleDate : null,
-                      scheduleTime: scheduleOption === "now" ? scheduleTime : null,
-                      timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+                      scheduleDate:
+                        scheduleOption === "now" ? scheduleDate : null,
+                      scheduleTime:
+                        scheduleOption === "now" ? scheduleTime : null,
+                      timeSlot:
+                        scheduleOption === "now" ? selectedTimeSlot : null,
                     },
                   });
                 }
@@ -1442,7 +1524,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan)
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   navigate("/questionnaire", {
                     state: { planToActivate: plan },
                   });
@@ -1471,7 +1553,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled)
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -1487,8 +1569,8 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                        sessionStorage.getItem("qw_guest_user") || "{}"
-                      )
+                          sessionStorage.getItem("qw_guest_user") || "{}"
+                        )
                       : undefined,
                     fromServices: true,
                   },
@@ -1632,10 +1714,14 @@ export default function BookingPage() {
                         // Clear error when user starts typing
                         if (nameError) setNameError("");
                       }}
-                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${nameError ? "border-destructive" : ""}`}
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${
+                        nameError ? "border-destructive" : ""
+                      }`}
                     />
                     {nameError && (
-                      <p className="text-destructive text-sm mt-1">{nameError}</p>
+                      <p className="text-destructive text-sm mt-1">
+                        {nameError}
+                      </p>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
                       Enter 2-50 letters only
@@ -1643,7 +1729,6 @@ export default function BookingPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-
                     {/* Email */}
                     <div>
                       <Label htmlFor="guestEmail">Email Address *</Label>
@@ -1661,10 +1746,14 @@ export default function BookingPage() {
                           // Clear error when user starts typing
                           if (emailError) setEmailError("");
                         }}
-                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${emailError ? "border-destructive" : ""}`}
+                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${
+                          emailError ? "border-destructive" : ""
+                        }`}
                       />
                       {emailError && (
-                        <p className="text-destructive text-sm mt-1">{emailError}</p>
+                        <p className="text-destructive text-sm mt-1">
+                          {emailError}
+                        </p>
                       )}
                     </div>
 
@@ -1688,10 +1777,14 @@ export default function BookingPage() {
                           }
                         }}
                         maxLength={15}
-                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${phoneError ? "border-destructive" : ""}`}
+                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${
+                          phoneError ? "border-destructive" : ""
+                        }`}
                       />
                       {phoneError && (
-                        <p className="text-destructive text-sm mt-1">{phoneError}</p>
+                        <p className="text-destructive text-sm mt-1">
+                          {phoneError}
+                        </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Enter 10-15 digit mobile number (any country)
@@ -1723,14 +1816,20 @@ export default function BookingPage() {
                       if (value === "") {
                         clearSelection();
                       } else {
-                        value === "now" ? openScheduleModal() : selectScheduleLater();
+                        value === "now"
+                          ? openScheduleModal()
+                          : selectScheduleLater();
                       }
                     }}
                     className="grid grid-cols-1 md:grid-cols-2 gap-6"
                   >
                     {/* Column 1 */}
                     <div className="flex items-start space-x-3 border rounded-lg p-4">
-                      <RadioGroupItem value="now" id="schedule-now" className="mt-1" />
+                      <RadioGroupItem
+                        value="now"
+                        id="schedule-now"
+                        className="mt-1"
+                      />
                       <div className="flex-1">
                         <Label
                           htmlFor="schedule-now"
@@ -1742,21 +1841,26 @@ export default function BookingPage() {
                           Pick date & time
                         </p>
 
-                        {scheduleOption === "now" && scheduleDate && scheduleTime && (
-                          <div className="mt-2 text-xs text-primary font-medium">
-                            {new Date(scheduleDate).toLocaleDateString()} | {
-                              selectedTimeSlot
+                        {scheduleOption === "now" &&
+                          scheduleDate &&
+                          scheduleTime && (
+                            <div className="mt-2 text-xs text-primary font-medium">
+                              {new Date(scheduleDate).toLocaleDateString()} |{" "}
+                              {selectedTimeSlot
                                 ? `${selectedTimeSlot.start} - ${selectedTimeSlot.end}`
-                                : scheduleTime
-                            }
-                          </div>
-                        )}
+                                : scheduleTime}
+                            </div>
+                          )}
                       </div>
                     </div>
 
                     {/* Column 2 */}
                     <div className="flex items-start space-x-3 border rounded-lg p-4">
-                      <RadioGroupItem value="later" id="schedule-later" className="mt-1" />
+                      <RadioGroupItem
+                        value="later"
+                        id="schedule-later"
+                        className="mt-1"
+                      />
                       <div className="flex-1">
                         <Label
                           htmlFor="schedule-later"
@@ -1788,7 +1892,11 @@ export default function BookingPage() {
 
                   {scheduleOption && (
                     <div className="pt-2">
-                      <Button variant="outline" size="sm" onClick={clearSelection}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearSelection}
+                      >
                         Clear
                       </Button>
                     </div>
@@ -1796,7 +1904,6 @@ export default function BookingPage() {
                 </div>
               </CardContent>
             </Card>
-
 
             {/* Security Notice */}
             <Card variant="outline">
@@ -1831,9 +1938,13 @@ export default function BookingPage() {
                       subscriptionBooking
                         ? "https://placehold.co/100x100?text=SUB"
                         : publicAdmins?.[0]?.profilePicture ||
-                        "https://placehold.co/100x100?text=DOC"
+                          "https://placehold.co/100x100?text=DOC"
                     }
-                    alt={subscriptionBooking ? plan.name : publicAdmins?.[0]?.name || "Doctor"}
+                    alt={
+                      subscriptionBooking
+                        ? plan.name
+                        : publicAdmins?.[0]?.name || "Doctor"
+                    }
                     className="w-12 h-12 rounded-lg object-cover"
                   />
                   <div>
@@ -1841,14 +1952,16 @@ export default function BookingPage() {
                       {publicAdmins?.[0]?.name || "Doctor"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {publicAdmins?.[0]?.doctorProfile?.specialization || bookingData?.therapist?.title || "Physiotherapist"}
+                      {publicAdmins?.[0]?.doctorProfile?.specialization ||
+                        bookingData?.therapist?.title ||
+                        "Physiotherapist"}
                     </p>
                     {publicAdmins?.[0]?.doctorProfile?.experience && (
                       <p className="text-sm text-muted-foreground">
-                        Experience: {publicAdmins[0].doctorProfile.experience} years
+                        Experience: {publicAdmins[0].doctorProfile.experience}{" "}
+                        years
                       </p>
                     )}
-
                   </div>
                 </div>
               </CardContent>
@@ -1857,7 +1970,11 @@ export default function BookingPage() {
             {/* Service/Plan Details Card */}
             <Card variant="elevated">
               <CardHeader>
-                <CardTitle>{subscriptionBooking ? 'Subscription Plan' : 'Service Details'}</CardTitle>
+                <CardTitle>
+                  {subscriptionBooking
+                    ? "Subscription Plan"
+                    : "Service Details"}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -1888,8 +2005,6 @@ export default function BookingPage() {
               </CardContent>
             </Card>
 
-
-
             <Card variant="elevated">
               <CardHeader>
                 <CardTitle>Payment Summary</CardTitle>
@@ -1904,7 +2019,10 @@ export default function BookingPage() {
                         Click to view and apply coupons
                       </p>
                     </div>
-                    <Dialog open={isOffersDialogOpen} onOpenChange={setIsOffersDialogOpen}>
+                    <Dialog
+                      open={isOffersDialogOpen}
+                      onOpenChange={setIsOffersDialogOpen}
+                    >
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
                           View Offers
@@ -1924,16 +2042,17 @@ export default function BookingPage() {
                               availableOffers.map((offer) => (
                                 <div
                                   key={offer._id || offer.id}
-                                  className={`p-3 rounded-md border cursor-pointer transition-all ${isCouponApplied && couponCode.toUpperCase() === offer.code
-                                    ? "border-success bg-success/10"
-                                    : "border-muted hover:border-primary/50 hover:bg-muted/50"
-                                    }`}
+                                  className={`p-3 rounded-md border cursor-pointer transition-all ${
+                                    isCouponApplied &&
+                                    couponCode.toUpperCase() === offer.code
+                                      ? "border-success bg-success/10"
+                                      : "border-muted hover:border-primary/50 hover:bg-muted/50"
+                                  }`}
                                   onClick={() => {
                                     if (!isCouponApplied) {
                                       setCouponCode(offer.code);
-                                      
+
                                       setTimeout(() => {
-                                        
                                         setIsOffersDialogOpen(false);
                                       }, 100);
                                     }
@@ -1942,22 +2061,52 @@ export default function BookingPage() {
                                   <div className="flex justify-between items-start">
                                     <div>
                                       <div className="flex items-center gap-2">
-                                        <span className="font-bold text-primary">{offer.discount}</span>
+                                        <span className="font-bold text-primary">
+                                          {offer.discount}
+                                        </span>
                                         <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
                                           {offer.code}
                                         </span>
-                                        {isCouponApplied && couponCode.toUpperCase() === offer.code && (
-                                          <span className="text-success text-xs">✓ Applied</span>
-                                        )}
+                                        {isCouponApplied &&
+                                          couponCode.toUpperCase() ===
+                                            offer.code && (
+                                            <span className="text-success text-xs">
+                                              ✓ Applied
+                                            </span>
+                                          )}
                                       </div>
-                                      <p className="text-xs text-muted-foreground mt-1">{offer.description}</p>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {offer.description}
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
                               ))
                             ) : (
-                              <div className="text-center py-4 text-muted-foreground">
-                                No offers available at the moment
+                              <div className="text-center py-8">
+                                <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-8 w-8 text-muted-foreground"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                </div>
+                                <h3 className="font-medium text-lg text-foreground">
+                                  No offers available
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Check back later for exciting discounts and
+                                  promotions
+                                </p>
                               </div>
                             )}
                           </div>
@@ -2166,13 +2315,13 @@ export default function BookingPage() {
                   disabled={
                     isProcessing ||
                     !scheduleOption ||
-                    (scheduleOption === "now" && (!scheduleDate || !scheduleTime)) ||
+                    (scheduleOption === "now" &&
+                      (!scheduleDate || !scheduleTime)) ||
                     (isGuestUser &&
                       (!guestUserData.name ||
                         !guestUserData.email ||
                         !guestUserData.phone))
                   }
-
                 >
                   {isProcessing ? (
                     <>
@@ -2183,18 +2332,19 @@ export default function BookingPage() {
                     <>
                       <Lock className="h-4 w-4 mr-2" />
                       {subscriptionBooking
-                        ? `Pay ₹${finalPrice} for Subscription${promoApplied || isCouponApplied
-                          ? ` (Save ₹${discountAmount})`
-                          : ""
-                        }`
-                        : `Pay ₹${finalPrice} for Booking${promoApplied || isCouponApplied
-                          ? ` (Save ₹${discountAmount})`
-                          : ""
-                        }`}
+                        ? `Pay ₹${finalPrice} for Subscription${
+                            promoApplied || isCouponApplied
+                              ? ` (Save ₹${discountAmount})`
+                              : ""
+                          }`
+                        : `Pay ₹${finalPrice} for Booking${
+                            promoApplied || isCouponApplied
+                              ? ` (Save ₹${discountAmount})`
+                              : ""
+                          }`}
                     </>
                   )}
                 </Button>
-
 
                 {isGuestUser && (nameError || emailError || phoneError) && (
                   <div className="text-xs text-center text-destructive space-y-1">
