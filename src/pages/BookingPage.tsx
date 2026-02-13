@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync } from '@/store/slices/bookingsSlice';
+import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync, checkUserExistsAsync } from '@/store/slices/bookingsSlice';
 import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
 import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
 import { useAppDispatch, useAppSelector, RootState } from '@/store';
@@ -38,7 +38,7 @@ import { ScheduleModal } from "@/components/profile/ScheduleModal";
 import { fetchPublicAdmins } from '@/store/slices/adminSlice';
 import { getAvailability } from '@/lib/api';
 import { fetchOffers, validateCoupon, resetCouponValidation } from '@/store/slices/offersSlice';
-import { register } from '@/store/slices/authSlice';
+import { register, setCredentials } from '@/store/slices/authSlice';
 export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -491,6 +491,37 @@ export default function BookingPage() {
       if (hasError) {
         return;
       }
+
+      // 🔹 2. Backend Email Check Kare
+      try {
+        const checkResult = await dispatch(checkUserExistsAsync(guestUserData.email));
+        if (checkUserExistsAsync.fulfilled.match(checkResult)) {
+          const userData = checkResult.payload;
+          if (userData.exists) {
+            // 👉 Agar user mil jaye (exists: true)
+            // Uska userId le lo and auto-login
+            if (userData.token) {
+              // Store the token for auto-login
+              localStorage.setItem("token", userData.token);
+              localStorage.setItem("user", JSON.stringify(userData.user));
+              // Update the Redux store
+              dispatch(setCredentials({ 
+                user: userData.user, 
+                token: userData.token 
+              }));
+              // Set isGuestUser to false since user is now authenticated
+              // This will be handled in the useEffect that checks for token
+            }
+          } else {
+            // 👉 Agar user na mile (exists: false)
+            // Naya user create karo - this will happen after payment verification
+            console.log("New user will be created after payment");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check user existence:", error);
+        // Continue with the flow even if user check fails
+      }
     }
 
     // Prepare guest user data
@@ -617,6 +648,21 @@ export default function BookingPage() {
                   verifyResult
                 ))
             ) {
+              // 🔹 6. JWT Token Generate Karo & 7. Token Frontend Ko Do
+              // Handle auto-login token if provided
+              if (verifyResult.payload?.token) {
+                // Store token for auto-login on confirmation page
+                localStorage.setItem("qw_auto_login_token", verifyResult.payload.token);
+                if (verifyResult.payload?.userId) {
+                  localStorage.setItem("user", JSON.stringify({
+                    id: verifyResult.payload.userId,
+                    // User data will be fetched in useEffect
+                  }));
+                }
+                // Update Redux store
+                dispatch({ type: 'auth/setUser', payload: { id: verifyResult.payload.userId } });
+              }
+
               // Verification successful - process subscription
               try {
                 // Get subscription ID from response
@@ -1052,6 +1098,28 @@ export default function BookingPage() {
                 verifyGuestPaymentAsync.fulfilled.match(verifyResult)) ||
               (!isGuestUser && verifyPaymentAsync.fulfilled.match(verifyResult))
             ) {
+              // 🔹 6. JWT Token Generate Karo & 7. Token Frontend Ko Do
+              // Handle auto-login token if provided
+              if (verifyResult.payload?.token) {
+                // Store token for auto-login on confirmation page
+                localStorage.setItem("qw_auto_login_token", verifyResult.payload.token);
+                if (verifyResult.payload?.userId) {
+                  localStorage.setItem("user", JSON.stringify({
+                    id: verifyResult.payload.userId,
+                    // User data will be fetched in useEffect
+                  }));
+                }
+                // Update Redux store
+                dispatch(setCredentials({ 
+                  user: { 
+                    id: verifyResult.payload.userId,
+                    email: guestUserData.email,
+                    name: guestUserData.name || "Guest User"
+                  }, 
+                  token: verifyResult.payload.token 
+                }));
+              }
+
               // Verification successful - update booking status based on schedule option
               if (isGuestUser) {
                 // For guest users, use guest booking update with client email
@@ -1159,6 +1227,26 @@ export default function BookingPage() {
                       phone: guestUserData.phone
                     }));
                     toast.success("Account created successfully!");
+                    
+                    // 🔹 Check user existence again after account creation for auto-login
+                    try {
+                      const postRegisterCheck = await dispatch(checkUserExistsAsync(guestUserData.email));
+                      if (checkUserExistsAsync.fulfilled.match(postRegisterCheck)) {
+                        const postRegisterData = postRegisterCheck.payload;
+                        if (postRegisterData.exists && postRegisterData.token) {
+                          // Auto-login the newly created user
+                          localStorage.setItem("token", postRegisterData.token);
+                          localStorage.setItem("user", JSON.stringify(postRegisterData.user));
+                          dispatch(setCredentials({ 
+                            user: postRegisterData.user, 
+                            token: postRegisterData.token 
+                          }));
+                          toast.success("Account created and logged in successfully!");
+                        }
+                      }
+                    } catch (checkError) {
+                      console.error("Post-registration user check failed:", checkError);
+                    }
                   } catch (registrationError: any) {
                     console.error("Auto-registration failed:", registrationError);
                     // If user already exists, try to log them in

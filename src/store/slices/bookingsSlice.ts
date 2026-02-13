@@ -16,7 +16,8 @@ import {
   createGuestSubscriptionPaymentOrder,
   verifyGuestSubscriptionPayment,
   checkSlotAvailability,
-  updateBookingSchedule
+  updateBookingSchedule,
+  checkUserExists
 } from '../../lib/api';
 
 interface Booking {
@@ -472,6 +473,22 @@ export const updateBookingScheduleAsync = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to update booking schedule'
+      );
+    }
+  }
+);
+
+// User check async thunk
+export const checkUserExistsAsync = createAsyncThunk(
+  'bookings/checkUserExists',
+  async (email: string, { rejectWithValue }) => {
+    try {
+      const response = await checkUserExists(email);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to check user existence'
       );
     }
   }
