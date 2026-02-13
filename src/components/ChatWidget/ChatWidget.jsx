@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSocketContext } from "../../context/SocketContext";
 import { useAuthRedux } from "../../hooks/useAuthRedux";
+import { useLocation } from "react-router-dom";
 import { chatApi } from "../../lib/chatApi";
+import { useIsMobile } from "../../hooks/use-mobile";
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,9 +18,16 @@ const ChatWidget = () => {
   const [loadError, setLoadError] = useState(null);
 
   const { socket, connected, emit, on } = useSocketContext();
-  const { user } = useAuthRedux();
+  const { user, isAuthenticated } = useAuthRedux();
+  const location = useLocation();
+  const isMobile = useIsMobile();
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // Check if we're on a video call related page
+  const isVideoCallPage = location.pathname.includes('/video-call') || 
+                         location.pathname.includes('/group-video-call') || 
+                         location.pathname.includes('/waiting-room');
 
   // Fetch initial messages when component mounts
   useEffect(() => {
@@ -347,19 +356,24 @@ const ChatWidget = () => {
     };
   }, [socket, sessionId, emit]);
 
+  // Only render the chat widget if user is authenticated and not on video call pages
+  if (!isAuthenticated || !user || isVideoCallPage) {
+    return null;
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className={`${isMobile ? 'bottom-16 right-4' : 'bottom-6 right-6'} fixed z-50`}>
       {!isOpen ? (
         // Floating chat button
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-2xl hover:shadow-blue-500/30 transform hover:scale-110 transition-all duration-300 group"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-2xl hover:shadow-blue-500/30 transform hover:scale-110 transition-all duration-300 group"
           aria-label="Open chat"
         >
           <div className="relative">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-7 w-7 group-hover:animate-pulse"
+              className="h-6 w-6 group-hover:animate-pulse"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -378,7 +392,7 @@ const ChatWidget = () => {
         </button>
       ) : (
         // Chat window
-        <div className="w-80 h-96 bg-white rounded-lg shadow-xl flex flex-col border border-gray-200">
+        <div className={`${isMobile ? 'w-full h-[80vh] max-w-[95vw] mx-2' : 'w-80 h-96'} bg-white rounded-lg shadow-xl flex flex-col border border-gray-200`}>
           {/* Header */}
           <div className="bg-blue-600 text-white p-3 rounded-t-lg flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -447,7 +461,7 @@ const ChatWidget = () => {
                   }`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                    className={`max-w-xs ${isMobile ? 'max-w-[85%]' : 'lg:max-w-md'} px-3 py-2 rounded-lg ${
                       msg.senderType === "user"
                         ? "bg-blue-500 text-white"
                         : msg.senderType === "admin"
@@ -483,7 +497,7 @@ const ChatWidget = () => {
           </div>
 
           {/* Input area */}
-          <div className="border-t p-2 bg-white">
+          <div className={`border-t p-2 bg-white ${isMobile ? 'p-3' : ''}`}>
             <div className="flex items-center space-x-2">
               <textarea
                 value={newMessage}
@@ -493,14 +507,15 @@ const ChatWidget = () => {
                 }}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 ${isMobile ? 'text-base py-3' : ''}`}
                 rows="1"
                 style={{ minHeight: "40px", maxHeight: "80px" }}
+                autoFocus={isMobile}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim()}
-                className={`p-2 rounded-lg ${
+                className={`p-2 rounded-lg ${isMobile ? 'p-3' : ''} ${
                   newMessage.trim()
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -508,7 +523,7 @@ const ChatWidget = () => {
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className={`h-5 w-5 ${isMobile ? 'h-6 w-6' : ''}`}
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
