@@ -8,6 +8,14 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import axios from "axios";
+import {
   CreditCard,
   Lock,
   Shield,
@@ -29,6 +37,8 @@ import { selectCurrentUser } from "@/store/slices/authSlice";
 import { ScheduleModal } from "@/components/profile/ScheduleModal";
 import { fetchPublicAdmins } from '@/store/slices/adminSlice';
 import { getAvailability } from '@/lib/api';
+import { fetchOffers, validateCoupon, resetCouponValidation } from '@/store/slices/offersSlice';
+import { register } from '@/store/slices/authSlice';
 export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,6 +47,7 @@ export default function BookingPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
   const { admins: publicAdmins } = useSelector((state: RootState) => state.admins);
+  const { offers: storeOffers, loading: offersStoreLoading } = useSelector((state: RootState) => state.offers);
   console.log("publicAdmins", publicAdmins)
 
   const [guestUserData, setGuestUserData] = useState({
@@ -62,6 +73,33 @@ export default function BookingPage() {
   const [availability, setAvailability] = useState<any[]>([]);
   console.log("availabilitylllllllll", availability)
   const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(null);
+
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [isCouponApplied, setIsCouponApplied] = useState(false);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState("");
+
+  // Available Offers dialog state
+  const [isOffersDialogOpen, setIsOffersDialogOpen] = useState(false);
+
+  // Available offers state
+  const [availableOffers, setAvailableOffers] = useState<any[]>([]);
+  const [offersLoading, setOffersLoading] = useState(true);
+
+  // Fetch available offers from API
+  useEffect(() => {
+    dispatch(fetchOffers());
+  }, [dispatch]);
+
+  // Update local state when store offers change
+  useEffect(() => {
+    if (!offersStoreLoading && storeOffers.length > 0) {
+      setAvailableOffers(storeOffers);
+      setOffersLoading(false);
+    }
+  }, [storeOffers, offersStoreLoading]);
+
   useEffect(() => {
     if (user) {
       setGuestUserData({
@@ -72,7 +110,7 @@ export default function BookingPage() {
     }
   }, [user]);
   useEffect(() => {
-   
+
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
   // Check if user is a guest (not logged in)
@@ -200,7 +238,10 @@ export default function BookingPage() {
   const time = formatTime(bookingData?.time);
   const promoApplied = bookingData?.promoApplied || false;
 
-  const finalPrice = promoApplied ? Math.round(plan.price * 0.8) : plan.price;
+  // Calculate final price with coupon discount
+  const basePrice = plan.price;
+  const discountAmount = isCouponApplied ? couponDiscount : (promoApplied ? Math.round(basePrice * 0.2) : 0);
+  const finalPrice = basePrice - discountAmount;
 
   // Check stored intake
   let storedIntake = null;
@@ -237,6 +278,88 @@ export default function BookingPage() {
     return phoneRegex.test(phone);
   };
 
+  // Coupon validation function
+  const handleValidateCoupon = async (code: string) => {
+    // Clear previous errors
+    setCouponError("");
+
+    if (!code.trim()) {
+      setCouponError("Please enter a coupon code");
+      return false;
+    }
+
+    try {
+      // Determine booking type
+      const bookingType = subscriptionBooking ? 'subscription' : 'booking';
+
+      // Get user ID if available
+      const token = localStorage.getItem('token');
+      let userId = null;
+      if (token) {
+        try {
+          // Decode JWT token to get user ID
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userId = payload.userId || payload.sub;
+        } catch (e) {
+          console.warn('Could not decode token to get user ID:', e);
+        }
+      }
+
+      // Call Redux store to validate coupon
+      const actionResult = await dispatch(validateCoupon({
+        code: code,
+        amount: plan.price,
+        bookingType,
+        userId
+      }));
+
+      if (validateCoupon.fulfilled.match(actionResult)) {
+        // If validation successful, apply the coupon
+        const offer = actionResult.payload;
+        let calculatedDiscount = 0;
+
+        if (offer.type === "percentage") {
+          calculatedDiscount = Math.round(plan.price * offer.value);
+          // Apply max discount limit if set
+          if (offer.maxDiscountAmount && calculatedDiscount > offer.maxDiscountAmount) {
+            calculatedDiscount = offer.maxDiscountAmount;
+          }
+        } else {
+          calculatedDiscount = offer.value;
+        }
+
+        setIsCouponApplied(true);
+        setCouponDiscount(calculatedDiscount);
+        setCouponError("");
+        toast.success(`Coupon applied! You saved ₹${calculatedDiscount}`);
+        return true;
+      } else {
+        // Handle rejection
+        const errorMessage = actionResult.payload as string || "Invalid coupon code";
+        setCouponError(errorMessage);
+        return false;
+      }
+    } catch (error: any) {
+      console.error("Coupon validation error:", error);
+      setCouponError(error.message || "Invalid coupon code");
+      return false;
+    }
+  };
+
+  // Apply coupon function
+  const handleApplyCoupon = async () => {
+    await handleValidateCoupon(couponCode);
+  };
+
+  // Remove coupon function
+  const handleRemoveCoupon = () => {
+    setIsCouponApplied(false);
+    setCouponDiscount(0);
+    setCouponCode("");
+    setCouponError("");
+    toast.info("Coupon removed");
+  };
+
   // Scheduling functions
   const openScheduleModal = async () => {
     // Select "Schedule Now" option
@@ -247,14 +370,14 @@ export default function BookingPage() {
       const response: any = await getAvailability();
       const fetchedAvailability = response.data?.data?.availability || [];
       console.log("fetchedAvailability", fetchedAvailability)
-      
+
       setAvailability(fetchedAvailability);
       setIsScheduleModalOpen(true);
       setScheduleError(null);
     } catch (error) {
       console.error("Failed to fetch availability:", error);
       setScheduleError("Failed to load availability. Please try again.");
-      
+
       // Set empty availability on error
       setAvailability([]);
       setIsScheduleModalOpen(true);
@@ -400,6 +523,8 @@ export default function BookingPage() {
             clientName: guestUserData.name,
             clientEmail: guestUserData.email,
             clientPhone: guestUserData.phone,
+            couponCode: isCouponApplied ? couponCode : undefined,
+            discountAmount: isCouponApplied ? couponDiscount : 0
           };
 
           paymentOrderResult = await dispatch(
@@ -412,6 +537,8 @@ export default function BookingPage() {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
             currency: "INR",
+            couponCode: isCouponApplied ? couponCode : undefined,
+            discountAmount: isCouponApplied ? couponDiscount : 0
           };
           paymentOrderResult = await dispatch(
             createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData)
@@ -457,7 +584,7 @@ export default function BookingPage() {
           amount: finalPrice * 100, // Convert to paise (multiply by 100)
           currency: "INR",
           name: "Tanish physio & fitness",
-          description: `Subscription Payment - Plan: ${bookingData.service.name}`,
+          description: `Subscription Payment - Plan: ${bookingData.service.name}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ''}`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
             // Payment successful - send response to backend for verification
@@ -843,6 +970,8 @@ export default function BookingPage() {
             clientName: guestUserData.name,
             clientEmail: guestUserData.email,
             clientPhone: guestUserData.phone,
+            couponCode: isCouponApplied ? couponCode : undefined,
+            discountAmount: isCouponApplied ? couponDiscount : 0
           };
 
           paymentOrderResult = await dispatch(
@@ -853,6 +982,8 @@ export default function BookingPage() {
             bookingId: bookingId,
             amount: finalPrice,
             currency: "INR",
+            couponCode: isCouponApplied ? couponCode : undefined,
+            discountAmount: isCouponApplied ? couponDiscount : 0
           };
 
           paymentOrderResult = await dispatch(
@@ -893,7 +1024,7 @@ export default function BookingPage() {
           amount: finalPrice * 100, // Convert to paise (multiply by 100)
           currency: "INR",
           name: "Tanish physio & fitness",
-          description: `Session Booking Payment - Booking ID: ${bookingId}`,
+          description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ''}`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
             // Payment successful - send response to backend for verification
@@ -930,7 +1061,7 @@ export default function BookingPage() {
                 await dispatch(
                   updateGuestBookingAsync({
                     id: bookingId,
-                    bookingData: { 
+                    bookingData: {
                       status: scheduleOption === "later" ? "pending" : "scheduled",
                       paymentStatus: "paid"
                     },
@@ -942,7 +1073,7 @@ export default function BookingPage() {
                 await dispatch(
                   updateBookingAsync({
                     id: bookingId,
-                    bookingData: { 
+                    bookingData: {
                       status: scheduleOption === "later" ? "pending" : "scheduled",
                       paymentStatus: "paid"
                     },
@@ -1017,7 +1148,37 @@ export default function BookingPage() {
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
                   !localStorage.getItem("token");
-
+                
+                // Auto-register guest user after successful payment
+                if (isGuestUser && guestUserData.email) {
+                  try {
+                    await dispatch(register({
+                      name: guestUserData.name || "Guest User",
+                      email: guestUserData.email,
+                      password: "123456",
+                      phone: guestUserData.phone
+                    }));
+                    toast.success("Account created successfully!");
+                  } catch (registrationError: any) {
+                    console.error("Auto-registration failed:", registrationError);
+                    // If user already exists, try to log them in
+                    if (registrationError.message?.includes("User already exists with this email")) {
+                      try {
+                        // Import the login action
+                        const { login } = await import('@/store/slices/authSlice');
+                        await dispatch(login({
+                          email: guestUserData.email,
+                          password: "123456"
+                        }));
+                        toast.success("Successfully logged in!");
+                      } catch (loginError: any) {
+                        console.error("Auto-login failed:", loginError);
+                      }
+                    }
+                    // Continue anyway since this is just for convenience
+                  }
+                }
+                
                 toast.success("Payment successful!.");
                 if (wasGuestUser) {
                   // For guest users, navigate to booking confirmation page
@@ -1442,7 +1603,7 @@ export default function BookingPage() {
                         {scheduleOption === "now" && scheduleDate && scheduleTime && (
                           <div className="mt-2 text-xs text-primary font-medium">
                             {new Date(scheduleDate).toLocaleDateString()} | {
-                              selectedTimeSlot 
+                              selectedTimeSlot
                                 ? `${selectedTimeSlot.start} - ${selectedTimeSlot.end}`
                                 : scheduleTime
                             }
@@ -1507,12 +1668,12 @@ export default function BookingPage() {
 
           {/* Order Summary */}
           <div className="space-y-6">
+            {/* Therapist Information Card */}
             <Card variant="elevated">
               <CardHeader>
-                <CardTitle>Booking Summary</CardTitle>
+                <CardTitle>Therapist Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Therapist or Plan Info depending on flow */}
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                   <img
                     src={
@@ -1526,30 +1687,28 @@ export default function BookingPage() {
                   />
                   <div>
                     <p className="font-medium">
-                      {subscriptionBooking 
-                        ? plan.name 
-                        : publicAdmins?.[0]?.name || therapist.name || "Doctor"}
+                      {publicAdmins?.[0]?.name || "Doctor"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {subscriptionBooking
-                        ? `Subscription Plan - ${plan.duration}`
-                        : publicAdmins?.[0]?.doctorProfile?.specialization || therapist.title || "Physiotherapist"}
+                      {publicAdmins?.[0]?.doctorProfile?.specialization || therapist.title || "Physiotherapist"}
                     </p>
-                    {subscriptionBooking && (
-                      <p className="text-sm text-muted-foreground">
-                        Sessions: {plan.sessions || "Unlimited"}
-                      </p>
-                    )}
-                    {!subscriptionBooking && publicAdmins?.[0]?.doctorProfile?.experience && (
+                    {publicAdmins?.[0]?.doctorProfile?.experience && (
                       <p className="text-sm text-muted-foreground">
                         Experience: {publicAdmins[0].doctorProfile.experience} years
                       </p>
                     )}
+
                   </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                <Separator />
-                {/* Plan or Service Info depending on flow */}
+            {/* Service/Plan Details Card */}
+            <Card variant="elevated">
+              <CardHeader>
+                <CardTitle>{subscriptionBooking ? 'Subscription Plan' : 'Service Details'}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="font-medium">
@@ -1562,6 +1721,11 @@ export default function BookingPage() {
                         ? plan.duration
                         : bookingData?.service?.duration || plan.duration}
                     </p>
+                    {subscriptionBooking && (
+                      <p className="text-sm text-muted-foreground">
+                        Sessions: {plan.sessions || "Unlimited"}
+                      </p>
+                    )}
                     {!subscriptionBooking && bookingData?.service && (
                       <p className="text-sm text-muted-foreground">
                         Service ID: {bookingData.service.id}
@@ -1570,11 +1734,241 @@ export default function BookingPage() {
                   </div>
                   <p className="font-semibold">₹{plan.price}</p>
                 </div>
+              </CardContent>
+            </Card>
 
-                {promoApplied && (
-                  <div className="flex justify-between items-center text-success">
-                    <span className="text-sm">Promo Discount (20%)</span>
-                    <span>-₹{Math.round(plan.price * 0.2)}</span>
+
+
+            <Card variant="elevated">
+              <CardHeader>
+                <CardTitle>Payment Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Available Offers Dialog Trigger */}
+                <div className="space-y-3 p-4 rounded-lg bg-muted/30">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium text-sm">Available Offers</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Click to view and apply coupons
+                      </p>
+                    </div>
+                    <Dialog open={isOffersDialogOpen} onOpenChange={setIsOffersDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          View Offers
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Available Offers & Coupons</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-2">
+                          <div className="space-y-3">
+                            {offersLoading ? (
+                              <div className="flex justify-center items-center h-20">
+                                <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                              </div>
+                            ) : availableOffers.length > 0 ? (
+                              availableOffers.map((offer) => (
+                                <div
+                                  key={offer._id || offer.id}
+                                  className={`p-3 rounded-md border cursor-pointer transition-all ${isCouponApplied && couponCode.toUpperCase() === offer.code
+                                    ? "border-success bg-success/10"
+                                    : "border-muted hover:border-primary/50 hover:bg-muted/50"
+                                    }`}
+                                  onClick={() => {
+                                    if (!isCouponApplied) {
+                                      setCouponCode(offer.code);
+                                      setTimeout(() => {
+                                        handleApplyCoupon();
+                                        setIsOffersDialogOpen(false);
+                                      }, 100);
+                                    }
+                                  }}
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-primary">{offer.discount}</span>
+                                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                          {offer.code}
+                                        </span>
+                                        {isCouponApplied && couponCode.toUpperCase() === offer.code && (
+                                          <span className="text-success text-xs">✓ Applied</span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mt-1">{offer.description}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-4 text-muted-foreground">
+                                No offers available at the moment
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Manual Coupon Entry */}
+                          {/* <div className="pt-4 border-t">
+                            <Label htmlFor="dialogCouponCode" className="text-sm">Or Enter Coupon Code</Label>
+                            <div className="flex gap-2 mt-2">
+                              <Input
+                                id="dialogCouponCode"
+                                placeholder="Enter coupon code"
+                                value={couponCode}
+                                onChange={(e) => {
+                                  setCouponCode(e.target.value);
+                                  if (couponError) setCouponError("");
+                                }}
+                                disabled={isCouponApplied}
+                                className={couponError ? "border-destructive" : ""}
+                              />
+                              {!isCouponApplied ? (
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApplyCoupon();
+                                    setIsOffersDialogOpen(false);
+                                  }}
+                                  disabled={!couponCode.trim()}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  Apply
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveCoupon();
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                            {couponError && (
+                              <p className="text-destructive text-sm mt-1">{couponError}</p>
+                            )}
+                          </div> */}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Applied Coupon Display
+                {(promoApplied || isCouponApplied) && (
+                  <div className="space-y-3 p-3 rounded-lg bg-muted/20">
+                    <h4 className="font-medium text-sm">Applied Discounts</h4>
+                    {promoApplied && !isCouponApplied && (
+                      <div className="flex justify-between items-center text-success">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">Promo Discount</span>
+                          <span className="text-xs bg-success/10 text-success px-2 py-1 rounded">20% OFF</span>
+                        </div>
+                        <span className="font-medium">-₹{Math.round(basePrice * 0.2)}</span>
+                      </div>
+                    )}
+                    {isCouponApplied && (
+                      <div className="flex justify-between items-center text-success">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">Coupon Discount</span>
+                          <span className="text-xs bg-success/10 text-success px-2 py-1 rounded">
+                            {couponCode.toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="font-medium">-₹{couponDiscount}</span>
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsOffersDialogOpen(true)}
+                        className="text-primary hover:text-primary"
+                      >
+                        Change Offer
+                      </Button>
+                    </div>
+                  </div>
+                )} */}
+
+                <Separator />
+
+                {/* Manual Coupon Code Section */}
+                <div className="space-y-2">
+                  <Label htmlFor="couponCode">Or Enter Coupon Code</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="couponCode"
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value);
+                        if (couponError) setCouponError("");
+                      }}
+                      disabled={isCouponApplied}
+                      className={couponError ? "border-destructive" : ""}
+                    />
+                    {!isCouponApplied ? (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApplyCoupon();
+                        }}
+                        disabled={!couponCode.trim()}
+                        variant="outline"
+                      >
+                        Apply
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveCoupon();
+                        }}
+                        variant="outline"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  {couponError && (
+                    <p className="text-destructive text-sm">{couponError}</p>
+                  )}
+                  {/* {isCouponApplied && (
+                    <p className="text-success text-sm font-medium">
+                      ✓ Coupon applied successfully!
+                    </p>
+                  )} */}
+                </div>
+
+                <Separator />
+
+                {/* Discount Display */}
+                {(promoApplied || isCouponApplied) && (
+                  <div className="space-y-2">
+                    {promoApplied && !isCouponApplied && (
+                      <div className="flex justify-between items-center text-success">
+                        <span className="text-sm">Promo Discount (20%)</span>
+                        <span>-₹{Math.round(plan.price * 0.2)}</span>
+                      </div>
+                    )}
+                    {isCouponApplied && (
+                      <div className="flex justify-between items-center text-success">
+                        <span className="text-sm">Coupon Discount</span>
+                        <span>-₹{couponDiscount}</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <Separator />
@@ -1586,10 +1980,22 @@ export default function BookingPage() {
                         ? "Subscription Payment"
                         : "Service Booking Payment"}
                     </p>
+                    {(promoApplied || isCouponApplied) && (
+                      <p className="text-xs text-muted-foreground line-through">
+                        Original: ₹{basePrice}
+                      </p>
+                    )}
                   </div>
-                  <span className="font-bold text-2xl text-primary">
-                    ₹{finalPrice}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-bold text-2xl text-primary">
+                      ₹{finalPrice}
+                    </span>
+                    {(promoApplied || isCouponApplied) && (
+                      <p className="text-xs text-success">
+                        You save ₹{discountAmount}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {!intakeIsRecent && (
@@ -1622,11 +2028,18 @@ export default function BookingPage() {
                     <>
                       <Lock className="h-4 w-4 mr-2" />
                       {subscriptionBooking
-                        ? `Pay ₹${finalPrice} for Subscription`
-                        : `Pay ₹${finalPrice} for Booking`}
+                        ? `Pay ₹${finalPrice} for Subscription${promoApplied || isCouponApplied
+                          ? ` (Save ₹${discountAmount})`
+                          : ""
+                        }`
+                        : `Pay ₹${finalPrice} for Booking${promoApplied || isCouponApplied
+                          ? ` (Save ₹${discountAmount})`
+                          : ""
+                        }`}
                     </>
                   )}
                 </Button>
+
 
                 {isGuestUser && (nameError || emailError || phoneError) && (
                   <div className="text-xs text-center text-destructive space-y-1">

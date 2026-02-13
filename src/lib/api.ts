@@ -502,6 +502,15 @@ export const chatAPI = {
 
   // Send stop typing indicator
   sendStopTyping: () => api.post("/chat/stop-typing"),
+
+  // Offers API
+  getOffers: (params) => api.get('/offers', { params }),
+  getOfferById: (id) => api.get(`/offers/${id}`),
+  createOffer: (data) => api.post('/offers', data),
+  updateOffer: (id, data) => api.put(`/offers/${id}`, data),
+  deleteOffer: (id) => api.delete(`/offers/${id}`),
+  validateOffer: (data) => api.post('/offers/validate', data),
+  incrementOfferUsage: (id) => api.post(`/offers/${id}/increment-usage`),
 };
 
 export default api;
