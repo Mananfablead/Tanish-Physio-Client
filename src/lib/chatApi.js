@@ -67,7 +67,7 @@ export const chatApi = {
     // Get chat messages for a session
     getMessages: async (sessionId) => {
         // For default live chat, use the new dedicated endpoint
-        if (sessionId === 'default-live-chat') {
+            if (sessionId === 'default-live-chat') {
             try {
                 const response = await apiClient.get('/default/messages');
                 return response.data;
@@ -76,7 +76,15 @@ export const chatApi = {
                 // Return empty response structure
                 return { success: false, data: { messages: [] } };
             }
-        } else {
+            } else if (typeof sessionId === 'string' && sessionId.startsWith('support-')) {
+                try {
+                    const response = await apiClient.get(`/support/${encodeURIComponent(sessionId)}`);
+                    return response.data;
+                } catch (error) {
+                    console.error('Error fetching support chat messages:', error);
+                    return { success: false, data: { messages: [] } };
+                }
+            } else {
         // For regular sessions
             const response = await apiClient.get(`/${sessionId}`);
             return response.data;

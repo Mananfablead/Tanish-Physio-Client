@@ -169,6 +169,12 @@ const ChatWidget = () => {
     // Listen for admin replies in default chat
     const cleanupAdminNewMessage = on("admin-new-message", (data) => {
       console.log("Received admin message:", data);
+      // Only show admin messages in the chat: if chatRoom is set, it must match our sessionId
+      if (data.chatRoom && data.chatRoom !== sessionId) {
+        console.log('Admin message for other room ignored:', data.chatRoom);
+        return;
+      }
+
       // Only show admin messages in the chat
       if (data.senderType === "admin" || data.senderType === "therapist") {
         setMessages((prev) => {
@@ -250,16 +256,15 @@ const ChatWidget = () => {
       setLoadError(null);
       console.log("Starting to load initial messages");
 
-      // For live support, we'll use a default session ID
-      const defaultSessionId = "default-live-chat";
+      // For live support, use a per-user support room so chats are private
+      const userId = user?._id || user?.userId || user?.id;
+      const defaultSessionId = userId ? `support-${userId}` : 'default-live-chat';
       setSessionId(defaultSessionId);
 
-      // Join the default live chat room
-      if (socket && connected) {
-        console.log("Joining chat rooms");
+      // Join the support room
+      if (socket && connected && defaultSessionId) {
+        console.log("Joining chat room:", defaultSessionId);
         emit("join-room", { sessionId: defaultSessionId });
-        // Also join the default chat room for admin presence tracking
-        socket.emit("join-default-chat");
       }
 
       // Load previous chat messages from API

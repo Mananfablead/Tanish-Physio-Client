@@ -67,6 +67,15 @@ const VideoCall = ({
     stopRecording,
   } = useWebRTC(roomId, socket, isTherapist);
 
+  const stopMediaStreams = () => {
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        track.stop();
+        console.log("Stopped media track:", track.kind);
+      });
+    }
+  };
+
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [participantAudioStatus, setParticipantAudioStatus] = useState({});
@@ -1344,6 +1353,7 @@ const VideoCall = ({
       setCallActive(false);
       setCallStartTime(null);
       setIncomingCall(false);
+      stopMediaStreams();
       if (onEndCall) onEndCall();
       console.log("Call ended by:", data.endedBy);
       console.log("Initiator role:", data.initiatorRole);
@@ -1360,6 +1370,7 @@ const VideoCall = ({
         setCallStartTime(null);
         setIncomingCall(false);
         setCanReconnect(false); // Disable reconnection for admin-terminated calls
+        stopMediaStreams();
         if (onEndCall) onEndCall();
       } else {
         // Regular participant ended the call - keep UI active for reconnection
@@ -1368,6 +1379,7 @@ const VideoCall = ({
         setCallStartTime(null);
         setIncomingCall(false);
         setCanReconnect(true); // Enable reconnection option
+        stopMediaStreams();
         // Don't call onEndCall to keep session UI active
         // Don't set callStatus to "ended" to avoid termination screen
       }
@@ -2714,11 +2726,16 @@ const VideoCall = ({
               className="rounded-2xl md:w-16 md:h-14 w-14 h-12 bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/20 min-w-[56px]"
               onClick={
                 isTherapist
-                  ? endCall
+                  ? () => {
+                      endCall();
+                      stopMediaStreams();
+                      if (onEndCall) onEndCall();
+                    }
                   : () => {
                       if (socket) {
                         socket.emit("leave-room", { roomId, roomType });
                       }
+                      stopMediaStreams();
                       if (onEndCall) onEndCall();
                     }
               }
