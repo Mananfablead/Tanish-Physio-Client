@@ -61,9 +61,14 @@ export function Header() {
     window.location.reload();
   };
 
-  useEffect(() => {
+useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
     dispatch(fetchProfile());
-  }, [dispatch]);
+  }
+}, [dispatch]);
+
   return (
     <header className="sticky top-0 left-0 right-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md shadow-sm">
       <div className="container flex items-center justify-between px-4 py-3 sm:py-3 md:py-3 lg:py-4">
