@@ -68,6 +68,7 @@ import {
   ArrowRight,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ConditionsWeTreatProps {
   cmsConditions: any;
@@ -114,7 +115,7 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5 },
   };
-  
+  const navigate = useNavigate();
   const getIconComponentFn = getIconComponent || ((iconName: string) => {
     const iconMap: Record<string, any> = {
       ClipboardList: ClipboardList,
@@ -348,10 +349,12 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                 <Button
                   size="lg"
                   className="rounded-full px-8 sm:px-12 py-4 text-base sm:text-lg group w-full sm:w-auto h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                  onClick={closeModal}
+                  onClick={() => {
+                    navigate("/services");
+                    closeModal();}}
                 >
                   <span className="flex items-center font-semibold">
-                    Book Consultation
+                    Book service
                     <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                   </span>
                 </Button>

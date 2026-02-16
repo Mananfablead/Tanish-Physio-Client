@@ -126,20 +126,20 @@ export function Services({
                         <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
-                    <Button
+                    {/* <Button
                       size="sm"
                       className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                       onClick={() => {
-                        // Add booking logic here
+                       
                         console.log(
                           "Book session clicked for service:",
                           service.slug || service.id
                         );
                       }}
                     >
-                      {/* <ShoppingCart className="h-3 w-3 mr-1" /> */}
+                      
                       Book session
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </Card>
