@@ -37,7 +37,7 @@ export default function TherapistProfilePage() {
   const { admins: publicAdmins, loading: adminsLoading, error: adminsError } = useSelector((state: RootState) => state.admins);
 
   // Find the specific therapist based on the ID from the URL
-  const therapist = publicAdmins.find(admin => admin.id === id) || null;
+  const therapist = publicAdmins.find(admin => admin.name === id) || null;
 
   // Fetch public admins when component mounts
   useEffect(() => {

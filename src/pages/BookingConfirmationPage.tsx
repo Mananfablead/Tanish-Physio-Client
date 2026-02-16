@@ -37,6 +37,7 @@ export default function BookingConfirmationPage() {
   const [isQuestionnaireFilled, setIsQuestionnaireFilled] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [isAutoLoginCompleted, setIsAutoLoginCompleted] = useState(false);
 
   useEffect(() => {
     dispatch(fetchPublicAdmins());
@@ -225,6 +226,7 @@ export default function BookingConfirmationPage() {
           }));
           // Update the authentication context
           localStorage.setItem("isAuthenticated", "true");
+          setIsAutoLoginCompleted(true);
           toast.success("Account created and logged in successfully!");
         })
         .catch((error) => {
@@ -236,6 +238,7 @@ export default function BookingConfirmationPage() {
           }));
           // Update the authentication context
           localStorage.setItem("isAuthenticated", "true");
+          setIsAutoLoginCompleted(true);
           toast.success("Logged in successfully!");
         });
       

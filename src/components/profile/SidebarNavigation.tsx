@@ -126,7 +126,8 @@ export function SidebarNavigation({
       <div className="lg:hidden mb-2">
         <Button
           onClick={() => navigate("/schedule")}
-          className="w-full py-5 rounded-xl bg-white text-primary font-black text-base shadow-lg"
+          className="w-full py-5 rounded-xl bg-white text-primary font-black text-base shadow-lg hover:bg-white hover:text-primary"
+
         >
           Book Session Now
           <ChevronRight className="h-4 w-4" />

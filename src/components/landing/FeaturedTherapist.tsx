@@ -107,7 +107,7 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
                   </button>
                 </Link>
 
-                <Link to={`/therapist/${publicAdmins[0].id}`}>
+                <Link to={`/therapist/${publicAdmins[0].name}`}>
                   <button
                     className="rounded-full bg-primary/10 text-primary hover:bg-primary/20 h-12 px-6 py-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 flex items-center gap-2"
                   >

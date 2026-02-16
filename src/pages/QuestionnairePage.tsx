@@ -136,7 +136,7 @@ export default function QuestionnairePage() {
 
       // Clear validation error when user starts answering
       if (validationErrors[questionId]) {
-        const newErrors = {...validationErrors};
+        const newErrors = { ...validationErrors };
         delete newErrors[questionId];
         setValidationErrors(newErrors);
       }
@@ -159,7 +159,7 @@ export default function QuestionnairePage() {
     });
   };
 
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   const handleNext = () => {
     // Check if current question is required and hasn't been answered
@@ -174,7 +174,7 @@ export default function QuestionnairePage() {
 
     // Clear validation error for current question if it exists
     if (validationErrors[currentQuestion?._id]) {
-      const newErrors = {...validationErrors};
+      const newErrors = { ...validationErrors };
       delete newErrors[currentQuestion._id];
       setValidationErrors(newErrors);
     }
@@ -188,21 +188,21 @@ export default function QuestionnairePage() {
       // Before going to review, validate all required questions are answered
       const requiredQuestions = activeQuestionnaire?.questions.filter((q: any) => q.required) || [];
       const unansweredRequired = requiredQuestions.filter((q: any) => !data[q._id] || data[q._id].toString().trim() === '');
-      
+
       if (unansweredRequired.length > 0) {
         // Set validation errors for all unanswered required questions
-        const newErrors: {[key: string]: string} = {};
+        const newErrors: { [key: string]: string } = {};
         unansweredRequired.forEach((q: any) => {
           newErrors[q._id] = `${q.question} is required`;
         });
         setValidationErrors(newErrors);
-        
+
         // Navigate to the first unanswered required question
         const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === unansweredRequired[0]._id) || 0;
         setActiveQuestionIndex(firstUnansweredIndex);
         return;
       }
-      
+
       setIsReviewing(true);
     }
   };
@@ -257,14 +257,14 @@ export default function QuestionnairePage() {
   // Transform questionnaire data to healthProfile structure
   const transformQuestionnaireToHealthProfile = (questionnaireData: any, questions: any[]) => {
     const healthProfile: any = {};
-    
+
     // Initialize questionnaire metadata
     const questionnaireMetadata = {
       questionnaireId: activeQuestionnaire?._id,
       completedAt: new Date(),
       responses: [] as any[]
     };
-    
+
     // Initialize questionnaire responses map
     const questionnaireResponses = new Map<string, string>();
 
@@ -287,7 +287,7 @@ export default function QuestionnairePage() {
 
       // Store in questionnaire responses map
       questionnaireResponses.set(questionId, answerValue as string);
-      
+
       // Store detailed response metadata
       questionnaireMetadata.responses.push({
         questionId: question._id,
@@ -341,15 +341,15 @@ export default function QuestionnairePage() {
     // Validate all required questions before submitting
     const requiredQuestions = activeQuestionnaire?.questions.filter((q: any) => q.required) || [];
     const unansweredRequired = requiredQuestions.filter((q: any) => !data[q._id] || data[q._id].toString().trim() === '');
-    
+
     if (unansweredRequired.length > 0) {
       // Set validation errors for all unanswered required questions
-      const newErrors: {[key: string]: string} = {};
+      const newErrors: { [key: string]: string } = {};
       unansweredRequired.forEach((q: any) => {
         newErrors[q._id] = `${q.question} is required`;
       });
       setValidationErrors(newErrors);
-      
+
       // Navigate to the first unanswered required question
       const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === unansweredRequired[0]._id) || 0;
       setActiveQuestionIndex(firstUnansweredIndex);
@@ -405,28 +405,32 @@ export default function QuestionnairePage() {
         } catch (e) {
           console.error("Error getting subscription ID from storage:", e);
         }
-        
-        // navigate to booking-confirmation page with plan data for session booking
-        navigate("/booking-confirmation", { state: { 
-          fromSubscription: true,
-          subscriptionId: subscriptionId,
-          plan: pending, 
-          questionnaireData: serializedData, 
-          therapist: assigned,
-          guestUser: guestUser
-        } });
+
+        // navigate to profile page with plan data for session booking
+        navigate("/profile", {
+          state: {
+            fromSubscription: true,
+            subscriptionId: subscriptionId,
+            plan: pending,
+            questionnaireData: data,
+            therapist: assigned,
+            guestUser: guestUser
+          }
+        });
         return;
       }
 
       if (serviceToBook) {
-        // For service bookings, navigate to booking-confirmation page with service data
-        navigate("/booking-confirmation", { state: { 
-          fromServices: true,
-          service: serviceToBook, 
-          questionnaireData: serializedData, 
-          therapist: assigned,
-          guestUser: guestUser
-        } });
+        // For service bookings, navigate to profile page with service data
+        navigate("/profile", {
+          state: {
+            fromServices: true,
+            service: serviceToBook,
+            questionnaireData: data,
+            therapist: assigned,
+            guestUser: guestUser
+          }
+        });
         return;
       }
 
@@ -466,28 +470,32 @@ export default function QuestionnairePage() {
         } catch (e) {
           console.error("Error getting subscription ID from storage:", e);
         }
-        
-        // navigate to booking-confirmation page with plan data for session booking
-        navigate("/booking-confirmation", { state: { 
-          fromSubscription: true,
-          subscriptionId: subscriptionId,
-          plan: pending, 
-          questionnaireData: serializedData, 
-          therapist: assigned,
-          guestUser: guestUser
-        } });
+
+        // navigate to profile page with plan data for session booking
+        navigate("/profile", {
+          state: {
+            fromSubscription: true,
+            subscriptionId: subscriptionId,
+            plan: pending,
+            questionnaireData: data,
+            therapist: assigned,
+            guestUser: guestUser
+          }
+        });
         return;
       }
 
       if (serviceToBook) {
-        // For service bookings, navigate to booking-confirmation page with service data
-        navigate("/booking-confirmation", { state: { 
-          fromServices: true,
-          service: serviceToBook, 
-          questionnaireData: serializedData, 
-          therapist: assigned,
-          guestUser: guestUser
-        } });
+        // For service bookings, navigate to profile page with service data
+        navigate("/profile", {
+          state: {
+            fromServices: true,
+            service: serviceToBook,
+            questionnaireData: data,
+            therapist: assigned,
+            guestUser: guestUser
+          }
+        });
         return;
       }
 
@@ -531,7 +539,7 @@ export default function QuestionnairePage() {
               onChange={(e) => {
                 // Clear validation error when user starts typing
                 if (validationErrors[question._id]) {
-                  const newErrors = {...validationErrors};
+                  const newErrors = { ...validationErrors };
                   delete newErrors[question._id];
                   setValidationErrors(newErrors);
                 }
@@ -553,7 +561,7 @@ export default function QuestionnairePage() {
             onValueChange={(value) => {
               // Clear validation error when user selects an option
               if (validationErrors[question._id]) {
-                const newErrors = {...validationErrors};
+                const newErrors = { ...validationErrors };
                 delete newErrors[question._id];
                 setValidationErrors(newErrors);
               }
@@ -598,7 +606,7 @@ export default function QuestionnairePage() {
                 onValueChange={([value]) => {
                   // Clear validation error when user adjusts the slider
                   if (validationErrors[question._id]) {
-                    const newErrors = {...validationErrors};
+                    const newErrors = { ...validationErrors };
                     delete newErrors[question._id];
                     setValidationErrors(newErrors);
                   }
@@ -635,13 +643,13 @@ export default function QuestionnairePage() {
                 <button
                   key={area.id}
                   className={`absolute ${area.position} w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${currentValue === area.id
-                      ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
-                      : "bg-slate-300 hover:bg-primary/40"
+                    ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
+                    : "bg-slate-300 hover:bg-primary/40"
                     }`}
                   onClick={() => {
                     // Clear validation error when user selects an area
                     if (validationErrors[question._id]) {
-                      const newErrors = {...validationErrors};
+                      const newErrors = { ...validationErrors };
                       delete newErrors[question._id];
                       setValidationErrors(newErrors);
                     }
@@ -661,7 +669,7 @@ export default function QuestionnairePage() {
                   onClick={() => {
                     // Clear validation error when user selects an area
                     if (validationErrors[question._id]) {
-                      const newErrors = {...validationErrors};
+                      const newErrors = { ...validationErrors };
                       delete newErrors[question._id];
                       setValidationErrors(newErrors);
                     }
@@ -852,7 +860,7 @@ export default function QuestionnairePage() {
               onChange={(e) => {
                 // Clear validation error when user starts typing
                 if (validationErrors[question._id]) {
-                  const newErrors = {...validationErrors};
+                  const newErrors = { ...validationErrors };
                   delete newErrors[question._id];
                   setValidationErrors(newErrors);
                 }
@@ -982,24 +990,22 @@ export default function QuestionnairePage() {
                         return (
                           <li
                             key={question._id}
-                            className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                              current
+                            className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${current
                                 ? "bg-primary/10 text-primary"
                                 : "hover:bg-slate-100"
-                            } ${answered ? "!text-emerald-700" : ""}`}
+                              } ${answered ? "!text-emerald-700" : ""}`}
                             aria-current={current ? "step" : undefined}
                           >
                             <div
                               className={`
                             h-8 w-8 rounded-full flex items-center justify-center
                             text-xs font-bold transition-all
-                            ${
-                              current
-                                ? "bg-primary text-white shadow-md shadow-primary/20"
-                                : answered
-                                ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                                : "bg-slate-100 text-slate-400 border border-slate-200"
-                            }
+                            ${current
+                                  ? "bg-primary text-white shadow-md shadow-primary/20"
+                                  : answered
+                                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                    : "bg-slate-100 text-slate-400 border border-slate-200"
+                                }
                           `}
                             >
                               {answered ? (
@@ -1058,8 +1064,8 @@ export default function QuestionnairePage() {
                             Last updated:{" "}
                             {storedIntakeUpdatedAt
                               ? new Date(
-                                  storedIntakeUpdatedAt
-                                ).toLocaleDateString()
+                                storedIntakeUpdatedAt
+                              ).toLocaleDateString()
                               : "Unknown"}
                             . You can review or continue with this intake.
                           </div>
@@ -1122,7 +1128,7 @@ export default function QuestionnairePage() {
                                     sessionStorage.removeItem(
                                       "qw_pending_plan"
                                     );
-                                  } catch (e) {}
+                                  } catch (e) { }
                                   // Get subscription ID from stored plan
                                   let subscriptionId = null;
                                   try {
@@ -1140,7 +1146,7 @@ export default function QuestionnairePage() {
                                     );
                                   }
 
-                                  navigate("/booking-confirmation", {
+                                  navigate("/profile", {
                                     state: {
                                       fromSubscription: true,
                                       subscriptionId: subscriptionId,
@@ -1228,7 +1234,7 @@ export default function QuestionnairePage() {
                                 className="hidden lg:inline-flex h-12 px-6 md:px-8 rounded-xl font-black text-lg bg-primary hover:from-primary/90 hover:to-accent/90 shadow-md shadow-primary/20 group"
                               >
                                 {activeQuestionIndex <
-                                (activeQuestionnaire?.questions.length || 0) - 1
+                                  (activeQuestionnaire?.questions.length || 0) - 1
                                   ? "Continue"
                                   : "Finish & Review"}
                                 <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -1406,7 +1412,7 @@ export default function QuestionnairePage() {
                   className="flex-1 h-12 min-h-[48px] rounded-xl font-black bg-primary text-white"
                 >
                   {activeQuestionIndex <
-                  (activeQuestionnaire?.questions.length || 0) - 1
+                    (activeQuestionnaire?.questions.length || 0) - 1
                     ? "Continue"
                     : "Finish & Review"}
                 </button>

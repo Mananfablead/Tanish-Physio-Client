@@ -249,23 +249,23 @@ useEffect(() => {
                         <p className="text-sm text-muted-foreground truncate">
                           {user?.email}
                         </p>
-                        <p className="text-xs font-medium text-primary mt-0.5">
+                        {/* <p className="text-xs font-medium text-primary mt-0.5">
                           {user?.role || "Patient"}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full mt-2"
                       onClick={() => {
                         setOpen(false);
                         navigate("/profile");
                       }}
                     >
-                      <div className="p-1 rounded bg-primary/10 mr-2">
+                      {/* <div className="p-1 rounded bg-primary/10 mr-2">
                         <User className="h-4 w-4 text-primary" />
-                      </div>
+                      </div> */}
                       View Profile
                     </Button>
                   </div>

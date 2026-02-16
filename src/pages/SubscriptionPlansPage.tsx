@@ -169,13 +169,13 @@ export default function SubscriptionPlansPage() {
                       {/* Gradient overlay */}
                       <div className={`absolute inset-0 bg-gradient-to-br ${plan.popular ? "from-primary/5 to-secondary/5" : "from-muted/20 to-background"} pointer-events-none`} />
 
-                      {isActive && (
+                      {/* {isActive && (
                         <div className="absolute top-0 right-4 z-10">
                           <Badge variant="success" className="bg-green-500/90 text-white border-green-500">
                             Active
                           </Badge>
                         </div>
-                      )}
+                      )} */}
                       {isSubscriptionExpired && activePlanId === planId && (
                         <div className="absolute top-4 right-4 z-10">
                           <Badge variant="destructive" className="bg-destructive/90 text-white border-destructive">

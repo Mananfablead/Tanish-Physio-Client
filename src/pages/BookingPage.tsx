@@ -45,7 +45,6 @@ export default function BookingPage() {
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
   const bookingData = location.state;
-
   console.log("bookingData", bookingData);
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
@@ -792,17 +791,15 @@ export default function BookingPage() {
                       JSON.stringify(plan)
                     );
                   } catch (e) {}
-                  navigate("/questionnaire", {
-                    state: { planToActivate: plan },
-                  });
-                  return;
+                  // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
+                  // Remove direct navigation to questionnaire from here
                 }
 
                 try {
                   const therapist = {
-                    id: `th-${Math.floor(Math.random() * 10000)}`,
-                    name: "Assigned Clinician",
-                    title: "Matched Specialist",
+                    id: publicAdmins?.[0]?.id,
+                    name: publicAdmins?.[0]?.name,
+                    title: publicAdmins?.[0]?.title,
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -880,7 +877,7 @@ export default function BookingPage() {
                     active: true,
                   })
                 );
-
+                
                 // Check for existing intake
                 let stored = null;
                 try {
@@ -893,7 +890,7 @@ export default function BookingPage() {
                 const now = Date.now();
                 const isRecent = (ts: number | undefined | null) =>
                   ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
-
+                
                 // Check for any previously reserved session (from intake-first scheduling)
                 let scheduled = null;
                 try {
@@ -902,7 +899,7 @@ export default function BookingPage() {
                 } catch (e) {
                   scheduled = null;
                 }
-
+                
                 if (!stored || !isRecent(stored?.updatedAt)) {
                   // Plan purchased, but intake missing or outdated: require intake to unlock sessions
                   toast.success(
@@ -915,18 +912,16 @@ export default function BookingPage() {
                       JSON.stringify(plan)
                     );
                   } catch (e) {}
-                  navigate("/questionnaire", {
-                    state: { planToActivate: plan },
-                  });
-                  return;
+                  // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
+                  // Remove direct navigation to questionnaire from here
                 }
-
+                
                 // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
                 try {
                   const therapist = {
-                    id: `th-${Math.floor(Math.random() * 10000)}`,
-                    name: "Assigned Clinician",
-                    title: "Matched Specialist",
+                    id: publicAdmins?.[0]?.id,
+                    name: publicAdmins?.[0]?.name,
+                    title: publicAdmins?.[0]?.title,
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -1298,10 +1293,8 @@ export default function BookingPage() {
                       JSON.stringify(plan)
                     );
                   } catch (e) {}
-                  navigate("/questionnaire", {
-                    state: { planToActivate: plan },
-                  });
-                  return;
+                  // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
+                  // Remove direct navigation to questionnaire from here
                 }
 
                 // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
@@ -1525,18 +1518,16 @@ export default function BookingPage() {
                       JSON.stringify(plan)
                     );
                   } catch (e) {}
-                  navigate("/questionnaire", {
-                    state: { planToActivate: plan },
-                  });
-                  return;
+                  // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
+                  // Remove direct navigation to questionnaire from here
                 }
 
                 // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
                 try {
                   const therapist = {
-                    id: `th-${Math.floor(Math.random() * 10000)}`,
-                    name: "Assigned Clinician",
-                    title: "Matched Specialist",
+                    id: publicAdmins?.[0]?.id || "",
+                    name: publicAdmins?.[0]?.name || "",
+                    title: publicAdmins?.[0]?.title || "",
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -2439,7 +2430,7 @@ export default function BookingPage() {
         setScheduleDate={setScheduleDate}
         setScheduleTime={setScheduleTime}
         setSelectedDate={setSelectedDate}
-        therapistName={therapist?.name || "your therapist"}
+        therapistName={therapist?.name}
       />
     </Layout>
   );
