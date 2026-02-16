@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '@/lib/api';
 
 // Define types
-export type QuestionType = 'text' | 'mcq' | 'slider' | 'skalaeton';
+export type QuestionType = 'text' | 'mcq' | 'slider' | 'skalaeton' | 'upload';
 
 export interface Question {
   _id: string;

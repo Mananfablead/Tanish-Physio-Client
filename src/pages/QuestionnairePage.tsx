@@ -22,7 +22,9 @@ import {
   FileText,
   Edit,
   Shield,
-  Lock
+  Lock,
+  Upload,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchActiveQuestionnaire, selectActiveQuestionnaire, selectQuestionnaireLoading, selectQuestionnaireError, QuestionType } from "@/store/slices/questionnaireSlice";
@@ -139,10 +141,10 @@ export default function QuestionnairePage() {
         setValidationErrors(newErrors);
       }
 
-      // Auto advance to next question if there is one and it's not a text field
+      // Auto advance to next question if there is one and it's not a text or upload field
       const question = activeQuestionnaire?.questions.find((q: any) => q._id === questionId);
       // Only auto-advance if the question is not required OR has been answered with a non-empty value
-      if (question && question.type !== 'text' && (!question.required || (value && value.toString().trim() !== ''))) {
+      if (question && !['text', 'upload'].includes(question.type) && (!question.required || (value && value.toString().trim() !== ''))) {
         const currentQuestionIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === questionId) ?? -1;
         if (currentQuestionIndex >= 0 && currentQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1) {
           setActiveQuestionIndex(currentQuestionIndex + 1);
@@ -228,6 +230,30 @@ export default function QuestionnairePage() {
     }
   };
 
+  // Helper function to convert file objects to serializable format
+  const serializeQuestionnaireData = (questionnaireData: any) => {
+    const serialized: any = {};
+    
+    Object.entries(questionnaireData).forEach(([key, value]) => {
+      if (typeof value === 'object' && value !== null) {
+        // If it's an uploaded file with URL, keep the URL
+        if (value.url) {
+          serialized[key] = value.url;
+        } else if (value.name) {
+          // If it's just a filename, keep the filename
+          serialized[key] = value.name;
+        } else {
+          // Otherwise keep the object as is
+          serialized[key] = value;
+        }
+      } else {
+        serialized[key] = value;
+      }
+    });
+    
+    return serialized;
+  };
+
   // Transform questionnaire data to healthProfile structure
   const transformQuestionnaireToHealthProfile = (questionnaireData: any, questions: any[]) => {
     const healthProfile: any = {};
@@ -247,14 +273,26 @@ export default function QuestionnairePage() {
       const question = questions.find(q => q._id === questionId);
       if (!question || !answer) return;
 
+      // Convert file objects/URLs to displayable format for storage
+      let answerValue = answer;
+      if (typeof answer === 'object' && answer !== null) {
+        // If it's an uploaded file with URL, use the URL
+        if (answer.url) {
+          answerValue = answer.url;
+        } else if (answer.name) {
+          // If it's just a filename, use the filename
+          answerValue = answer.name;
+        }
+      }
+
       // Store in questionnaire responses map
-      questionnaireResponses.set(questionId, answer as string);
+      questionnaireResponses.set(questionId, answerValue as string);
       
       // Store detailed response metadata
       questionnaireMetadata.responses.push({
         questionId: question._id,
         questionText: question.question,
-        answer: answer as string,
+        answer: answerValue as string,
         questionType: question.type,
         timestamp: new Date()
       });
@@ -337,6 +375,9 @@ export default function QuestionnairePage() {
         await updateProfile(profileData);
       }
 
+      // Serialize questionnaire data to handle file objects
+      const serializedData = serializeQuestionnaireData(data);
+
       // If we were navigated here to activate a plan, complete activation and send user to booking
       const pending = pendingPlan || (() => {
         try {
@@ -345,7 +386,7 @@ export default function QuestionnairePage() {
         } catch (e) { return null; }
       })();
 
-      const assigned = assignTherapist(data);
+      const assigned = assignTherapist(serializedData);
 
       if (pending) {
         // activate plan
@@ -370,7 +411,7 @@ export default function QuestionnairePage() {
           fromSubscription: true,
           subscriptionId: subscriptionId,
           plan: pending, 
-          questionnaireData: data, 
+          questionnaireData: serializedData, 
           therapist: assigned,
           guestUser: guestUser
         } });
@@ -382,7 +423,7 @@ export default function QuestionnairePage() {
         navigate("/booking-confirmation", { state: { 
           fromServices: true,
           service: serviceToBook, 
-          questionnaireData: data, 
+          questionnaireData: serializedData, 
           therapist: assigned,
           guestUser: guestUser
         } });
@@ -395,6 +436,9 @@ export default function QuestionnairePage() {
       console.error("Error updating profile with questionnaire data:", error);
       // Continue with navigation even if profile update fails
 
+      // Serialize questionnaire data to handle file objects  
+      const serializedData = serializeQuestionnaireData(data);
+
       // If we were navigated here to activate a plan, complete activation and send user to booking
       const pending = pendingPlan || (() => {
         try {
@@ -403,7 +447,7 @@ export default function QuestionnairePage() {
         } catch (e) { return null; }
       })();
 
-      const assigned = assignTherapist(data);
+      const assigned = assignTherapist(serializedData);
 
       if (pending) {
         // activate plan
@@ -428,7 +472,7 @@ export default function QuestionnairePage() {
           fromSubscription: true,
           subscriptionId: subscriptionId,
           plan: pending, 
-          questionnaireData: data, 
+          questionnaireData: serializedData, 
           therapist: assigned,
           guestUser: guestUser
         } });
@@ -440,7 +484,7 @@ export default function QuestionnairePage() {
         navigate("/booking-confirmation", { state: { 
           fromServices: true,
           service: serviceToBook, 
-          questionnaireData: data, 
+          questionnaireData: serializedData, 
           therapist: assigned,
           guestUser: guestUser
         } });
@@ -638,6 +682,166 @@ export default function QuestionnairePage() {
             currentValue={currentValue}
             updateAnswer={updateAnswer}
           />
+        );
+
+      case 'upload':
+        const isUploading = (currentValue && typeof currentValue === 'object' && currentValue.uploading) || false;
+        const uploadedFileUrl = (currentValue && typeof currentValue === 'object' && currentValue.url) ? currentValue.url : null;
+        const uploadedFileName = (currentValue && typeof currentValue === 'object' && currentValue.name) ? currentValue.name : null;
+        
+        return (
+          <div className="space-y-4">
+            {!uploadedFileUrl ? (
+              <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                hasError ? 'border-red-500 bg-red-50' : 
+                isRequired && !isAnswered ? 'border-red-300 bg-red-50' : 
+                'border-primary/30 bg-primary/5 hover:border-primary/60'
+              }`}>
+                <div className="mb-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                    <Upload className="w-6 h-6 text-primary" />
+                  </div>
+                </div>
+                <p className="font-bold text-sm mb-1">
+                  {isUploading ? 'Uploading...' : 'Upload File'}
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Click to select or drag and drop your file (PDF, Word, Excel, Images, etc.)
+                </p>
+                <input
+                  type="file"
+                  id={`file-upload-${question._id}`}
+                  className="hidden"
+                  disabled={isUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Clear validation error when user selects a file
+                      if (validationErrors[question._id]) {
+                        const newErrors = {...validationErrors};
+                        delete newErrors[question._id];
+                        setValidationErrors(newErrors);
+                      }
+                      
+                      // Show uploading state
+                      updateAnswer(question._id, {
+                        uploading: true,
+                        name: file.name,
+                        size: file.size,
+                        type: file.type
+                      });
+
+                      try {
+                        // Upload file to backend
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        const response = await fetch('/api/questionnaires/upload-file', {
+                          method: 'POST',
+                          body: formData
+                        });
+
+                        if (!response.ok) {
+                          throw new Error('File upload failed');
+                        }
+
+                        const result = await response.json();
+                        
+                        if (result.success && result.data) {
+                          // Store the uploaded file URL and details
+                          updateAnswer(question._id, {
+                            url: result.data.url,
+                            name: result.data.filename,
+                            size: result.data.size,
+                            type: result.data.mimetype,
+                            uploading: false
+                          });
+
+                          // Clear file input
+                          const fileInput = document.getElementById(`file-upload-${question._id}`) as HTMLInputElement;
+                          if (fileInput) fileInput.value = '';
+                        } else {
+                          throw new Error(result.message || 'Upload failed');
+                        }
+                      } catch (error) {
+                        console.error('Error uploading file:', error);
+                        // Reset to error state
+                        updateAnswer(question._id, {
+                          error: true,
+                          errorMessage: (error as Error).message,
+                          uploading: false
+                        });
+                      }
+                    }
+                  }}
+                />
+                <Label 
+                  htmlFor={`file-upload-${question._id}`}
+                  className="inline-block"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="cursor-pointer"
+                    disabled={isUploading}
+                    onClick={() => {
+                      const input = document.getElementById(`file-upload-${question._id}`) as HTMLInputElement;
+                      input?.click();
+                    }}
+                  >
+                    {isUploading ? 'Uploading...' : 'Select File'}
+                  </Button>
+                </Label>
+              </div>
+            ) : null}
+            
+            {uploadedFileUrl && (
+              <div className="flex items-center justify-between bg-success/10 border border-success/30 rounded-lg p-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <FileText className="w-5 h-5 text-success flex-shrink-0" />
+                  <div className="text-sm flex-1 min-w-0">
+                    <p className="font-bold text-success truncate">{uploadedFileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {uploadedFileUrl}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-2">
+                  <a
+                    href={uploadedFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 hover:bg-success/20 rounded transition-colors"
+                    title="View file"
+                  >
+                    <FileText className="w-5 h-5 text-success" />
+                  </a>
+                  <button
+                    onClick={() => {
+                      // Reset upload
+                      updateAnswer(question._id, null);
+                      const fileInput = document.getElementById(`file-upload-${question._id}`) as HTMLInputElement;
+                      if (fileInput) fileInput.value = '';
+                    }}
+                    className="p-2 hover:bg-red-100 rounded transition-colors"
+                    title="Remove file"
+                  >
+                    <X className="w-5 h-5 text-destructive" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(currentValue && typeof currentValue === 'object' && currentValue.error) && (
+              <p className="text-red-500 text-sm font-bold">
+                Upload error: {(currentValue as any).errorMessage}
+              </p>
+            )}
+
+            {hasError && (
+              <p className="text-red-500 text-sm font-bold">{validationErrors[question._id]}</p>
+            )}
+          </div>
         );
 
       default:
@@ -897,7 +1101,8 @@ export default function QuestionnairePage() {
                                   );
                                 }
 
-                                const assigned = assignTherapist(stored.data);
+                                const serializedStoredData = serializeQuestionnaireData(stored.data);
+                                const assigned = assignTherapist(serializedStoredData);
                                 const pending =
                                   pendingPlan ||
                                   (() => {
@@ -940,7 +1145,7 @@ export default function QuestionnairePage() {
                                       fromSubscription: true,
                                       subscriptionId: subscriptionId,
                                       plan: pending,
-                                      questionnaireData: stored.data,
+                                      questionnaireData: serializedStoredData,
                                       therapist: assigned,
                                       guestUser: guestUser,
                                     },
@@ -1075,9 +1280,25 @@ export default function QuestionnairePage() {
                                           <p className="text-xs uppercase font-black tracking-[0.15em] text-slate-400 mb-1.5">
                                             {question.question}
                                           </p>
-                                          <p className="text-base font-medium text-slate-800 break-words">
-                                            {data[question._id] ||
-                                              "Not answered"}
+                                          <p className="text-base font-medium text-slate-800 break-words flex items-center gap-2">
+                                            {typeof data[question._id] === 'object' && data[question._id]?.url ? (
+                                              <>
+                                                <a
+                                                  href={data[question._id].url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="text-primary hover:underline flex items-center gap-1"
+                                                >
+                                                  <FileText className="w-4 h-4" />
+                                                  {data[question._id].name || 'View File'}
+                                                </a>
+                                              </>
+                                            ) : typeof data[question._id] === 'object' && data[question._id]?.name ? (
+                                              data[question._id].name
+                                            ) : (
+                                              data[question._id] ||
+                                              "Not answered"
+                                            )}
                                           </p>
                                         </div>
                                         <button

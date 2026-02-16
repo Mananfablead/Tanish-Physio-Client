@@ -1,7 +1,45 @@
 import { Link } from "react-router-dom";
 import { Activity, Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
 import logo from '../../assets/logo.webp';
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchContactPublic } from "../../store/slices/cmsSlice";
+import { RootState } from "../../store";
+
 export function Footer() {
+  const dispatch = useDispatch();
+  const contact = useSelector((state: RootState) => state.cms.contact);
+
+  useEffect(() => {
+    dispatch(fetchContactPublic() as any);
+  }, [dispatch]);
+
+  // Fallback data if API data is not available
+  const contactData = contact || {
+    email: 'drkhushboo26@gmail.com',
+    phone: '+91 9427555696',
+    address: '5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan',
+    socialLinks: [
+      { platform: 'facebook', url: 'https://www.facebook.com/TanishPhysioFitnessandLaserClinic' },
+      { platform: 'instagram', url: 'https://www.instagram.com/tanish_physio_fitness_clinic/' },
+      { platform: 'linkedin', url: 'https://www.linkedin.com/in/dr-khhushbu-joshi-9b087b179/' }
+    ]
+  };
+
+  // Function to get social icon based on platform
+  const getSocialIcon = (platform: string) => {
+    switch(platform?.toLowerCase()) {
+      case 'facebook':
+        return <Facebook className="h-5 w-5" />;
+      case 'instagram':
+        return <Instagram className="h-5 w-5" />;
+      case 'linkedin':
+        return <Linkedin className="h-5 w-5" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <footer className="border-t border-border bg-muted/30">
       <div className="container py-4">
@@ -23,32 +61,6 @@ export function Footer() {
               Professional physiotherapy consultations from the comfort of your
               home.
             </p>
-            <div className="flex space-x-4 mt-4">
-              <a
-                href="https://www.facebook.com/TanishPhysioFitnessandLaserClinic"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-primary hover:scale-110  transition-colors"
-              >
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a
-                href="https://www.instagram.com/tanish_physio_fitness_clinic/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-primary  hover:scale-110  transition-colors"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href="https://www.linkedin.com/in/dr-khhushbu-joshi-9b087b179/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-primary hover:scale-110  transition-colors"
-              >
-                <Linkedin className="h-5 w-5" />
-              </a>
-            </div>
           </div>
 
           {/* Quick Links */}
@@ -101,15 +113,15 @@ export function Footer() {
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
                 <a
-                  href="mailto:drkhushboo26@gmail.com"
+                  href={`mailto:${contactData.email}`}
                   className="hover:text-primary transition-colors"
                 >
-                  drkhushboo26@gmail.com
+                  {contactData.email}
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
-                +91 9427555696
+                {contactData.phone}
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="h-4 w-10 text-primary" />
@@ -119,13 +131,24 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
                 >
-                  5, Dhaval Appts, Besides Telephone Exchange,Choksiwadi Road,
-                  Ajaramar Chowk, Adajan
+                  {contactData.address}
                 </a>
               </li>
+              {/* Social Links */}
+              <li className="flex gap-4 pt-2">
+                {contactData.socialLinks && contactData.socialLinks.map((link: any) => (
+                  <a
+                    key={link.platform}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary hover:scale-110 transition-colors"
+                  >
+                    {getSocialIcon(link.platform)}
+                  </a>
+                ))}
+              </li>
             </ul>
-
-            {/* Social Media */}
           </div>
         </div>
 
