@@ -30,10 +30,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { fetchActiveQuestionnaire, selectActiveQuestionnaire, selectQuestionnaireLoading, selectQuestionnaireError, QuestionType } from "@/store/slices/questionnaireSlice";
 import { updateProfile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
 
 interface QuestionnaireData {
   [key: string]: any; // Dynamic keys for question responses
 }
+
+/**
+ * QuestionnairePage Component
+ * 
+ * Data Loading Priority:
+ * 1. If user is authenticated: Fetch health profile from API (GET /api/users/{userId})
+ * 2. If no API data or not authenticated: Use data from sessionStorage (fallback)
+ * 3. If neither available: Show empty questionnaire form
+ * 
+ * This ensures that authenticated users always see their most recent health profile data
+ * from the server, while guest users can continue with their session-stored data.
+ */
 
 const initialData: QuestionnaireData = {};
 
@@ -102,17 +115,98 @@ export default function QuestionnairePage() {
     }
   };
 
+  // Fetch user data from API
+  const fetchUserHealthProfile = async (userId: string) => {
+    try {
+      const response = await api.get(`/users/${userId}`);
+      const user = response.data?.data || response.data;
+      
+      if (user?.healthProfile && user.healthProfile.questionnaireResponses) {
+        return user.healthProfile;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching user health profile:", error);
+      return null;
+    }
+  };
+
+  // Transform healthProfile back to questionnaire data format
+  const transformHealthProfileToQuestionnaireData = (healthProfile: any): QuestionnaireData => {
+    if (!healthProfile) return {};
+    
+    // If questionnaireResponses map exists, use it directly as it has the mapping from questionId to answer
+    if (healthProfile.questionnaireResponses && typeof healthProfile.questionnaireResponses === 'object') {
+      return { ...healthProfile.questionnaireResponses };
+    }
+    
+    // Fallback: build from individual healthProfile fields
+    const data: QuestionnaireData = {};
+    
+    if (healthProfile.primaryConcern) data.primaryConcern = healthProfile.primaryConcern;
+    if (healthProfile.painIntensity) data.painIntensity = healthProfile.painIntensity.toString();
+    if (healthProfile.priorTreatments) data.priorTreatments = healthProfile.priorTreatments;
+    if (healthProfile.medicalHistory) data.medicalHistory = healthProfile.medicalHistory;
+    if (healthProfile.allergies) data.allergies = healthProfile.allergies;
+    if (healthProfile.medications) data.medications = healthProfile.medications;
+    if (healthProfile.emergencyContact) data.emergencyContact = healthProfile.emergencyContact;
+    if (healthProfile.additionalNotes) data.additionalNotes = healthProfile.additionalNotes;
+    
+    return data;
+  };
+
+  // Load questionnaire data (from API if authenticated, fallback to sessionStorage)
+  const loadQuestionnaireData = async () => {
+    // First, try to load from API if authenticated
+    if (isAuthenticated) {
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          const userId = user.id || user._id;
+          
+          if (userId) {
+            const healthProfile = await fetchUserHealthProfile(userId);
+            if (healthProfile && Object.keys(healthProfile).length > 0) {
+              const apiData = transformHealthProfileToQuestionnaireData(healthProfile);
+              if (Object.keys(apiData).length > 0) {
+                // Mark as loaded from API, not sessionStorage
+                setStoredIntakeFound(true);
+                setStoredIntakeUpdatedAt(healthProfile.questionnaireMetadata?.completedAt ? new Date(healthProfile.questionnaireMetadata.completedAt).getTime() : now());
+                return apiData;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading from API, falling back to sessionStorage:", error);
+      }
+    }
+    
+    // Fallback to sessionStorage if not authenticated or API fetch failed
+    const stored = loadStoredQuestionnaire();
+    if (stored) {
+      setStoredIntakeFound(true);
+      setStoredIntakeUpdatedAt(stored.updatedAt || now());
+      return stored.data;
+    }
+    
+    return null;
+  };
+
   useEffect(() => {
     // Fetch active questionnaire from API
     dispatch(fetchActiveQuestionnaire() as any);
 
-    // On mount, check for stored intake
-    const stored = loadStoredQuestionnaire();
-    if (stored) {
-      setData(stored.data);
-      setStoredIntakeFound(true);
-      setStoredIntakeUpdatedAt(stored.updatedAt || now());
-    }
+    // Load questionnaire data from API or sessionStorage
+    const loadData = async () => {
+      const loadedData = await loadQuestionnaireData();
+      if (loadedData && Object.keys(loadedData).length > 0) {
+        setData(loadedData);
+      }
+    };
+    
+    loadData();
 
     // Visual viewport listener to detect on-screen keyboard and hide sticky CTA when keyboard is open
     if (typeof window !== 'undefined' && (window as any).visualViewport) {
@@ -126,7 +220,7 @@ export default function QuestionnairePage() {
     }
 
     return undefined;
-  }, []);
+  }, [isAuthenticated, dispatch]);
 
   const updateAnswer = (questionId: string, value: any) => {
     setData((prev) => {
