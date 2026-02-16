@@ -22,6 +22,7 @@ const ChatWidget = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef(null);
+  const wrapperRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
   // Check if we're on a video call related page
@@ -396,6 +397,27 @@ const ChatWidget = () => {
     };
   }, [socket, sessionId, emit]);
 
+  // Close chat when clicking outside or pressing Escape
+  useEffect(() => {
+    const handlePointerDown = (e) => {
+      if (!isOpen) return;
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isOpen) setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
   // Only render the chat widget if user is authenticated and not on video call pages
   if (!isAuthenticated || !user || isVideoCallPage) {
     return null;
@@ -403,6 +425,7 @@ const ChatWidget = () => {
 
   return (
     <div
+      ref={wrapperRef}
       className={`${
         isMobile ? "bottom-16 right-4" : "bottom-6 right-6"
       } fixed z-50`}
@@ -471,7 +494,7 @@ const ChatWidget = () => {
           </div>
 
           {/* Status bar */}
-          <div className="bg-gray-50 px-3 py-2 text-xs text-gray-500 border-b flex justify-between items-center">
+          {/* <div className="bg-gray-50 px-3 py-2 text-xs text-gray-500 border-b flex justify-between items-center">
             <div>
               {connected ? "Connected" : "Connecting..."} • {onlineUsers} online
             </div>
@@ -487,7 +510,7 @@ const ChatWidget = () => {
                 {adminStatus}
               </span>
             </div>
-          </div>
+          </div> */}
 
           {/* Messages container */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
