@@ -1201,7 +1201,7 @@ console.log("user?.purchasedServices",user?.purchasedServices)
           </motion.div>
         )}
       </AnimatePresence>
-        <div className="p-0">
+        {/* <div className="p-0">
             <div className="p-6 pb-4 border-b">
               <h2 className="text-2xl font-bold text-center text-slate-900">Choose Your Wellness Plan</h2>
               <p className="text-center text-slate-600 mt-2">Select the perfect plan for your recovery journey</p>
@@ -1345,7 +1345,7 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                 Close
               </Button>
             </div>
-          </div>
+          </div> */}
 
 
       {/* Success Dialog */}

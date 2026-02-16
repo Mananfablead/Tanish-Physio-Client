@@ -46,7 +46,7 @@ export default function BookingConfirmationPage() {
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem("qw_questionnaire");
-      if (stored) { 
+      if (stored) {
         const parsed = JSON.parse(stored);
         const now = Date.now();
         const RECENT_DAYS = 90;
@@ -63,23 +63,23 @@ export default function BookingConfirmationPage() {
   useEffect(() => {
     const fetchBookingDetails = async () => {
       if (!bookingData?.bookingId) return;
-      
+
       try {
         setLoadingDetails(true);
         let clientEmail = null;
-        
+
         // Determine email based on user type
         if (guestUser?.email) {
           clientEmail = guestUser.email;
         } else if (user?.email) {
           clientEmail = user.email;
         }
-        
+
         if (!clientEmail) {
           console.warn("No email found for booking details request");
           return;
         }
-        
+
         const response = await getBookingDetails(bookingData.bookingId, clientEmail);
         if (response.data?.success) {
           setBookingDetails(response.data.data.booking);
@@ -99,8 +99,8 @@ export default function BookingConfirmationPage() {
   // Use bookingDetails if available, fallback to bookingData
   const serviceName =
     bookingDetails?.serviceName ||
-    bookingData?.service?.name || 
-    bookingData?.plan?.name || 
+    bookingData?.service?.name ||
+    bookingData?.plan?.name ||
     "Physiotherapy";
 
   const serviceDuration =
@@ -115,21 +115,21 @@ export default function BookingConfirmationPage() {
     bookingData?.service?.price ||
     bookingData?.plan?.price;
 
-  const sessionDate = bookingDetails?.date 
+  const sessionDate = bookingDetails?.date
     ? new Date(bookingDetails.date).toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
     : bookingData?.scheduleDate
-    ? new Date(bookingData.scheduleDate).toLocaleDateString("en-US", {
+      ? new Date(bookingData.scheduleDate).toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
       })
-    : new Date().toLocaleDateString("en-US", {
+      : new Date().toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -139,28 +139,28 @@ export default function BookingConfirmationPage() {
   const sessionTime = bookingDetails?.time || bookingData?.scheduleTime || "Scheduled";
 
   const therapist = {
-    name: bookingDetails?.therapistName || 
-          primaryDoctor?.name || 
-          "Physiotherapy Specialist",
+    name: bookingDetails?.therapistName ||
+      primaryDoctor?.name ||
+      "Physiotherapy Specialist",
     title: bookingDetails?.therapistId?.doctorProfile?.specialization ||
-           primaryDoctor?.doctorProfile?.specialization ||
-           bookingData?.session?.type ||
-           "Senior Physiotherapist",
+      primaryDoctor?.doctorProfile?.specialization ||
+      bookingData?.session?.type ||
+      "Senior Physiotherapist",
     avatar: bookingDetails?.therapistId?.profilePicture ||
-            primaryDoctor?.profilePicture ||
-            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
+      primaryDoctor?.profilePicture ||
+      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
     experience: bookingDetails?.therapistId?.doctorProfile?.experience
       ? `${bookingDetails.therapistId.doctorProfile.experience}+ Years`
       : primaryDoctor?.doctorProfile?.experience
-      ? `${primaryDoctor.doctorProfile.experience}+ Years`
-      : "Experienced",
+        ? `${primaryDoctor.doctorProfile.experience}+ Years`
+        : "Experienced",
     qualification: bookingDetails?.therapistId?.doctorProfile?.education ||
-                   primaryDoctor?.doctorProfile?.education || 
-                   "MPT (Physiotherapy)",
+      primaryDoctor?.doctorProfile?.education ||
+      "MPT (Physiotherapy)",
     languages: (() => {
       try {
         const langs = bookingDetails?.therapistId?.doctorProfile?.languages?.[0] ||
-                      primaryDoctor?.doctorProfile?.languages?.[0];
+          primaryDoctor?.doctorProfile?.languages?.[0];
         return langs ? JSON.parse(langs).join(", ") : "";
       } catch {
         return "";
@@ -203,7 +203,7 @@ export default function BookingConfirmationPage() {
       // Remove guest user from session storage if user is now logged in
       sessionStorage.removeItem("qw_guest_user");
     }
-    
+
     // Check if we have an auto-login token from payment verification
     const autoLoginToken = localStorage.getItem("qw_auto_login_token");
     console.log("Auto-login token found:", autoLoginToken);
@@ -213,16 +213,16 @@ export default function BookingConfirmationPage() {
       // Set the token in the main storage location
       localStorage.setItem("token", autoLoginToken);
       localStorage.removeItem("qw_auto_login_token"); // Clean up
-      
+
       // Refresh user data
       dispatch(fetchProfile())
         .unwrap()
         .then((userData) => {
           console.log("Profile fetched successfully:", userData);
           // Manually update Redux store since fetchProfile doesn't do it automatically
-          dispatch(setCredentials({ 
-            user: userData, 
-            token: autoLoginToken 
+          dispatch(setCredentials({
+            user: userData,
+            token: autoLoginToken
           }));
           // Update the authentication context
           localStorage.setItem("isAuthenticated", "true");
@@ -232,19 +232,19 @@ export default function BookingConfirmationPage() {
         .catch((error) => {
           console.error("Failed to fetch profile:", error);
           // If profile fetch fails, try to set credentials anyway
-          dispatch(setCredentials({ 
-            user: null, 
-            token: autoLoginToken 
+          dispatch(setCredentials({
+            user: null,
+            token: autoLoginToken
           }));
           // Update the authentication context
           localStorage.setItem("isAuthenticated", "true");
           setIsAutoLoginCompleted(true);
           toast.success("Logged in successfully!");
         });
-      
+
       return;
     }
-    
+
     // If user is a guest and hasn't registered yet, register them automatically
     if (!isAuthenticated && guestUser && guestUser.email) {
       const registerGuestUser = async () => {
@@ -256,7 +256,7 @@ export default function BookingConfirmationPage() {
             password: "123456",
             phone: guestUser.phone
           }));
-          
+
           toast.success("Account created successfully!");
         } catch (error: any) {
           console.error("Auto-registration failed:", error);
@@ -264,12 +264,12 @@ export default function BookingConfirmationPage() {
           toast.info("Please log in to access your account.");
         }
       };
-      
+
       // Delay the registration slightly to allow other UI updates to complete
       const timer = setTimeout(() => {
         registerGuestUser();
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isAuthenticated, guestUser, dispatch]);

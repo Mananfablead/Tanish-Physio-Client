@@ -140,140 +140,51 @@ export default function TermsOfServicePage() {
     </div>
   );
 
-  // Function to extract table of contents from content
-  const getTableOfContents = () => {
-    if (terms && terms.content) {
-      // Extract headings from HTML content
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(terms.content, 'text/html');
-      const headings = doc.querySelectorAll('h1, h2, h3');
-      
-      return Array.from(headings).map((heading, index) => ({
-        id: `section-${index + 1}`,
-        text: heading.textContent || `Section ${index + 1}`,
-        level: parseInt(heading.tagName.charAt(1))
-      }));
-    }
-    
-    // Fallback for default content
-    return [
-      { id: 'section-1', text: 'Introduction', level: 2 },
-      { id: 'section-2', text: 'License to Use', level: 2 },
-      { id: 'section-3', text: 'User Responsibilities', level: 2 },
-      { id: 'section-4', text: 'Medical Disclaimer', level: 2 },
-      { id: 'section-5', text: 'Limitations of Liability', level: 2 },
-      { id: 'section-6', text: 'Privacy Policy', level: 2 },
-      { id: 'section-7', text: 'Changes to Terms', level: 2 },
-      { id: 'section-8', text: 'Contact Information', level: 2 },
-    ];
-  };
+
   
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <Card className="shadow-lg border-0 rounded-xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-primary to-primary/90 text-white text-center py-8">
-              <CardTitle className="text-3xl md:text-4xl font-bold">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="w-full px-0 md:px-0 lg:px-0">
+          <Card className="shadow-2xl border-0 rounded-none overflow-hidden">
+            <CardHeader className="bg-gradient-to-b from-primary/10 to-secondary/10 text-slate-900 text-center py-16 relative overflow-hidden">
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2" />
+                <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] translate-y-1/2" />
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] pointer-events-none" />
+              </div>
+              <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight relative z-10 text-slate-900">
                 {loading ? 'Loading...' : terms?.title || 'Terms of Service'}
               </CardTitle>
-              <p className="text-primary-50 mt-2">
+              {/* <p className="text-slate-600 mt-3 text-lg font-medium relative z-10">
                 Last updated: {terms?.lastUpdated ? new Date(terms.lastUpdated).toLocaleDateString() : new Date().toLocaleDateString()}
-              </p>
-              <Badge variant="secondary" className="mt-4 w-fit mx-auto bg-primary/20 text-white">
-                Legal Document
-              </Badge>
+              </p> */}
+            
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="flex flex-col lg:flex-row">
-                {/* Sidebar */}
-                <div className="lg:w-1/4 bg-gray-50 p-6 border-r border-gray-200">
-                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Table of Contents</h3>
-                  <nav>
-                    <ul className="space-y-2">
-                      {getTableOfContents().map((item, index) => (
-                        <li key={item.id}>
-                          <a 
-                            href={`#${item.id}`}
-                            className={`block py-2 px-3 rounded-md transition-colors duration-200 ${
-                              index % 2 === 0 
-                                ? 'text-primary hover:bg-primary/5' 
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            <span className="font-medium">{index + 1}.</span> {item.text}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </nav>
-                  
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h4 className="font-semibold text-gray-800 mb-3">Related Information</h4>
-                    <ul className="space-y-3">
-                      <li className="flex items-start">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-sm text-gray-600">Last updated: {terms?.lastUpdated ? new Date(terms.lastUpdated).toLocaleDateString() : new Date().toLocaleDateString()}</span>
-                      </li>
-                      <li className="flex items-start">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-sm text-gray-600">Effective immediately</span>
-                      </li>
-                      <li className="flex items-start">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-sm text-gray-600">Applies to all users</span>
-                      </li>
-                    </ul>
-                  </div>
-                  
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h4 className="font-semibold text-gray-800 mb-3">Need Help?</h4>
-                    <p className="text-sm text-gray-600 mb-3">Contact our support team for questions about these terms.</p>
-                    <button className="w-full py-2 px-4 bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors duration-200 text-sm font-medium">
-                      Contact Support
-                    </button>
-                  </div>
-                </div>
-                
+            <CardContent className="p-0 bg-gradient-to-b from-white via-gray-50 to-gray-100">
+              <div className="flex flex-col">
                 {/* Main Content */}
-                <div className="lg:w-3/4 p-8">
+                <div className="w-full p-8 md:p-12 lg:p-16">
                   
                   
                   {loading ? (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
-                      <p className="text-muted-foreground">Loading terms of service...</p>
+                    <div className="flex flex-col items-center justify-center py-16">
+                      <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent mb-6"></div>
+                      <p className="text-gray-600 text-lg">Loading terms of service...</p>
                     </div>
                   ) : terms && terms.content ? (
-                    <ScrollArea className="h-[calc(100vh-250px)] pr-4">
-                      <div className="prose prose-primary max-w-none">
-                        <div dangerouslySetInnerHTML={{ __html: terms.content }} />
-                      </div>
-                    </ScrollArea>
+                    <div className="prose prose-lg max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: terms.content }} />
+                    </div>
                   ) : (
-                    <ScrollArea className="h-[calc(100vh-250px)] pr-4">
-                      <div className="prose prose-primary max-w-none">
-                        {renderFallbackContent()}
-                      </div>
-                    </ScrollArea>
+                    <div className="prose prose-lg max-w-none">
+                      {renderFallbackContent()}
+                    </div>
                   )}
                 </div>
               </div>
               
-              <div className="px-8 py-6 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                <div className="text-sm text-muted-foreground">
-                  By using our service, you agree to these terms
-                </div>
-                <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
-                  Effective Now
-                </Badge>
-              </div>
+             
             </CardContent>
           </Card>
           

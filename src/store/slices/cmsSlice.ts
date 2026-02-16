@@ -75,13 +75,10 @@ interface AboutSection {
   _id?: string;
   title: string;
   description: string;
-  mission: string;
-  vision: string;
-  values: string[];
-  foundingStory: string;
-  teamInfo: string;
-  images: string[];
-  image?: string;
+  aboutheadline: string;
+  aboutheadlDescription: string;
+
+  images?: string[];
   isPublic: boolean;
 }
 

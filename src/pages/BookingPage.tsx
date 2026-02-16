@@ -541,21 +541,14 @@ export default function BookingPage() {
           const userData = checkResult.payload;
           if (userData.exists) {
             // 👉 Agar user mil jaye (exists: true)
-            // Uska userId le lo and auto-login
-            if (userData.token) {
-              // Store the token for auto-login
-              localStorage.setItem("token", userData.token);
-              localStorage.setItem("user", JSON.stringify(userData.user));
-              // Update the Redux store
-              dispatch(
-                setCredentials({
-                  user: userData.user,
-                  token: userData.token,
-                })
-              );
-              // Set isGuestUser to false since user is now authenticated
-              // This will be handled in the useEffect that checks for token
-            }
+            // Show popup that user is already registered, but don't auto-login
+            toast.info("This email is already registered. Please login to continue.");
+            
+            // Don't perform auto-login - let user login manually
+            console.log("User already exists, showing login prompt");
+            
+            // STOP ALL FURTHER PROCESSING
+            return;
           } else {
             // 👉 Agar user na mile (exists: false)
             // Naya user create karo - this will happen after payment verification

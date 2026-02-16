@@ -37,8 +37,8 @@ const navLinks = [
   { to: "/services", label: "Services" },
   { to: "/plans", label: "Plans" },
   // { to: "/schedule", label: "Schedule" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
+  { to: "/about", label: "About Us" },
+  { to: "/contact", label: "Contact Us" },
   { to: "/testimonials", label: "Testimonials" },
 ];
 
@@ -271,7 +271,7 @@ useEffect(() => {
                   </div>
                 )}
 
-                <div className="flex-1 overflow-y-auto py-4 px-2 mt-5">
+                <div className="flex-1 overflow-y-auto py-4 px-1 mt-5">
                   <div className="space-y-1">
                     {navLinks.map((link) => (
                       <Link
@@ -286,7 +286,7 @@ useEffect(() => {
                               ? "secondary"
                               : "ghost"
                           }
-                          className="w-full justify-start h-10 sm:h-12 px-4 text-left"
+                          className="w-full justify-start h-10 sm:h-12 px-2 text-left"
                         >
                           {link.label}
                         </Button>

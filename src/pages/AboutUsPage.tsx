@@ -1,71 +1,30 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import { 
-  Heart, Award, Users, Shield, Activity, Stethoscope, User, Clock,
-  Quote, MapPin, Calendar, CheckCircle, ArrowRight, Play, Star
+import {
+  Quote, ArrowRight
 } from 'lucide-react';
-import { fetchAboutPublic } from '../store/slices/cmsSlice';
-import { fetchFeaturedServices } from '../store/slices/serviceSlice';
+import { fetchAboutPublic, fetchWhyUsPublic } from '../store/slices/cmsSlice';
 import { RootState, useAppDispatch } from '../store';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { Service } from '@/types/service';
-
+import { fetchPublicAdmins } from '@/store/slices/adminSlice';
 export default function AboutUsPage() {
   const dispatch = useAppDispatch();
-  const { about, loading: cmsLoading } = useSelector((state: RootState) => state.cms);
-  const { featuredServices, loading: servicesLoading } = useSelector((state: RootState) => state.services);
-
+  const { about, whyUs, loading: cmsLoading } = useSelector((state: RootState) => state.cms);
+  const {
+    admins: publicAdmins,
+    loading: adminsLoading,
+    error: adminsError,
+  } = useSelector((state: RootState) => state.admins);
   useEffect(() => {
     dispatch(fetchAboutPublic());
-    dispatch(fetchFeaturedServices());
+    dispatch(fetchWhyUsPublic());
+     dispatch(fetchPublicAdmins());
   }, [dispatch]);
 
-  // Content data
-  const title = about?.title || "About Tanish Physio";
-  const description = about?.description || "Transforming physiotherapy through innovation, compassion, and cutting-edge digital healthcare solutions";
-  
-  const stats = [
-    { label: "Patients Helped", value: "10,000+", icon: Users },
-    { label: "Years Experience", value: "8+", icon: Calendar },
-    { label: "Success Rate", value: "96%", icon: CheckCircle },
-    { label: "Cities Served", value: "25+", icon: MapPin }
-  ];
-  
-  const mission = about?.mission || "At Tanish Physio, we're revolutionizing healthcare accessibility by bringing world-class physiotherapy directly to your doorstep. Our mission is to eliminate barriers to quality care through innovative technology, compassionate expertise, and personalized treatment plans that adapt to your unique lifestyle and recovery journey.";
-  
-  const vision = about?.vision || "To become the most trusted digital healthcare platform, transforming lives through accessible, personalized, and technology-driven physiotherapy solutions that empower individuals to achieve optimal wellness and mobility.";
-  
-  const foundingStory = about?.foundingStory || "Founded in 2018 by Dr. Khushboo, Tanish Physio emerged from a profound realization: exceptional healthcare shouldn't be constrained by geography or circumstance. With over 15 years of clinical experience, Dr. Khushboo witnessed countless patients struggle with traditional therapy models—missing appointments due to work commitments, battling transportation challenges, or feeling intimidated by clinical environments. This inspired a bold vision: to harness technology's power to democratize access to premium physiotherapy care. Today, we've evolved into a comprehensive digital health platform, serving thousands of patients across 25+ cities while maintaining the personal touch that defines exceptional care.";
-  
-  const teamInfo = about?.teamInfo || "Our multidisciplinary team comprises 25+ certified physiotherapists, each handpicked for their clinical excellence and patient-centric approach. Every team member holds advanced certifications from internationally recognized institutions and participates in continuous professional development programs. From orthopedic specialists to neurological rehabilitation experts, our diverse expertise ensures comprehensive care for complex conditions. We maintain a rigorous 360-degree evaluation process, combining peer reviews, patient feedback, and outcome metrics to uphold our commitment to clinical excellence.";
-  
-  // Use values from API if available, otherwise hide the section
-  const valuesToShow = about?.values && about.values.length > 0 ? about.values : null;
-  
-  // Use featured services from API if available, otherwise fallback to static data
-  const servicesToShow = featuredServices.length > 0 
-    ? featuredServices.slice(0, 8).map((service: Service) => ({
-        icon: Activity, // You might want to map specific icons based on service category
-        name: service.title,
-        description: service.description
-      }))
-    : [
-        { icon: Activity, name: "Orthopedic Rehabilitation", description: "Recovery from fractures, joint replacements, and musculoskeletal injuries" },
-        { icon: Stethoscope, name: "Neurological Physiotherapy", description: "Stroke recovery, spinal cord injuries, and neurological condition management" },
-        { icon: User, name: "Pediatric Physiotherapy", description: "Specialized care for children's developmental and mobility challenges" },
-        { icon: Clock, name: "Sports Injury Rehabilitation", description: "Professional athlete recovery and sports performance optimization" },
-        { icon: Award, name: "Post-Surgical Recovery", description: "Accelerated healing protocols after surgical procedures" },
-        { icon: Heart, name: "Chronic Pain Management", description: "Long-term strategies for pain reduction and functional improvement" },
-        { icon: Shield, name: "Posture Correction", description: "Ergonomic assessments and workplace wellness programs" },
-        { icon: Users, name: "Preventive Care Programs", description: "Proactive health maintenance and injury prevention strategies" }
-      ];
 
-  if (cmsLoading || servicesLoading) {
+  if (cmsLoading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
@@ -82,397 +41,265 @@ export default function AboutUsPage() {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-6 pt-8 pb-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>
+        <section className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-secondary/10 to-accent/20 py-20 md:py-12">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-secondary/15 via-transparent to-transparent"></div>
           
-          <div className="container relative z-10 text-center space-y-4">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
+          <div className="container relative z-10 text-center px-4 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              viewport={{ once: true }}
+              className="space-y-2"
             >
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
-                {title}
-              </h1>
+           
               
-              <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
-                {description}
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-6 leading-tight">
+                {about?.title}
+              </h1>
+
+              <p className="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-light">
+                {about?.description}
               </p>
+
+              <motion.div 
+                className="flex justify-center pt-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                {/* <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary rounded-full"></div> */}
+              </motion.div>
             </motion.div>
           </div>
         </section>
-        
-        
-        {/* Mission Section */}
-        <section className="py-10 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
-          <div className="container">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                <div className="space-y-4">
-                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
-                    <Heart className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-medium text-primary">Our Core Purpose</span>
-                  </div>
-                  
-                  <h2 className="text-4xl font-bold text-foreground">Revolutionizing Accessible Healthcare</h2>
-                  
-                  <p className="text-lg text-muted-foreground leading-relaxed">
-                    {mission}
-                  </p>
-                  
-                  <div className="pt-4">
-                    <Button size="lg" className="group">
-                      Meet Our Founder
-                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="relative"
-              >
-                <Card className="overflow-hidden shadow-2xl border-primary/10">
-                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative overflow-hidden">
-                    {about?.images?.[0] ? (
-                      <img 
-                        src={about.images[0]} 
-                        alt="Our Mission" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center relative z-10">
-                        <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Activity className="h-10 w-10 text-primary" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">Digital Healthcare Innovation</h3>
-                        <p className="text-muted-foreground max-w-xs">Bringing premium care to your fingertips</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-        
-        {/* Story Section */}
-        <section className="py-10">
-          <div className="container">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="order-2 lg:order-1"
-              >
-                <Card className="overflow-hidden shadow-2xl border-primary/10">
-                  <div className="aspect-video bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center relative overflow-hidden">
-                    {about?.images?.[1] ? (
-                      <img 
-                        src={about.images[1]} 
-                        alt="Our Story" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center relative z-10">
-                        <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Award className="h-10 w-10 text-accent" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">Healthcare Innovation Journey</h3>
-                        <p className="text-muted-foreground max-w-xs">From vision to reality</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="order-1 lg:order-2 space-y-6"
-              >
-                <div className="inline-flex items-center gap-3 px-4 py-2 bg-accent/10 rounded-full border border-accent/20">
-                  <Award className="h-5 w-5 text-accent" />
-                  <span className="text-sm font-medium text-accent">Our Journey</span>
-                </div>
-                
-                <h2 className="text-4xl font-bold text-foreground">From Vision to Impact</h2>
-                
-                <div className="space-y-4 text-muted-foreground">
-                  <p className="text-lg leading-relaxed">
-                    {foundingStory.substring(0, foundingStory.indexOf('.', foundingStory.indexOf('.') + 1) + 1)}
-                  </p>
-                  <p className="text-lg leading-relaxed">
-                    {foundingStory.substring(foundingStory.indexOf('.', foundingStory.indexOf('.') + 1) + 1).trim()}
-                  </p>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-        
-        {/* Vision Section */}
-        <section className="py-10 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
-          <div className="container">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                <div className="space-y-6">
-                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-accent/10 rounded-full border border-accent/20">
-                    <Star className="h-5 w-5 text-accent" />
-                    <span className="text-sm font-medium text-accent">Our Vision</span>
-                  </div>
-                  
-                  <h2 className="text-4xl font-bold text-foreground">Shaping Tomorrow's Healthcare</h2>
-                  
-                  <p className="text-lg text-muted-foreground leading-relaxed">
-                    {vision}
-                  </p>
-                </div>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="relative"
-              >
-                <Card className="overflow-hidden shadow-2xl border-primary/10">
-                  <div className="aspect-video bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center relative overflow-hidden">
-                    {about?.images?.[3] ? (
-                      <img 
-                        src={about.images[3]} 
-                        alt="Our Vision" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center relative z-10">
-                        <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Star className="h-10 w-10 text-accent" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">Future Healthcare</h3>
-                        <p className="text-muted-foreground max-w-xs">Innovating for tomorrow</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-        
-        {/* Values Section - Only show if values exist in API */}
-        {/* {valuesToShow && (
-          <section className="py-20 bg-gradient-to-br from-muted/30 to-background border-y border-border/50">
-            <div className="container">
-              <motion.div 
-                className="text-center mb-16"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                <h2 className="text-4xl font-bold text-foreground mb-4">Our Guiding Principles</h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                  The foundational values that shape every interaction and decision
-                </p>
-              </motion.div>
-              
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {valuesToShow.map((value: string, index: number) => (
+
+        {/* About Content Section - Left Image, Right Content */}
+        {about?.aboutheadline && (
+          <section className="py-16 bg-gradient-to-br from-background to-muted/20">
+            <div className="container px-4 md:px-8 max-w-7xl mx-auto">
+              <div className="flex flex-col lg:flex-row gap-20 items-center">
+                {/* Left Side - Main Image (first from images array) */}
+                {about.images && about.images.length > 0 && (
                   <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    className="lg:w-1/2 w-full relative"
+                    initial={{ opacity: 0, x: -60, scale: 0.9 }}
+                    whileInView={{ opacity: 1, x: 0, scale: 1 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
                   >
-                    <Card className="h-full border-primary/10 hover:border-primary/30 transition-all duration-300 hover:shadow-lg group">
-                      <CardHeader>
-                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-gradient-to-br from-primary/20 to-accent/20 group-hover:scale-110 transition-transform duration-300">
-                          <Heart className="h-7 w-7 text-primary" />
-                        </div>
-                        <CardTitle className="text-xl">{value}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground">Core principle guiding our healthcare mission</p>
-                      </CardContent>
-                    </Card>
+                    {/* Main Large Image */}
+                    <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-primary/20 group">
+                      <img
+                        src={about.images[0]}
+                        alt="About Main"
+                        className="w-full h-[480px] object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+
+                    {/* Overlapping Small Image */}
+                    <div className="absolute -bottom-12 -right-6 w-3/4 rounded-2xl overflow-hidden shadow-2xl border-4 border-white transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                      <img
+                        src={about.images[1]}
+                        alt="About Secondary"
+                        className="w-full h-[320px] object-cover"
+                      />
+                    </div>
+
+                    {/* Floating Doctor Card */}
+                    <motion.div 
+                      className="absolute -top-6 -right-6 bg-white rounded-2xl shadow-2xl p-5 flex items-center gap-4 w-[350px] border border-primary/10"
+                      initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                      whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+                    >
+                      <div className="relative">
+                        <img
+                          src={publicAdmins[0]?.image}
+                          alt="Doctor"
+                          className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                        />
+                        {/* <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div> */}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900">{publicAdmins[0]?.name}</h4>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {publicAdmins[0]?.doctorProfile?.education}
+                        </p>
+                       
+                      </div>
+                    </motion.div>
                   </motion.div>
-                ))}
+                )}
+
+                {/* Right Side - Content */}
+                <motion.div
+                  className="lg:w-1/2 w-full"
+                  initial={{ opacity: 0, x: 60, scale: 0.95 }}
+                  whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                >
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full mb-6 border border-primary/20">
+                      <span className="text-primary font-semibold text-sm uppercase tracking-wider">  {about?.title}</span>
+                    </div>
+                    
+                    <h2 className="text-3xl md:text-3xl font-bold text-slate-900 mb-8 leading-tight">
+                      {about.aboutheadline}
+                    </h2>
+                    
+                    <div className="space-y-2">
+                      {about?.aboutheadlDescription?.split('\n\n').map((paragraph: string, index: number) => (
+                        <motion.p 
+                          key={index}
+                          className="text-slate-600 leading-relaxed text-lg font-light"
+                          initial={{ opacity: 0, y: 20 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.6, delay: 0.4 + (index * 0.1) }}
+                        >
+                          {paragraph}
+                        </motion.p>
+                      ))}
+                    </div>
+                    
+                  
+                  </div>
+                </motion.div>
               </div>
             </div>
           </section>
-        )} */}
+        )}
         
-        {/* Services Section */}
-        <section className="py-20">
-          <div className="container">
-            <motion.div 
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-4xl font-bold text-foreground mb-4">Comprehensive Care Services</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Specialized treatments tailored to your unique recovery needs
-              </p>
-            </motion.div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {servicesToShow.map((service, index) => (
-                <motion.div
-                  key={service.name}
-                  initial={{ opacity: 0, y: 20 }}
+        {/* Stats Section (if Why Us section exists) */}
+  <div className="bg-primary mt-16">
+      
+        {whyUs && whyUs.stats && whyUs.stats.length > 0 && (
+          <div className="container px-4 max-w-7xl mx-auto py-16 ">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {whyUs.stats.map((stat: any, index: number) => (
+                <motion.div 
+                  key={stat._id || index}
+                  className="text-center p-6 bg-white rounded-2xl shadow-lg border border-primary/10"
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <Card className="h-full border-border/50 hover:border-primary/30 transition-all duration-300 group hover:shadow-md">
-                    <CardContent className="p-6">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                        <service.icon className="h-6 w-6 text-primary" />
-                      </div>
-                      <h3 className="font-semibold text-lg mb-2 text-foreground">{service.name}</h3>
-                      <p className="text-sm text-muted-foreground">{service.description}</p>
-                    </CardContent>
-                  </Card>
+                  <div className="text-4xl font-bold text-primary mb-2">{stat.value}</div>
+                  <div className="text-lg font-semibold text-slate-900 mb-1">{stat.label}</div>
+                  <div className="text-sm text-slate-600">{stat.description}</div>
                 </motion.div>
               ))}
             </div>
           </div>
-        </section>
-        
-        {/* Team Section */}
-        <section className="py-10 bg-gradient-to-br from-card to-muted/20 border-y border-border/50">
-          <div className="container">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                <div className="space-y-6">
-                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
-                    <Users className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-medium text-primary">Meet Our Experts</span>
-                  </div>
+        )}
+  </div>
+        {/* Why Choose Us Section */}
+        {whyUs && whyUs.title && (
+          <section className="py-20 bg-gradient-to-br from-primary/5 via-white to-secondary/5 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,_var(--tw-gradient-stops))] from-secondary/10 via-transparent to-transparent"></div>
+            
+            <div className="container relative z-10 px-4 max-w-7xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-center">
+                {/* Text Content Side */}
+                <div className="order-2 lg:order-1">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="inline-flex items-center px-5 py-2 bg-gradient-to-r from-primary/15 to-secondary/15 rounded-full mb-6 border border-primary/20"
+                  >
+                    <span className="text-primary font-bold text-sm uppercase tracking-widest">Why Choose Us</span>
+                  </motion.div>
                   
-                  <h2 className="text-4xl font-bold text-foreground">Exceptional Clinical Team</h2>
+                  <motion.h2 
+                    className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-6"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7 }}
+                  >
+                    {whyUs.title}
+                  </motion.h2>
                   
-                  <p className="text-lg text-muted-foreground leading-relaxed">
-                    {teamInfo}
-                  </p>
-                  
-                  <div className="pt-4">
-                    {/* <Button variant="outline" size="lg">
-                      <Play className="mr-2 h-4 w-4" />
-                      Meet Our Therapists
-                    </Button> */}
-                  </div>
-                </div>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="relative"
-              >
-                <Card className="overflow-hidden shadow-2xl border-primary/10">
-                  <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative overflow-hidden">
-                    {about?.images?.[2] ? (
-                      <img 
-                        src={about.images[2]} 
-                        alt="Our Team" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center relative z-10">
-                        <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <Users className="h-12 w-12 text-primary" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-foreground mb-2">Expert Team</h3>
-                        <p className="text-muted-foreground">25+ Certified Professionals</p>
+                  <motion.p 
+                    className="text-xl text-slate-600 max-w-2xl mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, delay: 0.1 }}
+                  >
+                    {whyUs.description}
+                  </motion.p>
+
+                  {/* Features Section */}
+                  {whyUs.features && whyUs.features.length > 0 && (
+                    <motion.div 
+                      className=""
+                      initial={{ opacity: 0, y: 40 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8 }}
+                    >
+                      <div className="">
+                        {whyUs.features.map((feature: string, index: number) => (
+                          <motion.div 
+                            key={index}
+                            className="flex items-start space-x-2 py-2 "
+                            initial={{ opacity: 0, x: -30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                          >
+                            <div className="flex-shrink-0 mt-1">
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                              </div>
+                            </div>
+                            <span className="text-slate-700 font-medium group-hover:text-slate-900 transition-colors">{feature}</span>
+                          </motion.div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-        
-        {/* CTA Section */}
-        <section className="py-20 bg-primary">
-          <div className="container">
-            <motion.div 
-              className="text-center max-w-3xl mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <Quote className="h-12 w-12 text-white mx-auto mb-6" />
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Ready to Begin Your Healing Journey?
-              </h2>
-              <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-                Join thousands of patients who've transformed their lives with our personalized care approach
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="px-8 bg-white text-primary hover:bg-white/90">
-                  Start Your Assessment
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button size="lg" variant="outline" className="px-8 border-white text-white hover:bg-white/10">
-                  Book Consultation
-                </Button>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Image Side */}
+                <div className="order-1 lg:order-2">
+                  {whyUs.image && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8 }}
+                      className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-primary/10 overflow-hidden"
+                    >
+                      <div className="aspect-square bg-gradient-to-br from-primary/5 to-secondary/5 rounded-2xl overflow-hidden">
+                        <img
+                          src={whyUs.image}
+                          alt="Why Choose Us"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </div>
-            </motion.div>
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
+
+
       </div>
     </Layout>
   );
 }
-
-{/* <div className="flex flex-wrap justify-center gap-8 mt-12">
-                {stats.map((stat, index) => (
-                  <motion.div 
-                    key={stat.label}
-                    className="text-center"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl border border-primary/20">
-                      <stat.icon className="h-7 w-7 text-primary" />
-                    </div>
-                    <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
-                  </motion.div>
-                ))}
-              </div> */}

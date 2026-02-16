@@ -275,9 +275,15 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
     flex
     flex-col
   "
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           {/* HEADER */}
-          <DialogHeader className="border-b border-border/30 px-4 sm:px-6 py-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <DialogHeader className="border-b border-border/30 px-4 sm:px-6 py-4">
             <div className="flex justify-between items-center">
               <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                 {selectedCondition?.title}
@@ -293,9 +299,15 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
         </Button> */}
             </div>
           </DialogHeader>
+          </motion.div>
 
           {/* SCROLLABLE BODY */}
-          <div className="overflow-y-auto px-4 sm:px-6 py-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="overflow-y-auto px-4 sm:px-6 py-4"
+          >
             <div className="space-y-6">
               {/* Main Content Area */}
               <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -360,7 +372,7 @@ export const ConditionsWeTreat = ({ cmsConditions, fadeInUp, getIconComponent }:
                 </Button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </DialogContent>
       </Dialog>
     </section>
