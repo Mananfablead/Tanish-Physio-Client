@@ -160,13 +160,17 @@ export default function SubscriptionPlansPage() {
             }
             
             return (
-              <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-0">
+              <div className={`${
+                filteredPlans.length === 2 
+                  ? 'flex flex-col md:flex-row justify-center gap-8 max-w-4xl mx-auto' 
+                  : 'grid md:grid-cols-3 gap-8 max-w-6xl mx-auto'
+              } mb-0`}>
                 {loading ? (
-                  <div className="col-span-full flex justify-center py-12">
+                  <div className={`${filteredPlans.length === 2 ? 'w-full' : 'col-span-full'} flex justify-center py-12`}>
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                   </div>
                 ) : error ? (
-                  <p className="col-span-full text-center text-destructive text-lg">
+                  <p className={`${filteredPlans.length === 2 ? 'w-full' : 'col-span-full'} text-center text-destructive text-lg`}>
                     {error}
                   </p>
                 ) : (
