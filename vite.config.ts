@@ -18,6 +18,15 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  build: {
+    emptyOutDir: false, // Prevent Vite from trying to empty the directory
+    outDir: "dist",
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
