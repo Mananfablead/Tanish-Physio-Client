@@ -107,19 +107,19 @@ const TestimonialsPage: React.FC = () => {
         
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>
         
-        <div className="container relative z-10 text-center space-y-4 px-4 max-w-6xl mx-auto py-8">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
-            What Our Patients Say
-          </h1>
-          
-          <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
-            Hear from our patients about their journey to recovery and improved quality of life.
-          </p>
-        
-        </div>
+       <div className="container relative z-10 text-center space-y-4 px-4 max-w-6xl mx-auto py-8">
+  <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
+    Patient Experiences
+  </h1>
+
+  <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
+    Real stories from individuals who achieved better mobility and lasting recovery through expert physiotherapy care.
+  </p>
+</div>
+
       </div>
       
-      <div className="container py-10 max-w-6xl mx-auto">
+      <div className="container py-10  mx-auto">
 
         {testimonials.length === 0 ? (
           <div className="text-center py-16">

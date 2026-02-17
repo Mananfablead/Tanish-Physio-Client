@@ -85,24 +85,15 @@ export default function SubscriptionPlansPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>
 
         <div className="container relative z-10 text-center space-y-4">
-{/* <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 backdrop-blur-sm rounded-full border border-primary/20">
-            <TrendingUp className="h-4 w-4 fill-primary text-primary" />
-          <span className="text-sm font-medium">
-  Expert-Guided Recovery Plans
-</span>
-
-          </div> */}
+         
           {/* Heading */}
-       <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
-  Start Your Recovery, Guided by 
-  <span className="block">Experts</span>
-</h1>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
+            Start Your Recovery, Guided by
+            <span className="block">an Expert</span>
+          </h1>
 
-
-          {/* Description */}
           <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
-            Choose a therapy plan that matches your recovery goals with
-            certified physiotherapist guidance.
+            Choose a therapy plan tailored to your recovery goals with guidance from our experienced physiotherapist.
           </p>
 
         </div>

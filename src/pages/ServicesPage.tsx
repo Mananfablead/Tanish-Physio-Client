@@ -51,38 +51,43 @@ export default function ServicesPage() {
 
         <div className="container relative z-10">
           <div className="max-w-3xl mx-auto text-center">
+
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4">
-              Specialized Physiotherapy Care
+              Expert-Led Physiotherapy Care
             </h1>
+
             <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
-              Personalized, expert-led treatment to help you recover faster and stay pain-free.
+              Personalized treatment and dedicated guidance from an experienced physiotherapy expert to support faster recovery and lasting results.
             </p>
 
             {/* Badges */}
-            <div className="flex flex-wrap justify-center gap-4 ">
+            <div className="flex flex-wrap justify-center gap-4">
+
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-slate-700">
-                  Evidence-Based
+                  Evidence-Based Approach
                 </span>
               </div>
 
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
                 <TrendingUp className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-slate-700">
-                  Personalized Plans
+                  Personalized Recovery Plans
                 </span>
               </div>
 
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
                 <Lock className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-slate-700">
-                  Secure Care
+                  Confidential & Secure Care
                 </span>
               </div>
+
             </div>
           </div>
         </div>
+
 
       </div>
 

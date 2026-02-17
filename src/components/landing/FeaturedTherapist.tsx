@@ -68,32 +68,54 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
                 {publicAdmins[0].name}
               </h2>
 
-              <p className="text-primary font-semibold text-lg">
-                <span className="block">Specialization:</span>
-                {publicAdmins[0].doctorProfile?.specialization || "Certified Physiotherapist"}
+              <p className="font-semibold text-lg">
+                <span className="text-slate-600">Specialization: </span>
+                <span className="text-primary">
+                  {publicAdmins[0].doctorProfile?.specialization || "Certified Physiotherapist"}
+                </span>
               </p>
 
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>Experience:</span>
-                  <span>{publicAdmins[0].doctorProfile?.experience ? `${publicAdmins[0].doctorProfile.experience}+ Years` : 'Experienced Professional'}</span>
+
+              <div className="flex flex-wrap items-center gap-6 text-sm">
+
+                {/* Experience */}
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-slate-400" />
+
+                  <span className="font-semibold text-slate-800">Experience:</span>
+
+                  <span className="font-semibold text-slate-800">
+                    {publicAdmins[0].doctorProfile?.experience
+                      ? `${publicAdmins[0].doctorProfile.experience}+ Years`
+                      : "Experienced Professional"}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1">
+
+                {/* Rating */}
+                <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 fill-warning text-warning" />
-                  <span className="font-semibold">4.9 Rating</span>
+
+                  <span className="font-semibold text-slate-800">
+                    4.9 Rating
+                  </span>
                 </div>
+
               </div>
+
 
               <p className="text-muted-foreground leading-relaxed max-w-xl">
                 {publicAdmins[0].doctorProfile?.bio || "Specialized in sports injuries, post-surgery rehabilitation, and chronic pain management. Known for personalized recovery plans and fast results through virtual physiotherapy."}
               </p>
-              
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground font-semibold">Education:</p>
-                <p className="text-sm text-muted-foreground">{publicAdmins[0].doctorProfile?.education || "Not specified"}</p>
-              </div>
-              
+
+             <div className="text-sm">
+  <span className="text-slate-500 mr-1">Education</span>
+  <span className="text-slate-400 mr-1">|</span>
+  <span className="font-semibold text-primary">
+    {publicAdmins[0].doctorProfile?.education || "Not specified"}
+  </span>
+</div>
+
+
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground font-semibold">Languages:</p>
                 <p className="text-sm text-muted-foreground">{publicAdmins[0].doctorProfile?.languages || "Not specified"}</p>

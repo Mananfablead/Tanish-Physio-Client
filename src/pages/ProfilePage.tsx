@@ -76,6 +76,8 @@ interface Section {
 
 export default function ProfilePage() {
   const user = useSelector(selectCurrentUser);
+
+
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [selectedSection, setSelectedSection] = useState<string>(() => {

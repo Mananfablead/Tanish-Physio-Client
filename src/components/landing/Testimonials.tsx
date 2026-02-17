@@ -34,18 +34,25 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
       </div>
 
       <div className="container relative z-10">
-        <motion.div
-          className="text-center max-w-2xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <Badge variant="outline" className="mb-4 border-white/30 text-white bg-white/10">Success Stories</Badge>
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">What Our Patients Say</h2>
-          <p className="text-white/80">
-            Real recovery stories from people who regained their mobility and strength with our help.
-          </p>
-        </motion.div>
+       <motion.div
+  className="text-center max-w-2xl mx-auto mb-16"
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+>
+  <Badge variant="outline" className="mb-4 border-white/30 text-white bg-white/10">
+    Success Stories
+  </Badge>
+
+  <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">
+    What Patients Say
+  </h2>
+
+  <p className="text-white/80">
+    Real recovery stories from individuals who regained mobility and strength with expert physiotherapy guidance.
+  </p>
+</motion.div>
+
 
         <div className=" md:px-12">
           <Carousel
