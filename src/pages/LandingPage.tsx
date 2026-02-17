@@ -365,6 +365,6 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <CTA />
-    </Layout>
+    </Layout> 
   );
 }

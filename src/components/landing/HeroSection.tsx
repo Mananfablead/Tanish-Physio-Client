@@ -21,7 +21,7 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
   return (
     <section className="relative  overflow-hidden gradient-hero border-b border-primary/5">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
-  <div className="container relative py-5 lg:py-6">
+      <div className="container relative py-5 lg:py-6">
 
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
@@ -62,28 +62,51 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-start">
+
+              {/* Primary CTA */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link to="/questionnaire">
-                    <Button variant="hero" size="xl">
+                    <Button variant="hero" size="lg" className="w-full sm:w-auto">
                       {cmsHero?.ctaText || "Start Your Recovery"}
-                      <ArrowRight className="h-5 w-5 ml-1" />
+                      <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Begin your personalized clinical assessment</p>
+                  <p>Begin your personalized recovery assessment</p>
                 </TooltipContent>
               </Tooltip>
+
+              {/* Secondary CTA */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link to="/consultation">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto border-primary text-primary hover:bg-primary hover:text-white"
+                    >
+                      Free Consultation
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Book a free 15-minute consultation session</p>
+                </TooltipContent>
+              </Tooltip>
+
             </div>
+
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-6">
               {cmsHero?.certifiedTherapists && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Star className="h-5 w-5 text-primary" />
-                  <span>Certified Therapists</span>
+                 <span>Expert Therapist</span>
                 </div>
               )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -103,7 +126,7 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                   cmsHero.features.map((feature: string, index: number) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                      className="flex items-center gap-4 text-sm text-muted-foreground"
                     >
                       <Star className="h-5 w-5 text-primary flex-shrink-0" />
                       <span>{feature}</span>
@@ -127,18 +150,6 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
             </div>
-
-            {/* <div className="absolute -top-4 -right-4 p-4 border border-primary/20 shadow-xl">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
-                  <Star className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">24/7</p>
-                  <p className="text-sm text-muted-foreground">Available</p>
-                </div>
-              </div>
-            </div> */}
           </motion.div>
         </div>
       </div>

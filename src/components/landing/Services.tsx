@@ -48,22 +48,25 @@ export function Services({
   return (
     <section className="py-12 bg-muted/30">
       <div className="container">
-        <motion.div
-          className="text-center max-w-2xl mx-auto mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <Badge variant="secondary" className="mb-3">
-            Our Services
-          </Badge>
-          <h2 className="text-2xl lg:text-3xl font-bold mb-3">
-            Specialized Physiotherapy Services
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Discover our range of professional physiotherapy services.
-          </p>
-        </motion.div>
+       <motion.div
+  className="text-center max-w-2xl mx-auto mb-12"
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+>
+  <Badge variant="secondary" className="mb-3">
+    Our Services
+  </Badge>
+
+  <h2 className="text-2xl lg:text-3xl font-bold mb-3">
+    Personalized Physiotherapy Services
+  </h2>
+
+  <p className="text-muted-foreground text-sm">
+    Receive expert care and treatment guided by our experienced physiotherapist.
+  </p>
+</motion.div>
+
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayedServices.map((service, index) => (

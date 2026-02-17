@@ -15,29 +15,49 @@ export const FAQ = ({ cmsFaqs }: FAQProps) => {
     <section className="py-10 bg-muted/30">
       <div className="container">
         <div className="grid lg:grid-cols-2 gap-16">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <Badge variant="secondary" className="mb-4">Support</Badge>
-            <h2 className="text-3xl lg:text-4xl font-bold mb-6">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground mb-8">
-              Find answers to common questions about our platform and services. Still have questions? Contact our support team.
-            </p>
-            <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <HelpCircle className="h-6 w-6 text-primary" />
-                </div>
-                <h4 className="font-bold">Need more help?</h4>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Our team is available 24/7 to answer your questions and help you with any issues.
-              </p>
-              <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate('/contact')}>Contact Support</Button>
-            </div>
-          </motion.div>
+        <motion.div
+  initial={{ opacity: 0, x: -30 }}
+  whileInView={{ opacity: 1, x: 0 }}
+  viewport={{ once: true }}
+>
+  <Badge variant="secondary" className="mb-4">
+    Support
+  </Badge>
+
+  <h2 className="text-3xl lg:text-4xl font-bold mb-6">
+    Frequently Asked Questions
+  </h2>
+
+  <p className="text-muted-foreground mb-8">
+    Find answers to common questions about our services and consultation process. 
+    Still have questions? Feel free to get in touch.
+  </p>
+
+ <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10">
+  <div className="flex items-center gap-4 mb-4">
+    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+      <HelpCircle className="h-6 w-6 text-primary" />
+    </div>
+    <h4 className="font-bold text-slate-900">
+      Need More Assistance?
+    </h4>
+  </div>
+
+  <p className="text-sm text-muted-foreground mb-4">
+    Get expert guidance and personalized support for any questions related to your consultation or treatment plan.
+  </p>
+
+  <Button
+    variant="outline"
+    className="w-full sm:w-auto"
+    onClick={() => navigate("/contact")}
+  >
+    Get in Touch
+  </Button>
+</div>
+
+</motion.div>
+
 
           <motion.div
             initial={{ opacity: 0, x: 30 }}
