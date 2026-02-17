@@ -122,8 +122,11 @@ export default function BookingPage() {
   // Handle service-based booking data
   // Handle subscription-based booking data
 
-  const therapist = bookingData?.therapist;
-
+  const therapist = bookingData?.therapist || (publicAdmins && publicAdmins.length > 0 ? {
+    id: publicAdmins[0]?.id,
+    name: publicAdmins[0]?.name,
+  } : undefined);
+  console.log("therapist", therapist)
   const serviceBooking = bookingData?.fromServices === true;
   const subscriptionBooking = bookingData?.fromSubscription === true;
 
@@ -182,7 +185,6 @@ export default function BookingPage() {
     }
   };
 
-  const date = formatDate(bookingData?.date);
   // Format time to HH:MM
   const formatTime = (timeString: string) => {
     if (!timeString) {
@@ -238,7 +240,15 @@ export default function BookingPage() {
     }
   };
 
-  const time = formatTime(bookingData?.time);
+  // Use selected schedule date/time when schedule option is 'now', otherwise use bookingData
+  const date = scheduleOption === "now" && scheduleDate 
+    ? scheduleDate 
+    : formatDate(bookingData?.date);
+  
+  // Use selected time slot when schedule option is 'now', otherwise use bookingData
+  const time = scheduleOption === "now" && selectedTimeSlot
+    ? selectedTimeSlot.start
+    : formatTime(bookingData?.time);
   const promoApplied = bookingData?.promoApplied || false;
 
   // Calculate final price with coupon discount
@@ -413,11 +423,11 @@ export default function BookingPage() {
     time: string,
     timeSlot?: { start: string; end: string }
   ) => {
-    // Save the scheduled session to sessionStorage
+    // Save the scheduled session to sessionStorage with complete time slot info
     const scheduledSession = {
       date,
       time,
-      timeSlot, // Store complete time slot info
+      timeSlot, // Store complete time slot info including start and end times
       therapist: { ...therapist, id: publicAdmins?.[0]?.id }, // Use the correct therapist ID
       service: bookingData?.service || plan,
       locked: true, // Will be unlocked after payment
@@ -607,8 +617,15 @@ export default function BookingPage() {
             clientPhone: guestUserData.phone,
             couponCode: isCouponApplied ? couponCode : undefined,
             discountAmount: isCouponApplied ? couponDiscount : 0,
+            // Add scheduling information
+            scheduleType: scheduleOption || "now",
+            scheduledDate: scheduleOption === "now" ? scheduleDate : null,
+            scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+            timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+            // Add therapistId if available
+            therapistId: therapist?.id || undefined,
           };
-
+          console.log("guestSubscriptionPaymentOrderData", guestSubscriptionPaymentOrderData);
           paymentOrderResult = await dispatch(
             createGuestSubscriptionPaymentOrderAsync(
               guestSubscriptionPaymentOrderData
@@ -621,6 +638,7 @@ export default function BookingPage() {
             originalPrice: plan.price,
             discountAmount: isCouponApplied ? couponDiscount : 0,
             couponCode: isCouponApplied ? couponCode : undefined,
+            therapistId: therapist?.id || null,
           });
           const subscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
@@ -628,6 +646,13 @@ export default function BookingPage() {
             currency: "INR",
             couponCode: isCouponApplied ? couponCode : undefined,
             discountAmount: isCouponApplied ? couponDiscount : 0,
+            // Add scheduling information
+            scheduleType: scheduleOption || "now",
+            scheduledDate: scheduleOption === "now" ? scheduleDate : null,
+            scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+            timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+            // Add therapistId if available
+            therapistId: therapist?.id || undefined,
           };
           paymentOrderResult = await dispatch(
             createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData)
@@ -1048,6 +1073,7 @@ export default function BookingPage() {
           scheduledTime: scheduleOption === "now" ? scheduleTime : null,
           timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
         };
+        console.log("Booking payload:", bookingPayload);
         // Create the booking - use guest booking if user is not logged in
         let bookingResult;
         if (isGuestUser) {
