@@ -4,6 +4,8 @@ import { useAuthRedux } from "../../hooks/useAuthRedux";
 import { useLocation } from "react-router-dom";
 import { chatApi } from "../../lib/chatApi";
 import { useIsMobile } from "../../hooks/use-mobile";
+import { renderTextWithLinks } from "../../utils/linkUtils";
+import axios from 'axios';
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +18,9 @@ const ChatWidget = () => {
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminStatus, setAdminStatus] = useState("Checking...");
   const [loadError, setLoadError] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const { socket, connected, emit, on } = useSocketContext();
   const { user, isAuthenticated } = useAuthRedux();
@@ -128,6 +133,7 @@ const ChatWidget = () => {
             senderName: data.senderName,
             timestamp: data.timestamp || new Date(),
             senderType: data.senderType || "user",
+            attachments: data.attachments || []
           },
         ];
       });
@@ -162,6 +168,7 @@ const ChatWidget = () => {
             senderName: messageData.senderId?.name || "Admin",
             timestamp: messageData.createdAt,
             senderType: "admin",
+            attachments: messageData.attachments || []
           },
         ];
       });
@@ -198,6 +205,7 @@ const ChatWidget = () => {
               senderName: data.senderName || data.userName || "Support Team",
               timestamp: data.timestamp || data.message?.createdAt || new Date(),
               senderType: "admin",
+              attachments: data.attachments || data.message?.attachments || []
             },
           ];
         });
@@ -282,6 +290,7 @@ const ChatWidget = () => {
             senderName: msg.senderId?.name || msg.senderId?.email || "User",
             timestamp: msg.createdAt || msg.timestamp,
             senderType: msg.senderType,
+            attachments: msg.attachments || []
           }));
           setMessages(formattedMessages);
           console.log("Loaded messages:", formattedMessages.length);
@@ -384,6 +393,99 @@ const ChatWidget = () => {
       typingTimeoutRef.current = setTimeout(() => {
         emit("stop-typing", { sessionId });
       }, 1000);
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => 
+      file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+    
+    if (validFiles.length !== files.length) {
+      alert('Only image and video files are allowed!');
+    }
+    
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+  };
+
+  // Remove selected file
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Upload files to server
+  const uploadFiles = async (files) => {
+    const uploadedAttachments = [];
+    
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        // Use axios instead of fetch for proper authorization handling
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const response = await axios.post(`${API_BASE_URL}/api/chat/upload-file`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.data.success) {
+          uploadedAttachments.push(response.data.data.file);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
+    }
+    
+    return uploadedAttachments;
+  };
+
+  // Handle send message with files
+  const handleSendMessageWithFiles = async () => {
+    if ((!newMessage.trim() && selectedFiles.length === 0) || !sessionId) return;
+
+    try {
+      setUploading(true);
+      
+      // Upload files first
+      let attachments = [];
+      if (selectedFiles.length > 0) {
+        attachments = await uploadFiles(selectedFiles);
+      }
+      
+      // Generate UUID for message deduplication
+      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+
+      const originalMessage = newMessage;
+      setNewMessage("");
+      setSelectedFiles([]);
+
+      // Send via socket with attachments
+      socket.emit("send-message", {
+        roomId: sessionId,
+        roomType: sessionId.includes('group') ? 'group' : 'individual',
+        message: {
+          content: originalMessage,
+          messageId: messageId,
+          attachments: attachments
+        }
+      });
+
+      // Emit typing stopped event
+      emit("stop-typing", { sessionId });
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -542,7 +644,45 @@ const ChatWidget = () => {
                         : "bg-gray-200 text-gray-800"
                     }`}
                   >
-                    <p className="text-sm">{msg.content}</p>
+                    {msg.content && (
+                      <p className="text-sm">{renderTextWithLinks(msg.content)}</p>
+                    )}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {msg.attachments.map((attachment, index) => (
+                          <div key={index} className="relative">
+                            {attachment.type === 'image' ? (
+                              <img 
+                                src={attachment.url} 
+                                alt={attachment.originalName}
+                                className="max-w-full h-auto rounded-lg cursor-pointer"
+                                onClick={() => window.open(attachment.url, '_blank')}
+                              />
+                            ) : (
+                              <div className="flex items-center space-x-2 p-2 bg-gray-100 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">{attachment.originalName}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                </div>
+                                <button 
+                                  onClick={() => window.open(attachment.url, '_blank')}
+                                  className="ml-auto text-blue-500 hover:text-blue-700"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <p
                       className={`text-xs mt-1 ${
                         msg.senderType === "user"
@@ -571,7 +711,52 @@ const ChatWidget = () => {
 
           {/* Input area */}
           <div className={`border-t p-2 bg-white ${isMobile ? "p-3" : ""}`}>
+            {/* Selected files preview */}
+            {selectedFiles.length > 0 && (
+              <div className="mb-2 p-2 bg-gray-50 rounded-lg">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-gray-700">Selected files:</span>
+                  <button 
+                    onClick={() => setSelectedFiles([])}
+                    className="text-xs text-red-500 hover:text-red-700"
+                  >
+                    Clear all
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center bg-white px-2 py-1 rounded border text-xs">
+                      <span className="truncate max-w-[120px]">{file.name}</span>
+                      <button 
+                        onClick={() => removeFile(index)}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-center space-x-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600"
+                title="Upload files"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </button>
               <textarea
                 value={newMessage}
                 onChange={(e) => {
@@ -588,22 +773,26 @@ const ChatWidget = () => {
                 autoFocus={isMobile}
               />
               <button
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim()}
+                onClick={handleSendMessageWithFiles}
+                disabled={(!newMessage.trim() && selectedFiles.length === 0) || uploading}
                 className={`p-2 rounded-lg ${isMobile ? "p-3" : ""} ${
-                  newMessage.trim()
+                  (newMessage.trim() || selectedFiles.length > 0) && !uploading
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`h-5 w-5 ${isMobile ? "h-6 w-6" : ""}`}
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                </svg>
+                {uploading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`h-5 w-5 ${isMobile ? "h-6 w-6" : ""}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

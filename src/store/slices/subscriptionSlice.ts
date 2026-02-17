@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getSubscriptionPlans, getUserSubscriptions } from '../../lib/api';
+import { detectUserCountry } from '../../utils/countryDetection';
 
 // Define TypeScript interfaces
 export interface SubscriptionPlan {
@@ -17,6 +18,8 @@ export interface SubscriptionPlan {
   services?: string[];
   popular?: boolean;
   subscriberCount?: number;
+  session_type?: 'individual' | 'group'; // New field
+  currency?: '₹' | '$'; // New field for currency display
 }
 
 // Define User Subscription interface
@@ -49,7 +52,16 @@ export const fetchSubscriptionPlans = createAsyncThunk(
   'subscriptions/fetchPlans',
   async (_, { rejectWithValue }) => {
     try {
-      const response: any = await getSubscriptionPlans();
+      // Detect user's country for price filtering
+      const countryInfo = await detectUserCountry();
+      
+      // Fetch plans with country parameter
+      const response: any = await getSubscriptionPlans({
+        params: {
+          country: countryInfo.country
+        }
+      });
+      
       return response.data.data.plans;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch subscription plans');

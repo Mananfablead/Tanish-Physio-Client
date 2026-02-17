@@ -78,8 +78,8 @@ export const confirmSession = (sessionData: any) => {
 };
 
 // Subscription API functions
-export const getSubscriptionPlans = () => {
-  return api.get("/subscriptions");
+export const getSubscriptionPlans = (config?: any) => {
+  return api.get("/subscriptions", config);
 };
 export const getActiveQuestionnaire = () => {
   return api.get("/questionnaires/active");

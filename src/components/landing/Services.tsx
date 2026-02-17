@@ -43,7 +43,7 @@ export function Services({
     );
   }
 
-  const displayedServices = services.slice(0, 5);
+  const displayedServices = services.slice(0, 6);
 
   return (
     <section className="py-12 bg-muted/30">

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface SubscriptionPlansProps {

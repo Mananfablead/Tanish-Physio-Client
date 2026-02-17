@@ -42,7 +42,7 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                   </span>
                   <span className="text-xs font-medium text-success">
                     {cmsHero?.isTherapistAvailable
-                      ? "Therapists available now"
+                      ? "Therapist available now"
                       : "Book your appointment"}
                   </span>
                 </div>
