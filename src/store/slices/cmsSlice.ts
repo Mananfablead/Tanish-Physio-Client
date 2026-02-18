@@ -41,6 +41,7 @@ interface WhyUsSection {
   _id?: string;
   title: string;
   description: string;
+  image?: string;
   stats: StatItem[];
   features: string[];
   isPublic: boolean;
