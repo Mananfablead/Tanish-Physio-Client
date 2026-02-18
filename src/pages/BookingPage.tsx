@@ -40,17 +40,18 @@ import { fetchPublicAdmins } from '@/store/slices/adminSlice';
 import { getAvailability } from '@/lib/api';
 import { fetchOffers, validateCoupon, resetCouponValidation } from '@/store/slices/offersSlice';
 import { register, setCredentials } from '@/store/slices/authSlice';
+import BookingLoginModal from '@/components/BookingLoginModal';
 export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
   const bookingData = location.state;
-  console.log("bookingData", bookingData);
+  // console.log("bookingData", bookingData);
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
   const { admins: publicAdmins } = useSelector((state: RootState) => state.admins);
   const { offers: storeOffers, loading: offersStoreLoading } = useSelector((state: RootState) => state.offers);
-  console.log("publicAdmins", publicAdmins)
+  // console.log("publicAdmins", publicAdmins)
 
   const [guestUserData, setGuestUserData] = useState({
     name: "",
@@ -73,7 +74,7 @@ export default function BookingPage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<any[]>([]);
-  console.log("availabilitylllllllll", availability)
+  // console.log("availabilitylllllllll", availability)
   const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(null);
 
   // Coupon states
@@ -89,9 +90,14 @@ export default function BookingPage() {
   const [availableOffers, setAvailableOffers] = useState<any[]>([]);
   const [offersLoading, setOffersLoading] = useState(true);
 
+  // Login modal state
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+
   // Fetch available offers from API
   useEffect(() => {
     dispatch(fetchOffers());
+    dispatch(fetchPublicAdmins());
   }, [dispatch]);
 
   // Update local state when store offers change
@@ -111,9 +117,7 @@ export default function BookingPage() {
       });
     }
   }, [user]);
-  useEffect(() => {
-    dispatch(fetchPublicAdmins());
-  }, [dispatch]);
+
   // Check if user is a guest (not logged in)
   // User is considered logged in if either qw_user exists in sessionStorage OR token exists in localStorage
   const isGuestUser =
@@ -126,7 +130,7 @@ export default function BookingPage() {
     id: publicAdmins[0]?.id,
     name: publicAdmins[0]?.name,
   } : undefined);
-  console.log("therapist", therapist)
+  // console.log("therapist", therapist)
   const serviceBooking = bookingData?.fromServices === true;
   const subscriptionBooking = bookingData?.fromSubscription === true;
 
@@ -241,10 +245,10 @@ export default function BookingPage() {
   };
 
   // Use selected schedule date/time when schedule option is 'now', otherwise use bookingData
-  const date = scheduleOption === "now" && scheduleDate 
-    ? scheduleDate 
+  const date = scheduleOption === "now" && scheduleDate
+    ? scheduleDate
     : formatDate(bookingData?.date);
-  
+
   // Use selected time slot when schedule option is 'now', otherwise use bookingData
   const time = scheduleOption === "now" && selectedTimeSlot
     ? selectedTimeSlot.start
@@ -258,9 +262,9 @@ export default function BookingPage() {
     : promoApplied
       ? Math.round(basePrice * 0.2)
       : 0;
-  console.log("discountAmount", discountAmount);
+  // console.log("discountAmount", discountAmount);
   const finalPrice = basePrice - discountAmount;
-  console.log("finalPrice", finalPrice);
+  // console.log("finalPrice", finalPrice);
   // Check stored intake
   let storedIntake = null;
   try {
@@ -392,7 +396,7 @@ export default function BookingPage() {
       // Fetch real availability data from API
       const response: any = await getAvailability();
       const fetchedAvailability = response.data?.data?.availability || [];
-      console.log("fetchedAvailability", fetchedAvailability);
+      // console.log("fetchedAvailability", fetchedAvailability);
 
       setAvailability(fetchedAvailability);
       setIsScheduleModalOpen(true);
@@ -551,18 +555,17 @@ export default function BookingPage() {
           const userData = checkResult.payload;
           if (userData.exists) {
             // 👉 Agar user mil jaye (exists: true)
-            // Show popup that user is already registered, but don't auto-login
-            toast.info("This email is already registered. Please login to continue.");
-
-            // Don't perform auto-login - let user login manually
-            console.log("User already exists, showing login prompt");
+            // Open login modal instead of just showing toast
+            setLoginEmail(guestUserData.email);
+            setIsLoginModalOpen(true);
+            // console.log("User already exists, opening login modal");
 
             // STOP ALL FURTHER PROCESSING
             return;
           } else {
             // 👉 Agar user na mile (exists: false)
             // Naya user create karo - this will happen after payment verification
-            console.log("New user will be created after payment");
+            // console.log("New user will be created after payment");
           }
         }
       } catch (error) {
@@ -625,21 +628,21 @@ export default function BookingPage() {
             // Add therapistId if available
             therapistId: therapist?.id || undefined,
           };
-          console.log("guestSubscriptionPaymentOrderData", guestSubscriptionPaymentOrderData);
+          // console.log("guestSubscriptionPaymentOrderData", guestSubscriptionPaymentOrderData);
           paymentOrderResult = await dispatch(
             createGuestSubscriptionPaymentOrderAsync(
               guestSubscriptionPaymentOrderData
             )
           );
         } else {
-          console.log("📤 Sending subscription payment order:", {
-            planId: bookingData.service.id || bookingData.service.planId,
-            amount: finalPrice,
-            originalPrice: plan.price,
-            discountAmount: isCouponApplied ? couponDiscount : 0,
-            couponCode: isCouponApplied ? couponCode : undefined,
-            therapistId: therapist?.id || null,
-          });
+          // console.log("📤 Sending subscription payment order:", {
+          //   planId: bookingData.service.id || bookingData.service.planId,
+          //   amount: finalPrice,
+          //   originalPrice: plan.price,
+          //   discountAmount: isCouponApplied ? couponDiscount : 0,
+          //   couponCode: isCouponApplied ? couponCode : undefined,
+          //   therapistId: therapist?.id || null,
+          // });
           const subscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
@@ -693,7 +696,7 @@ export default function BookingPage() {
           key:
             razorpayKey ||
             import.meta.env.VITE_RAZORPAY_KEY_ID ||
-            "rzp_test_S250uIjk1rVbsT",
+            "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
           currency: "INR",
@@ -1033,7 +1036,7 @@ export default function BookingPage() {
         // Initialize and open Razorpay checkout
         if (typeof window !== "undefined" && (window as any).Razorpay) {
           // Check if key exists before creating Razorpay instance
-          console.log("Razorpay key:", options);
+          // console.log("Razorpay key:", options);
           if (!options.key || options.key === "rzp_test_1234567890") {
             toast.error(
               "Razorpay key is not configured properly. Please contact support."
@@ -1050,7 +1053,7 @@ export default function BookingPage() {
           setIsProcessing(false);
         }
       } else {
-        console.log(bookingData);
+        // console.log(bookingData);
         const bookingPayload = {
           serviceId: serviceBooking ? bookingData.service.id : null,
           serviceName: serviceBooking ? bookingData.service.name : plan.name,
@@ -1073,7 +1076,7 @@ export default function BookingPage() {
           scheduledTime: scheduleOption === "now" ? scheduleTime : null,
           timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
         };
-        console.log("Booking payload:", bookingPayload);
+        // console.log("Booking payload:", bookingPayload);
         // Create the booking - use guest booking if user is not logged in
         let bookingResult;
         if (isGuestUser) {
@@ -1165,7 +1168,7 @@ export default function BookingPage() {
           key:
             razorpayKey ||
             import.meta.env.VITE_RAZORPAY_KEY_ID ||
-            "rzp_test_S250uIjk1rVbsT",
+            "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
           currency: "INR",
@@ -1408,13 +1411,13 @@ export default function BookingPage() {
                 }
 
                 toast.success("Payment successful!.");
-                
+
                 // Show loading state for 1 second before navigating to confirmation page
                 setIsProcessing(true);
-                
+
                 // Wait for 1 second to show the loader
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                
+
                 if (wasGuestUser) {
                   // For guest users, navigate to booking confirmation page
                   navigate("/booking-confirmation", {
@@ -1454,7 +1457,7 @@ export default function BookingPage() {
                     },
                   });
                 }
-                
+
                 // Note: We don't reset setIsProcessing(false) here as navigation will unmount the component
               } catch (error) {
                 console.error("Error processing payment success:", error);
@@ -1472,8 +1475,8 @@ export default function BookingPage() {
                 const guestUser = JSON.parse(
                   sessionStorage.getItem("qw_guest_user") || "{}"
                 );
-                console.log("Guest User:", guestUser);
-                console.log("Client Email:", guestUser.email);
+                // console.log("Guest User:", guestUser);
+                // console.log("Client Email:", guestUser.email);
 
                 if (!guestUser.email) {
                   console.error(
@@ -1656,7 +1659,7 @@ export default function BookingPage() {
         }
       }
     } catch (error) {
-      console.log("Error creating booking:", error);
+      // console.log("Error creating booking:", error);
       toast.error("Failed to create booking. Please try again.");
       setIsProcessing(false);
     }
@@ -2034,11 +2037,11 @@ export default function BookingPage() {
                         Sessions: {plan.sessions || "Unlimited"}
                       </p>
                     )}
-                    {!subscriptionBooking && bookingData?.service && (
+                    {/* {!subscriptionBooking && bookingData?.service && (
                       <p className="text-sm text-muted-foreground">
                         Service ID: {bookingData.service.id}
                       </p>
-                    )}
+                    )} */}
                   </div>
                   <p className="font-semibold">₹{plan.price}</p>
                 </div>
@@ -2083,9 +2086,9 @@ export default function BookingPage() {
                                 <div
                                   key={offer._id || offer.id}
                                   className={`p-3 rounded-md border cursor-pointer transition-all ${isCouponApplied &&
-                                      couponCode.toUpperCase() === offer.code
-                                      ? "border-success bg-success/10"
-                                      : "border-muted hover:border-primary/50 hover:bg-muted/50"
+                                    couponCode.toUpperCase() === offer.code
+                                    ? "border-success bg-success/10"
+                                    : "border-muted hover:border-primary/50 hover:bg-muted/50"
                                     }`}
                                   onClick={() => {
                                     if (!isCouponApplied) {
@@ -2451,6 +2454,21 @@ export default function BookingPage() {
         setScheduleTime={setScheduleTime}
         setSelectedDate={setSelectedDate}
         therapistName={therapist?.name}
+      />
+
+      {/* Login Modal for existing users */}
+      <BookingLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={() => {
+          setIsLoginModalOpen(false);
+          toast.success("Login successful! You can now continue with your booking.");
+          // You can add any additional logic here after successful login
+        }}
+        onError={() => {
+          setIsLoginModalOpen(true);
+        }}
+        email={loginEmail}
       />
     </Layout>
   );
