@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '@/lib/api';
 
 // Define types
-export type QuestionType = 'text' | 'mcq' | 'slider' | 'skalaeton' | 'upload';
+export type QuestionType = 'text' | 'mcq' | 'slider' | 'skalaeton' | 'upload' | 'age';
 
 export interface Question {
   _id: string;
@@ -14,6 +14,10 @@ export interface Question {
   options: string[];
   createdAt: string;
   updatedAt: string;
+  // New fields for common text field
+  hasCommonField?: boolean;
+  commonFieldLabel?: string;
+  commonFieldPlaceholder?: string;
 }
 
 export interface Questionnaire {

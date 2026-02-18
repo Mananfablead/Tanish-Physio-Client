@@ -89,7 +89,16 @@ export default function QuestionnairePage() {
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (parsed && parsed.data) {
-        return parsed;
+        // Ensure skalaeton questions have array values
+        const processedData = { ...parsed.data };
+        Object.keys(processedData).forEach(key => {
+          if (key.includes('skalaeton') || key.includes('skeleton')) {
+            if (!Array.isArray(processedData[key])) {
+              processedData[key] = processedData[key] ? [processedData[key]] : [];
+            }
+          }
+        });
+        return { ...parsed, data: processedData };
       }
     } catch (e) {
       // ignore
@@ -137,7 +146,29 @@ export default function QuestionnairePage() {
     
     // If questionnaireResponses map exists, use it directly as it has the mapping from questionId to answer
     if (healthProfile.questionnaireResponses && typeof healthProfile.questionnaireResponses === 'object') {
-      return { ...healthProfile.questionnaireResponses };
+      const data: QuestionnaireData = {};
+      Object.entries(healthProfile.questionnaireResponses).forEach(([key, value]) => {
+        // Handle JSON string format for common field data
+        if (typeof value === 'string' && value.startsWith('{') && value.includes('mainAnswer')) {
+          try {
+            const parsed = JSON.parse(value);
+            data[key] = {
+              mainAnswer: parsed.mainAnswer,
+              commonField: parsed.commonField || ''
+            };
+          } catch (e) {
+            // If parsing fails, store as simple value
+            data[key] = value;
+          }
+        }
+        // For skalaeton questions, ensure array format
+        else if (key.includes('skalaeton') || key.includes('skeleton')) {
+          data[key] = Array.isArray(value) ? value : (value ? [value] : []);
+        } else {
+          data[key] = value;
+        }
+      });
+      return data;
     }
     
     // Fallback: build from individual healthProfile fields
@@ -222,9 +253,51 @@ export default function QuestionnairePage() {
     return undefined;
   }, [isAuthenticated, dispatch]);
 
-  const updateAnswer = (questionId: string, value: any) => {
+  const updateAnswer = (questionId: string, value: any, isCommonField: boolean = false) => {
     setData((prev) => {
-      const next = { ...prev, [questionId]: value };
+      let next: QuestionnaireData;
+      
+      if (isCommonField) {
+        // Update common field
+        const currentData = prev[questionId] || { mainAnswer: null };
+        next = {
+          ...prev,
+          [questionId]: {
+            ...currentData,
+            commonField: value || '' // Ensure empty string instead of null/undefined
+          }
+        };
+      } else {
+        // Update main answer
+        const currentData = prev[questionId];
+        if (currentData && typeof currentData === 'object' && currentData.commonField !== undefined) {
+          // Already has common field structure
+          next = {
+            ...prev,
+            [questionId]: {
+              ...currentData,
+              mainAnswer: value
+            }
+          };
+        } else {
+          // Check if this question has common field enabled
+          const question = activeQuestionnaire?.questions.find(q => q._id === questionId);
+          if (question?.hasCommonField) {
+            // Initialize with common field structure even when only main answer is provided
+            next = {
+              ...prev,
+              [questionId]: {
+                mainAnswer: value,
+                commonField: '' // Initialize with empty common field
+              }
+            };
+          } else {
+            // Simple value storage for questions without common fields
+            next = { ...prev, [questionId]: value };
+          }
+        }
+      }
+      
       // persist
       saveStoredQuestionnaire(next);
 
@@ -233,20 +306,6 @@ export default function QuestionnairePage() {
         const newErrors = { ...validationErrors };
         delete newErrors[questionId];
         setValidationErrors(newErrors);
-      }
-
-      // Auto advance to next question if there is one and it's not a text or upload field
-      const question = activeQuestionnaire?.questions.find((q: any) => q._id === questionId);
-      // Only auto-advance if the question is not required OR has been answered with a non-empty value
-      if (question && !['text', 'upload'].includes(question.type) && (!question.required || (value && value.toString().trim() !== ''))) {
-        const currentQuestionIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === questionId) ?? -1;
-        if (currentQuestionIndex >= 0 && currentQuestionIndex < (activeQuestionnaire?.questions.length || 0) - 1) {
-          setActiveQuestionIndex(currentQuestionIndex + 1);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        } else if (currentQuestionIndex === (activeQuestionnaire?.questions.length || 0) - 1) {
-          // If this is the last question, go to review
-          setIsReviewing(true);
-        }
       }
 
       return next;
@@ -258,10 +317,32 @@ export default function QuestionnairePage() {
   const handleNext = () => {
     // Check if current question is required and hasn't been answered
     const currentQuestion = activeQuestionnaire?.questions[activeQuestionIndex];
-    if (currentQuestion?.required && (!data[currentQuestion._id] || data[currentQuestion._id].toString().trim() === '')) {
+    
+    // Check if main answer is required and provided
+    let isMainAnswerRequired = false;
+    const answer = data[currentQuestion._id];
+    
+    if (currentQuestion?.required) {
+      if (currentQuestion.hasCommonField) {
+        // For questions with common fields, check main answer in structured data
+        if (typeof answer === 'object' && answer !== null && answer.commonField !== undefined) {
+          isMainAnswerRequired = !answer.mainAnswer || answer.mainAnswer.toString().trim() === '';
+        } else {
+          // Simple value format
+          isMainAnswerRequired = !answer || answer.toString().trim() === '';
+        }
+      } else {
+        // Regular questions
+        isMainAnswerRequired = !answer || answer.toString().trim() === '';
+      }
+    }
+    
+    // Common fields are optional - don't block navigation for missing common fields
+    if (isMainAnswerRequired) {
+      const errorMessage = `${currentQuestion.question} is required`;
       setValidationErrors({
         ...validationErrors,
-        [currentQuestion._id]: `${currentQuestion.question} is required`
+        [currentQuestion._id]: errorMessage
       });
       return;
     }
@@ -281,18 +362,36 @@ export default function QuestionnairePage() {
     } else {
       // Before going to review, validate all required questions are answered
       const requiredQuestions = activeQuestionnaire?.questions.filter((q: any) => q.required) || [];
-      const unansweredRequired = requiredQuestions.filter((q: any) => !data[q._id] || data[q._id].toString().trim() === '');
+      const unansweredRequired = requiredQuestions.filter((q: any) => {
+        const answer = data[q._id];
+        // For questions with common fields, check if main answer is provided
+        if (q.hasCommonField) {
+          // Handle both structured data and simple values
+          if (typeof answer === 'object' && answer !== null && answer.commonField !== undefined) {
+            // Structured format
+            return !answer.mainAnswer || answer.mainAnswer.toString().trim() === '';
+          } else {
+            // Simple value format (user only provided main answer)
+            return !answer || answer.toString().trim() === '';
+          }
+        }
+        // For regular questions
+        return !answer || answer.toString().trim() === '';
+      });
 
+      // Common fields are optional - don't validate them as required
       if (unansweredRequired.length > 0) {
-        // Set validation errors for all unanswered required questions
+        // Set validation errors for unanswered required questions
         const newErrors: { [key: string]: string } = {};
         unansweredRequired.forEach((q: any) => {
           newErrors[q._id] = `${q.question} is required`;
         });
         setValidationErrors(newErrors);
 
-        // Navigate to the first unanswered required question
-        const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === unansweredRequired[0]._id) || 0;
+        // Navigate to the first unanswered question
+        const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => 
+          q._id === unansweredRequired[0]._id
+        ) || 0;
         setActiveQuestionIndex(firstUnansweredIndex);
         return;
       }
@@ -330,12 +429,20 @@ export default function QuestionnairePage() {
     
     Object.entries(questionnaireData).forEach(([key, value]) => {
       if (typeof value === 'object' && value !== null) {
+        const objValue = value as { commonField?: string; mainAnswer?: any; url?: string; name?: string };
+        // Handle common field structure - preserve the complete structure
+        if (objValue.commonField !== undefined || objValue.mainAnswer !== undefined) {
+          serialized[key] = {
+            mainAnswer: objValue.mainAnswer !== undefined ? objValue.mainAnswer : null,
+            commonField: objValue.commonField || '' // Always include commonField even if empty
+          };
+        }
         // If it's an uploaded file with URL, keep the URL
-        if (value.url) {
-          serialized[key] = value.url;
-        } else if (value.name) {
+        else if (objValue.url) {
+          serialized[key] = objValue.url;
+        } else if (objValue.name) {
           // If it's just a filename, keep the filename
-          serialized[key] = value.name;
+          serialized[key] = objValue.name;
         } else {
           // Otherwise keep the object as is
           serialized[key] = value;
@@ -367,26 +474,56 @@ export default function QuestionnairePage() {
       const question = questions.find(q => q._id === questionId);
       if (!question || !answer) return;
 
+      // Handle common field structure
+      let answerValue: any = answer;
+      let mainAnswer: any = answer;
+      let commonField: string = '';
+      
+      if (typeof answer === 'object' && answer !== null && (answer as any).commonField !== undefined) {
+        mainAnswer = (answer as any).mainAnswer;
+        commonField = (answer as any).commonField || '';
+        // For storage, we want to preserve both values separately
+        answerValue = mainAnswer;
+      }
+
       // Convert file objects/URLs to displayable format for storage
-      let answerValue = answer;
-      if (typeof answer === 'object' && answer !== null) {
+      if (typeof answerValue === 'object' && answerValue !== null) {
         // If it's an uploaded file with URL, use the URL
-        if (answer.url) {
-          answerValue = answer.url;
-        } else if (answer.name) {
+        if ((answerValue as any).url) {
+          answerValue = (answerValue as any).url;
+        } else if ((answerValue as any).name) {
           // If it's just a filename, use the filename
-          answerValue = answer.name;
+          answerValue = (answerValue as any).name;
+        } else {
+          // For arrays and other objects, convert to string representation
+          answerValue = Array.isArray(answerValue) 
+            ? JSON.stringify(answerValue) 
+            : JSON.stringify(answerValue);
         }
       }
 
-      // Store in questionnaire responses map
-      questionnaireResponses.set(questionId, answerValue as string);
+      // Store in questionnaire responses map - preserve both values for proper display
+      let responseValue = String(answerValue || '');
+      
+      // Store the structured data for better retrieval
+      if (typeof answer === 'object' && answer !== null && (answer as any).commonField !== undefined) {
+        // Store as JSON string to preserve structure
+        responseValue = JSON.stringify({
+          mainAnswer: mainAnswer,
+          commonField: commonField
+        });
+      } else {
+        // Simple value
+        responseValue = String(answerValue || '');
+      }
+      
+      questionnaireResponses.set(questionId, responseValue);
 
       // Store detailed response metadata
       questionnaireMetadata.responses.push({
         questionId: question._id,
         questionText: question.question,
-        answer: answerValue as string,
+        answer: responseValue,
         questionType: question.type,
         timestamp: new Date()
       });
@@ -398,34 +535,56 @@ export default function QuestionnairePage() {
         // Don't map name to healthProfile
         return;
       } else if (questionText.includes('concern') || questionText.includes('problem') || questionText.includes('issue')) {
-        healthProfile.primaryConcern = answer;
+        // Convert array to comma-separated string for primaryConcern
+        healthProfile.primaryConcern = Array.isArray(mainAnswer) 
+          ? mainAnswer.join(', ') 
+          : mainAnswer;
       } else if (questionText.includes('pain') && question.type === 'slider') {
-        healthProfile.painIntensity = parseInt(answer as string) || 0;
+        const painValue = parseInt(mainAnswer as string) || 1; // Default to 1 if invalid, min is 1
+        healthProfile.painIntensity = Math.max(1, Math.min(10, painValue)); // Ensure between 1-10
       } else if (questionText.includes('duration') || questionText.includes('how long')) {
-        healthProfile.priorTreatments = answer;
+        healthProfile.priorTreatments = mainAnswer;
       } else if (questionText.includes('treatment') || questionText.includes('therapy')) {
         healthProfile.priorTreatments = healthProfile.priorTreatments
-          ? `${healthProfile.priorTreatments}, ${answer}`
-          : answer;
+          ? `${healthProfile.priorTreatments}, ${mainAnswer}`
+          : mainAnswer;
       } else if (questionText.includes('medical') || questionText.includes('history')) {
-        healthProfile.medicalHistory = answer;
+        healthProfile.medicalHistory = mainAnswer;
       } else if (questionText.includes('allerg')) {
-        healthProfile.allergies = answer;
+        healthProfile.allergies = mainAnswer;
       } else if (questionText.includes('medication')) {
-        healthProfile.medications = answer;
+        healthProfile.medications = mainAnswer;
       } else if (questionText.includes('emergency') || questionText.includes('contact')) {
-        healthProfile.emergencyContact = answer;
+        healthProfile.emergencyContact = mainAnswer;
+      } else if (question.type === 'age') {
+        // Age is not stored in healthProfile schema, but we can include it in additionalNotes
+        const ageValue = parseInt(mainAnswer as string) || 0;
+        if (ageValue > 0) {
+          if (!healthProfile.additionalNotes) {
+            healthProfile.additionalNotes = '';
+          }
+          healthProfile.additionalNotes += `Age: ${ageValue}\n`;
+        }
       } else {
         // For other questions, add to additional notes (backward compatibility)
         if (!healthProfile.additionalNotes) {
           healthProfile.additionalNotes = '';
         }
-        healthProfile.additionalNotes += `${question.question}: ${answer}\n`;
+        let noteText = `${question.question}: ${mainAnswer}`;
+        if (commonField) {
+          noteText += ` | Additional: ${commonField}`;
+        }
+        healthProfile.additionalNotes += `${noteText}\n`;
       }
     });
 
-    // Add questionnaire data to healthProfile
-    healthProfile.questionnaireResponses = Object.fromEntries(questionnaireResponses);
+    // Add questionnaire data to healthProfile (convert Map to plain object)
+    // Mongoose Map type expects specific format, so we send as regular object
+    const responsesObject: { [key: string]: string } = {};
+    questionnaireResponses.forEach((value, key) => {
+      responsesObject[key] = value;
+    });
+    healthProfile.questionnaireResponses = responsesObject;
     healthProfile.questionnaireMetadata = questionnaireMetadata;
 
     return healthProfile;
@@ -434,18 +593,38 @@ export default function QuestionnairePage() {
   const handleSubmit = async () => {
     // Validate all required questions before submitting
     const requiredQuestions = activeQuestionnaire?.questions.filter((q: any) => q.required) || [];
-    const unansweredRequired = requiredQuestions.filter((q: any) => !data[q._id] || data[q._id].toString().trim() === '');
+    const unansweredRequired = requiredQuestions.filter((q: any) => {
+      const answer = data[q._id];
+      // For questions with common fields, check if main answer is provided
+      if (q.hasCommonField) {
+        // Handle both structured data and simple values
+        if (typeof answer === 'object' && answer !== null && answer.commonField !== undefined) {
+          // Structured format
+          return !answer.mainAnswer || answer.mainAnswer.toString().trim() === '';
+        } else {
+          // Simple value format (user only provided main answer)
+          return !answer || answer.toString().trim() === '';
+        }
+      }
+      // For regular questions
+      return !answer || answer.toString().trim() === '';
+    });
 
+    // Common fields are optional by default - only validate if they exist and have content requirements
+    // We don't enforce common fields as required unless explicitly marked (which is not in current schema)
+    
     if (unansweredRequired.length > 0) {
-      // Set validation errors for all unanswered required questions
+      // Set validation errors for unanswered required questions
       const newErrors: { [key: string]: string } = {};
       unansweredRequired.forEach((q: any) => {
         newErrors[q._id] = `${q.question} is required`;
       });
       setValidationErrors(newErrors);
 
-      // Navigate to the first unanswered required question
-      const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => q._id === unansweredRequired[0]._id) || 0;
+      // Navigate to the first unanswered question
+      const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => 
+        q._id === unansweredRequired[0]._id
+      ) || 0;
       setActiveQuestionIndex(firstUnansweredIndex);
       return;
     }
@@ -462,10 +641,15 @@ export default function QuestionnairePage() {
 
       // Update user profile with health data from questionnaire (only for authenticated users)
       const profileData = {
-        healthProfile: healthProfileData
+        healthProfile: {
+          ...healthProfileData,
+          // Ensure proper data types
+          painIntensity: healthProfileData.painIntensity ? parseInt(healthProfileData.painIntensity) : undefined
+        }
       };
       // Only update profile for authenticated users
       if (isAuthenticated) {
+        console.log('Sending profile data:', JSON.stringify(profileData, null, 2));
         await updateProfile(profileData);
       }
 
@@ -606,7 +790,9 @@ export default function QuestionnairePage() {
     { id: "shoulder-right", label: "Right Shoulder", position: "top-[22%] right-[35%]" },
     { id: "upper-back", label: "Upper Back", position: "top-[28%] left-[50%] -translate-x-1/2" },
     { id: "lower-back", label: "Lower Back", position: "top-[40%] left-[50%] -translate-x-1/2" },
-    { id: "hip", label: "Hip", position: "top-[48%] left-[50%] -translate-x-1/2" },
+    { id: "hip-left", label: "Left Hip", position: "top-[48%] left-[50%] -translate-x-1/2" },
+    { id: "hip-right", label: "Right Hip", position: "top-[48%] right-[50%] -translate-x-1/2" },
+    { id: "headache", label: "Headache", position: "top-[15%] left-[50%] -translate-x-1/2" },
     { id: "knee-left", label: "Left Knee", position: "top-[65%] left-[42%]" },
     { id: "knee-right", label: "Right Knee", position: "top-[65%] right-[42%]" },
     { id: "ankle-left", label: "Left Ankle", position: "top-[85%] left-[42%]" },
@@ -619,14 +805,35 @@ export default function QuestionnairePage() {
 
   // Render question based on type
   const renderQuestion = (question: any) => {
-    const currentValue = data[question._id] || '';
+    // Extract main answer and common field values
+    const questionData = data[question._id];
+    let currentValue: any;
+    let commonFieldValue: string = '';
+    
+    // Handle both structured data and simple values
+    if (questionData && typeof questionData === 'object' && questionData.commonField !== undefined) {
+      // Structured format with both main answer and common field
+      currentValue = questionData.mainAnswer;
+      commonFieldValue = questionData.commonField || '';
+    } else if (question.hasCommonField) {
+      // Simple value format - user only provided main answer
+      currentValue = questionData;
+      commonFieldValue = ''; // Common field is empty
+    } else {
+      // Regular question without common field
+      currentValue = questionData;
+    }
+    
     const isRequired = question.required;
     const isAnswered = !!currentValue && currentValue.toString().trim() !== '';
     const hasError = validationErrors[question._id];
 
+    // Render main question content
+    let mainQuestionContent;
+    
     switch (question.type) {
       case 'text':
-        return (
+        mainQuestionContent = (
           <div className="space-y-4">
             <Input
               value={currentValue}
@@ -647,9 +854,37 @@ export default function QuestionnairePage() {
             )}
           </div>
         );
+        break;
+
+      case 'age':
+        mainQuestionContent = (
+          <div className="space-y-4">
+            <Input
+              type="number"
+              value={currentValue}
+              onChange={(e) => {
+                // Clear validation error when user starts typing
+                if (validationErrors[question._id]) {
+                  const newErrors = { ...validationErrors };
+                  delete newErrors[question._id];
+                  setValidationErrors(newErrors);
+                }
+                updateAnswer(question._id, e.target.value);
+              }}
+              placeholder="Enter your age"
+              min="1"
+              max="120"
+              className={`${hasError ? 'border-red-500 focus:ring-red-500' : isRequired && !isAnswered ? 'border-red-500 focus:ring-red-500' : 'border-slate-200'} min-h-[48px] h-12 lg:h-16 text-3xl font-black rounded-2xl focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all px-4 lg:px-8 shadow-sm`}
+            />
+            {hasError && (
+              <p className="text-red-500 text-sm font-bold">{validationErrors[question._id]}</p>
+            )}
+          </div>
+        );
+        break;
 
       case 'mcq':
-        return (
+        mainQuestionContent = (
           <RadioGroup
             value={currentValue}
             onValueChange={(value) => {
@@ -680,10 +915,11 @@ export default function QuestionnairePage() {
             ))}
           </RadioGroup>
         );
+        break;
 
       case 'slider':
         const sliderValue = parseInt(currentValue) || 0;
-        return (
+        mainQuestionContent = (
           <div className={`bg-gradient-to-br from-primary/5 to-secondary/10 p-2 rounded-3xl ${hasError ? 'border border-red-500' : isRequired && !isAnswered ? 'border border-red-300' : 'border border-primary/20'} space-y-12 shadow-inner`}>
             <div className="text-center relative">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 blur-3xl rounded-full" />
@@ -719,9 +955,10 @@ export default function QuestionnairePage() {
             </div>
           </div>
         );
+        break;
 
       case 'skeleton':
-        return (
+        mainQuestionContent = (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className={`relative w-full aspect-[3/4] max-w-[260px] md:max-w-[300px] mx-auto ${hasError ? 'bg-red-50' : isRequired && !isAnswered ? 'bg-red-50' : 'bg-slate-50'} rounded-3xl p-6 md:p-8 shadow-inner border ${hasError ? 'border-red-500' : isRequired && !isAnswered ? 'border-red-200' : 'border-slate-100'} flex items-center justify-center`}>
               <svg viewBox="0 0 100 200" className="w-full h-full opacity-10 text-slate-900">
@@ -776,22 +1013,24 @@ export default function QuestionnairePage() {
             </div>
           </div>
         );
+        break;
 
       case 'skalaeton':
-        return (
+        mainQuestionContent = (
           <SkalaetonQuestion
             question={question}
-            currentValue={currentValue}
-            updateAnswer={updateAnswer}
+            currentValue={Array.isArray(currentValue) ? currentValue : []}
+            updateAnswer={(questionId: string, value: string[]) => updateAnswer(questionId, value)}
           />
         );
+        break;
 
       case 'upload':
         const isUploading = (currentValue && typeof currentValue === 'object' && currentValue.uploading) || false;
         const uploadedFileUrl = (currentValue && typeof currentValue === 'object' && currentValue.url) ? currentValue.url : null;
         const uploadedFileName = (currentValue && typeof currentValue === 'object' && currentValue.name) ? currentValue.name : null;
         
-        return (
+        mainQuestionContent = (
           <div className="space-y-4">
             {!uploadedFileUrl ? (
               <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
@@ -838,7 +1077,7 @@ export default function QuestionnairePage() {
                         const formData = new FormData();
                         formData.append('file', file);
 
-                        const response = await fetch('/api/questionnaires/upload-file', {
+                        const response = await fetch('/questionnaires/upload-file', {
                           method: 'POST',
                           body: formData
                         });
@@ -945,9 +1184,10 @@ export default function QuestionnairePage() {
             )}
           </div>
         );
+        break;
 
       default:
-        return (
+        mainQuestionContent = (
           <div className="space-y-4">
             <Input
               value={currentValue}
@@ -969,6 +1209,28 @@ export default function QuestionnairePage() {
           </div>
         );
     }
+
+    // Add common field if enabled
+    const commonFieldContent = question.hasCommonField ? (
+      <div className="mt-6 pt-4 border-t border-slate-200">
+        <Label className="text-sm font-bold text-slate-700 mb-2 block">
+          {question.commonFieldLabel || "Additional Information"}
+        </Label>
+        <Input
+          value={commonFieldValue}
+          onChange={(e) => updateAnswer(question._id, e.target.value, true)}
+          placeholder={question.commonFieldPlaceholder || "Enter additional details..."}
+          className="border-slate-200 min-h-[40px] text-lg rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all px-4"
+        />
+      </div>
+    ) : null;
+
+    return (
+      <div className="space-y-4">
+        {mainQuestionContent}
+        {commonFieldContent}
+      </div>
+    );
   };
 
   // Get current question
@@ -1381,20 +1643,108 @@ export default function QuestionnairePage() {
                                             {question.question}
                                           </p>
                                           <p className="text-base font-medium text-slate-800 break-words flex items-center gap-2">
-                                            {typeof data[question._id] === 'object' && data[question._id]?.url ? (
+                                            {question.type === 'skalaeton' && Array.isArray(data[question._id]) && data[question._id].length > 0 ? (
+                                              <span className="flex flex-wrap gap-2">
+                                                {data[question._id].map((areaId: string) => {
+                                                  const area = [
+                                                    { id: "neck", label: "Neck" },
+                                                    { id: "left-shoulder", label: "Left Shoulder" },
+                                                    { id: "right-shoulder", label: "Right Shoulder" },
+                                                    { id: "upper-back", label: "Upper Back" },
+                                                    { id: "lower-back", label: "Lower Back" },
+                                                    { id: "hip-left", label: "Left Hip" },
+                                                    { id: "hip-right", label: "Right Hip" },
+                                                    { id: "headache", label: "Headache" },
+                                                    { id: "left-knee", label: "Left Knee" },
+                                                    { id: "right-knee", label: "Right Knee" },
+                                                    { id: "left-ankle", label: "Left Ankle" },
+                                                    { id: "right-ankle", label: "Right Ankle" },
+                                                    { id: "left-elbow", label: "Left Elbow" },
+                                                    { id: "right-elbow", label: "Right Elbow" },
+                                                    { id: "left-wrist", label: "Left Wrist" },
+                                                    { id: "right-wrist", label: "Right Wrist" },
+                                                  ].find(a => a.id === areaId);
+                                                  return area ? (
+                                                    <Badge key={areaId} variant="default" className="text-xs">
+                                                      {area.label}
+                                                    </Badge>
+                                                  ) : null;
+                                                })}
+                                              </span>
+                                            ) : question.type === 'age' ? (
+                                              <span className="flex items-center gap-2">
+                                                <User className="w-4 h-4 text-primary" />
+                                                {data[question._id] || "Not answered"}
+                                              </span>
+                                            ) : typeof data[question._id] === 'object' && data[question._id] !== null && (data[question._id] as any).commonField !== undefined ? (
+                                              <div className="space-y-1">
+                                                <span>
+                                                  {(data[question._id] as any).mainAnswer || 
+                                                   ((data[question._id] as any).mainAnswer === null ? "Not answered" : (data[question._id] as any).mainAnswer)}
+                                                </span>
+                                                {(data[question._id] as any).commonField && (
+                                                  <div className="text-sm text-slate-500 italic mt-1">
+                                                    Additional: {(data[question._id] as any).commonField}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ) : question.hasCommonField && data[question._id] !== undefined && data[question._id] !== null ? (
+                                              // Handle case where user only provided main answer (simple value format)
+                                              <div className="space-y-1">
+                                                <span>{data[question._id].toString() || "Not answered"}</span>
+                                                {/* No additional field since user didn't provide it */}
+                                              </div>
+                                            ) : typeof data[question._id] === 'string' && data[question._id].includes(' | Additional: ') ? (
+                                              // Handle combined format from questionnaire responses (backward compatibility)
+                                              <div className="space-y-1">
+                                                <span>{data[question._id].split(' | Additional: ')[0] || "Not answered"}</span>
+                                                {data[question._id].includes(' | Additional: ') && (
+                                                  <div className="text-sm text-slate-500 italic mt-1">
+                                                    Additional: {data[question._id].split(' | Additional: ')[1]}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ) : typeof data[question._id] === 'string' && data[question._id].startsWith('{') && data[question._id].includes('mainAnswer') ? (
+                                              // Handle JSON string format from stored responses
+                                              (() => {
+                                                try {
+                                                  const parsed = JSON.parse(data[question._id]);
+                                                  return (
+                                                    <div className="space-y-1">
+                                                      <span>{parsed.mainAnswer || "Not answered"}</span>
+                                                      {parsed.commonField && (
+                                                        <div className="text-sm text-slate-500 italic mt-1">
+                                                          Additional: {parsed.commonField}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                } catch (e) {
+                                                  return <span>{data[question._id] || "Not answered"}</span>;
+                                                }
+                                              })()
+                                            ) : typeof data[question._id] === 'object' && (data[question._id] as any)?.url ? (
                                               <>
                                                 <a
-                                                  href={data[question._id].url}
+                                                  href={(data[question._id] as any).url}
                                                   target="_blank"
                                                   rel="noopener noreferrer"
                                                   className="text-primary hover:underline flex items-center gap-1"
                                                 >
                                                   <FileText className="w-4 h-4" />
-                                                  {data[question._id].name || 'View File'}
+                                                  {(data[question._id] as any).name || 'View File'}
                                                 </a>
                                               </>
-                                            ) : typeof data[question._id] === 'object' && data[question._id]?.name ? (
-                                              data[question._id].name
+                                            ) : typeof data[question._id] === 'object' && (data[question._id] as any)?.name ? (
+                                              (data[question._id] as any).name
+                                            ) : typeof data[question._id] === 'object' && (data[question._id] as any)?.error ? (
+                                              <span className="text-red-500 text-sm">
+                                                Upload failed: {(data[question._id] as any).errorMessage || 'Unknown error'}
+                                              </span>
+                                            ) : typeof data[question._id] === 'object' && (data[question._id] as any)?.uploading ? (
+                                              <span className="text-blue-500 text-sm">
+                                                Uploading...
+                                              </span>
                                             ) : (
                                               data[question._id] ||
                                               "Not answered"

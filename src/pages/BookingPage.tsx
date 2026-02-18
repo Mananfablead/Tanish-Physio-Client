@@ -2451,6 +2451,8 @@ export default function BookingPage() {
         setScheduleTime={setScheduleTime}
         setSelectedDate={setSelectedDate}
         therapistName={therapist?.name}
+        selectedTimeSlot={selectedTimeSlot}
+        setSelectedTimeSlot={setSelectedTimeSlot}
       />
     </Layout>
   );

@@ -77,7 +77,9 @@ useEffect(() => {
             src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
             alt="Tanish Physio Logo"
             className="h-12 sm:h-14 md:h-16 lg:h-16 w-auto object-contain"
+            
           />
+          {/* <span className="text-xs font-bold">Practising Since 2004</span> */}
         </Link>
         {/* Desktop Navigation */}
         <nav className="hidden md:hidden lg:flex items-center gap-2 lg:gap-3">
