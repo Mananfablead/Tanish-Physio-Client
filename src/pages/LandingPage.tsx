@@ -216,7 +216,7 @@ export default function LandingPage() {
     loading: subscriptionLoading,
     error: subscriptionError,
   } = useSelector((state: RootState) => state.subscriptions);
-
+  console.log("object", subscriptionPlans)
   // Fetch testimonials from Redux store
   const featuredTestimonials = useSelector(selectFeaturedTestimonials);
   const testimonialsLoading = useSelector(selectTestimonialsLoading);
@@ -246,17 +246,18 @@ export default function LandingPage() {
   const servicesError = useSelector(selectServicesError);
 
   // State to track which session type to fetch
-  const [sessionTypeFilter, setSessionTypeFilter] = useState<'individual' | 'group' | undefined>(undefined);
-
+ const [sessionTypeFilter, setSessionTypeFilter] =
+    useState<'individual' | 'group'>('individual');
   // Fetch subscription plans when component mounts or session type changes
-  useEffect(() => {
-    dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
-  }, [dispatch, sessionTypeFilter]);
+useEffect(() => {
+  dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
+}, [dispatch, sessionTypeFilter]);
+;
 
   // Fetch featured testimonials when component mounts
-  useEffect(() => {
-    dispatch(fetchFeaturedTestimonials());
-  }, [dispatch]);
+ useEffect(() => {
+    dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
+  }, [dispatch, sessionTypeFilter]);
 
   // Fetch CMS hero and steps data when component mounts
   useEffect(() => {
@@ -350,6 +351,7 @@ export default function LandingPage() {
         subscriptionLoading={subscriptionLoading}
         subscriptionError={subscriptionError}
         onTabChange={setSessionTypeFilter}
+
         stagger={stagger}
         fadeInUp={fadeInUp}
       />
