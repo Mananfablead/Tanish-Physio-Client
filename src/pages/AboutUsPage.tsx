@@ -36,6 +36,21 @@ export default function AboutUsPage() {
       </Layout>
     );
   }
+const highlightTanish = (text?: string) => {
+  if (!text) return null;
+
+  const parts = text.split(/(Tanish Physio)/gi);
+
+  return parts.map((part, index) =>
+    part.toLowerCase() === "tanish physio" ? (
+      <span key={index} className="text-primary font-bold">
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+};
 
   return (
     <Layout>
@@ -162,7 +177,7 @@ export default function AboutUsPage() {
                           viewport={{ once: true }}
                           transition={{ duration: 0.6, delay: 0.4 + (index * 0.1) }}
                         >
-                          {paragraph}
+                          {highlightTanish(paragraph)}
                         </motion.p>
                       ))}
                     </div>
