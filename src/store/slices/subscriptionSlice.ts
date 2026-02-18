@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getSubscriptionPlans, getUserSubscriptions } from '../../lib/api';
-import { detectUserCountry } from '../../utils/countryDetection';
+import { detectUserCountry, getCountryInfoSync } from '../../utils/countryDetection';
 
 // Define TypeScript interfaces
 export interface SubscriptionPlan {
@@ -50,21 +50,31 @@ interface SubscriptionState {
 // Async thunk to fetch subscription plans
 export const fetchSubscriptionPlans = createAsyncThunk(
   'subscriptions/fetchPlans',
-  async (_, { rejectWithValue }) => {
+  async (params: { sessionType?: 'individual' | 'group' } | undefined, thunkAPI) => {
     try {
-      // Detect user's country for price filtering
-      const countryInfo = await detectUserCountry();
+      let countryInfo;
+      try {
+        // Detect user's country for price filtering
+        countryInfo = await detectUserCountry();
+      } catch (countryError) {
+        console.warn('Failed to detect country, using fallback:', countryError);
+        // Use synchronous fallback if async detection fails
+        countryInfo = getCountryInfoSync();
+      }
       
-      // Fetch plans with country parameter
+      // Fetch plans with country and session type parameters
+      const queryParams: any = { country: countryInfo.country };
+      if (params?.sessionType) {
+        queryParams.session_type = params.sessionType;
+      }
+
       const response: any = await getSubscriptionPlans({
-        params: {
-          country: countryInfo.country
-        }
+        params: queryParams
       });
       
       return response.data.data.plans;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch subscription plans');
+      return thunkAPI.rejectWithValue(error.response?.data?.message || 'Failed to fetch subscription plans');
     }
   }
 );
@@ -129,6 +139,7 @@ const subscriptionSlice = createSlice({
       })
       .addCase(fetchSubscriptionPlans.fulfilled, (state, action) => {
         state.loading = false;
+        // The action.payload is already the plans array (since the thunk returns response.data.data.plans)
         // Transform the data to match the expected format for the UI
         state.plans = action.payload.map((plan: any) => ({
           ...plan,

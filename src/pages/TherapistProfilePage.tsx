@@ -128,8 +128,8 @@ export default function TherapistProfilePage() {
     bio: therapist.doctorProfile?.bio || "No biography available.",
     avatar: therapist.profilePicture || "/default-avatar.png",
     experience: parseInt(therapist.doctorProfile?.experience) || 0,
-    rating: 0, // Will be calculated from reviews or set to 0
-    reviews: 0, // Will be calculated from reviews or set to 0
+    rating: 5, // Will be calculated from reviews or set to 5
+    reviews: 5, // Will be calculated from reviews or set to 0
     languages: parseLanguages(therapist.doctorProfile?.languages),
     certifications: therapist.doctorProfile?.certifications || [],
     certificationNames: parseCertificationNames(therapist.doctorProfile?.certificationNames),
@@ -211,7 +211,7 @@ export default function TherapistProfilePage() {
                   </span>
                 </div>
                 <div className="text-muted-foreground">
-                  {therapistData.experience} years experience
+                  {therapistData.experience}+ years experience
                 </div>
                 <div className="text-muted-foreground">
                   {therapistData.languages.join(", ")}

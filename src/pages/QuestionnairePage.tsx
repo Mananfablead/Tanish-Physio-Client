@@ -1174,7 +1174,7 @@ export default function QuestionnairePage() {
                           >
                             Review
                           </Button>
-                          <Button
+                          {/* <Button
                             className="w-full lg:w-auto"
                             onClick={async () => {
                               const stored = loadStoredQuestionnaire();
@@ -1257,7 +1257,7 @@ export default function QuestionnairePage() {
                             }}
                           >
                             Use & Continue
-                          </Button>
+                          </Button> */}
                         </div>
                       </div>
                     </Card>

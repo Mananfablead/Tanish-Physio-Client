@@ -3,11 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, ArrowRight, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 interface SubscriptionPlansProps {
   subscriptionPlans: any[];
   subscriptionLoading: boolean;
   subscriptionError: string | null;
+  onTabChange?: (tab: 'individual' | 'group') => void;
   stagger?: any;
   fadeInUp?: any;
 }
@@ -26,7 +28,7 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 };
 
-export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subscriptionError, stagger, fadeInUp }: SubscriptionPlansProps) => {
+export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subscriptionError, onTabChange, stagger, fadeInUp }: SubscriptionPlansProps) => {
   // Use passed props or fallback to local definitions
   const staggerAnimation = stagger || {
     animate: {
@@ -41,6 +43,22 @@ export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subs
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5 }
   };
+
+  // Add state for tabs
+  const [activeTab, setActiveTab] = useState<'individual' | 'group'>('individual');
+  
+  // Handle tab change by calling the parent callback
+  const handleTabChange = (tab: 'individual' | 'group') => {
+    setActiveTab(tab);
+    if (onTabChange) {
+      onTabChange(tab);
+    }
+  };
+  
+  // Filter plans based on active tab
+  const filteredPlans = subscriptionPlans.filter(plan => 
+    (plan as any).session_type === activeTab
+  );
   return (
     <section className="py-8 bg-muted/30">
       <div className="container">
@@ -63,6 +81,32 @@ export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subs
           </p>
         </motion.div>
 
+        {/* TABS */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex rounded-lg border bg-muted p-1">
+            <button
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                activeTab === 'individual'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => handleTabChange('individual')}
+            >
+              Individual
+            </button>
+            <button
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                activeTab === 'group'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => handleTabChange('group')}
+            >
+              Group
+            </button>
+          </div>
+        </div>
+
         <motion.div
           className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto"
           variants={staggerAnimation}
@@ -74,8 +118,18 @@ export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subs
             <div className="col-span-full text-center py-8">
               <p>Loading subscription plans...</p>
             </div>
+          ) : filteredPlans.length === 0 ? (
+            <div className="col-span-full text-center py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">No {activeTab} Plans Available</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                We don't have any {activeTab} subscription plans available at the moment.
+              </p>
+            </div>
           ) : (
-            subscriptionPlans.slice(0, 3).map((plan, index) => {
+            filteredPlans.slice(0, 3).map((plan, index) => {
               const planId = plan.planId || plan.id;
               const highlight = plan.popular || planId === 'weekly';
               return (
@@ -117,7 +171,7 @@ export const SubscriptionPlans = ({ subscriptionPlans, subscriptionLoading, subs
         </motion.div>
 
         <div className="mt-16 text-center">
-          <Link to="/plans">
+          <Link to={`/plans?tab=${activeTab}`}>
             <button className="inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 underline-offset-4 hover:underline text-primary">
               View All Detailed Plans & Benefits
               <ArrowRight className="h-4 w-4 ml-2" />

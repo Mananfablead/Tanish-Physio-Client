@@ -245,10 +245,13 @@ export default function LandingPage() {
   const servicesLoading = useSelector(selectServicesLoading);
   const servicesError = useSelector(selectServicesError);
 
-  // Fetch subscription plans when component mounts
+  // State to track which session type to fetch
+  const [sessionTypeFilter, setSessionTypeFilter] = useState<'individual' | 'group' | undefined>(undefined);
+
+  // Fetch subscription plans when component mounts or session type changes
   useEffect(() => {
-    dispatch(fetchSubscriptionPlans());
-  }, [dispatch]);
+    dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
+  }, [dispatch, sessionTypeFilter]);
 
   // Fetch featured testimonials when component mounts
   useEffect(() => {
@@ -346,6 +349,7 @@ export default function LandingPage() {
         subscriptionPlans={subscriptionPlans}
         subscriptionLoading={subscriptionLoading}
         subscriptionError={subscriptionError}
+        onTabChange={setSessionTypeFilter}
         stagger={stagger}
         fadeInUp={fadeInUp}
       />

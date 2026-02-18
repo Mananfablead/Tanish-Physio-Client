@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,11 @@ import { toast } from "sonner";
 export default function SubscriptionPlansPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [searchParams] = useSearchParams();
+
+  // Get tab from URL parameter or default to 'individual'
+  const urlTab = searchParams.get('tab') as 'individual' | 'group' | null;
+  const [activeTab, setActiveTab] = useState<'individual' | 'group'>(urlTab || 'individual');
 
   const { plans: subscriptionPlans, loading, error } = useSelector(
     (state: RootState) => state.subscriptions
@@ -61,12 +66,12 @@ export default function SubscriptionPlansPage() {
   const [promoApplied] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [expandedFeatures, setExpandedFeatures] = useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = useState<'individual' | 'group'>('individual'); // New state for tabs
+  // activeTab is now declared above with URL parameter support
 
   useEffect(() => {
-    dispatch(fetchSubscriptionPlans());
+    dispatch(fetchSubscriptionPlans({ sessionType: activeTab }));
     if (localStorage.getItem("token")) dispatch(fetchProfile());
-  }, [dispatch]);
+  }, [dispatch, activeTab]);
 
   const [viewMode, setViewMode] = useState<'cards' | 'comparison'>('cards');
 
@@ -139,240 +144,237 @@ export default function SubscriptionPlansPage() {
             </p>
           </div>
         ) : viewMode === 'cards' ? (
-          (() => {
-            // Filter plans based on active tab
-            const filteredPlans = subscriptionPlans.filter(plan => 
-              (plan as any).session_type === activeTab
-            );
-            
-            if (filteredPlans.length === 0) {
-              return (
-                <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
-                    <Zap className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">No {activeTab} Plans Available</h2>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    We don't have any {activeTab} subscription plans available at the moment.
-                  </p>
+          <div className={`${
+            subscriptionPlans.length === 2 
+              ? 'flex flex-col md:flex-row justify-center gap-8 max-w-4xl mx-auto' 
+              : 'grid md:grid-cols-3 gap-8 max-w-6xl mx-auto'
+          } mb-0`}>
+            {loading ? (
+              <div className={`${subscriptionPlans.length === 2 ? 'w-full' : 'col-span-full'} flex justify-center py-12`}>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : error ? (
+              <p className={`${subscriptionPlans.length === 2 ? 'w-full' : 'col-span-full'} text-center text-destructive text-lg`}>
+                {error}
+              </p>
+            ) : subscriptionPlans.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
+                  <Zap className="h-8 w-8 text-muted-foreground" />
                 </div>
-              );
-            }
-            
-            return (
-              <div className={`${
-                filteredPlans.length === 2 
-                  ? 'flex flex-col md:flex-row justify-center gap-8 max-w-4xl mx-auto' 
-                  : 'grid md:grid-cols-3 gap-8 max-w-6xl mx-auto'
-              } mb-0`}>
-                {loading ? (
-                  <div className={`${filteredPlans.length === 2 ? 'w-full' : 'col-span-full'} flex justify-center py-12`}>
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                  </div>
-                ) : error ? (
-                  <p className={`${filteredPlans.length === 2 ? 'w-full' : 'col-span-full'} text-center text-destructive text-lg`}>
-                    {error}
-                  </p>
-                ) : (
-                  filteredPlans.map((plan, index) => {
-                    const planId = plan.planId || plan.id;
-                    const isSelected = selectedPlan === planId;
-                    const isActive = activePlanId === planId && !isSubscriptionExpired;
+                <h2 className="text-2xl font-bold mb-2">No {activeTab} Plans Available</h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  We don't have any {activeTab} subscription plans available at the moment.
+                </p>
+              </div>
+            ) : (
+              subscriptionPlans.map((plan, index) => {
+                const planId = plan.planId || plan.id;
+                const isSelected = selectedPlan === planId;
+                const isActive = activePlanId === planId && !isSubscriptionExpired;
 
-                    // Calculate discount percentage
-                    const discountPercentage = plan.originalPrice
-                      ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
-                      : 0;
+                // Calculate discount percentage
+                const discountPercentage = plan.originalPrice
+                  ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
+                  : 0;
 
-                    return (
-                      <motion.div
-                        key={planId}
-                        initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
-                        className="relative"
-                      >
-                        <Card
-                          onClick={() => {
-                            if ((!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId)) && !isActive) {
-                              setSelectedPlan(planId);
-                            }
-                          }}
-                          className={`relative h-full flex flex-col rounded-3xl cursor-pointer border-2 overflow-hidden group transition-all duration-300 hover:shadow-xl ${isSelected ? "ring-2 ring-primary scale-[1.02]" : "scale-100"} ${plan.popular ? "border-primary shadow-lg" : "border-border shadow-md"}`}
-                        >
-                          {/* Gradient overlay */}
-                          <div className={`absolute inset-0 bg-gradient-to-br ${plan.popular ? "from-primary/5 to-secondary/5" : "from-muted/20 to-background"} pointer-events-none`} />
+                return (
+                  <motion.div
+                    key={planId}
+                    initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+                    className="relative"
+                  >
+                    <Card
+                      onClick={() => {
+                        if ((!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId)) && !isActive) {
+                          setSelectedPlan(planId);
+                        }
+                      }}
+                      className={`relative h-full flex flex-col rounded-3xl cursor-pointer border-2 overflow-hidden group transition-all duration-300 hover:shadow-xl ${isSelected ? "ring-2 ring-primary scale-[1.02]" : "scale-100"} ${plan.popular ? "border-primary shadow-lg" : "border-border shadow-md"}`}
+                    >
+                      {/* Gradient overlay */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${plan.popular ? "from-primary/5 to-secondary/5" : "from-muted/20 to-background"} pointer-events-none`} />
 
-                          {isSubscriptionExpired && activePlanId === planId && (
-                            <div className="absolute top-4 right-4 z-10">
-                              <Badge variant="destructive" className="bg-destructive/90 text-white border-destructive">
-                                Expired
-                              </Badge>
+                      {isSubscriptionExpired && activePlanId === planId && (
+                        <div className="absolute top-4 right-4 z-10">
+                          <Badge variant="destructive" className="bg-destructive/90 text-white border-destructive">
+                            Expired
+                          </Badge>
+                        </div>
+                      )}
+
+                      <CardHeader className="text-center flex-shrink-0 pt-4 pb-4 relative z-10">
+                        <CardTitle className="text-2xl font-bold">
+                          {plan.name}
+                        </CardTitle>
+                        <CardDescription className="text-base mt-2">
+                          {plan.planId}
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="text-center space-y-6 flex-grow flex flex-col px-8 pb-4 relative z-10">
+                        {/* PRICE SECTION */}
+                        <div className="space-y-2">
+                          {plan.originalPrice && (
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="line-through text-muted-foreground text-lg">
+                                {plan.currency || '₹'}{plan.originalPrice}
+                              </span>
+                              {discountPercentage > 0 && (
+                                <Badge variant="secondary" className="bg-destructive/20 text-destructive">
+                                  {discountPercentage}% OFF
+                                </Badge>
+                              )}
                             </div>
                           )}
+                          <div className="flex items-baseline justify-center gap-1">
+                            <span className="text-4xl font-bold">
+                              {plan.currency || '₹'}{plan.price}
+                            </span>
+                            <span className="text-muted-foreground">
+                              /{plan.duration}
+                            </span>
+                          </div>
+                        </div>
 
-                          <CardHeader className="text-center flex-shrink-0 pt-4 pb-4 relative z-10">
-                            <CardTitle className="text-2xl font-bold">
-                              {plan.name}
-                            </CardTitle>
-                            <CardDescription className="text-base mt-2">
-                              {plan.planId}
-                            </CardDescription>
-                          </CardHeader>
+                        {/* SESSIONS */}
+                        <div className="py-0">
+                          <p className="text-lg font-semibold text-primary">
+                            {typeof plan.sessions === "number"
+                              ? `Up to ${plan.sessions} sessions`
+                              : plan.sessions} sessions
+                          </p>
+                        </div>
 
-                          <CardContent className="text-center space-y-6 flex-grow flex flex-col px-8 pb-4 relative z-10">
-                            {/* PRICE SECTION */}
-                            <div className="space-y-2">
-                              {plan.originalPrice && (
-                                <div className="flex items-center justify-center gap-2">
-                                  <span className="line-through text-muted-foreground text-lg">
-                                    {plan.currency || '₹'}{plan.originalPrice}
-                                  </span>
-                                  {discountPercentage > 0 && (
-                                    <Badge variant="secondary" className="bg-destructive/20 text-destructive">
-                                      {discountPercentage}% OFF
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
-                              <div className="flex items-baseline justify-center gap-1">
-                                <span className="text-4xl font-bold">
-                                  {plan.currency || '₹'}{plan.price}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  /{plan.duration}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* SESSIONS */}
-                            <div className="py-0">
-                              <p className="text-lg font-semibold text-primary">
-                                {typeof plan.sessions === "number"
-                                  ? `Up to ${plan.sessions} sessions`
-                                  : plan.sessions} sessions
-                              </p>
-                            </div>
-
-                            {/* DESCRIPTION */}
-                            {plan.description && (
-                              <div className="text-left">
-                                <h4 className="text-xs font-medium mb-2 text-foreground">What's Included</h4>
-                                <ul className="space-y-1 text-xs text-muted-foreground">
-                                  {plan.description
-                                    .split("\n")
-                                    .slice(0, expandedDescriptions[planId] ? undefined : 2)
-                                    .map((line, idx) => (
-                                      <li key={idx} className="flex gap-1 items-start">
-                                        <CheckCircle className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
-                                        <span>{line}</span>
-                                      </li>
-                                    ))}
-                                </ul>
-                                {plan.description.split("\n").length > 2 && (
-                                  <Button
-                                    variant="link"
-                                    size="sm"
-                                    className="mt-1 p-0 h-auto text-primary hover:text-primary/80 text-xs"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setExpandedDescriptions(prev => ({
-                                        ...prev,
-                                        [planId]: !prev[planId]
-                                      }));
-                                    }}
-                                  >
-                                    {expandedDescriptions[planId] ? (
-                                      <>
-                                        Show Less <ChevronUp className="h-3 w-3 ml-1" />
-                                      </>
-                                    ) : (
-                                      <>
-                                        Show More <ChevronDown className="h-3 w-3 ml-1" />
-                                      </>
-                                    )}
-                                  </Button>
+                        {/* DESCRIPTION */}
+                        {plan.description && (
+                          <div className="text-left">
+                            <h4 className="text-xs font-medium mb-2 text-foreground">What's Included</h4>
+                            <ul className="space-y-1 text-xs text-muted-foreground">
+                              {plan.description
+                                .split("\n")
+                                .slice(0, expandedDescriptions[planId] ? undefined : 2)
+                                .map((line, idx) => (
+                                  <li key={idx} className="flex gap-1 items-start">
+                                    <CheckCircle className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                                    <span className="break-words">{line}</span>
+                                  </li>
+                                ))}
+                            </ul>
+                            {plan.description.split("\n").length > 2 && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="mt-1 p-0 h-auto text-primary hover:text-primary/80 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedDescriptions(prev => ({
+                                    ...prev,
+                                    [planId]: !prev[planId]
+                                  }));
+                                }}
+                              >
+                                {expandedDescriptions[planId] ? (
+                                  <>
+                                    Show Less <ChevronUp className="h-3 w-3 ml-1" />
+                                  </>
+                                ) : (
+                                  <>
+                                    Show More <ChevronDown className="h-3 w-3 ml-1" />
+                                  </>
                                 )}
-                              </div>
+                              </Button>
                             )}
+                          </div>
+                        )}
 
-                            {/* FEATURES */}
-                            <div className="text-left flex-grow">
-                              <h4 className="text-xs font-medium mb-2 text-foreground">
-                                Included Features
-                              </h4>
-                              <div className="space-y-1">
-                                {plan.features
-                                  .slice(0, expandedFeatures[planId] ? undefined : 3)
-                                  .map((f, i) => (
-                                    <div key={i} className="flex gap-1 items-start text-xs">
-                                      <CheckCircle className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
-                                      <span>{f}</span>
-                                    </div>
-                                  ))}
-                              </div>
-                              {plan.features.length > 3 && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  className="mt-1 p-0 h-auto text-primary hover:text-primary/80 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedFeatures(prev => ({
-                                      ...prev,
-                                      [planId]: !prev[planId]
-                                    }));
-                                  }}
-                                >
-                                  {expandedFeatures[planId] ? (
-                                    <>
-                                      Show Less <ChevronUp className="h-3 w-3 ml-1" />
-                                    </>
-                                  ) : (
-                                    <>
-                                      Show More <ChevronDown className="h-3 w-3 ml-1" />
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-
-                            {/* BUTTON */}
+                        {/* FEATURES */}
+                        <div className="text-left flex-grow">
+                          <h4 className="text-xs font-medium mb-2 text-foreground">
+                            Included Features
+                          </h4>
+                          <div className="space-y-1">
+                            {plan.features
+                              .slice(0, expandedFeatures[planId] ? undefined : 3)
+                              .map((f, i) => (
+                                <div key={i} className="flex gap-1 items-start text-xs">
+                                  <CheckCircle className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
+                                  <span>{f}</span>
+                                </div>
+                              ))}
+                          </div>
+                          {plan.features.length > 3 && (
                             <Button
-                              className="w-full h-12 text-base font-semibold py-6 rounded-xl"
-                              variant={
-                                isActive
-                                  ? "secondary"
-                                  : (hasActiveSubscription && activePlanId === planId)
-                                    ? "outline"
-                                    : "default"
-                              }
-                              disabled={isActive || (hasActiveSubscription && !isSubscriptionExpired && activePlanId !== planId)}
+                              variant="link"
+                              size="sm"
+                              className="mt-1 p-0 h-auto text-primary hover:text-primary/80 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (!isActive && (!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId))) {
-                                  setSelectedPlan(planId);
-                                  setIsModalOpen(true);
-                                }
+                                setExpandedFeatures(prev => ({
+                                  ...prev,
+                                  [planId]: !prev[planId]
+                                }));
                               }}
                             >
-                              {isActive
-                                ? "Active Plan"
-                                : (hasActiveSubscription && activePlanId === planId)
-                                  ? "Plan Already Active"
-                                  : isSubscriptionExpired && activePlanId === planId
-                                    ? "Renew Plan"
-                                    : "Select Plan"}
+                              {expandedFeatures[planId] ? (
+                                <>
+                                  Show Less <ChevronUp className="h-3 w-3 ml-1" />
+                                </>
+                              ) : (
+                                <>
+                                  Show More <ChevronDown className="h-3 w-3 ml-1" />
+                                </>
+                              )}
                             </Button>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    );
-                  })
-                )}
-              </div>
-            );
-          })()
+                          )}
+                        </div>
+
+                        {/* BUTTON */}
+                        <Button
+                          className="w-full h-12 text-base font-semibold py-6 rounded-xl"
+                          variant={
+                            isActive
+                              ? "secondary"
+                              : (hasActiveSubscription && activePlanId === planId)
+                                ? "outline"
+                                : "default"
+                          }
+                          disabled={isActive || (hasActiveSubscription && !isSubscriptionExpired && activePlanId !== planId)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isActive && (!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId))) {
+                              setSelectedPlan(planId);
+                              setIsModalOpen(true);
+                            }
+                          }}
+                        >
+                          {isActive
+                            ? "Active Plan"
+                            : (hasActiveSubscription && activePlanId === planId)
+                              ? "Plan Already Active"
+                              : isSubscriptionExpired && activePlanId === planId
+                                ? "Renew Plan"
+                                : "Select Plan"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        ) : subscriptionPlans.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
+              <Zap className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">No {activeTab} Plans Available</h2>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              We don't have any {activeTab} subscription plans available at the moment.
+            </p>
+          </div>
         ) : (
           /* COMPARISON TABLE VIEW */
           <div className="overflow-x-auto rounded-xl border bg-card mb-12">
