@@ -268,6 +268,7 @@ useEffect(() => {
     dispatch(fetchConditionsPublic());
     dispatch(fetchPublicAdmins());
     dispatch(fetchFeaturedServices());
+    dispatch(fetchFeaturedTestimonials());
   }, [dispatch]);
 
   useEffect(() => {

@@ -21,6 +21,7 @@ const fadeInUp = {
 
 export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testimonialsError, fadeInUp }: TestimonialsProps) => {
   // Use passed prop or fallback to local definition
+  
   const fadeInUpAnimation = fadeInUp || {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
