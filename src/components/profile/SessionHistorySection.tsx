@@ -84,9 +84,19 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
     if (!session?.startTime) return true; // If no startTime, assume it's available
 
     const now = new Date();
+    
+    // If we have both date and time fields, use them for more accurate local time comparison
+    if (session.date && session.time) {
+      // Parse the local date and time
+      const [hours, minutes] = session.time.split(':').map(Number);
+      const sessionLocalTime = new Date(session.date);
+      sessionLocalTime.setHours(hours, minutes, 0, 0);
+      
+      return now >= sessionLocalTime;
+    }
+    
+    // Fallback to startTime if date/time not available
     const sessionStartTime = new Date(session.startTime);
-
-    // Enable join if current time is past or equal to session start time
     return now >= sessionStartTime;
   };
 
@@ -316,7 +326,7 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                           : "N/A"}
                       </div>
                       <div className="text-sm text-slate-500">
-                        {s.time || "—"}
+                        {s.time || (s.startTime ? new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—")}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
@@ -344,7 +354,16 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                   px-4 py-1.5 rounded-full whitespace-nowrap flex-shrink-0 cursor-not-allowed"
                             disabled
                           >
-                            Starts in {Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                            Starts in {
+                              s.date && s.time 
+                                ? (() => {
+                                    const [hours, minutes] = s.time.split(':').map(Number);
+                                    const sessionLocalTime = new Date(s.date);
+                                    sessionLocalTime.setHours(hours, minutes, 0, 0);
+                                    return Math.ceil((sessionLocalTime.getTime() - Date.now()) / (1000 * 60));
+                                  })()
+                                : Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))
+                            } min
                           </button>
                         )
                       ) : (
@@ -433,7 +452,9 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                           })
                           : "N/A"}
                       </p>
-                      <p className="text-xs text-slate-500">{s.time || "—"}</p>
+                      <p className="text-xs text-slate-500">
+                        {s.time || (s.startTime ? new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—")}
+                      </p>
                     </div>
                     <div className="flex flex-col gap-2">
                       {s.status === "live" ? (
@@ -454,7 +475,16 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                   px-3 py-1 rounded-full whitespace-nowrap cursor-not-allowed"
                             disabled
                           >
-                            Starts in {Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                            Starts in {
+                              s.date && s.time 
+                                ? (() => {
+                                    const [hours, minutes] = s.time.split(':').map(Number);
+                                    const sessionLocalTime = new Date(s.date);
+                                    sessionLocalTime.setHours(hours, minutes, 0, 0);
+                                    return Math.ceil((sessionLocalTime.getTime() - Date.now()) / (1000 * 60));
+                                  })()
+                                : Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))
+                            } min
                           </button>
                         )
                       ) : (

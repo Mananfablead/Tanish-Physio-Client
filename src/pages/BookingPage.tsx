@@ -1408,6 +1408,13 @@ export default function BookingPage() {
                 }
 
                 toast.success("Payment successful!.");
+                
+                // Show loading state for 1 second before navigating to confirmation page
+                setIsProcessing(true);
+                
+                // Wait for 1 second to show the loader
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
                 if (wasGuestUser) {
                   // For guest users, navigate to booking confirmation page
                   navigate("/booking-confirmation", {
@@ -1447,6 +1454,8 @@ export default function BookingPage() {
                     },
                   });
                 }
+                
+                // Note: We don't reset setIsProcessing(false) here as navigation will unmount the component
               } catch (error) {
                 console.error("Error processing payment success:", error);
                 toast.error(
