@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 
 interface ScheduleModalProps {
   isOpen: boolean;
@@ -18,6 +19,9 @@ interface ScheduleModalProps {
   setScheduleTime: (time: string) => void;
   setSelectedDate: (date: string | null) => void;
   therapistName: string;
+  selectedTimeSlot: { start: string; end: string } | null;
+  setSelectedTimeSlot: (slot: { start: string; end: string } | null) => void;
+  bookingType?: 'regular' | 'free-consultation';
 }
 
 export function ScheduleModal({
@@ -35,7 +39,10 @@ export function ScheduleModal({
   setScheduleDate,
   setScheduleTime,
   setSelectedDate,
-  therapistName
+  therapistName,
+  selectedTimeSlot,
+  setSelectedTimeSlot,
+  bookingType = 'regular'
 }: ScheduleModalProps) {
   const [calendarWeeks, setCalendarWeeks] = useState<any[][]>([]);
 
@@ -56,20 +63,41 @@ export function ScheduleModal({
   };
 
   const handleTimeSlotClick = (date: string, timeSlot: any) => {
-    if (timeSlot.status === 'available') {
+    // Only allow selecting time slots that match the booking type
+    const isValidSlot = timeSlot.status === 'available' && (
+      (bookingType === 'free-consultation' && timeSlot.duration === 15) ||
+      (bookingType !== 'free-consultation' && timeSlot.duration === 45)
+    );
+    
+    if (isValidSlot) {
       setSelectedDate(date);
       setScheduleDate(date);
       setScheduleTime(timeSlot.start);
+      setSelectedTimeSlot({ start: timeSlot.start, end: timeSlot.end });
     }
   };
 
   const getStatusColor = (status: number) => {
     switch (status) {
-      case 0: return ''; 
-      case 1: return 'bg-green-100 text-green-700 hover:bg-green-200';
-      case 2: return 'bg-muted text-muted-foreground'; 
-      default: return 'bg-muted text-muted-foreground';
+      case 0: return 'bg-gray-100 text-gray-400 cursor-not-allowed'; // Not Booked
+      case 1: return 'bg-blue-100 text-blue-700 font-semibold'; // Booked
+      case 2: return 'bg-red-100 text-red-700'; // Unavailable
+      default: return 'bg-gray-100 text-gray-400 cursor-not-allowed';
     }
+  };
+
+  // Get availability for a specific date
+  const getAvailabilityForDate = (date: string) => {
+    return availability.find((avail) => avail.date === date);
+  };
+
+  // Check if date has available slots
+  const hasAvailableSlots = (dateStr: string) => {
+    const dayAvailability = availability.find((item: any) => item.date === dateStr);
+    if (!dayAvailability || !Array.isArray(dayAvailability.timeSlots)) {
+      return false;
+    }
+    return dayAvailability.timeSlots.some((slot: any) => slot.status === "available");
   };
 
   // Calendar weeks memoization
@@ -83,19 +111,19 @@ export function ScheduleModal({
 
       const availabilityForDate = availability.find((item: any) => item.date === dateStr);
 
-      let status = 0;
+      let status = 0; // Default: Not Booked
       if (availabilityForDate && availabilityForDate.timeSlots) {
         const slots = availabilityForDate.timeSlots;
         const bookedSlots = slots.filter((slot: any) => slot.status === 'booked');
         const unavailableSlots = slots.filter((slot: any) => slot.status === 'unavailable');
         const availableSlots = slots.filter((slot: any) => slot.status === 'available');
 
-        if (bookedSlots.length > 0) {
-          status = 1;
+        if (availableSlots.length > 0) {
+          status = 0; // Available (has available slots)
+        } else if (bookedSlots.length > 0) {
+          status = 1; // Booked
         } else if (unavailableSlots.length > 0 && availableSlots.length === 0) {
-          status = 2;
-        } else if (availableSlots.length > 0) {
-          status = 0;
+          status = 2; // Unavailable
         }
       }
 
@@ -212,6 +240,26 @@ export function ScheduleModal({
                 ))}
               </div>
 
+              {/* Legend for calendar colors */}
+              <div className="flex flex-wrap gap-2 mb-3 justify-center">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-blue-100 border border-blue-300"></div>
+                  <span className="text-xs text-slate-600">Booked</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-green-100 border border-green-300"></div>
+                  <span className="text-xs text-slate-600">Available</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-red-100 border border-red-300"></div>
+                  <span className="text-xs text-slate-600">Unavailable</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-gray-100 border border-gray-300"></div>
+                  <span className="text-xs text-slate-600">Not Booked</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-7 gap-1">
                 {calendarWeeks.flat().map((day, i) =>
                   day ? (
@@ -223,13 +271,16 @@ export function ScheduleModal({
                         setScheduleDate(day.date);
                       }}
                       className={`
-                      h-8 w-8 rounded-full text-xs flex items-center justify-center
+                      h-8 w-8 rounded-full text-xs flex items-center justify-center transition-all
                       ${isPastDate(day.date)
                         ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                        : getStatusColor(day.status)}
-                      ${scheduleDate === day.date
+                        : scheduleDate === day.date
                         ? "ring-2 ring-primary bg-primary text-white"
-                        : ""}
+                        : hasAvailableSlots(day.date)
+                        ? "bg-green-100 text-green-700 hover:bg-green-200" // Available
+                        : getAvailabilityForDate(day.date)
+                        ? getStatusColor(day.status) // Booked/Unavailable
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"} // Not Booked
                     `}
                     >
                       {day.day}
@@ -243,49 +294,131 @@ export function ScheduleModal({
 
             {/* TIME SLOTS */}
             <div className="border rounded-lg p-3 bg-slate-50">
-              <h4 className="font-bold text-slate-800 mb-3 text-sm">
-                Available Time Slots
-              </h4>
+              <div>
+                <h4 className="font-bold text-slate-800 mb-3 text-sm">
+                  Available Time Slots
+                </h4>
 
-           {scheduleDate ? (
-  <div className="grid grid-cols-2 gap-2 max-h-48 md:max-h-80 overflow-y-auto">
-    {availability
-      .find((a: any) => a.date === scheduleDate)
-      ?.timeSlots?.map((slot: any, i: number) => (
-        <button
-          key={i}
-          disabled={slot.status !== "available"}
-          onClick={() =>
-            slot.status === "available" &&
-            handleTimeSlotClick(scheduleDate, slot)
-          }
-          className={`
-            w-full p-2 rounded-lg border text-left text-sm
-            ${slot.status === "available"
-              ? "border-green-300 hover:bg-green-50"
-              : slot.status === "booked"
-              ? "border-red-300 opacity-50"
-              : "border-gray-300 opacity-50"}
-            ${scheduleTime === slot.start
-              ? "ring-2 ring-primary bg-primary/10"
-              : ""}
-          `}
-        >
-          {formatTime(slot.start)} – {formatTime(slot.end)}
-        </button>
-      ))}
-  </div>
-) : (
-  <p className="text-xs text-slate-500">
-    Select a date to see time slots
-  </p>
-)}
+                {/* Status Legend */}
+                <div className="flex flex-wrap gap-3 text-xs mb-3">
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span className="text-slate-600">Available</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span className="text-slate-600">Unavailable</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span className="text-slate-600">Booked</span>
+                  </div>
+                </div>
+              </div>
+
+              {scheduleDate ? (
+                (() => {
+                  // Filter time slots based on booking type
+                  const dayAvailability = availability.find((a: any) => a.date === scheduleDate);
+                  if (!dayAvailability || !dayAvailability.timeSlots) {
+                    // Show appropriate message when no time slots are defined for the selected date
+                    return (
+                      <div className="text-center py-8">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+                          <Clock className="h-6 w-6 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-bold text-red-500 mb-1">
+                          No Time Slots Available
+                        </h3>
+                        <p className="text-red-400 text-sm">
+                          No time slots have been defined for {new Date(scheduleDate).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  // Filter slots based on booking type
+                  const filteredSlots = dayAvailability.timeSlots.filter((slot: any) => {
+                    // Only show available slots
+                    if (slot.status !== 'available') return false;
+                    
+                    // Filter by duration based on booking type
+                    if (bookingType === 'free-consultation') {
+                      // Free consultation slots should have 15 minute duration
+                      return slot.duration === 15;
+                    } else {
+                      // Regular slots should have 45 minute duration
+                      return slot.duration === 45;
+                    }
+                  });
+                  
+                  return filteredSlots.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 max-h-48 md:max-h-80 overflow-y-auto">
+                      {filteredSlots.map((slot: any, i: number) => {
+                        const isSelected = selectedTimeSlot?.start === slot.start && selectedTimeSlot?.end === slot.end;
+                        
+                        return (
+                          <button
+                            key={i}
+                            disabled={slot.status !== "available"}
+                            onClick={() =>
+                              slot.status === "available" &&
+                              handleTimeSlotClick(scheduleDate, slot)
+                            }
+                            className={`
+                              w-full p-2 rounded-lg border text-left text-sm font-medium transition-all
+                              ${isSelected
+                                ? "bg-green-600 text-white border-green-600"
+                                : slot.status === "available"
+                                ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
+                                : slot.status === "booked"
+                                ? "border border-red-500 text-red-500 cursor-not-allowed"
+                                : "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"}
+                            `}
+                          >
+                            {formatTime(slot.start)} – {formatTime(slot.end)}
+                            <div className="text-xs opacity-70">
+                              ({slot.duration}min {slot.bookingType === 'free-consultation' ? 'Free' : 'Regular'})
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+                        <Clock className="h-6 w-6 text-red-500" />
+                      </div>
+                      <h3 className="text-lg font-bold text-red-500 mb-1">
+                        Slots Not Available
+                      </h3>
+                      <p className="text-red-400 text-sm">
+                        No available time slots for {bookingType === 'free-consultation' ? 'free consultation' : 'regular session'} on {new Date(scheduleDate).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  );
+                })()
+              ) : (
+                <p className="text-xs text-slate-500">
+                  Select a date to see time slots
+                </p>
+              )}
 
             </div>
           </div>
 
           {/* SELECTED DATE/TIME PREVIEW */}
-          {(scheduleDate || scheduleTime) && (
+          {(scheduleDate || selectedTimeSlot) && (
             <div className="p-3 rounded-lg border bg-primary/5">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="h-4 w-4 text-primary" />
@@ -305,11 +438,11 @@ export function ScheduleModal({
                     </span>
                   </p>
                 )}
-                {scheduleTime && (
+                {selectedTimeSlot && (
                   <p>
                     <span className="text-muted-foreground">Time:</span>{" "}
                     <span className="font-medium">
-                      {formatTime(scheduleTime)}
+                      {formatTime(selectedTimeSlot.start)} - {formatTime(selectedTimeSlot.end)}
                     </span>
                   </p>
                 )}
@@ -339,14 +472,9 @@ export function ScheduleModal({
 
           <Button
             className="flex-1 bg-gradient-to-r from-primary to-accent"
-            disabled={!scheduleDate || !scheduleTime}
+            disabled={!scheduleDate || !selectedTimeSlot}
             onClick={() => {
-              // Find the selected time slot to pass complete information
-              const selectedSlot = availability
-                .find((a: any) => a.date === scheduleDate)
-                ?.timeSlots?.find((slot: any) => slot.start === scheduleTime);
-              
-              onConfirm(scheduleDate, scheduleTime, selectedSlot || undefined);
+              onConfirm(scheduleDate, selectedTimeSlot?.start || '', selectedTimeSlot || undefined);
             }}
           >
             Confirm Schedule

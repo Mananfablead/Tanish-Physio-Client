@@ -82,7 +82,7 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
               {/* Secondary CTA */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link to="/consultation">
+                  <Link to="/free-consultation">
                     <Button
                       variant="outline"
                       size="lg"

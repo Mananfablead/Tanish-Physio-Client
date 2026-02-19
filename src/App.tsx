@@ -47,7 +47,7 @@ const ServiceDetailPage = lazy(() => import("./pages/ServiceDetailPage"));
 const RecordedSessionsPage = lazy(() => import("./pages/RecordedSessionsPage"));
 const TestimonialsPage = lazy(() => import("./pages/TestimonialsPage"));
 const LiveChatHistoryPage = lazy(() => import("./pages/LiveChatHistory"));
-
+const FreeConsultationPage = lazy(() => import("./pages/FreeConsultationPage"));
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 
@@ -69,6 +69,10 @@ const App = () => (
                     {/* <Route path="/" element={<ComingSoonPage />} /> */}
                     <Route path="/" element={<LandingPage />} />
 
+                    <Route
+                      path="/free-consultation"
+                      element={<FreeConsultationPage />}
+                    />
                     <Route
                       path="/questionnaire"
                       element={<QuestionnairePage />}

@@ -249,7 +249,7 @@ export default function SubscriptionPlansPage() {
                         </div>
 
                         {/* DESCRIPTION */}
-                        {plan.description && (
+                        {/* {plan.description && (
                           <div className="text-left">
                             <h4 className="text-xs font-medium mb-2 text-foreground">What's Included</h4>
                             <ul className="space-y-1 text-xs text-muted-foreground">
@@ -288,7 +288,7 @@ export default function SubscriptionPlansPage() {
                               </Button>
                             )}
                           </div>
-                        )}
+                        )} */}
 
                         {/* FEATURES */}
                         <div className="text-left flex-grow">
@@ -297,15 +297,15 @@ export default function SubscriptionPlansPage() {
                           </h4>
                           <div className="space-y-1">
                             {plan.features
-                              .slice(0, expandedFeatures[planId] ? undefined : 3)
+                              .slice(0, expandedFeatures[planId] ? undefined : 6)
                               .map((f, i) => (
-                                <div key={i} className="flex gap-1 items-start text-xs">
+                                <div key={i} className="flex gap-1 items-start text-lg">
                                   <CheckCircle className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
                                   <span>{f}</span>
                                 </div>
                               ))}
                           </div>
-                          {plan.features.length > 3 && (
+                          {plan.features.length > 6 && (
                             <Button
                               variant="link"
                               size="sm"
@@ -433,13 +433,13 @@ export default function SubscriptionPlansPage() {
                     {subscriptionPlans.map((plan) => (
                       <td key={`features-${plan.planId || plan.id}`} className="p-4">
                         <ul className="space-y-1">
-                          {plan.features.slice(0, 3).map((feature, idx) => (
+                          {plan.features.slice(0, 6).map((feature, idx) => (
                             <li key={idx} className="flex items-center gap-1 text-xs">
                               <CheckCircle className="h-2 w-2 text-primary" />
                               <span>{feature}</span>
                             </li>
                           ))}
-                          {plan.features.length > 3 && (
+                          {plan.features.length > 6 && (
                             <li className="text-xs text-primary/70">+{plan.features.length - 3} more</li>
                           )}
                         </ul>
@@ -639,16 +639,20 @@ export default function SubscriptionPlansPage() {
                   if (!plan) return;
 
                   setIsModalOpen(false);
-                  navigate("/booking", {
-                    state: {
-                      service: {
-                        id: plan.planId || plan.id,
-                        name: plan.name,
-                        price: String(plan.price),
-                        duration: plan.duration,
-                      },
-                      fromSubscription: true,
+                  
+                  const bookingData = {
+                    service: {
+                      id: plan.planId || plan.id,
+                      name: plan.name,
+                      price: String(plan.price),
+                      duration: plan.duration,
                     },
+                    fromSubscription: true,
+                  };
+                  
+                  // Navigate to questionnaire first, then to booking
+                  navigate("/questionnaire", {
+                    state: bookingData,
                   });
                 }}
               >

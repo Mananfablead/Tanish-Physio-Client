@@ -214,15 +214,21 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                                   <span
                                     className={`px-3 py-1 rounded-full text-xs font-black uppercase
                     ${booking.status === "confirmed"
-                                        ? "bg-green-100 text-green-700"
+                                        ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
                                         : booking.status === "cancelled"
                                           ? "bg-red-100 text-red-700"
                                           : booking.status === "pending"
                                             ? "bg-yellow-100 text-yellow-700"
-                                            : "bg-blue-100 text-blue-700"
+                                            : booking.status === "scheduled"
+                                              ? "bg-purple-100 text-purple-700"
+                                              : booking.status === "completed"
+                                                ? "bg-emerald-100 text-emerald-700"
+                                                : "bg-blue-100 text-blue-700"
                                       }`}
                                   >
-                                    {booking.status}
+                                    {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
+                                      ? "Accepted" 
+                                      : booking.status || "Unknown"}
                                   </span>
                                 )}
 
@@ -368,15 +374,21 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-black uppercase
                                 ${booking.status === "confirmed"
-                                    ? "bg-green-100 text-green-700"
+                                    ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
                                     : booking.status === "cancelled"
                                       ? "bg-red-100 text-red-700"
                                       : booking.status === "pending"
                                         ? "bg-yellow-100 text-yellow-700"
-                                        : "bg-blue-100 text-blue-700"
+                                        : booking.status === "scheduled"
+                                          ? "bg-purple-100 text-purple-700"
+                                          : booking.status === "completed"
+                                            ? "bg-emerald-100 text-emerald-700"
+                                            : "bg-blue-100 text-blue-700"
                                   }`}
                               >
-                                {booking.status}
+                                {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
+                                  ? "Accepted" 
+                                  : booking.status || "Unknown"}
                               </span>
                             )}
 

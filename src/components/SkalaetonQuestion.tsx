@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 
 interface SkalaetonQuestionProps {
   question: any;
-  currentValue: string;
-  updateAnswer: (questionId: string, value: string) => void;
+  currentValue: string[];
+  updateAnswer: (questionId: string, value: string[]) => void;
 }
 
 export const SkalaetonQuestion: React.FC<SkalaetonQuestionProps> = ({
@@ -19,7 +19,9 @@ export const SkalaetonQuestion: React.FC<SkalaetonQuestionProps> = ({
     { id: "right-shoulder", label: "Right Shoulder" },
     { id: "upper-back", label: "Upper Back" },
     { id: "lower-back", label: "Lower Back" },
-    { id: "hip", label: "Hip" },
+    { id: "hip-left", label: "Left Hip" },
+    { id: "hip-right", label: "Right Hip" },
+    { id: "headache", label: "Headache" },
     { id: "left-knee", label: "Left Knee" },
     { id: "right-knee", label: "Right Knee" },
     { id: "left-ankle", label: "Left Ankle" },
@@ -30,11 +32,19 @@ export const SkalaetonQuestion: React.FC<SkalaetonQuestionProps> = ({
     { id: "right-wrist", label: "Right Wrist" },
   ];
 
+  // Function to toggle selection
+  const toggleSelection = (areaId: string) => {
+    const newSelection = currentValue.includes(areaId)
+      ? currentValue.filter(id => id !== areaId) // Remove if already selected
+      : [...currentValue, areaId]; // Add if not selected
+    updateAnswer(question._id, newSelection);
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h3 className="text-2xl font-black text-slate-900 mb-2">Area of Concern</h3>
-        <p className="text-base text-slate-600">Select the primary area of discomfort</p>
+        <h3 className="text-2xl font-black text-slate-900 mb-2">Areas of Concern</h3>
+        <p className="text-base text-slate-600">Select all areas that apply to you (multiple selection allowed)</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -51,129 +61,145 @@ export const SkalaetonQuestion: React.FC<SkalaetonQuestionProps> = ({
 
           {/* Body area buttons positioned over the SVG */}
           <div 
-            className={`absolute top-[15%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "neck"
+            className={`absolute top-[15%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("neck")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "neck")}
+            onClick={() => toggleSelection("neck")}
           />
 
           <div 
-            className={`absolute top-[22%] left-[35%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "left-shoulder"
+            className={`absolute top-[22%] left-[35%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("left-shoulder")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "left-shoulder")}
+            onClick={() => toggleSelection("left-shoulder")}
           />
 
           <div 
-            className={`absolute top-[22%] right-[35%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "right-shoulder"
+            className={`absolute top-[22%] right-[35%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("right-shoulder")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "right-shoulder")}
+            onClick={() => toggleSelection("right-shoulder")}
           />
 
           <div 
-            className={`absolute top-[28%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "upper-back"
+            className={`absolute top-[28%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("upper-back")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "upper-back")}
+            onClick={() => toggleSelection("upper-back")}
           />
 
           <div 
-            className={`absolute top-[40%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "lower-back"
+            className={`absolute top-[40%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("lower-back")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "lower-back")}
+            onClick={() => toggleSelection("lower-back")}
           />
 
           <div 
-            className={`absolute top-[48%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "hip"
+            className={`absolute top-[48%] left-[55%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("hip-right")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "hip")}
+            onClick={() => toggleSelection("hip-right")}
+          />
+          <div 
+            className={`absolute top-[48%] right-[55%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("hip-left")
+                ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
+                : "bg-slate-300 hover:bg-primary/40"
+            }`}
+            onClick={() => toggleSelection("hip-left")}
+          />
+          <div 
+            className={`absolute top-[5%] left-[50%] -translate-x-1/2 w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("headache")
+                ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
+                : "bg-slate-300 hover:bg-primary/40"
+            }`}
+            onClick={() => toggleSelection("headache")}
           />
 
           <div 
-            className={`absolute top-[65%] left-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "left-knee"
+            className={`absolute top-[65%] left-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("left-knee")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "left-knee")}
+            onClick={() => toggleSelection("left-knee")}
           />
 
           <div 
-            className={`absolute top-[65%] right-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "right-knee"
+            className={`absolute top-[65%] right-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("right-knee")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "right-knee")}
+            onClick={() => toggleSelection("right-knee")}
           />
 
           <div 
-            className={`absolute top-[85%] left-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "left-ankle"
+            className={`absolute top-[85%] left-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("left-ankle")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "left-ankle")}
+            onClick={() => toggleSelection("left-ankle")}
           />
 
           <div 
-            className={`absolute top-[85%] right-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "right-ankle"
+            className={`absolute top-[85%] right-[42%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("right-ankle")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "right-ankle")}
+            onClick={() => toggleSelection("right-ankle")}
           />
 
           <div 
-            className={`absolute top-[35%] left-[28%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "left-elbow"
+            className={`absolute top-[35%] left-[28%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("left-elbow")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "left-elbow")}
+            onClick={() => toggleSelection("left-elbow")}
           />
 
           <div 
-            className={`absolute top-[35%] right-[28%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "right-elbow"
+            className={`absolute top-[35%] right-[28%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("right-elbow")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "right-elbow")}
+            onClick={() => toggleSelection("right-elbow")}
           />
 
           <div 
-            className={`absolute top-[48%] left-[22%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "left-wrist"
+            className={`absolute top-[48%] left-[22%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("left-wrist")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "left-wrist")}
+            onClick={() => toggleSelection("left-wrist")}
           />
 
           <div 
-            className={`absolute top-[48%] right-[22%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 ${
-              currentValue === "right-wrist"
+            className={`absolute top-[48%] right-[22%] w-8 h-8 md:w-6 md:h-6 rounded-full transition-all duration-500 cursor-pointer ${
+              currentValue.includes("right-wrist")
                 ? "bg-primary scale-150 shadow-xl shadow-primary/40 ring-4 ring-primary/20"
                 : "bg-slate-300 hover:bg-primary/40"
             }`}
-            onClick={() => updateAnswer(question._id, "right-wrist")}
+            onClick={() => toggleSelection("right-wrist")}
           />
         </div>
 
@@ -186,13 +212,13 @@ export const SkalaetonQuestion: React.FC<SkalaetonQuestionProps> = ({
               whileTap={{ scale: 0.95 }}
             >
               <Badge
-                variant={currentValue === area.id ? "default" : "secondary"}
+                variant={currentValue.includes(area.id) ? "default" : "secondary"}
                 className={`cursor-pointer transition-all px-6 py-4 text-xs font-black rounded-2xl ${
-                  currentValue === area.id 
+                  currentValue.includes(area.id) 
                     ? "shadow-2xl scale-110 bg-primary text-primary-foreground" 
                     : "bg-white hover:bg-slate-50 border-slate-100 text-slate-700"
                 }`}
-                onClick={() => updateAnswer(question._id, area.id)}
+                onClick={() => toggleSelection(area.id)}
               >
                 {area.label}
               </Badge>

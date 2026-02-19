@@ -28,7 +28,7 @@ export function Footer() {
 
   // Function to get social icon based on platform
   const getSocialIcon = (platform: string) => {
-    switch(platform?.toLowerCase()) {
+    switch (platform?.toLowerCase()) {
       case 'facebook':
         return <Facebook className="h-5 w-5" />;
       case 'instagram':
@@ -46,17 +46,22 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-2">
-              {/* <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
-                <Activity className="h-5 w-5 text-primary-foreground" />
-              </div> */}
+            <Link
+              to="/"
+              className="flex flex-col items-center gap-2"
+            >
               <img
                 src={logo}
                 alt="Tanish Physio & Fitness Logo"
                 className="h-20 w-auto object-contain"
               />
-              {/* <span className="text-xl font-bold text-foreground">Tanish Physio</span> */}
+
+              <span className="text-xs md:text-[12px] font-semibold tracking-wider text-primary">
+                Practising Since 2004
+              </span>
+
             </Link>
+
             <p className="text-sm text-muted-foreground">
               Professional physiotherapy consultations from the comfort of your
               home.

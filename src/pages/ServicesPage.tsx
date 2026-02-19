@@ -17,10 +17,18 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from "@/store";
 import type { AppDispatch } from "@/store";
+import { selectCurrentUser } from "@/store/slices/authSlice";
 
 export default function ServicesPage() {
   const dispatch: AppDispatch = useDispatch();
   const { services, loading, error } = useSelector((state: RootState) => state.services);
+  const user = useSelector(selectCurrentUser);
+  
+  // Check if user has active subscription
+  const hasActivePlan = user?.subscriptionData && 
+                       user.subscriptionData.status === 'active' && 
+                       !user.subscriptionData.isExpired;
+  
   useEffect(() => {
     dispatch(fetchAllServices());
   }, []);
@@ -93,7 +101,11 @@ export default function ServicesPage() {
 
       {/* Services Grid Section */}
       <div className="container ">
-        <EnhancedServicesGrid services={services} />
+        <EnhancedServicesGrid 
+          services={services} 
+          hasActivePlan={hasActivePlan}
+          activePlan={user?.subscriptionData}
+        />
       </div>
 
 

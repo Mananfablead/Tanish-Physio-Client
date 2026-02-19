@@ -22,7 +22,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import {
- 
+
   fetchProfile,
 } from "@/store/slices/authSlice";
 import {
@@ -61,24 +61,34 @@ export function Header() {
     window.location.reload();
   };
 
-useEffect(() => {
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-  if (token) {
-    dispatch(fetchProfile());
-  }
-}, [dispatch]);
+    if (token) {
+      dispatch(fetchProfile());
+    }
+  }, [dispatch]);
 
   return (
     <header className="sticky top-0 left-0 right-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md shadow-sm">
-      <div className="container flex items-center justify-between px-4 py-3 sm:py-3 md:py-3 lg:py-4">
-        <Link to="/" className="flex items-center gap-3 md:gap-5 flex-shrink-0">
+      <div className="container flex items-center justify-between px-4 py-3 sm:py-3 md:py-3 lg:py-3">
+        <Link
+          to="/"
+          className="flex flex-col items-center gap-1 md:gap-1 flex-shrink-0"
+        >
           <img
             src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
             alt="Tanish Physio Logo"
             className="h-12 sm:h-14 md:h-16 lg:h-16 w-auto object-contain"
           />
+          <span className="text-[8px] md:text-[10px] font-semibold tracking-wider text-emerald-700">
+            Practising Since 2004
+          </span>
+
+
+
         </Link>
+
         {/* Desktop Navigation */}
         <nav className="hidden md:hidden lg:flex items-center gap-2 lg:gap-3">
           {navLinks.map((link) => (
@@ -97,116 +107,124 @@ useEffect(() => {
 
           {/* Show profile dropdown when authenticated */}
           <div className="hidden md:flex">
-          {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div
-                  className="relative h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-full
-    cursor-pointer
-    hover:ring-2 hover:ring-primary/40
-    transition-all duration-200"
+            {isAuthenticated ? (
+              <DropdownMenu>
+             <DropdownMenuTrigger asChild>
+  <div
+    className="flex items-center gap-3 cursor-pointer
+    hover:ring-2 hover:ring-primary/40 
+    transition-all duration-200 px-2 py-1 rounded-lg"
+  >
+    {user?.profilePicture ? (
+      <img
+        src={user?.profilePicture}
+        alt={user?.name || "User profile"}
+        className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-border shadow-sm"
+      />
+    ) : (
+      <div className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+        <User className="h-5 w-5 sm:h-6 sm:w-6" />
+      </div>
+    )}
+
+    {/* Name & Email */}
+    <div className="hidden md:block">
+      <p className="text-sm font-semibold truncate">
+        {user?.name || user?.email?.split("@")[0]}
+      </p>
+      <p className="text-xs text-muted-foreground truncate">
+        {user?.email}
+      </p>
+    </div>
+  </div>
+</DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  className="w-56 sm:w-64 md:w-72 mt-2 shadow-lg rounded-lg border border-border bg-popover text-popover-foreground"
+                  align="end"
+                  sideOffset={5}
+                  forceMount
                 >
-                  {user?.profilePicture ? (
-                    <img
-                      src={user?.profilePicture}
-                      alt={user?.name || "User profile"}
-                      className="h-full w-full rounded-full object-cover border-2 border-border shadow-sm"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                      <User className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-                    </div>
-                  )}
-
-                </div>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent
-                className="w-56 sm:w-64 md:w-72 mt-2 shadow-lg rounded-lg border border-border bg-popover text-popover-foreground"
-                align="end"
-                sideOffset={5}
-                forceMount
-              >
-                <div className="px-4 py-3 bg-muted/50">
-                  <div className="flex items-center gap-3 mb-2">
-                    {user?.profilePicture ? (
-                      <img
-                        src={user.profilePicture}
-                        alt={user?.name || "User profile"}
-                        className="h-12 w-12 rounded-full object-cover border-2 border-border"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <User className="h-6 w-6" />
+                  <div className="px-4 py-3 bg-muted/50">
+                    <div className="flex items-center gap-3 mb-2">
+                      {user?.profilePicture ? (
+                        <img
+                          src={user.profilePicture}
+                          alt={user?.name || "User profile"}
+                          className="h-12 w-12 rounded-full object-cover border-2 border-border"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <User className="h-6 w-6" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{user?.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{user?.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                     </div>
                   </div>
-                </div>
-                <DropdownMenuItem
-                  className="px-4 py-3 cursor-pointer
+                  <DropdownMenuItem
+                    className="px-4 py-3 cursor-pointer
   hover:bg-primary/10 hover:text-primary
   focus:bg-primary/10 focus:text-primary
   data-[highlighted]:bg-primary/10 data-[highlighted]:text-primary
   transition-colors"
-                  onClick={() => navigate('/profile')}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <User className="h-4 w-4" />
-                    <span className="font-medium">Profile Settings</span>
-                  </div>
-                </DropdownMenuItem>
+                    onClick={() => navigate('/profile')}
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">Profile Settings</span>
+                    </div>
+                  </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  className="px-4 py-3 cursor-pointer
+                  <DropdownMenuItem
+                    className="px-4 py-3 cursor-pointer
   hover:bg-primary/10 hover:text-destructive
   focus:bg-primary/10 focus:text-destructive
   data-[highlighted]:bg-primary/10 data-[highlighted]:text-destructive
   transition-colors"
-                  onClick={handleLogout}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <LogOut className="h-4 w-4" />
-                    <span className="font-medium">Sign Out</span>
-                  </div>
-                </DropdownMenuItem>
-
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="hidden md:flex px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium"
-                    onClick={() => navigate('/login')}
+                    onClick={handleLogout}
                   >
-                    Sign In
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Access your professional or patient portal</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link to="/register" className="hidden md:block">
-                    <Button variant="default" size="sm" className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium">
-                      Get Started
+                    <div className="flex items-center gap-3 w-full">
+                      <LogOut className="h-4 w-4" />
+                      <span className="font-medium">Sign Out</span>
+                    </div>
+                  </DropdownMenuItem>
+
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="hidden md:flex px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium"
+                      onClick={() => navigate('/login')}
+                    >
+                      Sign In
                     </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Start your clinical assessment today</p>
-                </TooltipContent>
-              </Tooltip>
-            </>
-          )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Access your professional or patient portal</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link to="/register" className="hidden md:block">
+                      <Button variant="default" size="sm" className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Start your clinical assessment today</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
           </div>
 
           {/* Mobile Navigation */}
@@ -217,7 +235,7 @@ useEffect(() => {
                 size="icon"
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg md:flex lg:hidden [&_svg]:size-8"
               >
-                <Menu  className="h-5 w-5" />
+                <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
