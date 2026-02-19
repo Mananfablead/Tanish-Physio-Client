@@ -656,7 +656,7 @@ export default function QuestionnairePage() {
       // Serialize questionnaire data to handle file objects
       const serializedData = serializeQuestionnaireData(data);
 
-      // If we were navigated here to activate a plan, complete activation and send user to booking
+      // If we were navigated here to activate a plan, complete activation and send user to schedule
       const pending = pendingPlan || (() => {
         try {
           const raw = sessionStorage.getItem("qw_pending_plan");
@@ -684,8 +684,8 @@ export default function QuestionnairePage() {
           console.error("Error getting subscription ID from storage:", e);
         }
 
-        // navigate to profile page with plan data for session booking
-        navigate("/profile", {
+        // navigate to schedule page with plan data for session booking
+        navigate("/schedule", {
           state: {
             fromSubscription: true,
             subscriptionId: subscriptionId,
@@ -699,8 +699,8 @@ export default function QuestionnairePage() {
       }
 
       if (serviceToBook) {
-        // For service bookings, navigate to profile page with service data
-        navigate("/profile", {
+        // For service bookings, navigate to schedule page with service data
+        navigate("/schedule", {
           state: {
             fromServices: true,
             service: serviceToBook,
@@ -712,8 +712,8 @@ export default function QuestionnairePage() {
         return;
       }
 
-      // Default behavior: continue to therapist discovery with intake data
-      // navigate("/profile", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
+      // Default behavior: continue to schedule page with intake data
+      // navigate("/schedule", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
     } catch (error) {
       console.error("Error updating profile with questionnaire data:", error);
       // Continue with navigation even if profile update fails
@@ -721,7 +721,7 @@ export default function QuestionnairePage() {
       // Serialize questionnaire data to handle file objects  
       const serializedData = serializeQuestionnaireData(data);
 
-      // If we were navigated here to activate a plan, complete activation and send user to booking
+      // If we were navigated here to activate a plan, complete activation and send user to schedule
       const pending = pendingPlan || (() => {
         try {
           const raw = sessionStorage.getItem("qw_pending_plan");
@@ -749,8 +749,8 @@ export default function QuestionnairePage() {
           console.error("Error getting subscription ID from storage:", e);
         }
 
-        // navigate to profile page with plan data for session booking
-        navigate("/profile", {
+        // navigate to schedule page with plan data for session booking
+        navigate("/schedule", {
           state: {
             fromSubscription: true,
             subscriptionId: subscriptionId,
@@ -764,8 +764,8 @@ export default function QuestionnairePage() {
       }
 
       if (serviceToBook) {
-        // For service bookings, navigate to profile page with service data
-        navigate("/profile", {
+        // For service bookings, navigate to schedule page with service data
+        navigate("/schedule", {
           state: {
             fromServices: true,
             service: serviceToBook,
@@ -777,10 +777,15 @@ export default function QuestionnairePage() {
         return;
       }
 
-      // Default behavior: continue to therapist discovery with intake data
-      // navigate("/profile", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
+      // Default behavior: continue to schedule page with intake data
+      // navigate("/schedule", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
     }
-    navigate("/");
+    navigate("/schedule", {
+      state: {
+        questionnaireData: data,
+        guestUser: guestUser
+      }
+    });
   };
 
   // Define body areas for skeleton type
@@ -1782,19 +1787,33 @@ export default function QuestionnairePage() {
                                   review profiles and choose a specialist.
                                 </p>
 
-                                <div className="space-y-4">
-                                  <Button
-                                    onClick={handleSubmit}
-                                    className="w-full h-14 rounded-xl font-black bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
-                                  >
-                                    Submit Consultation{" "}
-                                    <ArrowRight className="ml-2 h-4 w-4" />
-                                  </Button>
-                                  <p className="text-xs text-slate-500 text-center pt-2">
-                                    Your responses are encrypted and shared only
-                                    with HIPAA-compliant providers
-                                  </p>
-                                </div>
+                               <div className="space-y-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    
+    <Button
+      onClick={handleSubmit}
+      className="h-14 rounded-xl font-black bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
+    >
+      Submit Consultation
+      <ArrowRight className="ml-2 h-4 w-4" />
+    </Button>
+
+    <Button
+      onClick={handleSubmit}
+      variant="outline"
+      className="h-14 rounded-xl font-black border-primary text-primary hover:bg-primary/10 hover:text-black"
+    >
+      Free Consultation
+      <ArrowRight className="ml-2 h-4 w-4" />
+    </Button>
+
+  </div>
+
+  <p className="text-xs text-slate-500 text-center pt-2">
+    Your responses are encrypted and shared only with HIPAA-compliant providers
+  </p>
+</div>
+
 
                                 <div className="mt-6 pt-6 border-t border-slate-200">
                                   <div className="flex items-center justify-between gap-4">

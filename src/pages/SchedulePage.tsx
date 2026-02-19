@@ -304,23 +304,44 @@ export default function SchedulePage() {
   }, [sessions, currentPage]);
   const dispatch = useAppDispatch();
   useEffect(() => {
-    dispatch(fetchUserSubscriptions());
-    dispatch(fetchPublicAdmins());
-
-  }, [dispatch]);
+    const fetchUserData = async () => {
+      try {
+        // Only fetch user subscriptions if user is logged in
+        if (user) {
+          dispatch(fetchUserSubscriptions() as any);
+        }
+        dispatch(fetchPublicAdmins() as any);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    
+    fetchUserData();
+  }, [dispatch, user]);
   useEffect(() => {
-    dispatch(fetchSubscriptionPlans());
+    dispatch(fetchSubscriptionPlans(undefined) as any);
   }, [dispatch]);
   // Show subscription plans modal when user has no services or subscriptions
   useEffect(() => {
+    // Check if user is a guest
+    const isGuestUser = bookingData?.guestUser || sessionStorage.getItem("qw_guest_user") || (!user && !localStorage.getItem("token"));
+    
     const hasNoServices = !user?.purchasedServices || user.purchasedServices.length === 0;
     const hasNoSubscription = !user?.subscriptionData;
 
+    // Automatically show plans modal for guest users
+    if (isGuestUser && plans && plans.length > 0 && !subscriptionLoading) {
+      // Only show if not already showing another modal
+      if (!isBookingModalOpen && !isSuccessDialogOpen && !isPlansModalOpen) {
+        setIsPlansModalOpen(true);
+      }
+    }
+    
     if (isBookingModalOpen && hasNoServices && hasNoSubscription) {
       setIsPlansModalOpen(true);
       setIsBookingModalOpen(false);
     }
-  }, [isBookingModalOpen, user?.purchasedServices, user?.subscriptionData, userSubscriptions]);
+  }, [isBookingModalOpen, isSuccessDialogOpen, user?.purchasedServices, user?.subscriptionData, userSubscriptions, user, plans, subscriptionLoading, bookingData]);
 
   // Debug effect to see what booking data is available
   useEffect(() => {
@@ -335,31 +356,46 @@ export default function SchedulePage() {
       try {
         setLoading(true);
 
-        // Fetch both availability and sessions
-        const [availabilityResponse, sessionsResponse] = await Promise.all([
-          getAvailability(),
-          getAllSessions()
-        ]);
-
+        // Fetch availability (public data)
+        const availabilityResponse = await getAvailability();
         const availabilityData: any = availabilityResponse;
-        const sessionsData: any = sessionsResponse;
-
         setAvailability(availabilityData.data?.data?.availability || []);
 
-        // Update sessions with actual data from API
-        if (sessionsData.data?.success) {
-          setSessions(sessionsData.data.data.sessions || []);
-          // Also dispatch to store in Redux
-          // dispatch(fetchAllSessions());
+        // Only fetch sessions if user is authenticated
+        if (user) {
+          const sessionsResponse = await getAllSessions();
+          const sessionsData: any = sessionsResponse;
+
+          if (sessionsData.data?.success) {
+            setSessions(sessionsData.data.data.sessions || []);
+            // Also dispatch to store in Redux
+            // dispatch(fetchAllSessions());
+          } else {
+            setSessions([]);
+          }
         } else {
+          // For guest users, initialize with empty sessions
           setSessions([]);
         }
 
         setError(null);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching data:', err);
-        setError('Failed to load schedule data');
-        toast.error('Failed to load schedule data');
+        
+        // Check if the error is due to unauthorized access
+        if (err?.response?.status === 401) {
+          // For unauthorized users, just set availability and empty sessions
+          setSessions([]);
+          setError(null); // Don't show error for unauthorized session access
+          // Only show info message if user tried to access their sessions
+          if (user) {
+            toast.info('Please log in to view your sessions');
+          }
+        } else {
+          setError('Failed to load schedule data');
+          toast.error('Failed to load schedule data');
+        }
+        
         // Fallback to empty arrays
         setAvailability([]);
         setSessions([]);
@@ -369,7 +405,7 @@ export default function SchedulePage() {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) =>
@@ -422,15 +458,45 @@ console.log("user?.purchasedServices",user?.purchasedServices)
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 pt-10 pb-20">
         <div className="container  mx-auto px-4 sm:px-6 lg:px-8">
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                {hasBookingSummary ? "Your Sessions" : "Schedule"}
-              </h1>
-              <p className="text-slate-600 font-medium">
-                Manage your upcoming and past appointments
-              </p>
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+                  {hasBookingSummary ? "Your Sessions" : "Schedule"}
+                </h1>
+                <p className="text-slate-600 font-medium">
+                  Manage your upcoming and past appointments
+                </p>
+              </div>
             </div>
+            {/* Notification for users without services or subscriptions */}
+            {(user && (!user.purchasedServices || user.purchasedServices.length === 0) && !user.subscriptionData) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 ">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                      <span className="text-yellow-600 font-bold text-sm">!</span>
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-bold text-yellow-800">No Plans or Services</h3>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p>You don't have any plans or services purchased yet.</p>
+                      <p className="mt-1">Please select a plan to book a session.</p>
+                    </div>
+                    <div className="mt-3">
+                      <Button 
+                        onClick={() => setIsPlansModalOpen(true)}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                      Explore Our Plans
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
 
@@ -1201,153 +1267,7 @@ console.log("user?.purchasedServices",user?.purchasedServices)
           </motion.div>
         )}
       </AnimatePresence>
-        {/* <div className="p-0">
-            <div className="p-6 pb-4 border-b">
-              <h2 className="text-2xl font-bold text-center text-slate-900">Choose Your Wellness Plan</h2>
-              <p className="text-center text-slate-600 mt-2">Select the perfect plan for your recovery journey</p>
-            </div>
-            
-            <div className="p-6">
-            {subscriptionLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : subscriptionError ? (
-              <div className="text-center py-8">
-                <p className="text-red-500 font-medium">Failed to load plans: {subscriptionError}</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => dispatch(fetchUserSubscriptions())}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : plans && plans.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {plans.map((plan: any) => (
-                  <Card key={plan._id || plan.id} className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300">
-                    <div className="p-6 flex-1">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
-                      </div>
-
-                      <div className="mb-6">
-                        <div className="text-3xl font-black text-primary mb-1">
-                          ₹{plan.price?.toLocaleString()}
-                        </div>
-                        <div className="text-slate-500 text-sm">{plan.duration}</div>
-                      </div>
-
-                      <p className="text-slate-600 text-sm mb-6 line-clamp-2">
-                        {plan.description}
-                      </p>
-
-                      <ul className="space-y-3 mb-6 flex-1">
-                        {plan.features?.slice(0, 5).map((feature: string, index: number) => (
-                          <li key={index} className="flex items-start gap-3">
-                            <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-slate-700">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="p-6 pt-0">
-                      <Button
-                        className="w-full h-12 text-base font-semibold rounded-xl"
-                        onClick={() => {
-                          setIsPlansModalOpen(false);
-
-                          if (plan.planId || plan.id) {
-                            const handlePayment = async (selectedPlan: any) => {
-                              try {
-                                // For guest users, we'll use a different approach
-                                // Instead of calling guest API, we'll navigate directly to booking
-                                const isGuestUser = !user || !localStorage.getItem("token");
-
-                                if (isGuestUser) {
-                                  // For guest users, store plan info and navigate to booking
-                                  sessionStorage.setItem("qw_selected_plan", JSON.stringify({
-                                    plan: selectedPlan,
-                                    selectedAt: Date.now()
-                                  }));
-
-                                  // Navigate to booking page with plan parameter
-                                  navigate("/booking", {
-                                    state: {
-                                      service: {
-                                        id: selectedPlan.planId || selectedPlan.id,
-                                        name: selectedPlan.name,
-                                        price: String(selectedPlan.price),
-                                        duration: selectedPlan.duration,
-                                      },
-                                      fromSubscription: true,
-                                      isGuestFlow: true
-                                    }
-                                  });
-                                } else {
-                                  // For logged-in users, proceed with normal subscription flow
-                                  // Navigate to booking page with subscription flow
-                                  navigate("/booking", {
-                                    state: {
-                                      service: {
-                                        id: selectedPlan.planId || selectedPlan.id,
-                                        name: selectedPlan.name,
-                                        price: String(selectedPlan.price),
-                                        duration: selectedPlan.duration,
-                                      },
-                                      fromSubscription: true,
-                                      isGuestFlow: false
-                                    }
-                                  });
-                                }
-
-                                toast.success(
-                                  `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
-                                );
-                              } catch (error) {
-                                console.error("Error handling plan selection:", error);
-                                toast.error(
-                                  "Failed to process plan selection. Please try again."
-                                );
-                              }
-                            };
-
-                            // Actually call the handlePayment function
-                            handlePayment(plan);
-                          }
-                        }}
-                      >
-                        Select Plan
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                  <Star className="h-8 w-8 text-slate-300" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">No Plans Available</h3>
-                <p className="text-slate-500">Please check back later or contact support.</p>
-              </div>
-            )}
-            </div>
-            
-            <div className="px-6 py-4 border-t bg-slate-50 flex justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setIsPlansModalOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </div> */}
-
-
+        
       {/* Success Dialog */}
       <AnimatePresence>
         {isSuccessDialogOpen && (
