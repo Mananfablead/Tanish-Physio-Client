@@ -76,6 +76,8 @@ export default function BookingPage() {
   const [availability, setAvailability] = useState<any[]>([]);
   // console.log("availabilitylllllllll", availability)
   const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(null);
+  
+
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -145,6 +147,12 @@ export default function BookingPage() {
       ? bookingData.service.duration // "monthly", "quarterly"
       : bookingData.service.duration, // "52 min"
   };
+
+  // Determine booking type for Schedule Modal
+  const bookingType = (() => {
+    const serviceOrPlanName = serviceBooking ? bookingData?.service?.name?.toLowerCase() : plan?.name?.toLowerCase();
+    return serviceOrPlanName?.includes('free') ? 'free-consultation' : 'regular';
+  })();
 
   // Format date to YYYY-MM-DD
   const formatDate = (dateString: string) => {
@@ -1054,6 +1062,10 @@ export default function BookingPage() {
         }
       } else {
         // console.log(bookingData);
+        // Determine booking type based on service name or other criteria
+        const isFreeConsultation = (serviceBooking ? bookingData.service.name.toLowerCase().includes('free') : plan.name.toLowerCase().includes('free'));
+        const bookingType = isFreeConsultation ? 'free-consultation' : 'regular';
+        
         const bookingPayload = {
           serviceId: serviceBooking ? bookingData.service.id : null,
           serviceName: serviceBooking ? bookingData.service.name : plan.name,
@@ -1075,6 +1087,7 @@ export default function BookingPage() {
           scheduledDate: scheduleOption === "now" ? scheduleDate : null,
           scheduledTime: scheduleOption === "now" ? scheduleTime : null,
           timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+          bookingType: bookingType,
         };
         // console.log("Booking payload:", bookingPayload);
         // Create the booking - use guest booking if user is not logged in
@@ -2437,7 +2450,6 @@ export default function BookingPage() {
         </div>
       </div>
 
-      {/* Schedule Modal */}
       <ScheduleModal
         isOpen={isScheduleModalOpen}
         onClose={closeScheduleModal}
@@ -2456,6 +2468,7 @@ export default function BookingPage() {
         therapistName={therapist?.name}
         selectedTimeSlot={selectedTimeSlot}
         setSelectedTimeSlot={setSelectedTimeSlot}
+        bookingType={bookingType}
       />
 
       {/* Login Modal for existing users */}
@@ -2467,9 +2480,7 @@ export default function BookingPage() {
           toast.success("Login successful! You can now continue with your booking.");
           // You can add any additional logic here after successful login
         }}
-        onError={() => {
-          setIsLoginModalOpen(true);
-        }}
+
         email={loginEmail}
       />
     </Layout>

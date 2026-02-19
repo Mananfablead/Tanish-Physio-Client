@@ -21,6 +21,7 @@ interface ScheduleModalProps {
   therapistName: string;
   selectedTimeSlot: { start: string; end: string } | null;
   setSelectedTimeSlot: (slot: { start: string; end: string } | null) => void;
+  bookingType?: 'regular' | 'free-consultation';
 }
 
 export function ScheduleModal({
@@ -40,7 +41,8 @@ export function ScheduleModal({
   setSelectedDate,
   therapistName,
   selectedTimeSlot,
-  setSelectedTimeSlot
+  setSelectedTimeSlot,
+  bookingType = 'regular'
 }: ScheduleModalProps) {
   const [calendarWeeks, setCalendarWeeks] = useState<any[][]>([]);
 
@@ -61,7 +63,13 @@ export function ScheduleModal({
   };
 
   const handleTimeSlotClick = (date: string, timeSlot: any) => {
-    if (timeSlot.status === 'available') {
+    // Only allow selecting time slots that match the booking type
+    const isValidSlot = timeSlot.status === 'available' && (
+      (bookingType === 'free-consultation' && timeSlot.duration === 15) ||
+      (bookingType !== 'free-consultation' && timeSlot.duration === 45)
+    );
+    
+    if (isValidSlot) {
       setSelectedDate(date);
       setScheduleDate(date);
       setScheduleTime(timeSlot.start);
@@ -309,11 +317,49 @@ export function ScheduleModal({
               </div>
 
               {scheduleDate ? (
-                availability.find((a: any) => a.date === scheduleDate)?.timeSlots?.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 max-h-48 md:max-h-80 overflow-y-auto">
-                    {availability
-                      .find((a: any) => a.date === scheduleDate)
-                      ?.timeSlots?.map((slot: any, i: number) => {
+                (() => {
+                  // Filter time slots based on booking type
+                  const dayAvailability = availability.find((a: any) => a.date === scheduleDate);
+                  if (!dayAvailability || !dayAvailability.timeSlots) {
+                    // Show appropriate message when no time slots are defined for the selected date
+                    return (
+                      <div className="text-center py-8">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+                          <Clock className="h-6 w-6 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-bold text-red-500 mb-1">
+                          No Time Slots Available
+                        </h3>
+                        <p className="text-red-400 text-sm">
+                          No time slots have been defined for {new Date(scheduleDate).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  // Filter slots based on booking type
+                  const filteredSlots = dayAvailability.timeSlots.filter((slot: any) => {
+                    // Only show available slots
+                    if (slot.status !== 'available') return false;
+                    
+                    // Filter by duration based on booking type
+                    if (bookingType === 'free-consultation') {
+                      // Free consultation slots should have 15 minute duration
+                      return slot.duration === 15;
+                    } else {
+                      // Regular slots should have 45 minute duration
+                      return slot.duration === 45;
+                    }
+                  });
+                  
+                  return filteredSlots.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 max-h-48 md:max-h-80 overflow-y-auto">
+                      {filteredSlots.map((slot: any, i: number) => {
                         const isSelected = selectedTimeSlot?.start === slot.start && selectedTimeSlot?.end === slot.end;
                         
                         return (
@@ -336,28 +382,32 @@ export function ScheduleModal({
                             `}
                           >
                             {formatTime(slot.start)} – {formatTime(slot.end)}
+                            <div className="text-xs opacity-70">
+                              ({slot.duration}min {slot.bookingType === 'free-consultation' ? 'Free' : 'Regular'})
+                            </div>
                           </button>
                         );
                       })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
-                      <Clock className="h-6 w-6 text-red-500" />
                     </div>
-                    <h3 className="text-lg font-bold text-red-500 mb-1">
-                      Slots Not Available
-                    </h3>
-                    <p className="text-red-400 text-sm">
-                      No available time slots for {new Date(scheduleDate).toLocaleDateString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                )
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+                        <Clock className="h-6 w-6 text-red-500" />
+                      </div>
+                      <h3 className="text-lg font-bold text-red-500 mb-1">
+                        Slots Not Available
+                      </h3>
+                      <p className="text-red-400 text-sm">
+                        No available time slots for {bookingType === 'free-consultation' ? 'free consultation' : 'regular session'} on {new Date(scheduleDate).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  );
+                })()
               ) : (
                 <p className="text-xs text-slate-500">
                   Select a date to see time slots

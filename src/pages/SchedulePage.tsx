@@ -283,8 +283,19 @@ export default function SchedulePage() {
       return [];
     }
 
-    // 🔥 RETURN ALL SLOTS (available + unavailable)
-    return dayAvailability.timeSlots;
+    // 🔥 RETURN ONLY 45 MINUTE REGULAR SLOTS
+    return dayAvailability.timeSlots.filter((slot: any) => {
+      // Calculate slot duration in minutes
+      const [startHour, startMinute] = slot.start.split(':').map(Number);
+      const [endHour, endMinute] = slot.end.split(':').map(Number);
+      const today = new Date();
+      const slotStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), startHour, startMinute, 0, 0);
+      const slotEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), endHour, endMinute, 0, 0);
+      const slotDurationMinutes = Math.round((slotEnd.getTime() - slotStart.getTime()) / (1000 * 60));
+      
+      // Only return 45-minute regular slots
+      return slotDurationMinutes === 45;
+    });
   };
 
 
@@ -431,6 +442,16 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                 Manage your upcoming and past appointments
               </p>
             </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/free-consultation')}
+                className="flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                Book Free Consultation
+              </Button>
+            </div>
 
           </div>
 
@@ -532,7 +553,18 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                             }
 
                             return dayAvailability.timeSlots.some(
-                              (slot: any) => slot.status === "available"
+                              (slot: any) => {
+                                // Calculate slot duration in minutes
+                                const [startHour, startMinute] = slot.start.split(':').map(Number);
+                                const [endHour, endMinute] = slot.end.split(':').map(Number);
+                                const now = new Date();
+                                const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute, 0, 0);
+                                const slotEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute, 0, 0);
+                                const slotDurationMinutes = Math.round((slotEnd.getTime() - slotStart.getTime()) / (1000 * 60));
+                                
+                                // Only consider 45-minute regular slots as available
+                                return slot.status === "available" && slotDurationMinutes === 45;
+                              }
                             );
                           };
                           const isToday = isSameDay(day, today);
@@ -734,13 +766,23 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                         {format(selectedDate, "MMMM d, yyyy")}.
                       </p> */}
 
-                      {/* <Button
-                        className="h-11 rounded-xl bg-primary text-white font-bold px-6"
-                        onClick={() => setIsBookingModalOpen(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Book Session
-                      </Button> */}
+                      <div className="space-y-3">
+                        <Button
+                          className="h-11 rounded-xl bg-primary text-white font-bold px-6 w-full"
+                          onClick={() => setIsBookingModalOpen(true)}
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Book Session
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-11 rounded-xl font-bold w-full"
+                          onClick={() => navigate('/free-consultation')}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Book Free Consultation
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -884,9 +926,21 @@ console.log("user?.purchasedServices",user?.purchasedServices)
 
                 {availableTimes.length > 0 ? (
                   <div>
-
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                      {availableTimes.map((slot: any) => {
+                      {availableTimes
+                        .filter((slot: any) => {
+                          // Calculate slot duration in minutes
+                          const [startHour, startMinute] = slot.start.split(':').map(Number);
+                          const [endHour, endMinute] = slot.end.split(':').map(Number);
+                          const now = new Date();
+                          const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute, 0, 0);
+                          const slotEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute, 0, 0);
+                          const slotDurationMinutes = Math.round((slotEnd.getTime() - slotStart.getTime()) / (1000 * 60));
+                          
+                          // Only show 45-minute regular slots (not 15-minute free consultation slots)
+                          return slotDurationMinutes === 45;
+                        })
+                        .map((slot: any) => {
                         const timeValue = `${slot.start} - ${slot.end}`;
 
                         const isAvailable = slot.status === "available";
@@ -909,13 +963,12 @@ console.log("user?.purchasedServices",user?.purchasedServices)
 
                         const isSelected = selectedTime === timeValue;
 
-                        // Calculate slot duration in minutes
+                        // Calculate slot duration in minutes (already calculated in filter)
                         const [startHour, startMinute] = slot.start.split(':').map(Number);
                         const [endHour, endMinute] = slot.end.split(':').map(Number);
-                        const slotStart = new Date();
-                        slotStart.setHours(startHour, startMinute, 0, 0);
-                        const slotEnd = new Date();
-                        slotEnd.setHours(endHour, endMinute, 0, 0);
+                        const now = new Date();
+                        const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute, 0, 0);
+                        const slotEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute, 0, 0);
                         const slotDurationMinutes = Math.round((slotEnd.getTime() - slotStart.getTime()) / (1000 * 60));
 
                         // Check if this slot can accommodate the service duration

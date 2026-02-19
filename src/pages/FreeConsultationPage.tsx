@@ -91,12 +91,15 @@ export default function FreeConsultationPage() {
       const response = await getAvailability();
       const allAvailability = response.data.data.availability;
 
-      // Filter for free consultation slots (assuming they have a special marker or we look for admin availability)
+      // Filter for free consultation slots only (available slots with bookingType 'free-consultation' from admin therapists)
       const freeConsultationSlots = allAvailability
         .filter((avail: any) => avail.therapistId.role === 'admin')
         .flatMap((avail: any) =>
           avail.timeSlots
-            .filter((slot: any) => slot.status === 'available')
+            .filter((slot: any) => 
+              slot.status === 'available' && 
+              slot.bookingType === 'free-consultation'
+            )
             .map((slot: any) => ({
               ...slot,
               date: avail.date,
@@ -142,9 +145,9 @@ export default function FreeConsultationPage() {
       const bookingData = {
         serviceId: "free-consultation", // Special ID for free consultation
         serviceName: "Free Consultation",
-        therapistId: publicAdmins?.[0]?._id || "",
+        therapistId: publicAdmins?.[0]?.id || "",
         therapistName: publicAdmins?.[0]?.name || "Admin",
-        userId: user?._id || null,
+        userId: user?.id || null,
         clientName: guestUserData.name,
         date: selectedDate,
         time: selectedTime,
@@ -167,11 +170,11 @@ export default function FreeConsultationPage() {
           clientPhone: guestUserData.phone,
         })).unwrap();
 
-        toast.success("Free consultation booked successfully!");
+        toast.success("Free consultation booked successfully! You are now logged in.");
         navigate("/booking-confirmation", {
           state: {
             booking: result.booking,
-            isGuest: true,
+            isGuest: false, // User is now logged in
           },
         });
       } else {
@@ -365,7 +368,7 @@ export default function FreeConsultationPage() {
                     <div>
                       <h4 className="font-semibold">Expert Physiotherapist</h4>
                       <p className="text-sm text-gray-600">
-                        Connect with our certified physiotherapy experts.
+                        Connect with our certified physiotherapy expert.
                       </p>
                     </div>
                   </div>

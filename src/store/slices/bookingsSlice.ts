@@ -19,6 +19,7 @@ import {
   updateBookingSchedule,
   checkUserExists
 } from '../../lib/api';
+import { setCredentials } from './authSlice';
 
 interface Booking {
   _id: string;
@@ -52,6 +53,19 @@ interface Booking {
   createdAt: string;
   updatedAt: string;
   clientEmail: string;
+}
+
+interface GuestBookingResponse {
+  booking: Booking;
+  token?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    phone: string;
+  };
+  message: string;
 }
 
 interface PaymentOrder {
@@ -374,10 +388,19 @@ const bookingsSlice = createSlice({
 // Guest booking async thunks
 export const createGuestBookingAsync = createAsyncThunk(
   'bookings/createGuestBooking',
-  async (bookingData: any, { rejectWithValue }) => {
+  async (bookingData: any, { rejectWithValue, dispatch }) => {
     try {
       const response = await createGuestBooking(bookingData);
       const apiResponse = response.data as ApiResponse<Booking>;
+
+      // If token and user are provided in the response, auto-login the user
+      if (apiResponse.data.token && apiResponse.data.user) {
+        dispatch(setCredentials({
+          user: apiResponse.data.user,
+          token: apiResponse.data.token
+        }));
+      }
+
       return apiResponse.data;
     } catch (error: any) {
       return rejectWithValue(
