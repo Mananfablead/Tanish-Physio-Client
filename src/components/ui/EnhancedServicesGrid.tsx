@@ -27,10 +27,14 @@ interface Service {
 
 interface EnhancedServicesGridProps {
   services?: Service[];
+  hasActivePlan?: boolean;
+  activePlan?: any;
 }
 
 export function EnhancedServicesGrid({
   services = [],
+  hasActivePlan = false,
+  activePlan = null
 }: EnhancedServicesGridProps) {
   const servicesToDisplay = services;
   const navigate = useNavigate();
@@ -174,8 +178,12 @@ export function EnhancedServicesGrid({
                     <span>
                       Duration: {service.details.sessionDuration}
                     </span>
-                    <span className="font-bold text-primary">
-                      {service.details.price}
+                    <span className="font-bold">
+                      {hasActivePlan ? (
+                        <span className="text-green-600">FREE</span>
+                      ) : (
+                        <span className="text-primary">{service.details.price}</span>
+                      )}
                     </span>
                   </div>
 
@@ -228,7 +236,7 @@ export function EnhancedServicesGrid({
                         };
 
                         console.log("Booking Data:", bookingData);
-                        navigate("/booking", { state: bookingData });
+                        navigate("/questionnaire", { state: bookingData });
                       }}
                     >
                       Book Session

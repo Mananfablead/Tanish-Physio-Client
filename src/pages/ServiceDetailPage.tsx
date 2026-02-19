@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import type { AppDispatch } from "@/store";
 import { useAuth } from "@/context/AuthContext";
+import { selectCurrentUser } from "@/store/slices/authSlice";
 
 // Use the Service type from the shared types
 // Define extended service data structure
@@ -293,9 +294,13 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
 const ServiceSidebar = ({
   service,
   navigate,
+  hasActivePlan = false,
+  activePlan = null
 }: {
   service: ExtendedService;
   navigate: any;
+  hasActivePlan?: boolean;
+  activePlan?: any;
 }) => {
   const { isAuthenticated } = useAuth();
 
@@ -335,7 +340,7 @@ const ServiceSidebar = ({
       },
     };
     console.log("Booking Data:", bookingData);
-    navigate("/booking", { state: bookingData });
+    navigate("/questionnaire", { state: bookingData });
   };
 
   return (
@@ -355,15 +360,26 @@ const ServiceSidebar = ({
           <div className="flex justify-between">
             <span className="text-slate-600">Price:</span>
             <span className="font-medium text-slate-900 flex items-center gap-1">
-              <IndianRupee className="h-4 w-4" />
-              {(() => {
-                const priceRange =
-                  service.details.priceRange || service.details.price;
-                const cleanedPriceRange = priceRange.replace("₹", "");
-                // Extract first price from range (e.g., "4000-7500" -> "4000")
-                const fixedPrice = cleanedPriceRange.split("-")[0];
-                return fixedPrice;
-              })()}
+              {hasActivePlan ? (
+                <>
+                  <span className="text-green-600 font-bold">FREE</span>
+                  <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full ml-2">
+                    with {activePlan?.planName || "your plan"}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <IndianRupee className="h-4 w-4" />
+                  {(() => {
+                    const priceRange =
+                      service.details.priceRange || service.details.price;
+                    const cleanedPriceRange = priceRange.replace("₹", "");
+                    // Extract first price from range (e.g., "4000-7500" -> "4000")
+                    const fixedPrice = cleanedPriceRange.split("-")[0];
+                    return fixedPrice;
+                  })()}
+                </>
+              )}
             </span>
           </div>
           <div className="flex justify-between">
@@ -490,6 +506,13 @@ export default function ServiceDetailPage() {
   const navigate = useNavigate();
   const dispatch: AppDispatch = useDispatch();
   const { isAuthenticated } = useAuth();
+  const user = useSelector(selectCurrentUser);
+  
+  // Check if user has active subscription
+  const hasActivePlan = user?.subscriptionData && 
+                       user.subscriptionData.status === 'active' && 
+                       !user.subscriptionData.isExpired;
+  const activePlan = user?.subscriptionData || null;
 
   // Get service from Redux store
   const { selectedService, loading, error } = useSelector(
@@ -625,6 +648,8 @@ export default function ServiceDetailPage() {
                     <ServiceSidebar
                       service={service as ExtendedService}
                       navigate={navigate}
+                      hasActivePlan={hasActivePlan}
+                      activePlan={activePlan}
                     />
                   </div>
                 </div>

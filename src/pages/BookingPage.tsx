@@ -41,11 +41,24 @@ import { getAvailability } from '@/lib/api';
 import { fetchOffers, validateCoupon, resetCouponValidation } from '@/store/slices/offersSlice';
 import { register, setCredentials } from '@/store/slices/authSlice';
 import BookingLoginModal from '@/components/BookingLoginModal';
+import { fetchAllServices } from "@/store/slices/serviceSlice";
 export default function BookingPage() {
+
   const location = useLocation();
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
-  const bookingData = location.state;
+  const bookingData = location.state || {};
+  
+  // Check if user has active subscription
+  const hasActivePlan = user?.subscriptionData && 
+                       user.subscriptionData.status === 'active' && 
+                       !user.subscriptionData.isExpired;
+  const activePlan = user?.subscriptionData || null;
+  console.log("bookingData", bookingData)
+  // Extract questionnaire data if present
+  const questionnaireData = bookingData.questionnaireData || null;
+  const fromQuestionnaire = bookingData.fromQuestionnaire || false;
+  const guestUserFromQuestionnaire = bookingData.guestUser || null;
   // console.log("bookingData", bookingData);
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
@@ -78,7 +91,11 @@ export default function BookingPage() {
   const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(null);
   
 
+  const { services, loading, error } = useSelector((state: RootState) => state.services);
 
+
+
+  console.log("services", services)
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
   const [isCouponApplied, setIsCouponApplied] = useState(false);
@@ -100,7 +117,9 @@ export default function BookingPage() {
   useEffect(() => {
     dispatch(fetchOffers());
     dispatch(fetchPublicAdmins());
+    dispatch(fetchAllServices());
   }, [dispatch]);
+
 
   // Update local state when store offers change
   useEffect(() => {
@@ -137,15 +156,15 @@ export default function BookingPage() {
   const subscriptionBooking = bookingData?.fromSubscription === true;
 
   const plan = bookingData?.plan ?? {
-    name: subscriptionBooking
+    name: subscriptionBooking && bookingData.service
       ? bookingData.service.name
-      : `${bookingData.service.name} Plan`,
+      : (bookingData.service ? `${bookingData.service.name} Plan` : "Default Plan"),
 
-    price: Number(bookingData.service.price),
+    price: hasActivePlan ? 0 : (bookingData.service ? Number(bookingData.service.price) : 0),
 
-    duration: subscriptionBooking
+    duration: subscriptionBooking && bookingData.service
       ? bookingData.service.duration // "monthly", "quarterly"
-      : bookingData.service.duration, // "52 min"
+      : (bookingData.service ? bookingData.service.duration : "60 min"), // "52 min"
   };
 
   // Determine booking type for Schedule Modal
@@ -433,7 +452,8 @@ export default function BookingPage() {
   const handleScheduleConfirm = (
     date: string,
     time: string,
-    timeSlot?: { start: string; end: string }
+    timeSlot?: { start: string; end: string },
+    selectedService?: any
   ) => {
     // Save the scheduled session to sessionStorage with complete time slot info
     const scheduledSession = {
@@ -441,7 +461,7 @@ export default function BookingPage() {
       time,
       timeSlot, // Store complete time slot info including start and end times
       therapist: { ...therapist, id: publicAdmins?.[0]?.id }, // Use the correct therapist ID
-      service: bookingData?.service || plan,
+      service: selectedService || bookingData?.service || plan,
       locked: true, // Will be unlocked after payment
       createdAt: Date.now(),
     };
@@ -1065,12 +1085,14 @@ export default function BookingPage() {
         // Determine booking type based on service name or other criteria
         const isFreeConsultation = (serviceBooking ? bookingData.service.name.toLowerCase().includes('free') : plan.name.toLowerCase().includes('free'));
         const bookingType = isFreeConsultation ? 'free-consultation' : 'regular';
+        // Get service information - use bookingData.service since selectedService is not available
+        const serviceInfo = serviceBooking ? bookingData.service : null;
         
         const bookingPayload = {
-          serviceId: serviceBooking ? bookingData.service.id : null,
-          serviceName: serviceBooking ? bookingData.service.name : plan.name,
-          therapistId: therapist.id || null,
-          therapistName: therapist.name,
+          serviceId: serviceInfo?.id || null,
+          serviceName: serviceInfo?.name || plan.name,
+          therapistId: therapist?.id || null,
+          therapistName: therapist?.name || "Default Therapist",
           userId: isGuestUser ? null : localStorage.getItem("user"),
           clientName: isGuestUser ? guestUserData.name : guestUserData.name,
           date: date,
@@ -1082,7 +1104,7 @@ export default function BookingPage() {
           finalAmount: finalPrice,
           couponCode: isCouponApplied ? couponCode : undefined,
           discountAmount: isCouponApplied ? couponDiscount : 0,
-          bookingId: serviceBooking ? bookingData.service.bookingId : null,
+          bookingId: serviceInfo?.bookingId || null,
           scheduleType: scheduleOption || "now",
           scheduledDate: scheduleOption === "now" ? scheduleDate : null,
           scheduledTime: scheduleOption === "now" ? scheduleTime : null,
@@ -1983,45 +2005,51 @@ export default function BookingPage() {
           {/* Order Summary */}
           <div className="space-y-6">
             {/* Therapist Information Card */}
-            <Card variant="elevated">
-              <CardHeader>
-                <CardTitle>Therapist Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <img
-                    src={
-                      subscriptionBooking
-                        ? "https://placehold.co/100x100?text=SUB"
-                        : publicAdmins?.[0]?.profilePicture ||
-                        "https://placehold.co/100x100?text=DOC"
-                    }
-                    alt={
-                      subscriptionBooking
-                        ? plan.name
-                        : publicAdmins?.[0]?.name || "Doctor"
-                    }
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                  <div>
-                    <p className="font-medium">
-                      {publicAdmins?.[0]?.name || "Doctor"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {publicAdmins?.[0]?.doctorProfile?.specialization ||
-                        bookingData?.therapist?.title ||
-                        "Physiotherapist"}
-                    </p>
-                    {publicAdmins?.[0]?.doctorProfile?.experience && (
-                      <p className="text-sm text-muted-foreground">
-                        Experience: {publicAdmins[0].doctorProfile.experience}{" "}
-                        years
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+ <Card variant="elevated">
+  <CardHeader className="border-b bg-primary/5">
+   <CardTitle>Therapist Information</CardTitle>
+ 
+  </CardHeader>
+
+  <CardContent className="space-y-4 pt-4">
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-background shadow-sm border">
+      
+      <img
+        src={
+          subscriptionBooking
+            ? "https://placehold.co/100x100?text=SUB"
+            : publicAdmins?.[0]?.profilePicture ||
+              "https://placehold.co/100x100?text=DOC"
+        }
+        alt={
+          subscriptionBooking
+            ? plan.name
+            : publicAdmins?.[0]?.name || "Doctor"
+        }
+        className="w-14 h-14 rounded-xl object-cover border-2"
+      />
+
+      <div>
+        <p className="font-semibold text-base">
+          {publicAdmins?.[0]?.name || "Doctor"}
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          {publicAdmins?.[0]?.doctorProfile?.specialization ||
+            bookingData?.therapist?.title ||
+            "Physiotherapist"}
+        </p>
+
+        {publicAdmins?.[0]?.doctorProfile?.experience && (
+          <p className="text-sm text-primary font-medium mt-1">
+            {publicAdmins[0].doctorProfile.experience}+ Years Experience
+          </p>
+        )}
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
 
             {/* Service/Plan Details Card */}
             <Card variant="elevated">
@@ -2047,7 +2075,9 @@ export default function BookingPage() {
                     </p>
                     {subscriptionBooking && (
                       <p className="text-sm text-muted-foreground">
-                        Sessions: {plan.sessions || "Unlimited"}
+                        Sessions: {plan.sessions || bookingData?.service
+                          ? bookingData?.service?.sessions
+                          : plan.sessions}
                       </p>
                     )}
                     {/* {!subscriptionBooking && bookingData?.service && (
@@ -2056,7 +2086,16 @@ export default function BookingPage() {
                       </p>
                     )} */}
                   </div>
-                  <p className="font-semibold">₹{plan.price}</p>
+                  {hasActivePlan ? (
+                    <div className="text-right">
+                      <p className="font-semibold text-green-600">FREE</p>
+                      <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                        with {activePlan?.planName || "your plan"}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="font-semibold">₹{plan.price}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -2342,16 +2381,25 @@ export default function BookingPage() {
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
-                    <span className="font-bold text-2xl text-primary">
-                      ₹{finalPrice}
-                    </span>
-                    {(promoApplied || isCouponApplied) && (
-                      <p className="text-xs text-success">
-                        You save ₹{discountAmount}
+                  {hasActivePlan ? (
+                    <div className="text-right">
+                      <span className="font-bold text-2xl text-green-600">FREE</span>
+                      <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full mt-1">
+                        with {activePlan?.planName || "your plan"}
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="text-right">
+                      <span className="font-bold text-2xl text-primary">
+                        ₹{finalPrice}
+                      </span>
+                      {(promoApplied || isCouponApplied) && (
+                        <p className="text-xs text-success">
+                          You save ₹{discountAmount}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {!intakeIsRecent && (
@@ -2386,15 +2434,19 @@ export default function BookingPage() {
                   ) : (
                     <>
                       <Lock className="h-4 w-4 mr-2" />
-                      {subscriptionBooking
-                        ? `Pay ₹${finalPrice} for Subscription${promoApplied || isCouponApplied
+                      {hasActivePlan ? (
+                        "Book Session"
+                      ) : subscriptionBooking ? (
+                        `Pay ₹${finalPrice} for Subscription${promoApplied || isCouponApplied
                           ? ` (Save ₹${discountAmount})`
                           : ""
                         }`
-                        : `Pay ₹${finalPrice} for Booking${promoApplied || isCouponApplied
+                      ) : (
+                        `Pay ₹${finalPrice} for Booking${promoApplied || isCouponApplied
                           ? ` (Save ₹${discountAmount})`
                           : ""
-                        }`}
+                        }`
+                      )}
                     </>
                   )}
                 </Button>
@@ -2473,6 +2525,7 @@ export default function BookingPage() {
 
       {/* Login Modal for existing users */}
       <BookingLoginModal
+        
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={() => {
@@ -2481,6 +2534,9 @@ export default function BookingPage() {
           // You can add any additional logic here after successful login
         }}
 
+        // onError={() => {
+        //   setIsLoginModalOpen(true);
+        // }}
         email={loginEmail}
       />
     </Layout>

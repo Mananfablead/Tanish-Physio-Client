@@ -639,16 +639,20 @@ export default function SubscriptionPlansPage() {
                   if (!plan) return;
 
                   setIsModalOpen(false);
-                  navigate("/booking", {
-                    state: {
-                      service: {
-                        id: plan.planId || plan.id,
-                        name: plan.name,
-                        price: String(plan.price),
-                        duration: plan.duration,
-                      },
-                      fromSubscription: true,
+                  
+                  const bookingData = {
+                    service: {
+                      id: plan.planId || plan.id,
+                      name: plan.name,
+                      price: String(plan.price),
+                      duration: plan.duration,
                     },
+                    fromSubscription: true,
+                  };
+                  
+                  // Navigate to questionnaire first, then to booking
+                  navigate("/questionnaire", {
+                    state: bookingData,
                   });
                 }}
               >

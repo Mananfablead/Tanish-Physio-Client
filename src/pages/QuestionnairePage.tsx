@@ -58,6 +58,7 @@ export default function QuestionnairePage() {
   const pendingPlan = (location.state as any)?.planToActivate || null;
   const serviceToBook = (location.state as any)?.serviceToBook || null;
   const locationGuestUser = (location.state as any)?.guestUser || null;
+  const goToSchedule = (location.state as any)?.goToSchedule || false;
   const sessionGuestUser = typeof window !== 'undefined' ? JSON.parse(sessionStorage.getItem("qw_guest_user") || "null") : null;
   const guestUser = locationGuestUser || sessionGuestUser || null;
 
@@ -632,6 +633,8 @@ export default function QuestionnairePage() {
     // persist intake
     saveStoredQuestionnaire(data);
 
+    // Serialize questionnaire data to handle file objects
+    let serializedData;
     try {
       // Transform questionnaire data to healthProfile structure
       const healthProfileData = transformQuestionnaireToHealthProfile(
@@ -652,140 +655,99 @@ export default function QuestionnairePage() {
         console.log('Sending profile data:', JSON.stringify(profileData, null, 2));
         await updateProfile(profileData);
       }
-
-      // Serialize questionnaire data to handle file objects
-      const serializedData = serializeQuestionnaireData(data);
-
-      // If we were navigated here to activate a plan, complete activation and send user to schedule
-      const pending = pendingPlan || (() => {
-        try {
-          const raw = sessionStorage.getItem("qw_pending_plan");
-          return raw ? JSON.parse(raw) : null;
-        } catch (e) { return null; }
-      })();
-
-      const assigned = assignTherapist(serializedData);
-
-      if (pending) {
-        // activate plan
-        savePlanToStorage(pending);
-        // clear pending marker
-        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
-
-        // Get subscription ID from stored plan
-        let subscriptionId = null;
-        try {
-          const storedPlan = sessionStorage.getItem("qw_plan");
-          if (storedPlan) {
-            const planData = JSON.parse(storedPlan);
-            subscriptionId = planData.subscriptionId || null;
-          }
-        } catch (e) {
-          console.error("Error getting subscription ID from storage:", e);
-        }
-
-        // navigate to schedule page with plan data for session booking
-        navigate("/schedule", {
-          state: {
-            fromSubscription: true,
-            subscriptionId: subscriptionId,
-            plan: pending,
-            questionnaireData: data,
-            therapist: assigned,
-            guestUser: guestUser
-          }
-        });
-        return;
-      }
-
-      if (serviceToBook) {
-        // For service bookings, navigate to schedule page with service data
-        navigate("/schedule", {
-          state: {
-            fromServices: true,
-            service: serviceToBook,
-            questionnaireData: data,
-            therapist: assigned,
-            guestUser: guestUser
-          }
-        });
-        return;
-      }
-
-      // Default behavior: continue to schedule page with intake data
-      // navigate("/schedule", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
     } catch (error) {
       console.error("Error updating profile with questionnaire data:", error);
-      // Continue with navigation even if profile update fails
-
-      // Serialize questionnaire data to handle file objects  
-      const serializedData = serializeQuestionnaireData(data);
-
-      // If we were navigated here to activate a plan, complete activation and send user to schedule
-      const pending = pendingPlan || (() => {
-        try {
-          const raw = sessionStorage.getItem("qw_pending_plan");
-          return raw ? JSON.parse(raw) : null;
-        } catch (e) { return null; }
-      })();
-
-      const assigned = assignTherapist(serializedData);
-
-      if (pending) {
-        // activate plan
-        savePlanToStorage(pending);
-        // clear pending marker
-        try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
-
-        // Get subscription ID from stored plan
-        let subscriptionId = null;
-        try {
-          const storedPlan = sessionStorage.getItem("qw_plan");
-          if (storedPlan) {
-            const planData = JSON.parse(storedPlan);
-            subscriptionId = planData.subscriptionId || null;
-          }
-        } catch (e) {
-          console.error("Error getting subscription ID from storage:", e);
-        }
-
-        // navigate to schedule page with plan data for session booking
-        navigate("/schedule", {
-          state: {
-            fromSubscription: true,
-            subscriptionId: subscriptionId,
-            plan: pending,
-            questionnaireData: data,
-            therapist: assigned,
-            guestUser: guestUser
-          }
-        });
-        return;
-      }
-
-      if (serviceToBook) {
-        // For service bookings, navigate to schedule page with service data
-        navigate("/schedule", {
-          state: {
-            fromServices: true,
-            service: serviceToBook,
-            questionnaireData: data,
-            therapist: assigned,
-            guestUser: guestUser
-          }
-        });
-        return;
-      }
-
-      // Default behavior: continue to schedule page with intake data
-      // navigate("/schedule", { state: { questionnaireData: data, assigned, guestUser: guestUser } });
+      // Continue even if profile update fails
     }
-    navigate("/schedule", {
-      state: {
-        questionnaireData: data,
-        guestUser: guestUser
+
+    // Serialize questionnaire data regardless of profile update success
+    serializedData = serializeQuestionnaireData(data);
+
+    // If we were navigated here to activate a plan, complete activation and send user to schedule
+    const pending = pendingPlan || (() => {
+      try {
+        const raw = sessionStorage.getItem("qw_pending_plan");
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    })();
+
+    const assigned = assignTherapist(serializedData);
+
+    if (pending) {
+      // activate plan
+      savePlanToStorage(pending);
+      // clear pending marker
+      try { sessionStorage.removeItem("qw_pending_plan"); } catch (e) { }
+
+      // Get subscription ID from stored plan
+      let subscriptionId = null;
+      try {
+        const storedPlan = sessionStorage.getItem("qw_plan");
+        if (storedPlan) {
+          const planData = JSON.parse(storedPlan);
+          subscriptionId = planData.subscriptionId || null;
+        }
+      } catch (e) {
+        console.error("Error getting subscription ID from storage:", e);
       }
-    });
+
+      // navigate to schedule page with plan data for session booking
+      navigate("/schedule", {
+        state: {
+          fromSubscription: true,
+          subscriptionId: subscriptionId,
+          plan: pending,
+          questionnaireData: data,
+          therapist: assigned,
+          guestUser: guestUser
+        }
+      });
+      return;
+    }
+
+    if (serviceToBook) {
+      // For service bookings, navigate to schedule page with service data
+      navigate("/schedule", {
+        state: {
+          fromServices: true,
+          service: serviceToBook,
+          questionnaireData: data,
+          therapist: assigned,
+          guestUser: guestUser
+        }
+      });
+      return;
+    }
+
+    // Check if we came from services or subscription to pass original bookingData to booking page
+    const originalBookingData = location.state || {};
+    
+    // Check if we should navigate to schedule page instead of booking page
+    if (goToSchedule) {
+      // Navigate to schedule page with questionnaire data
+      navigate("/schedule", {
+        state: {
+          questionnaireData: data,
+          guestUser: guestUser,
+          fromQuestionnaire: true,
+          therapist: assignTherapist(serializeQuestionnaireData(data))
+        }
+      });
+    } else {
+      // Navigate to booking page with questionnaire data and original booking data
+      navigate("/booking", {
+        state: {
+          questionnaireData: data,
+          guestUser: guestUser,
+          fromQuestionnaire: true,
+          // Include original booking data passed from services or subscription plans
+          service: originalBookingData.service || serviceToBook,
+          fromSubscription: originalBookingData.fromSubscription || false,
+          plan: originalBookingData.plan || pendingPlan,
+          fromServices: originalBookingData.fromServices || !!serviceToBook
+        }
+      });
+    }
   };
 
   // Define body areas for skeleton type
@@ -1282,7 +1244,7 @@ export default function QuestionnairePage() {
   }
 
   return (
-    <Layout showFooter={false}>
+    <Layout >
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 pb-20">
         {/* Progress Header */}
         {!isReviewing && (
