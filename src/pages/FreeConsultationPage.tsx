@@ -143,7 +143,7 @@ export default function FreeConsultationPage() {
 
     try {
       const bookingData = {
-        serviceId: "free-consultation", // Special ID for free consultation
+        serviceId: null, // Will be determined by backend for free consultation
         serviceName: "Free Consultation",
         therapistId: publicAdmins?.[0]?.id || "",
         therapistName: publicAdmins?.[0]?.name || "Admin",
@@ -153,8 +153,10 @@ export default function FreeConsultationPage() {
         time: selectedTime,
         status: "pending",
         notes: "Free 15-minute consultation booking",
-        paymentStatus: "verified", // Free consultation
+        paymentStatus: "paid", // Free consultation is automatically paid
         amount: 0,
+        scheduledDate: selectedDate,
+        scheduledTime: selectedTime,
         timeSlot: {
           start: selectedTime.split('-')[0],
           end: selectedTime.split('-')[1],
@@ -173,7 +175,7 @@ export default function FreeConsultationPage() {
         toast.success("Free consultation booked successfully! You are now logged in.");
         navigate("/booking-confirmation", {
           state: {
-            booking: result.booking,
+            booking: result,
             isGuest: false, // User is now logged in
           },
         });
@@ -184,7 +186,7 @@ export default function FreeConsultationPage() {
         toast.success("Free consultation booked successfully!");
         navigate("/booking-confirmation", {
           state: {
-            booking: result.booking,
+            booking: result,
           },
         });
       }

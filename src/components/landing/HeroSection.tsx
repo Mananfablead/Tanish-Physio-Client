@@ -53,7 +53,7 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-balance">
                 {cmsHero?.heading || "Start Your Recovery Journey Today"}
               </h1>
-              <h3 className="text-xl font-semibold tracking-tight text-balance tracking-wide">
+              <h3 className="text-xl font-semibold tracking-wide text-balance">
                 {cmsHero?.subHeading || "Recovery"}
               </h3>
               <p className="text-lg text-muted-foreground max-w-lg">
@@ -67,7 +67,7 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
               {/* Primary CTA */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link to="/questionnaire">
+                  <Link to="/questionnaire" state={{ goToSchedule: true }}>
                     <Button variant="hero" size="lg" className="w-full sm:w-auto">
                       {cmsHero?.ctaText || "Start Your Recovery"}
                       <ArrowRight className="h-5 w-5 ml-2" />

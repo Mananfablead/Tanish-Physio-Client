@@ -715,7 +715,7 @@ export default function BookingPage() {
             // Add scheduling information
             scheduleType: scheduleOption || "now",
             scheduledDate: scheduleOption === "now" ? scheduleDate : null,
-            scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+            scheduledTime: scheduleOption === "now" ? (selectedTimeSlot ? `${selectedTimeSlot.start}-${selectedTimeSlot.end}` : scheduleTime) : null,
             timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
             // Add therapistId if available
             therapistId: therapist?.id || undefined,
@@ -744,7 +744,7 @@ export default function BookingPage() {
             // Add scheduling information
             scheduleType: scheduleOption || "now",
             scheduledDate: scheduleOption === "now" ? scheduleDate : null,
-            scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+            scheduledTime: scheduleOption === "now" ? (selectedTimeSlot ? `${selectedTimeSlot.start}-${selectedTimeSlot.end}` : scheduleTime) : null,
             timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
             // Add therapistId if available
             therapistId: therapist?.id || undefined,
@@ -1171,7 +1171,7 @@ export default function BookingPage() {
           bookingId: serviceInfo?.bookingId || null,
           scheduleType: scheduleOption || "now",
           scheduledDate: scheduleOption === "now" ? scheduleDate : null,
-          scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+          scheduledTime: scheduleOption === "now" ? (selectedTimeSlot ? `${selectedTimeSlot.start}-${selectedTimeSlot.end}` : scheduleTime) : null,
           timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
           bookingType: bookingType,
         };

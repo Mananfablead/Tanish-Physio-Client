@@ -19,7 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { register, fetchProfile, setCredentials } from "@/store/slices/authSlice";
+import { register, login, fetchProfile, setCredentials } from "@/store/slices/authSlice";
 
 export default function BookingConfirmationPage() {
   const location = useLocation();
@@ -208,6 +208,7 @@ export default function BookingConfirmationPage() {
     const autoLoginToken = localStorage.getItem("qw_auto_login_token");
     console.log("Auto-login token found:", autoLoginToken);
     console.log("Is authenticated:", isAuthenticated);
+    
     if (autoLoginToken && !isAuthenticated) {
       console.log("Processing auto-login...");
       // Set the token in the main storage location
@@ -228,6 +229,24 @@ export default function BookingConfirmationPage() {
           localStorage.setItem("isAuthenticated", "true");
           setIsAutoLoginCompleted(true);
           toast.success("Account created and logged in successfully!");
+          
+          // Auto-navigate to questionnaire if not already completed
+          if (!isQuestionnaireFilled) {
+            setTimeout(() => {
+              navigate("/questionnaire", {
+                state: {
+                  serviceToBook: {
+                    name: serviceName,
+                    price: servicePrice,
+                    duration: serviceDuration,
+                    bookingId: bookingData?.bookingId,
+                    serviceId: bookingData?.service?.id,
+                  },
+                  guestUser: guestUser,
+                }
+              });
+            }, 2000);
+          }
         })
         .catch((error) => {
           console.error("Failed to fetch profile:", error);
@@ -240,6 +259,24 @@ export default function BookingConfirmationPage() {
           localStorage.setItem("isAuthenticated", "true");
           setIsAutoLoginCompleted(true);
           toast.success("Logged in successfully!");
+          
+          // Auto-navigate to questionnaire if not already completed
+          if (!isQuestionnaireFilled) {
+            setTimeout(() => {
+              navigate("/questionnaire", {
+                state: {
+                  serviceToBook: {
+                    name: serviceName,
+                    price: servicePrice,
+                    duration: serviceDuration,
+                    bookingId: bookingData?.bookingId,
+                    serviceId: bookingData?.service?.id,
+                  },
+                  guestUser: guestUser,
+                }
+              });
+            }, 2000);
+          }
         });
 
       return;
@@ -250,18 +287,80 @@ export default function BookingConfirmationPage() {
       const registerGuestUser = async () => {
         try {
           // Attempt to register the guest user with a default password
-          await dispatch(register({
+          const result = await dispatch(register({
             name: guestUser.name || "Guest User",
             email: guestUser.email,
             password: "123456",
             phone: guestUser.phone
           }));
 
-          toast.success("Account created successfully!");
+          if (register.fulfilled.match(result)) {
+            toast.success("Account created successfully!");
+            // Auto-login after registration
+            const loginResult = await dispatch(login({
+              email: guestUser.email,
+              password: "123456"
+            }));
+            
+            if (login.fulfilled.match(loginResult)) {
+              toast.success("Successfully logged in!");
+              // Auto-navigate to questionnaire if not already completed
+              if (!isQuestionnaireFilled) {
+                setTimeout(() => {
+                  navigate("/questionnaire", {
+                    state: {
+                      serviceToBook: {
+                        name: serviceName,
+                        price: servicePrice,
+                        duration: serviceDuration,
+                        bookingId: bookingData?.bookingId,
+                        serviceId: bookingData?.service?.id,
+                      },
+                      guestUser: guestUser,
+                    }
+                  });
+                }, 2000);
+              }
+            }
+          }
         } catch (error: any) {
           console.error("Auto-registration failed:", error);
-          // Continue anyway since this is just for convenience
-          toast.info("Please log in to access your account.");
+          // If user already exists, try to log them in
+          if (error.message?.includes("User already exists with this email")) {
+            try {
+              const loginResult = await dispatch(login({
+                email: guestUser.email,
+                password: "123456"
+              }));
+              
+              if (login.fulfilled.match(loginResult)) {
+                toast.success("Successfully logged in!");
+                // Auto-navigate to questionnaire if not already completed
+                if (!isQuestionnaireFilled) {
+                  setTimeout(() => {
+                    navigate("/questionnaire", {
+                      state: {
+                        serviceToBook: {
+                          name: serviceName,
+                          price: servicePrice,
+                          duration: serviceDuration,
+                          bookingId: bookingData?.bookingId,
+                          serviceId: bookingData?.service?.id,
+                        },
+                        guestUser: guestUser,
+                      }
+                    });
+                  }, 2000);
+                }
+              }
+            } catch (loginError: any) {
+              console.error("Auto-login failed:", loginError);
+              toast.info("Please log in to access your account.");
+            }
+          } else {
+            // Continue anyway since this is just for convenience
+            toast.info("Please log in to access your account.");
+          }
         }
       };
 
@@ -272,7 +371,7 @@ export default function BookingConfirmationPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, guestUser, dispatch]);
+  }, [isAuthenticated, guestUser, dispatch, isQuestionnaireFilled, serviceName, servicePrice, serviceDuration, bookingData, navigate]);
 
   /* ---------------- Action Buttons ---------------- */
   const renderActionButtons = () => {
