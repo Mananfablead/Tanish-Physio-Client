@@ -1244,7 +1244,7 @@ export default function QuestionnairePage() {
   }
 
   return (
-    <Layout >
+    <Layout>
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 pb-20">
         {/* Progress Header */}
         {!isReviewing && (
