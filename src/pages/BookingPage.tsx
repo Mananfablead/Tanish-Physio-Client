@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync, checkUserExistsAsync } from '@/store/slices/bookingsSlice';
 import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
 import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
-import { createBookingWithSubscription } from '@/lib/api';
+import { createBookingWithSubscription, checkSubscriptionEligibility } from '@/lib/api';
 import { useAppDispatch, useAppSelector, RootState } from '@/store';
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
@@ -88,6 +88,11 @@ export default function BookingPage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<any[]>([]);
+
+  // Subscription state
+  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
   // console.log("availabilitylllllllll", availability)
   const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(null);
   
@@ -138,6 +143,40 @@ export default function BookingPage() {
         phone: user.phone || "",
       });
     }
+  }, [user]);
+
+  // Check subscription eligibility when user changes
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (user) {
+        try {
+          setCheckingSubscription(true);
+          const response = await checkSubscriptionEligibility();
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
+          
+          setSubscriptionEligible(eligible);
+          setSubscriptionInfo({
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions
+          });
+        } catch (error) {
+          console.error('Error checking subscription status:', error);
+          setSubscriptionEligible(false);
+          setSubscriptionInfo(null);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else {
+        setSubscriptionEligible(false);
+        setSubscriptionInfo(null);
+      }
+    };
+    
+    checkSubscriptionStatus();
   }, [user]);
 
   // Check if user is a guest (not logged in)
@@ -515,7 +554,7 @@ export default function BookingPage() {
 
   const handlePayment = async () => {
     // 🔹 NEW: Check if user has active subscription and can book for free
-    if (hasActivePlan && !subscriptionBooking) {
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo?.remainingSessions > 0) {
       // User has active subscription, create booking directly without payment
       try {
         setIsProcessing(true);
@@ -574,6 +613,13 @@ export default function BookingPage() {
       } finally {
         setIsProcessing(false);
       }
+      return;
+    }
+    
+    // If user has an active plan but no remaining sessions
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo?.remainingSessions <= 0) {
+      toast.error(`You have reached your session limit. Your ${user.subscriptionData.planName} plan includes ${subscriptionInfo?.totalSessions} sessions and you have used all of them.`);
+      setIsProcessing(false);
       return;
     }
     
@@ -2156,6 +2202,19 @@ export default function BookingPage() {
                       <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                         with {activePlan?.planName || "your plan"}
                       </p>
+                      {activePlan?.availableSessions && (
+                        <div className="mt-1 text-xs">
+                          <p className="text-green-700">
+                            {activePlan.availableSessions.remaining} of {activePlan.availableSessions.total} sessions left
+                          </p>
+                          <div className="w-20 bg-gray-200 rounded-full h-1.5 mt-1">
+                            <div 
+                              className="bg-green-600 h-1.5 rounded-full" 
+                              style={{ width: `${activePlan.availableSessions.percentageUsed}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="font-semibold">₹{plan.price}</p>

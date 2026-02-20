@@ -618,7 +618,7 @@ console.log("user?.purchasedServices",user?.purchasedServices)
               </div>
             </div> */}
             {/* Subscription Status Display */}
-            {/* {user && subscriptionInfo && (
+            {user && subscriptionInfo && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -654,7 +654,7 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                   </div>
                 </div>
               </div>
-            )} */}
+            )}
             
             {/* Notification for users without services or subscriptions */}
             {(user && (!user.purchasedServices || user.purchasedServices.length === 0) && !user.subscriptionData && !subscriptionInfo?.eligible) && (

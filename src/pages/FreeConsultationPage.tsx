@@ -37,7 +37,7 @@ import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { ScheduleModal } from "@/components/profile/ScheduleModal";
 import { fetchPublicAdmins } from '@/store/slices/adminSlice';
-import { getAvailability } from '@/lib/api';
+import { getAvailability, checkSubscriptionEligibility } from '@/lib/api';
 import { fetchOffers, validateCoupon, resetCouponValidation } from '@/store/slices/offersSlice';
 import { register, setCredentials } from '@/store/slices/authSlice';
 import BookingLoginModal from '@/components/BookingLoginModal';
@@ -57,6 +57,11 @@ export default function FreeConsultationPage() {
     email: "",
     phone: "",
   });
+
+  // Subscription state
+  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
 
   // Check if user is a guest (not logged in)
   const isGuestUser = !sessionStorage.getItem("qw_user") && !localStorage.getItem("token");
@@ -80,6 +85,40 @@ export default function FreeConsultationPage() {
         phone: user.phone || "",
       });
     }
+  }, [user]);
+
+  // Check subscription eligibility when user changes
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (user) {
+        try {
+          setCheckingSubscription(true);
+          const response = await checkSubscriptionEligibility();
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
+          
+          setSubscriptionEligible(eligible);
+          setSubscriptionInfo({
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions
+          });
+        } catch (error) {
+          console.error('Error checking subscription status:', error);
+          setSubscriptionEligible(false);
+          setSubscriptionInfo(null);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else {
+        setSubscriptionEligible(false);
+        setSubscriptionInfo(null);
+      }
+    };
+    
+    checkSubscriptionStatus();
   }, [user]);
 
   // Get available slots for free consultation
@@ -215,6 +254,45 @@ export default function FreeConsultationPage() {
                 Book a free 15-minute video consultation with our expert physiotherapist
               </p>
             </div>
+
+            {/* Subscription Status Display */}
+            {user && subscriptionInfo && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                      <Wallet className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-bold text-blue-800">{subscriptionInfo.planName}</h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      {subscriptionInfo.eligible ? (
+                        <>
+                          <p>You have <span className="font-bold">{subscriptionInfo.remainingSessions}</span> sessions remaining</p>
+                          <p className="mt-1 text-xs">Book sessions for free with your subscription!</p>
+                        </>
+                      ) : (
+                        <p>{subscriptionInfo.message}</p>
+                      )}
+                    </div>
+                    {subscriptionInfo.totalSessions !== 'unlimited' && (
+                      <div className="mt-2">
+                        <div className="w-full bg-blue-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${((subscriptionInfo.totalSessions - subscriptionInfo.remainingSessions) / subscriptionInfo.totalSessions) * 100}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-blue-600 mt-1">
+                          {subscriptionInfo.usedSessions} of {subscriptionInfo.totalSessions} sessions used
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Booking Form */}

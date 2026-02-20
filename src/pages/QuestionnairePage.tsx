@@ -108,6 +108,7 @@ export default function QuestionnairePage() {
   };
 
   const saveStoredQuestionnaire = (payload: QuestionnaireData) => {
+    console.log("Saving questionnaire data:", payload);
     try {
       sessionStorage.setItem(STORAGE_KEY_QUESTIONNAIRE, JSON.stringify({ data: payload, updatedAt: now() }));
       setStoredIntakeFound(true);
@@ -1761,7 +1762,7 @@ export default function QuestionnairePage() {
     </Button>
 
     <Button
-      onClick={handleSubmit}
+      onClick={() =>navigate("/free-consultation")}
       variant="outline"
       className="h-14 rounded-xl font-black border-primary text-primary hover:bg-primary/10 hover:text-black"
     >

@@ -10,23 +10,119 @@ import {
   Mail,
   User,
   FileText,
+  Package,
+  Activity,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { updateGuestBookingStatus, getBookingDetails } from "@/lib/api";
+import { updateGuestBookingStatus, getBookingDetails, updateProfile, getUserSubscriptions } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { register, login, fetchProfile, setCredentials } from "@/store/slices/authSlice";
+import { fetchActiveQuestionnaire, selectActiveQuestionnaire } from "@/store/slices/questionnaireSlice";
 
 export default function BookingConfirmationPage() {
+  // Transform questionnaire data to health profile format
+  const transformQuestionnaireToHealthProfile = (questionnaireData: any, questions: any[] = []) => {
+    const healthProfile: any = {};
+
+    // Initialize questionnaire metadata
+    const questionnaireMetadata = {
+      questionnaireId: null,
+      completedAt: new Date(),
+      responses: [] as any[]
+    };
+
+    // Initialize questionnaire responses map
+    const questionnaireResponses = new Map<string, string>();
+
+    // Map questionnaire responses to healthProfile fields
+    Object.entries(questionnaireData || {}).forEach(([questionId, answer]) => {
+      if (!answer) return;
+
+      // Handle common field structure
+      let answerValue: any = answer;
+      let mainAnswer: any = answer;
+      let commonField: string = '';
+      
+      if (typeof answer === 'object' && answer !== null && (answer as any).commonField !== undefined) {
+        mainAnswer = (answer as any).mainAnswer;
+        commonField = (answer as any).commonField || '';
+        // For storage, we want to preserve both values separately
+        answerValue = mainAnswer;
+      }
+
+      // Convert file objects/URLs to displayable format for storage
+      if (typeof answerValue === 'object' && answerValue !== null) {
+        // If it's an uploaded file with URL, use the URL
+        if ((answerValue as any).url) {
+          answerValue = (answerValue as any).url;
+        } else if ((answerValue as any).name) {
+          // If it's just a filename, use the filename
+          answerValue = (answerValue as any).name;
+        } else {
+          // For arrays and other objects, convert to string representation
+          answerValue = Array.isArray(answerValue) 
+            ? JSON.stringify(answerValue) 
+            : JSON.stringify(answerValue);
+        }
+      }
+
+      // Store in questionnaire responses map - preserve both values for proper display
+      let responseValue = String(answerValue || '');
+      
+      // Store the structured data for better retrieval
+      if (typeof answer === 'object' && answer !== null && (answer as any).commonField !== undefined) {
+        // Store as JSON string to preserve structure
+        responseValue = JSON.stringify({
+          mainAnswer: mainAnswer,
+          commonField: commonField
+        });
+      } else {
+        // Simple value
+        responseValue = String(answerValue || '');
+      }
+      
+      questionnaireResponses.set(questionId, responseValue);
+
+      // Find the actual question text from the questions array
+      const questionObj = questions.find(q => q._id === questionId);
+      const actualQuestionText = questionObj ? questionObj.question : questionId;
+      const questionType = questionObj ? questionObj.type : 'unknown';
+      
+      // Store detailed response metadata
+      questionnaireMetadata.responses.push({
+        questionId: questionId,
+        questionText: actualQuestionText,
+        answer: responseValue,
+        questionType: questionType,
+        timestamp: new Date()
+      });
+
+      // Map based on question content or type (for backward compatibility)
+      // For now, just store all answers in the responses map
+    });
+
+    // Add questionnaire data to healthProfile (convert Map to plain object)
+    const responsesObject: { [key: string]: string } = {};
+    questionnaireResponses.forEach((value, key) => {
+      responsesObject[key] = value;
+    });
+    
+    healthProfile.questionnaireResponses = responsesObject;
+    healthProfile.questionnaireMetadata = questionnaireMetadata;
+
+    return healthProfile;
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { admins: publicAdmins, } = useSelector((state: RootState) => state.admins);
   const primaryDoctor = publicAdmins?.[0];
+  const activeQuestionnaire = useSelector(selectActiveQuestionnaire);
   console.log("isAuthenticated", isAuthenticated)
   const bookingData = location.state;
   console.log("booking data", bookingData)
@@ -38,10 +134,19 @@ export default function BookingConfirmationPage() {
   const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [isAutoLoginCompleted, setIsAutoLoginCompleted] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   useEffect(() => {
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
+
+  useEffect(() => {
+    // Fetch active questionnaire if not already loaded
+    if (!activeQuestionnaire) {
+      dispatch(fetchActiveQuestionnaire());
+    }
+  }, [dispatch, activeQuestionnaire]);
   /* ---------------- Questionnaire Check ---------------- */
   useEffect(() => {
     try {
@@ -203,22 +308,22 @@ export default function BookingConfirmationPage() {
       // Remove guest user from session storage if user is now logged in
       sessionStorage.removeItem("qw_guest_user");
     }
-
+  
     // Check if we have an auto-login token from payment verification
     const autoLoginToken = localStorage.getItem("qw_auto_login_token");
     console.log("Auto-login token found:", autoLoginToken);
     console.log("Is authenticated:", isAuthenticated);
-    
+      
     if (autoLoginToken && !isAuthenticated) {
       console.log("Processing auto-login...");
       // Set the token in the main storage location
       localStorage.setItem("token", autoLoginToken);
       localStorage.removeItem("qw_auto_login_token"); // Clean up
-
+  
       // Refresh user data
       dispatch(fetchProfile())
         .unwrap()
-        .then((userData) => {
+        .then(async (userData) => {
           console.log("Profile fetched successfully:", userData);
           // Manually update Redux store since fetchProfile doesn't do it automatically
           dispatch(setCredentials({
@@ -229,26 +334,32 @@ export default function BookingConfirmationPage() {
           localStorage.setItem("isAuthenticated", "true");
           setIsAutoLoginCompleted(true);
           toast.success("Account created and logged in successfully!");
-          
-          // Auto-navigate to questionnaire if not already completed
-          if (!isQuestionnaireFilled) {
-            setTimeout(() => {
-              navigate("/questionnaire", {
-                state: {
-                  serviceToBook: {
-                    name: serviceName,
-                    price: servicePrice,
-                    duration: serviceDuration,
-                    bookingId: bookingData?.bookingId,
-                    serviceId: bookingData?.service?.id,
-                  },
-                  guestUser: guestUser,
-                }
+            
+          // Get questionnaire data from session storage and update profile
+          try {
+            const questionnaireData = sessionStorage.getItem("qw_questionnaire");
+            console.log("Questionnaire data found:", questionnaireData);
+            if (questionnaireData) {
+              const parsedQuestionnaire = JSON.parse(questionnaireData);
+                
+              // Transform questionnaire data to health profile format
+              // The stored data structure is { data: payload, updatedAt: timestamp }
+              const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
+              console.log("healthProfileData", healthProfileData)
+              // Update profile with questionnaire data
+              await updateProfile({
+                healthProfile: healthProfileData
               });
-            }, 2000);
+                
+              console.log("Profile updated with questionnaire data successfully");
+              // Clear the questionnaire data after successful profile update
+              sessionStorage.removeItem("qw_questionnaire");
+            }
+          } catch (questionnaireError) {
+            console.error("Error updating profile with questionnaire data:", questionnaireError);
           }
         })
-        .catch((error) => {
+        .catch(async (error) => {
           console.error("Failed to fetch profile:", error);
           // If profile fetch fails, try to set credentials anyway
           dispatch(setCredentials({
@@ -259,29 +370,35 @@ export default function BookingConfirmationPage() {
           localStorage.setItem("isAuthenticated", "true");
           setIsAutoLoginCompleted(true);
           toast.success("Logged in successfully!");
-          
-          // Auto-navigate to questionnaire if not already completed
-          if (!isQuestionnaireFilled) {
-            setTimeout(() => {
-              navigate("/questionnaire", {
-                state: {
-                  serviceToBook: {
-                    name: serviceName,
-                    price: servicePrice,
-                    duration: serviceDuration,
-                    bookingId: bookingData?.bookingId,
-                    serviceId: bookingData?.service?.id,
-                  },
-                  guestUser: guestUser,
-                }
+            
+          // Get questionnaire data from session storage and update profile
+          try {
+            const questionnaireData = sessionStorage.getItem("qw_questionnaire");
+            console.log("Questionnaire data found:", questionnaireData);
+            if (questionnaireData) {
+              const parsedQuestionnaire = JSON.parse(questionnaireData);
+                
+              // Transform questionnaire data to health profile format
+              // The stored data structure is { data: payload, updatedAt: timestamp }
+              const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
+              console.log("healthProfileData", healthProfileData)
+              // Update profile with questionnaire data
+              await updateProfile({
+                healthProfile: healthProfileData
               });
-            }, 2000);
+                
+              console.log("Profile updated with questionnaire data successfully");
+              // Clear the questionnaire data after successful profile update
+              sessionStorage.removeItem("qw_questionnaire");
+            }
+          } catch (questionnaireError) {
+            console.error("Error updating profile with questionnaire data:", questionnaireError);
           }
         });
-
+  
       return;
     }
-
+  
     // If user is a guest and hasn't registered yet, register them automatically
     if (!isAuthenticated && guestUser && guestUser.email) {
       const registerGuestUser = async () => {
@@ -293,34 +410,58 @@ export default function BookingConfirmationPage() {
             password: "123456",
             phone: guestUser.phone
           }));
-
-          if (register.fulfilled.match(result)) {
-            toast.success("Account created successfully!");
-            // Auto-login after registration
-            const loginResult = await dispatch(login({
-              email: guestUser.email,
-              password: "123456"
-            }));
+  
+          toast.success("Account created successfully!");
             
-            if (login.fulfilled.match(loginResult)) {
-              toast.success("Successfully logged in!");
-              // Auto-navigate to questionnaire if not already completed
-              if (!isQuestionnaireFilled) {
-                setTimeout(() => {
-                  navigate("/questionnaire", {
-                    state: {
-                      serviceToBook: {
-                        name: serviceName,
-                        price: servicePrice,
-                        duration: serviceDuration,
-                        bookingId: bookingData?.bookingId,
-                        serviceId: bookingData?.service?.id,
-                      },
-                      guestUser: guestUser,
-                    }
-                  });
-                }, 2000);
+          // After successful registration, try to log in
+          const loginResult = await dispatch(login({
+            email: guestUser.email,
+            password: "123456"
+          }));
+            
+          if (login.fulfilled.match(loginResult)) {
+            toast.success("Successfully logged in!");
+              
+            // Get questionnaire data from session storage and update profile
+            try {
+              const questionnaireData = sessionStorage.getItem("qw_questionnaire");
+              console.log("Questionnaire data found:", questionnaireData);
+              if (questionnaireData) {
+                const parsedQuestionnaire = JSON.parse(questionnaireData);
+                  
+                // Transform questionnaire data to health profile format
+                // The stored data structure is { data: payload, updatedAt: timestamp }
+                const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
+                console.log("healthProfileData", healthProfileData)
+                // Update profile with questionnaire data
+                await updateProfile({
+                  healthProfile: healthProfileData
+                });
+                  
+                console.log("Profile updated with questionnaire data successfully");
+                // Clear the questionnaire data after successful profile update
+                sessionStorage.removeItem("qw_questionnaire");
               }
+            } catch (questionnaireError) {
+              console.error("Error updating profile with questionnaire data:", questionnaireError);
+            }
+              
+            // Auto-navigate to questionnaire if not already completed
+            if (!isQuestionnaireFilled) {
+              setTimeout(() => {
+                navigate("/questionnaire", {
+                  state: {
+                    serviceToBook: {
+                      name: serviceName,
+                      price: servicePrice,
+                      duration: serviceDuration,
+                      bookingId: bookingData?.bookingId,
+                      serviceId: bookingData?.service?.id,
+                    },
+                    guestUser: guestUser,
+                  }
+                });
+              }, 2000);
             }
           }
         } catch (error: any) {
@@ -332,9 +473,34 @@ export default function BookingConfirmationPage() {
                 email: guestUser.email,
                 password: "123456"
               }));
-              
+                
               if (login.fulfilled.match(loginResult)) {
                 toast.success("Successfully logged in!");
+                                  
+                // Get questionnaire data from session storage and update profile
+                try {
+                  const questionnaireData = sessionStorage.getItem("qw_questionnaire");
+                  console.log("Questionnaire data found:", questionnaireData);
+                  if (questionnaireData) {
+                    const parsedQuestionnaire = JSON.parse(questionnaireData);
+                                            
+                    // Transform questionnaire data to health profile format
+                    // The stored data structure is { data: payload, updatedAt: timestamp }
+                    const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
+                    console.log("healthProfileData", healthProfileData)
+                    // Update profile with questionnaire data
+                    await updateProfile({
+                      healthProfile: healthProfileData
+                    });
+                                            
+                    console.log("Profile updated with questionnaire data successfully");
+                    // Clear the questionnaire data after successful profile update
+                    sessionStorage.removeItem("qw_questionnaire");
+                  }
+                } catch (questionnaireError) {
+                  console.error("Error updating profile with questionnaire data:", questionnaireError);
+                }
+                  
                 // Auto-navigate to questionnaire if not already completed
                 if (!isQuestionnaireFilled) {
                   setTimeout(() => {
@@ -363,15 +529,48 @@ export default function BookingConfirmationPage() {
           }
         }
       };
-
+  
       // Delay the registration slightly to allow other UI updates to complete
       const timer = setTimeout(() => {
         registerGuestUser();
       }, 1000);
-
+  
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, guestUser, dispatch, isQuestionnaireFilled, serviceName, servicePrice, serviceDuration, bookingData, navigate]);
+  }, [isAuthenticated, guestUser, dispatch, isQuestionnaireFilled, serviceName, servicePrice, serviceDuration, bookingData, navigate, transformQuestionnaireToHealthProfile]);
+  
+  /* ---------------- Fetch Subscription Information ---------------- */
+  useEffect(() => {
+    const fetchSubscriptionInfo = async () => {
+      if (isAuthenticated && user) {
+        try {
+          setLoadingSubscription(true);
+          const response = await getUserSubscriptions();
+          if (response.data?.success && response.data.data?.subscriptions) {
+            // Get the most recent active subscription
+            const activeSubscriptions = response.data.data.subscriptions.filter(
+              (sub: any) => sub.status === 'active' && !sub.isExpired
+            );
+              
+            if (activeSubscriptions.length > 0) {
+              // Get the most recently purchased subscription
+              const latestSubscription = activeSubscriptions.reduce((latest: any, current: any) => {
+                return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
+              });
+                
+              setSubscriptionInfo(latestSubscription);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch subscription info:', error);
+        } finally {
+          setLoadingSubscription(false);
+        }
+      }
+    };
+      
+    fetchSubscriptionInfo();
+  }, [isAuthenticated, user]);
 
   /* ---------------- Action Buttons ---------------- */
   const renderActionButtons = () => {
@@ -698,21 +897,60 @@ export default function BookingConfirmationPage() {
 
                   {isAuthenticated && (
                     <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-left">
-                      <h3 className="font-semibold text-lg mb-3 text-green-800">
-                        Session Booking Information
+                      <h3 className="font-semibold text-lg mb-3 text-green-800 flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        Subscription Information
                       </h3>
 
-                      <ul className="list-disc pl-5 space-y-2 text-green-800 text-sm">
-                        <li>View upcoming sessions in your profile</li>
-                        <li>Book new sessions from the Book Session section</li>
-                        <li>Select service, date & time slot</li>
-                        <li>Confirm to complete booking</li>
-                      </ul>
+                      {loadingSubscription ? (
+                        <p className="text-green-700 mb-3">Loading subscription details...</p>
+                      ) : subscriptionInfo ? (
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-green-700">Plan:</span>
+                            <span className="font-medium">{subscriptionInfo.planName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-700">Sessions Available:</span>
+                            <span className="font-medium">
+                              {subscriptionInfo.availableSessions?.remaining !== undefined 
+                                ? `${subscriptionInfo.availableSessions.remaining} of ${subscriptionInfo.availableSessions.total} sessions remaining`
+                                : 'Unlimited'}
+                            </span>
+                          </div>
+                          {subscriptionInfo.availableSessions?.percentageUsed !== undefined && (
+                            <div>
+                              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                <div 
+                                  className="bg-green-600 h-2 rounded-full" 
+                                  style={{ width: `${subscriptionInfo.availableSessions.percentageUsed}%` }}
+                                ></div>
+                              </div>
+                              <p className="text-xs text-green-700 text-right">
+                                {subscriptionInfo.availableSessions.used} used
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-green-700">Valid Until:</span>
+                            <span className="font-medium">
+                              {new Date(subscriptionInfo.endDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-green-700 mb-3">No active subscription found.</p>
+                      )}
 
-                      <p className="text-xs text-green-700 mt-4">
-                        You can join sessions 5 minutes before the scheduled
-                        time.
-                      </p>
+                      <div className="mt-4 pt-4 border-t border-green-200">
+                        <h4 className="font-semibold text-green-800 mb-2">Next Steps:</h4>
+                        <ul className="list-disc pl-5 space-y-1 text-green-800 text-sm">
+                          <li>View upcoming sessions in your profile</li>
+                          <li>Book new sessions from the Book Session section</li>
+                          <li>Select service, date & time slot</li>
+                          <li>Confirm to complete booking</li>
+                        </ul>
+                      </div>
                     </div>
                   )}
                 </div>
