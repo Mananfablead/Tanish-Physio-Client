@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync, checkUserExistsAsync } from '@/store/slices/bookingsSlice';
 import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
 import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
+import { createBookingWithSubscription } from '@/lib/api';
 import { useAppDispatch, useAppSelector, RootState } from '@/store';
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
@@ -513,6 +514,69 @@ export default function BookingPage() {
   };
 
   const handlePayment = async () => {
+    // 🔹 NEW: Check if user has active subscription and can book for free
+    if (hasActivePlan && !subscriptionBooking) {
+      // User has active subscription, create booking directly without payment
+      try {
+        setIsProcessing(true);
+        
+        // Validate schedule option
+        if (!scheduleOption) {
+          setScheduleError("Please select a scheduling option");
+          setIsProcessing(false);
+          return;
+        }
+        
+        // For "Schedule Now", validate that date and time are selected
+        if (scheduleOption === "now" && (!scheduleDate || !scheduleTime)) {
+          setScheduleError("Please select a date and time for your session");
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Use subscription-based booking API
+        const subscriptionBookingData = {
+          serviceId: bookingData?.service?.id || null,
+          date: scheduleOption === "now" ? scheduleDate : new Date().toISOString().split('T')[0],
+          time: scheduleOption === "now" ? scheduleTime : "09:00",
+          notes: "",
+          clientName: user?.name || "",
+          scheduleType: scheduleOption || "now",
+          scheduledDate: scheduleOption === "now" ? scheduleDate : null,
+          scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+          timeSlot: scheduleOption === "now" ? selectedTimeSlot : null
+        };
+        
+        const response: any = await createBookingWithSubscription(subscriptionBookingData);
+        
+        if (response.data?.success) {
+          toast.success("Session booked successfully with your subscription!");
+          
+          // Navigate to confirmation page
+          navigate("/booking-confirmation", {
+            state: {
+              ...bookingData,
+              finalPrice: 0,
+              fromSubscription: false,
+              scheduleOption: scheduleOption,
+              scheduleDate: scheduleOption === "now" ? scheduleDate : null,
+              scheduleTime: scheduleOption === "now" ? scheduleTime : null,
+              timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+              isFreeWithSubscription: true
+            },
+          });
+        } else {
+          toast.error(response.data?.message || "Failed to book session");
+        }
+      } catch (error) {
+        console.error("Error booking with subscription:", error);
+        toast.error("Failed to book session with subscription");
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+    
     // Validate guest user data if applicable
     if (isGuestUser) {
       let hasError = false;
@@ -847,7 +911,7 @@ export default function BookingPage() {
                   const therapist = {
                     id: publicAdmins?.[0]?.id,
                     name: publicAdmins?.[0]?.name,
-                    title: publicAdmins?.[0]?.title,
+                    title: publicAdmins?.[0]?.role || "Therapist",
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -969,7 +1033,7 @@ export default function BookingPage() {
                   const therapist = {
                     id: publicAdmins?.[0]?.id,
                     name: publicAdmins?.[0]?.name,
-                    title: publicAdmins?.[0]?.title,
+                    title: publicAdmins?.[0]?.role || "Therapist",
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -1591,7 +1655,7 @@ export default function BookingPage() {
                   const therapist = {
                     id: publicAdmins?.[0]?.id || "",
                     name: publicAdmins?.[0]?.name || "",
-                    title: publicAdmins?.[0]?.title || "",
+                    role: publicAdmins?.[0]?.role || "Therapist",
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(

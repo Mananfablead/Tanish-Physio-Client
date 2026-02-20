@@ -41,7 +41,8 @@ import {
 } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
-import { getAvailability, getAllSessions, getUpcomingSessions, getSessionById, createSession, updateSession, deleteSession, getSessionsByUserId, getSessionsByTherapistId, getCompletedSessions, getScheduledSessions, cancelSession, rescheduleSession, getSessionNotes, addSessionNotes, getPastSessions, getTodaySessions } from "@/lib/api";
+import { getAvailability, getAllSessions, getUpcomingSessions, getSessionById, createSession, updateSession, deleteSession, getSessionsByUserId, getSessionsByTherapistId, getCompletedSessions, getScheduledSessions, cancelSession, rescheduleSession, getSessionNotes, addSessionNotes, getPastSessions, getTodaySessions, checkSubscriptionEligibility, createFreeSessionWithSubscription, createBookingWithSubscription, getSubscriptionServices } from "@/lib/api";
+import { fetchAllServices } from "@/store/slices/serviceSlice";
 import { fetchAllSessions, fetchUpcomingSessions, fetchPastSessions, fetchCompletedSessions, fetchScheduledSessions, fetchTodaySessions, fetchSessionById, fetchSessionsByUserId, createNewSession, updateExistingSession, deleteExistingSession, cancelSessionById, rescheduleSessionById, fetchSessionNotes, addSessionNote } from '@/store/slices/sessionSlice';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { useDispatch, useSelector } from "react-redux";
@@ -59,6 +60,7 @@ export default function SchedulePage() {
   const { plans } = useSelector(
     (state: any) => state.subscriptions
   );
+  const { services: allServices, loading: servicesLoading } = useSelector((state: RootState) => state.services);
 
   // Helper function to get service duration from booking data
   const getServiceDuration = () => {
@@ -121,6 +123,85 @@ export default function SchedulePage() {
   // Handle session booking
   const handleBooking = async () => {
     try {
+      // Extract start and end time from the selected time format (e.g., "10:00 - 11:00" -> startTime: "10:00", endTime: "11:00")
+      let startTime, endTime;
+      if (selectedTime.includes(' - ')) {
+        const timeParts = selectedTime.split(' - ');
+        startTime = timeParts[0];
+        endTime = timeParts[1];
+      } else {
+        startTime = selectedTime;
+        endTime = null; // Backend will calculate endTime based on duration if not provided
+      }
+
+      // Check if user can book with subscription first
+      if (subscriptionEligible && subscriptionInfo?.remainingSessions > 0) {
+        // Use subscription-based booking API which creates a booking without payment required
+        // Determine scheduleType based on whether we have specific scheduled date/time
+        const scheduleType = (selectedDate > new Date() || (selectedDate.toDateString() === new Date().toDateString() && startTime > new Date().toTimeString().substring(0, 5))) ? 'later' : 'now';
+        
+        const subscriptionBookingData = {
+          date: format(selectedDate, "yyyy-MM-dd"),
+          time: startTime,
+          notes: sessionNotesValue,
+          clientName: user?.name || '',
+          scheduleType: scheduleType, // Set scheduleType based on whether it's a future booking
+          therapistId: bookingData?.therapistId || publicAdmins[0]?.id,
+          serviceId: null, // For subscription bookings, serviceId can be null
+          scheduledDate: format(selectedDate, "yyyy-MM-dd"), // Include scheduled date
+          scheduledTime: startTime, // Include scheduled time
+          timeSlot: {
+            start: startTime,
+            end: endTime || startTime // Use endTime if provided, otherwise use start time
+          }
+        };
+
+        const response: any = await createBookingWithSubscription(subscriptionBookingData);
+        
+        if (response.data?.success) {
+          // Add the new booking to sessions list if available in response
+          if (response.data.data?.booking) {
+            const newBooking = response.data.data.booking;
+            setSessions([...sessions, {
+              ...newBooking,
+              id: newBooking._id,
+              therapist: { name: newBooking.therapistName },
+              bookingId: newBooking._id, // Use the booking _id as bookingId
+              status: newBooking.status || 'pending'
+            }]);
+          }
+          
+          setIsBookingModalOpen(false);
+          setBookingError(null);
+          setIsSuccessDialogOpen(true);
+          toast.success(
+            user?.subscriptionData?.status === 'active' 
+              ? `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime} with your ${user.subscriptionData.planName} subscription!`
+              : `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`
+          );
+          
+          // Refresh subscription info
+          const refreshResponse = await checkSubscriptionEligibility();
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = refreshResponse.data.data;
+          setSubscriptionInfo({
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions
+          });
+          
+          // Navigate to profile page after 5 seconds
+          setTimeout(() => {
+            setIsSuccessDialogOpen(false);
+            navigate("/profile");
+          }, 5000);
+          return;
+        }
+      }
+
+      // Fall back to regular booking flow if subscription not eligible
       let subscriptionIdValue = null;
       if (bookingData?.fromSubscription) {
         subscriptionIdValue = bookingData?.subscriptionId || getSubscriptionIdFromStorage();
@@ -136,17 +217,6 @@ export default function SchedulePage() {
       // If no subscriptionId found in bookingData, use from user's subscriptionData
       if (!subscriptionIdValue && user?.subscriptionData?.id) {
         subscriptionIdValue = user?.subscriptionData?.id;
-      }
-
-      // Extract start and end time from the selected time format (e.g., "10:00 - 11:00" -> startTime: "10:00", endTime: "11:00")
-      let startTime, endTime;
-      if (selectedTime.includes(' - ')) {
-        const timeParts = selectedTime.split(' - ');
-        startTime = timeParts[0];
-        endTime = timeParts[1];
-      } else {
-        startTime = selectedTime;
-        endTime = null; // Backend will calculate endTime based on duration if not provided
       }
 
       // Determine bookingId and subscriptionId based on user selection
@@ -188,6 +258,8 @@ export default function SchedulePage() {
         type: sessionTypeValue,
         status: sessionStatusValue,
         therapistId: bookingData?.therapistId || publicAdmins[0]?.id,
+        serviceId: selectedServiceOrSubscription, // Include the selected service ID
+        notes: sessionNotesValue
       };
 
       const response: any = await createSession(sessionData);
@@ -269,6 +341,25 @@ export default function SchedulePage() {
   // State for displaying error messages in the booking dialog
   const [bookingError, setBookingError] = useState<string | null>(null);
 
+  // Subscription state
+  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
+  const [subscriptionServices, setSubscriptionServices] = useState<any[]>([]);
+
+  // Auto-select first service when subscription is eligible
+  useEffect(() => {
+    if (subscriptionEligible && allServices && allServices.length > 0) {
+      // Auto-select the first service since all are free with active subscription
+      const firstService = allServices[0];
+      const serviceId = 'id' in firstService ? firstService.id : (firstService as any)._id;
+      setSelectedServiceOrSubscription(serviceId as string);
+    } else if (subscriptionEligible && user?.subscriptionData?.id) {
+      // Fallback to subscription if no services available
+      setSelectedServiceOrSubscription(user.subscriptionData.id);
+    }
+  }, [subscriptionEligible, allServices, user?.subscriptionData]);
+
   // Get available times for selected date from availability API
   const getAvailableTimesForDate = (date: Date | null) => {
     if (!date || !availability) return [];
@@ -322,6 +413,8 @@ export default function SchedulePage() {
           dispatch(fetchUserSubscriptions() as any);
         }
         dispatch(fetchPublicAdmins() as any);
+        // Fetch all services for active plan display
+        dispatch(fetchAllServices() as any);
       } catch (error) {
         console.error('Error fetching user data:', error);
       }
@@ -418,6 +511,50 @@ export default function SchedulePage() {
     fetchData();
   }, [user]);
 
+  // Check subscription eligibility when user changes
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (user) {
+        try {
+          setCheckingSubscription(true);
+          const response = await checkSubscriptionEligibility();
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
+          
+          setSubscriptionEligible(eligible);
+          setSubscriptionInfo({
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions
+          });
+
+          // If eligible, use all available services instead of subscription-specific services
+          if (eligible) {
+            // Services are already fetched in the services slice
+            setSubscriptionServices([]);
+          } else {
+            setSubscriptionServices([]);
+          }
+        } catch (error) {
+          console.error('Error checking subscription status:', error);
+          setSubscriptionEligible(false);
+          setSubscriptionInfo(null);
+          setSubscriptionServices([]);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else {
+        setSubscriptionEligible(false);
+        setSubscriptionInfo(null);
+        setSubscriptionServices([]);
+      }
+    };
+    
+    checkSubscriptionStatus();
+  }, [user]);
+
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) =>
       direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1)
@@ -470,7 +607,7 @@ console.log("user?.purchasedServices",user?.purchasedServices)
         <div className="container  mx-auto px-4 sm:px-6 lg:px-8">
 
           <div className="space-y-4 py-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            {/* <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
               <div className="space-y-2">
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight">
                   {hasBookingSummary ? "Your Sessions" : "Schedule"}
@@ -479,9 +616,48 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                   Manage your upcoming and past appointments
                 </p>
               </div>
-            </div>
+            </div> */}
+            {/* Subscription Status Display */}
+            {/* {user && subscriptionInfo && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                      <Package className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-bold text-blue-800">{subscriptionInfo.planName}</h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      {subscriptionInfo.eligible ? (
+                        <>
+                          <p>You have <span className="font-bold">{subscriptionInfo.remainingSessions}</span> sessions remaining</p>
+                          <p className="mt-1 text-xs">Book sessions for free with your subscription!</p>
+                        </>
+                      ) : (
+                        <p>{subscriptionInfo.message}</p>
+                      )}
+                    </div>
+                    {subscriptionInfo.totalSessions !== 'unlimited' && (
+                      <div className="mt-2">
+                        <div className="w-full bg-blue-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${((subscriptionInfo.totalSessions - subscriptionInfo.remainingSessions) / subscriptionInfo.totalSessions) * 100}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-blue-600 mt-1">
+                          {subscriptionInfo.usedSessions} of {subscriptionInfo.totalSessions} sessions used
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )} */}
+            
             {/* Notification for users without services or subscriptions */}
-            {(user && (!user.purchasedServices || user.purchasedServices.length === 0) && !user.subscriptionData) && (
+            {(user && (!user.purchasedServices || user.purchasedServices.length === 0) && !user.subscriptionData && !subscriptionInfo?.eligible) && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 ">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -761,13 +937,16 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                                         : session.time ? session.time.split(' - ')[0] : "N/A"}
                                       {session.endTime && ` - ${new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                                     </span>
-
+                                  
                                     <Badge variant="outline" className="text-xs font-bold">
-                                      {session.type}
+                                      {session.type || session.sessionType || "1-on-1"}
                                     </Badge>
-
-
-
+                                  
+                                    {session.bookingId && (
+                                      <Badge variant="outline" className="text-xs font-bold bg-blue-100 text-blue-800">
+                                        Booking: {String(session.bookingId).substring(0, 8)}...
+                                      </Badge>
+                                    )}
                                   </div>
                                 </div>
                                 <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
@@ -782,8 +961,16 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                               <p className="text-sm text-slate-500 mt-3 flex gap-1">
                                 <User className="h-4 w-4 mt-0.5" />
                                 <span className="font-bold">Focus:</span>{" "}
-                                {session.relatedTo || "General Physiotherapy"}
+                                {session.relatedTo || session.serviceName || session.service?.name || "General Physiotherapy"}
                               </p>
+
+                              {session.notes && (
+                                <p className="text-sm text-slate-500 mt-1 flex gap-1">
+                                  <FileText className="h-4 w-4 mt-0.5" />
+                                  <span className="font-bold">Notes:</span>{" "}
+                                  {session.notes}
+                                </p>
+                              )}
 
                               {session.location && (
                                 <p className="text-sm text-slate-500 mt-1 flex gap-1">
@@ -928,26 +1115,44 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                 {/* SERVICE OR SUBSCRIPTION DROPDOWN */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Select Service or Subscription
+                    {subscriptionEligible ? 'Select Free Service (Active Plan Covered)' : 'Select Service or Subscription'}
                   </label>
                   <select
                     value={selectedServiceOrSubscription}
                     onChange={(e) => setSelectedServiceOrSubscription(e.target.value)}
                     className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
-                    <option value="">Select a service or subscription</option>
+                    <option value="">
+                      {subscriptionEligible 
+                        ? 'Select a free service with your active plan' 
+                        : 'Select a service or subscription'}
+                    </option>
 
-                    {/* Purchased Services */}
-                    {user?.purchasedServices?.map((service: any) => (
+                    {/* Show all services as free when eligible for active plan */}
+                    {subscriptionEligible && allServices && allServices.length > 0 && allServices.map((service: any) => {
+                      const serviceId = 'id' in service ? service.id : service._id;
+                      const serviceName = service.title || service.name || 'Unnamed Service';
+                      const serviceDuration = service.details?.sessionDuration || service.duration || 'N/A';
+                      const serviceCategory = service.category || service.details?.category || '';
+                      
+                      return (
+                        <option key={serviceId} value={serviceId}>
+                          🎁 FREE: {serviceName} {serviceCategory ? `(${serviceCategory})` : ''} - {serviceDuration} (Active Plan Covered)
+                        </option>
+                      );
+                    })}
+
+                    {/* Show purchased services normally when not eligible for subscription */}
+                    {!subscriptionEligible && user?.purchasedServices?.map((service: any) => (
                       <option key={service.id} value={service.id}>
                         Service: {service.name} - {service.duration}
                       </option>
                     ))}
 
-                    {/* Subscription Plan */}
+                    {/* Show subscription plan when user has one */}
                     {user?.subscriptionData && (
                       <option value={user.subscriptionData.id}>
-                        Subscription: {user.subscriptionData.planName} ({user.subscriptionData.status})
+                        {user.subscriptionData.planName} ({user.subscriptionData.status})
                       </option>
                     )}
                   </select>
@@ -1147,13 +1352,12 @@ console.log("user?.purchasedServices",user?.purchasedServices)
               </Button>
 
               <div className="flex-1">
-
                 <Button
                   className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                   disabled={!selectedTime || !selectedServiceOrSubscription}
                   onClick={handleBooking}
                 >
-                  Confirm
+                  {user?.subscriptionData?.status === 'active' ? 'Book Free Session' : 'Confirm'}
                 </Button>
               </div>
             </div>
@@ -1355,7 +1559,9 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                   Booking Successful!
                 </h3>
                 <p className="text-slate-600 mb-6">
-                  Your session for {format(selectedDate, "MMMM d, yyyy")} at {selectedTime} has been successfully booked.
+                  {user?.subscriptionData?.status === 'active' 
+                    ? `Your session for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime} has been successfully booked with your ${user.subscriptionData.planName} subscription.`
+                    : `Your session for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedTime} has been successfully booked.`}
                 </p>
                 <p className="text-sm text-slate-500">
                   You will be redirected to your profile page in a moment...
@@ -1376,6 +1582,8 @@ console.log("user?.purchasedServices",user?.purchasedServices)
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </Layout>
+  
   );
 }
