@@ -36,33 +36,33 @@ api.interceptors.request.use(
 );
 
 // Response interceptor to handle token expiration
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Don't redirect on login attempts, just reject the promise
-      const isLoginAttempt = error.config.url?.includes("/auth/login");
-      if (!isLoginAttempt) {
-        // Clear auth data if token is invalid
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login"; // Redirect to login
-      }
-    }
+// api.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response?.status === 401) {
+//       // Don't redirect on login attempts, just reject the promise
+//       const isLoginAttempt = error.config.url?.includes("/auth/login");
+//       if (!isLoginAttempt) {
+//         // Clear auth data if token is invalid
+//         localStorage.removeItem("token");
+//         localStorage.removeItem("user");
+//         window.location.href = "/login"; // Redirect to login
+//       }
+//     }
 
-    // Handle specific session not active error globally
-    if (
-      error?.response?.data?.message?.includes(
-        "Session is not active at this time"
-      )
-    ) {
-      error.response.data.message =
-        "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.";
-    }
+//     // Handle specific session not active error globally
+//     if (
+//       error?.response?.data?.message?.includes(
+//         "Session is not active at this time"
+//       )
+//     ) {
+//       error.response.data.message =
+//         "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.";
+//     }
 
-    return Promise.reject(error);
-  }
-);
+//     return Promise.reject(error);
+//   }
+// );
 
 // Availability API functions
 export const getAvailability = () => {
@@ -209,6 +209,17 @@ export const verifyGuestSubscriptionPayment = (paymentData: {
   signature: string;
 }) => {
   return api.post("/payments/verify-guest-subscription", paymentData);
+};
+
+// Razorpay API functions
+export const getRazorpayConfig = async () => {
+  try {
+    const response = await api.get('/payments/config');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching Razorpay config:', error);
+    throw error;
+  }
 };
 
 // Additional booking and payment related functions

@@ -85,27 +85,27 @@ export const createTokenExpirationWatcher = (
  * @param {Function} logoutCallback - Function to call when token is expired
  * @returns {Function} - Interceptor function
  */
-export const createTokenExpirationInterceptor = (
-  logoutCallback: () => void
-) => {
-  return (error: any) => {
-    // Check if error is 401 Unauthorized
-    if (error.response?.status === 401) {
-      const token = localStorage.getItem("token");
+// export const createTokenExpirationInterceptor = (
+//   logoutCallback: () => void
+// ) => {
+//   return (error: any) => {
+//     // Check if error is 401 Unauthorized
+//     if (error.response?.status === 401) {
+//       const token = localStorage.getItem("token");
 
-      // If we have a token but got 401, it's likely expired
-      if (token) {
-        console.log("401 Unauthorized - checking if token is expired");
+//       // If we have a token but got 401, it's likely expired
+//       if (token) {
+//         console.log("401 Unauthorized - checking if token is expired");
 
-        if (isTokenExpired(token)) {
-          console.log("Token is expired, logging out automatically");
-          logoutCallback();
-          return Promise.reject(new Error("Token expired"));
-        }
-      }
-    }
+//         if (isTokenExpired(token)) {
+//           console.log("Token is expired, logging out automatically");
+//           logoutCallback();
+//           return Promise.reject(new Error("Token expired"));
+//         }
+//       }
+//     }
 
-    // For other errors, just reject normally
-    return Promise.reject(error);
-  };
-};
+//     // For other errors, just reject normally
+//     return Promise.reject(error);
+//   };
+// };

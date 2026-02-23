@@ -7,7 +7,7 @@ import {
 } from "../store/slices/authSlice";
 import {
   createTokenExpirationWatcher,
-  createTokenExpirationInterceptor,
+  // createTokenExpirationInterceptor,
 } from "../utils/tokenExpiration";
 import api from "../lib/api";
 
@@ -72,23 +72,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [isAuthenticated, token, dispatch]);
 
   // Setup API interceptor for token expiration
-  useEffect(() => {
-    const interceptor = createTokenExpirationInterceptor(() => {
-      console.log("API 401 error - token expired, logging out automatically");
-      dispatch(logoutAction());
-    });
+  // useEffect(() => {
+  //   const interceptor = createTokenExpirationInterceptor(() => {
+  //     console.log("API 401 error - token expired, logging out automatically");
+  //     dispatch(logoutAction());
+  //   });
 
-    // Add interceptor to API instance
-    const requestInterceptor = api.interceptors.response.use(
-      (response) => response,
-      interceptor
-    );
+  //   // Add interceptor to API instance
+  //   const requestInterceptor = api.interceptors.response.use(
+  //     (response) => response,
+  //     interceptor
+  //   );
 
-    // Clean up interceptor on unmount
-    return () => {
-      api.interceptors.response.eject(requestInterceptor);
-    };
-  }, [dispatch]);
+  //   // Clean up interceptor on unmount
+  //   return () => {
+  //     api.interceptors.response.eject(requestInterceptor);
+  //   };
+  // }, [dispatch]);
 
   // Mock login function for compatibility - in real app, use the Redux auth
   const login = (email: string, name: string, role: string = "patient") => {

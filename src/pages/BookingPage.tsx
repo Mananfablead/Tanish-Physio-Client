@@ -852,7 +852,6 @@ export default function BookingPage() {
         const options = {
           key:
             razorpayKey ||
-            import.meta.env.VITE_RAZORPAY_KEY_ID ||
             "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
@@ -1378,7 +1377,6 @@ export default function BookingPage() {
         const options = {
           key:
             razorpayKey ||
-            import.meta.env.VITE_RAZORPAY_KEY_ID ||
             "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
