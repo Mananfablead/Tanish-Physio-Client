@@ -17,7 +17,8 @@ import {
   verifyGuestSubscriptionPayment,
   checkSlotAvailability,
   updateBookingSchedule,
-  checkUserExists
+  checkUserExists,
+  createBookingWithSubscription
 } from '../../lib/api';
 import { setCredentials } from './authSlice';
 
@@ -119,6 +120,21 @@ export const createBookingAsync = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to create booking'
+      );
+    }
+  }
+);
+
+export const createSubscriptionBookingAsync = createAsyncThunk(
+  'bookings/createSubscriptionBooking',
+  async (bookingData: any, { rejectWithValue }) => {
+    try {
+      const response = await createBookingWithSubscription(bookingData);
+      const apiResponse = response.data as ApiResponse<any>;
+      return apiResponse.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create subscription booking'
       );
     }
   }

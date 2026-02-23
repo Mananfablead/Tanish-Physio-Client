@@ -518,16 +518,23 @@ export default function SchedulePage() {
         try {
           setCheckingSubscription(true);
           const response = await checkSubscriptionEligibility();
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
+          const data = response.data.data;
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = data;
+          
+          // Ensure we have proper values, fallback to 0 if null/undefined
+          const safeRemainingSessions = (remainingSessions != null && !isNaN(remainingSessions)) ? remainingSessions : 0;
+          const safeTotalSessions = (totalSessions != null && !isNaN(totalSessions)) ? totalSessions : 0;
+          const safeUsedSessions = (usedSessions != null && !isNaN(usedSessions)) ? usedSessions : 0;
+          const safePlanName = planName || 'your plan';
           
           setSubscriptionEligible(eligible);
           setSubscriptionInfo({
             eligible,
             message,
-            remainingSessions,
-            planName,
-            totalSessions,
-            usedSessions
+            remainingSessions: safeRemainingSessions,
+            planName: safePlanName,
+            totalSessions: safeTotalSessions,
+            usedSessions: safeUsedSessions
           });
 
           // If eligible, use all available services instead of subscription-specific services

@@ -29,10 +29,10 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync, checkUserExistsAsync } from '@/store/slices/bookingsSlice';
+import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync, checkUserExistsAsync, createSubscriptionBookingAsync } from '@/store/slices/bookingsSlice';
 import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
 import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
-import { createBookingWithSubscription, checkSubscriptionEligibility } from '@/lib/api';
+import { createBookingWithSubscription, checkSubscriptionEligibility, checkSubscriptionBookingEligibility } from '@/lib/api';
 import { useAppDispatch, useAppSelector, RootState } from '@/store';
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
@@ -152,16 +152,31 @@ export default function BookingPage() {
         try {
           setCheckingSubscription(true);
           const response = await checkSubscriptionEligibility();
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
+          const data = response.data.data;
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = data;
+          
+          // Ensure we have proper values, fallback to 0 if null/undefined
+          const safeRemainingSessions = (remainingSessions != null && !isNaN(remainingSessions)) ? remainingSessions : 0;
+          const safeTotalSessions = (totalSessions != null && !isNaN(totalSessions)) ? totalSessions : 0;
+          const safeUsedSessions = (usedSessions != null && !isNaN(usedSessions)) ? usedSessions : 0;
+          const safePlanName = planName || 'your plan';
           
           setSubscriptionEligible(eligible);
           setSubscriptionInfo({
             eligible,
             message,
-            remainingSessions,
-            planName,
-            totalSessions,
-            usedSessions
+            remainingSessions: safeRemainingSessions,
+            planName: safePlanName,
+            totalSessions: safeTotalSessions,
+            usedSessions: safeUsedSessions
+          });
+          
+          console.log('Subscription info updated:', {
+            eligible,
+            remainingSessions: safeRemainingSessions,
+            totalSessions: safeTotalSessions,
+            usedSessions: safeUsedSessions,
+            planName: safePlanName
           });
         } catch (error) {
           console.error('Error checking subscription status:', error);
@@ -616,9 +631,13 @@ export default function BookingPage() {
       return;
     }
     
-    // If user has an active plan but no remaining sessions
-    if (hasActivePlan && !subscriptionBooking && subscriptionInfo?.remainingSessions <= 0) {
-      toast.error(`You have reached your session limit. Your ${user.subscriptionData.planName} plan includes ${subscriptionInfo?.totalSessions} sessions and you have used all of them.`);
+    // If user has an active plan but no remaining sessions or invalid plan
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo && (subscriptionInfo?.remainingSessions <= 0 || subscriptionInfo?.reason === 'NO_VALID_SESSIONS' || subscriptionInfo?.reason === 'INVALID_PLAN' || subscriptionInfo?.reason === 'PLAN_CONFIG_ERROR' || subscriptionInfo?.reason === 'SESSIONS_EXHAUSTED')) {
+      const totalSessions = subscriptionInfo?.totalSessions ?? user?.subscriptionData?.plan?.sessions ?? 'unknown';
+      const planName = subscriptionInfo?.planName ?? user?.subscriptionData?.planName ?? 'your';
+      const usedSessions = subscriptionInfo?.usedSessions ?? 0;
+      const message = subscriptionInfo?.message ?? `You have reached your session limit. Your ${planName} plan includes ${totalSessions} sessions and you have used ${usedSessions} of them.`;
+      toast.error(message);
       setIsProcessing(false);
       return;
     }
@@ -1222,7 +1241,24 @@ export default function BookingPage() {
           bookingType: bookingType,
         };
         // console.log("Booking payload:", bookingPayload);
-        // Create the booking - use guest booking if user is not logged in
+        // Check if user can book with subscription (session-based)
+        let useSubscriptionBooking = false;
+        let subscriptionCheckResult = null;
+        let subscriptionInfo = null;
+        
+        if (!isGuestUser && serviceInfo?.id) {
+          try {
+            subscriptionCheckResult = await checkSubscriptionBookingEligibility(serviceInfo.id);
+            useSubscriptionBooking = subscriptionCheckResult.data?.data?.eligible === true;
+            subscriptionInfo = subscriptionCheckResult.data?.data?.subscription;
+            console.log('Subscription info:', subscriptionInfo); // Debug log
+          } catch (error) {
+            console.log('Subscription check failed, proceeding with regular booking');
+            useSubscriptionBooking = false;
+          }
+        }
+        
+        // Create the booking - use appropriate method based on subscription eligibility
         let bookingResult;
         if (isGuestUser) {
           // Prepare guest booking payload
@@ -1236,6 +1272,36 @@ export default function BookingPage() {
           bookingResult = await dispatch(
             createGuestBookingAsync(guestBookingPayload)
           );
+        } else if (useSubscriptionBooking) {
+          // Use subscription booking (no payment required)
+          const subscriptionBookingPayload = {
+            ...bookingPayload,
+            serviceId: serviceInfo?.id || null,
+            // Remove payment-related fields for subscription booking
+            amount: 0,
+            finalAmount: 0,
+            paymentStatus: 'paid',
+            status: 'pending', // Always pending for admin approval
+            bookingType: 'subscription-covered'
+          };
+          
+          bookingResult = await dispatch(createSubscriptionBookingAsync(subscriptionBookingPayload));
+          
+          if (createSubscriptionBookingAsync.fulfilled.match(bookingResult)) {
+            toast.success("Session booked successfully with your subscription! Awaiting admin confirmation.");
+            // Navigate to confirmation page without payment
+            navigate("/booking-confirmation", {
+              state: {
+                booking: bookingResult.payload.booking,
+                isGuest: false,
+                requiresPayment: false,
+                subscriptionBooking: true,
+                subscriptionInfo: subscriptionInfo || bookingResult.payload.subscriptionInfo
+              },
+            });
+            setIsProcessing(false);
+            return;
+          }
         } else {
           bookingResult = await dispatch(createBookingAsync(bookingPayload));
         }

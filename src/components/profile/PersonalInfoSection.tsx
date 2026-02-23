@@ -196,8 +196,8 @@ export function PersonalInfoSection({ user, onSaveChanges }: PersonalInfoSection
               <HeartPulse className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <div className="h-12 pl-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center font-bold text-slate-700">
                 {user.subscriptionData?.planId
-                  ? user.subscriptionData.planId.charAt(0).toUpperCase() +
-                    user.subscriptionData.planId.slice(1)
+                  ? String(user.subscriptionData.planId).charAt(0).toUpperCase() +
+                    String(user.subscriptionData.planId).slice(1)
                   : "N/A"}
               </div>
             </div>
@@ -234,8 +234,8 @@ export function PersonalInfoSection({ user, onSaveChanges }: PersonalInfoSection
               </div>
               <div className="h-12 pl-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center font-bold text-slate-700">
                 {user.subscriptionData?.status
-                  ? user.subscriptionData.status.charAt(0).toUpperCase() +
-                    user.subscriptionData.status.slice(1)
+                  ? String(user.subscriptionData.status).charAt(0).toUpperCase() +
+                    String(user.subscriptionData.status).slice(1)
                   : "N/A"}
               </div>
             </div>

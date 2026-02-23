@@ -100,6 +100,12 @@ export const createBookingWithSubscription = (bookingData: any) => {
   return api.post("/bookings/subscription", bookingData);
 };
 
+// Check subscription booking eligibility
+export const checkSubscriptionBookingEligibility = (serviceId?: string) => {
+  const params = serviceId ? { serviceId } : {};
+  return api.get("/bookings/subscription/eligibility", { params });
+};
+
 export const getActiveQuestionnaire = () => {
   return api.get("/questionnaires/active");
 };

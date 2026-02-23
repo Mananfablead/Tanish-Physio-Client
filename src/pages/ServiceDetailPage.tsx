@@ -308,9 +308,13 @@ const ServiceSidebar = ({
   const { isAuthenticated } = useAuth();
 
   const handleBooking = () => {
-    // Check if user has an active plan but no remaining sessions
-    if (hasActivePlan && subscriptionInfo?.remainingSessions <= 0) {
-      alert(`You have reached your session limit. Your ${activePlan?.planName} plan includes ${subscriptionInfo?.totalSessions} sessions and you have used all of them.`);
+    // Check if user has an active plan but no remaining sessions or invalid plan
+    if (hasActivePlan && subscriptionInfo && (subscriptionInfo?.remainingSessions <= 0 || subscriptionInfo?.reason === 'NO_VALID_SESSIONS' || subscriptionInfo?.reason === 'INVALID_PLAN' || subscriptionInfo?.reason === 'PLAN_CONFIG_ERROR' || subscriptionInfo?.reason === 'SESSIONS_EXHAUSTED')) {
+      const totalSessions = subscriptionInfo?.totalSessions ?? activePlan?.sessions ?? 'unknown';
+      const planName = subscriptionInfo?.planName ?? activePlan?.planName ?? 'your';
+      const usedSessions = subscriptionInfo?.usedSessions ?? 0;
+      const message = subscriptionInfo?.message ?? `You have reached your session limit. Your ${planName} plan includes ${totalSessions} sessions and you have used ${usedSessions} of them.`;
+      alert(message);
       return;
     }
     const bookingData = {
