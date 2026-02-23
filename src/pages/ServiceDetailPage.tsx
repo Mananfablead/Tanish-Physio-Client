@@ -15,6 +15,7 @@ import { RootState } from "@/store";
 import type { AppDispatch } from "@/store";
 import { useAuth } from "@/context/AuthContext";
 import { selectCurrentUser } from "@/store/slices/authSlice";
+import { checkSubscriptionEligibility } from "@/lib/api";
 
 // Use the Service type from the shared types
 // Define extended service data structure
@@ -295,16 +296,23 @@ const ServiceSidebar = ({
   service,
   navigate,
   hasActivePlan = false,
-  activePlan = null
+  activePlan = null,
+  subscriptionInfo = null
 }: {
   service: ExtendedService;
   navigate: any;
   hasActivePlan?: boolean;
   activePlan?: any;
+  subscriptionInfo?: any;
 }) => {
   const { isAuthenticated } = useAuth();
 
   const handleBooking = () => {
+    // Check if user has an active plan but no remaining sessions
+    if (hasActivePlan && subscriptionInfo?.remainingSessions <= 0) {
+      alert(`You have reached your session limit. Your ${activePlan?.planName} plan includes ${subscriptionInfo?.totalSessions} sessions and you have used all of them.`);
+      return;
+    }
     const bookingData = {
       service: {
         id: service.id,
@@ -382,6 +390,23 @@ const ServiceSidebar = ({
               )}
             </span>
           </div>
+          
+          {/* Show subscription session information if user has active plan */}
+          {hasActivePlan && activePlan?.availableSessions && (
+            <div className="mt-3 pt-3 border-t border-slate-200">
+              <div className="text-sm">
+                <p className="text-green-700 font-medium">
+                  {activePlan.availableSessions.remaining} of {activePlan.availableSessions.total} sessions left
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full" 
+                    style={{ width: `${100 - activePlan.availableSessions.percentageUsed}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-slate-600">Results Timeline:</span>
             <span className="font-medium text-slate-900">
@@ -514,6 +539,11 @@ export default function ServiceDetailPage() {
                        !user.subscriptionData.isExpired;
   const activePlan = user?.subscriptionData || null;
 
+  // Subscription state
+  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
+
   // Get service from Redux store
   const { selectedService, loading, error } = useSelector(
     (state: RootState) => state.services
@@ -521,6 +551,40 @@ export default function ServiceDetailPage() {
 
   // Use slug if available, otherwise fall back to serviceId
   const identifier = slug || serviceId;
+
+  // Check subscription eligibility when user changes
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (user) {
+        try {
+          setCheckingSubscription(true);
+          const response = await checkSubscriptionEligibility();
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
+          
+          setSubscriptionEligible(eligible);
+          setSubscriptionInfo({
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions
+          });
+        } catch (error) {
+          console.error('Error checking subscription status:', error);
+          setSubscriptionEligible(false);
+          setSubscriptionInfo(null);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else {
+        setSubscriptionEligible(false);
+        setSubscriptionInfo(null);
+      }
+    };
+    
+    checkSubscriptionStatus();
+  }, [user]);
 
   useEffect(() => {
     if (identifier) {
@@ -650,6 +714,7 @@ export default function ServiceDetailPage() {
                       navigate={navigate}
                       hasActivePlan={hasActivePlan}
                       activePlan={activePlan}
+                      subscriptionInfo={subscriptionInfo}
                     />
                   </div>
                 </div>

@@ -68,3 +68,41 @@ export interface ServiceWithExpiration {
   discountAmount?: number;
   couponCode?: string;
 }
+
+export interface Booking {
+  _id: string;
+  serviceId?: {
+    _id: string;
+    name: string;
+    price: number;
+    duration: string;
+    validity: number;
+  };
+  serviceName: string;
+  therapistId?: string;
+  therapistName: string;
+  userId: string;
+  clientName: string;
+  date: string;
+  time: string;
+  status: string;
+  notes: string;
+  paymentStatus: string;
+  amount: number;
+  purchaseDate: string;
+  serviceExpiryDate?: string;
+  serviceValidityDays?: number;
+  isServiceExpired: boolean;
+  createdAt: string;
+  updatedAt: string;
+  bookingType?: string;
+  scheduleType?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  sessionCreated?: boolean;
+  finalAmount?: number;
+  discountAmount?: number;
+  couponCode?: string;
+  expiryDate?: string;
+  isExpired?: boolean;
+}

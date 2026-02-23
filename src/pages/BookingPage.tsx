@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync, checkUserExistsAsync } from '@/store/slices/bookingsSlice';
 import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
 import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
+import { createBookingWithSubscription, checkSubscriptionEligibility } from '@/lib/api';
 import { useAppDispatch, useAppSelector, RootState } from '@/store';
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
@@ -87,6 +88,11 @@ export default function BookingPage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<any[]>([]);
+
+  // Subscription state
+  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
   // console.log("availabilitylllllllll", availability)
   const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(null);
   
@@ -137,6 +143,40 @@ export default function BookingPage() {
         phone: user.phone || "",
       });
     }
+  }, [user]);
+
+  // Check subscription eligibility when user changes
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (user) {
+        try {
+          setCheckingSubscription(true);
+          const response = await checkSubscriptionEligibility();
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
+          
+          setSubscriptionEligible(eligible);
+          setSubscriptionInfo({
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions
+          });
+        } catch (error) {
+          console.error('Error checking subscription status:', error);
+          setSubscriptionEligible(false);
+          setSubscriptionInfo(null);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else {
+        setSubscriptionEligible(false);
+        setSubscriptionInfo(null);
+      }
+    };
+    
+    checkSubscriptionStatus();
   }, [user]);
 
   // Check if user is a guest (not logged in)
@@ -513,6 +553,76 @@ export default function BookingPage() {
   };
 
   const handlePayment = async () => {
+    // 🔹 NEW: Check if user has active subscription and can book for free
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo?.remainingSessions > 0) {
+      // User has active subscription, create booking directly without payment
+      try {
+        setIsProcessing(true);
+        
+        // Validate schedule option
+        if (!scheduleOption) {
+          setScheduleError("Please select a scheduling option");
+          setIsProcessing(false);
+          return;
+        }
+        
+        // For "Schedule Now", validate that date and time are selected
+        if (scheduleOption === "now" && (!scheduleDate || !scheduleTime)) {
+          setScheduleError("Please select a date and time for your session");
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Use subscription-based booking API
+        const subscriptionBookingData = {
+          serviceId: bookingData?.service?.id || null,
+          date: scheduleOption === "now" ? scheduleDate : new Date().toISOString().split('T')[0],
+          time: scheduleOption === "now" ? scheduleTime : "09:00",
+          notes: "",
+          clientName: user?.name || "",
+          scheduleType: scheduleOption || "now",
+          scheduledDate: scheduleOption === "now" ? scheduleDate : null,
+          scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+          timeSlot: scheduleOption === "now" ? selectedTimeSlot : null
+        };
+        
+        const response: any = await createBookingWithSubscription(subscriptionBookingData);
+        
+        if (response.data?.success) {
+          toast.success("Session booked successfully with your subscription!");
+          
+          // Navigate to confirmation page
+          navigate("/booking-confirmation", {
+            state: {
+              ...bookingData,
+              finalPrice: 0,
+              fromSubscription: false,
+              scheduleOption: scheduleOption,
+              scheduleDate: scheduleOption === "now" ? scheduleDate : null,
+              scheduleTime: scheduleOption === "now" ? scheduleTime : null,
+              timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+              isFreeWithSubscription: true
+            },
+          });
+        } else {
+          toast.error(response.data?.message || "Failed to book session");
+        }
+      } catch (error) {
+        console.error("Error booking with subscription:", error);
+        toast.error("Failed to book session with subscription");
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+    
+    // If user has an active plan but no remaining sessions
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo?.remainingSessions <= 0) {
+      toast.error(`You have reached your session limit. Your ${user.subscriptionData.planName} plan includes ${subscriptionInfo?.totalSessions} sessions and you have used all of them.`);
+      setIsProcessing(false);
+      return;
+    }
+    
     // Validate guest user data if applicable
     if (isGuestUser) {
       let hasError = false;
@@ -651,7 +761,7 @@ export default function BookingPage() {
             // Add scheduling information
             scheduleType: scheduleOption || "now",
             scheduledDate: scheduleOption === "now" ? scheduleDate : null,
-            scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+            scheduledTime: scheduleOption === "now" ? (selectedTimeSlot ? `${selectedTimeSlot.start}-${selectedTimeSlot.end}` : scheduleTime) : null,
             timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
             // Add therapistId if available
             therapistId: therapist?.id || undefined,
@@ -680,7 +790,7 @@ export default function BookingPage() {
             // Add scheduling information
             scheduleType: scheduleOption || "now",
             scheduledDate: scheduleOption === "now" ? scheduleDate : null,
-            scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+            scheduledTime: scheduleOption === "now" ? (selectedTimeSlot ? `${selectedTimeSlot.start}-${selectedTimeSlot.end}` : scheduleTime) : null,
             timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
             // Add therapistId if available
             therapistId: therapist?.id || undefined,
@@ -847,7 +957,7 @@ export default function BookingPage() {
                   const therapist = {
                     id: publicAdmins?.[0]?.id,
                     name: publicAdmins?.[0]?.name,
-                    title: publicAdmins?.[0]?.title,
+                    title: publicAdmins?.[0]?.role || "Therapist",
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -969,7 +1079,7 @@ export default function BookingPage() {
                   const therapist = {
                     id: publicAdmins?.[0]?.id,
                     name: publicAdmins?.[0]?.name,
-                    title: publicAdmins?.[0]?.title,
+                    title: publicAdmins?.[0]?.role || "Therapist",
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -1107,7 +1217,7 @@ export default function BookingPage() {
           bookingId: serviceInfo?.bookingId || null,
           scheduleType: scheduleOption || "now",
           scheduledDate: scheduleOption === "now" ? scheduleDate : null,
-          scheduledTime: scheduleOption === "now" ? scheduleTime : null,
+          scheduledTime: scheduleOption === "now" ? (selectedTimeSlot ? `${selectedTimeSlot.start}-${selectedTimeSlot.end}` : scheduleTime) : null,
           timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
           bookingType: bookingType,
         };
@@ -1591,7 +1701,7 @@ export default function BookingPage() {
                   const therapist = {
                     id: publicAdmins?.[0]?.id || "",
                     name: publicAdmins?.[0]?.name || "",
-                    title: publicAdmins?.[0]?.title || "",
+                    role: publicAdmins?.[0]?.role || "Therapist",
                     assignedAt: Date.now(),
                   };
                   sessionStorage.setItem(
@@ -2092,6 +2202,19 @@ export default function BookingPage() {
                       <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                         with {activePlan?.planName || "your plan"}
                       </p>
+                      {activePlan?.availableSessions && (
+                        <div className="mt-1 text-xs">
+                          <p className="text-green-700">
+                            {activePlan.availableSessions.remaining} of {activePlan.availableSessions.total} sessions left
+                          </p>
+                          <div className="w-20 bg-gray-200 rounded-full h-1.5 mt-1">
+                            <div 
+                              className="bg-green-600 h-1.5 rounded-full" 
+                              style={{ width: `${activePlan.availableSessions.percentageUsed}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="font-semibold">₹{plan.price}</p>

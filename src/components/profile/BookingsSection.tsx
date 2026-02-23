@@ -6,10 +6,10 @@ import { CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-import { ServiceWithExpiration } from "@/types/user";
+import { Booking } from "@/types/user";
 
 interface BookingsSectionProps {
-  bookingList: ServiceWithExpiration[];
+  bookingList: Booking[];
 }
 
 const ITEMS_PER_PAGE = 5; // Adjust this number as needed
@@ -29,7 +29,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
     return bookingList.slice(startIndex, endIndex);
   }, [bookingList, currentPage]);
 
-  const getServiceExpirationStatus = (booking: ServiceWithExpiration) => {
+  const getServiceExpirationStatus = (booking: Booking) => {
     if (booking.isExpired) {
       return { status: 'expired', text: 'Expire', color: 'text-red-600 bg-red-100' };
     }
@@ -228,7 +228,9 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                                   >
                                     {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
                                       ? "Accepted" 
-                                      : booking.status || "Unknown"}
+                                      : booking.bookingType === 'subscription-covered' && booking.status === "pending"
+                                        ? "Pending Review"
+                                        : booking.status || "Unknown"}
                                   </span>
                                 )}
 
@@ -388,7 +390,9 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                               >
                                 {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
                                   ? "Accepted" 
-                                  : booking.status || "Unknown"}
+                                  : booking.bookingType === 'subscription-covered' && booking.status === "pending"
+                                    ? "Pending Review"
+                                    : booking.status || "Unknown"}
                               </span>
                             )}
 

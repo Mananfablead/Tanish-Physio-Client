@@ -91,6 +91,7 @@ export function Footer() {
               <li>
                 <Link
                   to="/questionnaire"
+                  state={{ goToSchedule: true }}
                   className="hover:text-primary transition-colors"
                 >
                   Health Assessment

@@ -81,6 +81,25 @@ export const confirmSession = (sessionData: any) => {
 export const getSubscriptionPlans = (config?: any) => {
   return api.get("/subscriptions", config);
 };
+
+// Subscription booking API functions
+export const checkSubscriptionEligibility = () => {
+  return api.get("/subscriptions/eligibility");
+};
+
+export const getSubscriptionServices = () => {
+  return api.get("/subscriptions/services");
+};
+
+export const createFreeSessionWithSubscription = (sessionData: any) => {
+  return api.post("/subscriptions/free-session", sessionData);
+};
+
+// Create booking with subscription (no payment required)
+export const createBookingWithSubscription = (bookingData: any) => {
+  return api.post("/bookings/subscription", bookingData);
+};
+
 export const getActiveQuestionnaire = () => {
   return api.get("/questionnaires/active");
 };
