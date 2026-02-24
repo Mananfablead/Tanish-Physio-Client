@@ -407,7 +407,7 @@ export const createGuestBookingAsync = createAsyncThunk(
   async (bookingData: any, { rejectWithValue, dispatch }) => {
     try {
       const response = await createGuestBooking(bookingData);
-      const apiResponse = response.data as ApiResponse<Booking>;
+      const apiResponse = response.data as ApiResponse<GuestBookingResponse>;
 
       // If token and user are provided in the response, auto-login the user
       if (apiResponse.data.token && apiResponse.data.user) {
@@ -471,22 +471,21 @@ export const createGuestSubscriptionPaymentOrderAsync = createAsyncThunk(
   }
 );
 
-export const verifyGuestSubscriptionPaymentAsync = createAsyncThunk(
-  'bookings/verifyGuestSubscriptionPayment',
-  async (paymentData: any, { rejectWithValue }) => {
+export const checkUserExistsAsync = createAsyncThunk(
+  'bookings/checkUserExists',
+  async (email: string, { rejectWithValue }) => {
     try {
-      const response = await verifyGuestSubscriptionPayment(paymentData);
+      const response = await checkUserExists(email);
       const apiResponse = response.data as ApiResponse<any>;
       return apiResponse.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to verify guest subscription payment'
+        error.response?.data?.message || 'Failed to check user existence'
       );
     }
   }
 );
 
-// Slot availability async thunks
 export const checkSlotAvailabilityAsync = createAsyncThunk(
   'bookings/checkSlotAvailability',
   async (slotData: any, { rejectWithValue }) => {
@@ -502,32 +501,16 @@ export const checkSlotAvailabilityAsync = createAsyncThunk(
   }
 );
 
-export const updateBookingScheduleAsync = createAsyncThunk(
-  'bookings/updateBookingSchedule',
-  async ({ id, scheduleData }: { id: string; scheduleData: any }, { rejectWithValue }) => {
+export const verifyGuestSubscriptionPaymentAsync = createAsyncThunk(
+  'bookings/verifyGuestSubscriptionPayment',
+  async (paymentData: any, { rejectWithValue }) => {
     try {
-      const response = await updateBookingSchedule(id, scheduleData);
+      const response = await verifyGuestSubscriptionPayment(paymentData);
       const apiResponse = response.data as ApiResponse<any>;
       return apiResponse.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || 'Failed to update booking schedule'
-      );
-    }
-  }
-);
-
-// User check async thunk
-export const checkUserExistsAsync = createAsyncThunk(
-  'bookings/checkUserExists',
-  async (email: string, { rejectWithValue }) => {
-    try {
-      const response = await checkUserExists(email);
-      const apiResponse = response.data as ApiResponse<any>;
-      return apiResponse.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to check user existence'
+        error.response?.data?.message || 'Failed to verify guest subscription payment'
       );
     }
   }

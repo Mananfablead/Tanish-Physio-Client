@@ -976,11 +976,15 @@ export default function BookingPage() {
                   verifyResult.payload.token
                 );
                 if (verifyResult.payload?.userId) {
+                  // Store complete user data for auto-login
                   localStorage.setItem(
                     "user",
                     JSON.stringify({
                       id: verifyResult.payload.userId,
-                      // User data will be fetched in useEffect
+                      email: guestUserData.email,
+                      name: guestUserData.name,
+                      phone: guestUserData.phone,
+                      role: 'patient'
                     })
                   );
                 }
@@ -1113,8 +1117,7 @@ export default function BookingPage() {
 
               // For subscription payments, we don't need to update booking status
               // The subscription is already activated via the payment verification
-
-              try {
+              {
                 // Get subscription ID from response (even in fallback scenario)
                 const subscriptionId =
                   verifyResult.payload?.subscription?.id ||
@@ -1197,35 +1200,37 @@ export default function BookingPage() {
                   !sessionStorage.getItem("qw_user") &&
                   !localStorage.getItem("token");
 
-                toast.success("Payment successful!.");
-                // Navigate to booking confirmation page for all users
-                navigate("/booking-confirmation", {
-                  state: {
-                    ...bookingData,
-                    finalPrice,
-                    guestUser: wasGuestUser
-                      ? JSON.parse(
-                        sessionStorage.getItem("qw_guest_user") || "{}"
-                      )
-                      : undefined,
-                    fromSubscription: true,
-                    scheduleOption: scheduleOption,
-                    scheduleDate:
-                      scheduleOption === "now" ? scheduleDate : null,
-                    scheduleTime:
-                      scheduleOption === "now" ? scheduleTime : null,
-                    timeSlot:
-                      scheduleOption === "now" ? selectedTimeSlot : null,
-                  },
-                });
-              } catch (innerError) {
-                console.error(
-                  "Error in subscription fallback flow:",
-                  innerError
-                );
-                toast.error(
-                  "Payment was successful but there was an issue processing your subscription. Please contact support."
-                );
+                try {
+                  toast.success("Payment successful!.");
+                  // Navigate to booking confirmation page for all users
+                  navigate("/booking-confirmation", {
+                    state: {
+                      ...bookingData,
+                      finalPrice,
+                      guestUser: wasGuestUser
+                        ? JSON.parse(
+                          sessionStorage.getItem("qw_guest_user") || "{}"
+                        )
+                        : undefined,
+                      fromSubscription: true,
+                      scheduleOption: scheduleOption,
+                      scheduleDate:
+                        scheduleOption === "now" ? scheduleDate : null,
+                      scheduleTime:
+                        scheduleOption === "now" ? scheduleTime : null,
+                      timeSlot:
+                        scheduleOption === "now" ? selectedTimeSlot : null,
+                    },
+                  });
+                } catch (innerError) {
+                  console.error(
+                    "Error in subscription fallback flow:",
+                    innerError
+                  );
+                  toast.error(
+                    "Payment was successful but there was an issue processing your subscription. Please contact support."
+                  );
+                }
               }
             }
           },
@@ -1621,7 +1626,7 @@ export default function BookingPage() {
                 // Auto-register guest user after successful payment
                 if (isGuestUser && guestUserData.email) {
                   try {
-                    await dispatch(
+                    const registerResult = await dispatch(
                       register({
                         name: guestUserData.name || "Guest User",
                         email: guestUserData.email,
@@ -1629,66 +1634,54 @@ export default function BookingPage() {
                         phone: guestUserData.phone,
                       })
                     );
-                    toast.success("Account created successfully!");
-
-                    // 🔹 Check user existence again after account creation for auto-login
-                    try {
-                      const postRegisterCheck = await dispatch(
-                        checkUserExistsAsync(guestUserData.email)
-                      );
-                      if (
-                        checkUserExistsAsync.fulfilled.match(postRegisterCheck)
-                      ) {
-                        const postRegisterData = postRegisterCheck.payload;
-                        if (postRegisterData.exists && postRegisterData.token) {
-                          // Auto-login the newly created user
-                          localStorage.setItem("token", postRegisterData.token);
-                          localStorage.setItem(
-                            "user",
-                            JSON.stringify(postRegisterData.user)
-                          );
-                          dispatch(
-                            setCredentials({
-                              user: postRegisterData.user,
-                              token: postRegisterData.token,
-                            })
-                          );
-                          toast.success(
-                            "Account created and logged in successfully!"
-                          );
-                        }
-                      }
-                    } catch (checkError) {
-                      console.error(
-                        "Post-registration user check failed:",
-                        checkError
-                      );
+                    
+                    if (register.fulfilled.match(registerResult)) {
+                      toast.success("Account created and logged in successfully!");
+                    } else {
+                      toast.success("Account created successfully!");
                     }
+
+                    // No need to check user existence or login again - register already handles authentication
                   } catch (registrationError: any) {
                     console.error(
                       "Auto-registration failed:",
                       registrationError
                     );
-                    // If user already exists, try to log them in
+                    // If user already exists, try to check if they exist and get token
                     if (
                       registrationError.message?.includes(
                         "User already exists with this email"
                       )
                     ) {
                       try {
-                        // Import the login action
-                        const { login } = await import(
-                          "@/store/slices/authSlice"
+                        const userCheckResult = await dispatch(
+                          checkUserExistsAsync(guestUserData.email)
                         );
-                        await dispatch(
-                          login({
-                            email: guestUserData.email,
-                            password: "123456",
-                          })
+                        if (
+                          checkUserExistsAsync.fulfilled.match(userCheckResult)
+                        ) {
+                          const userData = userCheckResult.payload;
+                          if (userData.exists && userData.token) {
+                            // Set the token for auto-login
+                            localStorage.setItem("token", userData.token);
+                            localStorage.setItem(
+                              "user",
+                              JSON.stringify(userData.user)
+                            );
+                            dispatch(
+                              setCredentials({
+                                user: userData.user,
+                                token: userData.token,
+                              })
+                            );
+                            toast.success("Logged in successfully!");
+                          }
+                        }
+                      } catch (checkError) {
+                        console.error(
+                          "User check failed:",
+                          checkError
                         );
-                        toast.success("Successfully logged in!");
-                      } catch (loginError: any) {
-                        console.error("Auto-login failed:", loginError);
                       }
                     }
                     // Continue anyway since this is just for convenience

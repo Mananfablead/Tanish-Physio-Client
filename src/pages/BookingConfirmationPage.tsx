@@ -16,12 +16,13 @@ import {
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { updateGuestBookingStatus, getBookingDetails, updateProfile, getUserSubscriptions } from "@/lib/api";
+import { updateGuestBookingStatus, getBookingDetails, updateProfile, getUserSubscriptions, checkUserExists } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { register, login, fetchProfile, setCredentials } from "@/store/slices/authSlice";
+import { checkUserExistsAsync } from "@/store/slices/bookingsSlice";
 import { fetchActiveQuestionnaire, selectActiveQuestionnaire } from "@/store/slices/questionnaireSlice";
 
 export default function BookingConfirmationPage() {
@@ -129,6 +130,48 @@ export default function BookingConfirmationPage() {
   const dispatch = useDispatch<AppDispatch>();
   const guestUser = bookingData?.guestUser;
   const user = useSelector((state: RootState) => state.auth.user);
+
+  // Auto-login for guest users who just purchased a subscription
+  useEffect(() => {
+    const autoLoginGuestUser = async () => {
+      if (!isAuthenticated && guestUser?.email && bookingData?.fromSubscription) {
+        try {
+          // Check if user exists and get token for auto-login
+          const userCheckResult = await dispatch(
+            checkUserExistsAsync(guestUser.email)
+          );
+          
+          if (checkUserExistsAsync.fulfilled.match(userCheckResult)) {
+            const userData = userCheckResult.payload;
+            if (userData.exists && userData.token) {
+              // Set the token for auto-login
+              localStorage.setItem("token", userData.token);
+              localStorage.setItem(
+                "user",
+                JSON.stringify(userData.user)
+              );
+              localStorage.setItem("isAuthenticated", "true");
+              
+              dispatch(
+                setCredentials({
+                  user: userData.user,
+                  token: userData.token,
+                })
+              );
+              
+              toast.success("Successfully logged in!");
+              setIsAutoLoginCompleted(true);
+            }
+          }
+        } catch (error) {
+          console.error("Auto-login failed:", error);
+          // Continue without auto-login
+        }
+      }
+    };
+
+    autoLoginGuestUser();
+  }, [isAuthenticated, guestUser, bookingData, dispatch]);
 
   const [isQuestionnaireFilled, setIsQuestionnaireFilled] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<any>(null);
@@ -317,7 +360,35 @@ export default function BookingConfirmationPage() {
     };
 
     confirmBooking();
-  }, [bookingData, guestUser]);
+  }, [bookingData, guestUser, isAuthenticated, dispatch]);
+
+  /* ---------------- Handle Auto-Login Token ---------------- */
+  useEffect(() => {
+    // Check for auto-login token on component mount
+    const autoLoginToken = localStorage.getItem("qw_auto_login_token");
+    const storedUser = localStorage.getItem("user");
+    
+    if (autoLoginToken && !isAuthenticated && storedUser) {
+      console.log("Auto-login token found on mount:", autoLoginToken);
+      try {
+        const user = JSON.parse(storedUser);
+        // Set credentials immediately
+        dispatch(setCredentials({
+          user: user,
+          token: autoLoginToken
+        }));
+        // Clean up the temporary token
+        localStorage.removeItem("qw_auto_login_token");
+        // Set authentication flag
+        localStorage.setItem("isAuthenticated", "true");
+        setIsAutoLoginCompleted(true);
+        toast.success("Successfully logged in!");
+      } catch (e) {
+        console.error("Error processing auto-login:", e);
+        localStorage.removeItem("qw_auto_login_token");
+      }
+    }
+  }, [isAuthenticated, dispatch]);
 
   /* ---------------- Handle Guest to Auth Transition ---------------- */
   useEffect(() => {
@@ -329,21 +400,34 @@ export default function BookingConfirmationPage() {
   
     // Check if we have an auto-login token from payment verification
     const autoLoginToken = localStorage.getItem("qw_auto_login_token");
+    const storedUser = localStorage.getItem("user");
     console.log("Auto-login token found:", autoLoginToken);
     console.log("Is authenticated:", isAuthenticated);
+    console.log("Stored user:", storedUser);
       
-    if (autoLoginToken && !isAuthenticated) {
+    if (autoLoginToken && !isAuthenticated && storedUser) {
       console.log("Processing auto-login...");
       // Set the token in the main storage location
       localStorage.setItem("token", autoLoginToken);
       localStorage.removeItem("qw_auto_login_token"); // Clean up
-  
+    
+      // Set credentials immediately to ensure Redux state is updated
+      try {
+        const user = JSON.parse(storedUser);
+        dispatch(setCredentials({
+          user: user,
+          token: autoLoginToken
+        }));
+      } catch (e) {
+        console.error("Error parsing stored user:", e);
+      }
+    
       // Refresh user data
       dispatch(fetchProfile())
         .unwrap()
         .then(async (userData) => {
           console.log("Profile fetched successfully:", userData);
-          // Manually update Redux store since fetchProfile doesn't do it automatically
+          // Update Redux store with fresh user data
           dispatch(setCredentials({
             user: userData,
             token: autoLoginToken
@@ -352,6 +436,11 @@ export default function BookingConfirmationPage() {
           localStorage.setItem("isAuthenticated", "true");
           setIsAutoLoginCompleted(true);
           toast.success("Account created and logged in successfully!");
+          
+          // Automatically navigate to profile page after successful auto-login
+          setTimeout(() => {
+            navigate("/profile");
+          }, 2000); // Small delay to show the success message
             
           // Get questionnaire data from session storage and update profile
           try {
@@ -379,46 +468,22 @@ export default function BookingConfirmationPage() {
         })
         .catch(async (error) => {
           console.error("Failed to fetch profile:", error);
-          // If profile fetch fails, try to set credentials anyway
-          dispatch(setCredentials({
-            user: null,
-            token: autoLoginToken
-          }));
-          // Update the authentication context
-          localStorage.setItem("isAuthenticated", "true");
-          setIsAutoLoginCompleted(true);
-          toast.success("Logged in successfully!");
+          // If profile fetch fails, clear the invalid token and show error
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("isAuthenticated");
+          toast.error("Failed to log in. Please try logging in manually.");
             
-          // Get questionnaire data from session storage and update profile
-          try {
-            const questionnaireData = sessionStorage.getItem("qw_questionnaire");
-            console.log("Questionnaire data found:", questionnaireData);
-            if (questionnaireData) {
-              const parsedQuestionnaire = JSON.parse(questionnaireData);
-                
-              // Transform questionnaire data to health profile format
-              // The stored data structure is { data: payload, updatedAt: timestamp }
-              const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
-              console.log("healthProfileData", healthProfileData)
-              // Update profile with questionnaire data
-              await updateProfile({
-                healthProfile: healthProfileData
-              });
-                
-              console.log("Profile updated with questionnaire data successfully");
-              // Clear the questionnaire data after successful profile update
-              sessionStorage.removeItem("qw_questionnaire");
-            }
-          } catch (questionnaireError) {
-            console.error("Error updating profile with questionnaire data:", questionnaireError);
-          }
+          // Don't set credentials with null user
+          // Continue with the flow without auto-login
         });
   
       return;
     }
   
     // If user is a guest and hasn't registered yet, register them automatically
-    if (!isAuthenticated && guestUser && guestUser.email) {
+    // Skip for subscription guests since they should already be created by payment verification
+    if (!isAuthenticated && guestUser && guestUser.email && !bookingData?.fromSubscription) {
       const registerGuestUser = async () => {
         try {
           // Attempt to register the guest user with a default password
