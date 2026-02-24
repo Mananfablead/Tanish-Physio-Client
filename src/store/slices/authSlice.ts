@@ -256,6 +256,21 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    decrementSubscriptionSessions: (state) => {
+      if (state.user?.subscriptionData) {
+        // Initialize sessions if not present (from totalService)
+        if (state.user.subscriptionData.sessions == null && state.user.subscriptionData.totalService != null) {
+          state.user.subscriptionData.sessions = state.user.subscriptionData.totalService;
+        }
+        
+        // Decrement sessions (remaining count)
+        if (state.user.subscriptionData.sessions > 0) {
+          state.user.subscriptionData.sessions -= 1;
+        }
+        // Update localStorage
+        localStorage.setItem("user", JSON.stringify(state.user));
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -377,7 +392,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setCredentials, logoutSync } = authSlice.actions;
+export const { clearError, setCredentials, logoutSync, decrementSubscriptionSessions } = authSlice.actions;
 
 // Selectors
 export const selectCurrentUser = (state: { auth: AuthState }) =>

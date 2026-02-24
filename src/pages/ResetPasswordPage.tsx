@@ -81,7 +81,11 @@ const ResetPasswordPage = () => {
 
   const onSubmit = async (data: ResetForm) => {
     if (token) {
-      await handleResetPassword(token, data.password);
+      try {
+        await handleResetPassword(token, data.password);
+      } catch (error) {
+        console.error('Reset password error:', error);
+      }
     }
   };
 
@@ -178,10 +182,7 @@ const ResetPasswordPage = () => {
                 )}
 
                 <Form {...resetForm}>
-                  <form
-                    onSubmit={resetForm.handleSubmit(onSubmit)}
-                    className="space-y-6"
-                  >
+                  <div className="space-y-6">
                     <FormField
                       control={resetForm.control}
                       name="password"
@@ -256,7 +257,10 @@ const ResetPasswordPage = () => {
 
                     <div className="space-y-3">
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={() => {
+                          resetForm.handleSubmit(onSubmit)();
+                        }}
                         disabled={loading}
                         className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-primary active:scale-[0.99] transition-all shadow-lg shadow-green-200 disabled:opacity-70 disabled:cursor-not-allowed"
                       >
@@ -296,7 +300,7 @@ const ResetPasswordPage = () => {
                         Back to Sign In
                       </Link>
                     </div>
-                  </form>
+                  </div>
                 </Form>
 
                 <div className="text-center mt-6">

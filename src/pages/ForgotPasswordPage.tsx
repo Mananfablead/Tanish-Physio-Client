@@ -165,10 +165,16 @@ const ForgotPasswordPage = () => {
 
                   <Form {...forgotForm}>
                     <form
-                      onSubmit={forgotForm.handleSubmit(async (data) => {
-                        await handleForgotPassword(data.email);
-                      })}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        forgotForm.handleSubmit(async (data) => {
+                          await handleForgotPassword(data.email);
+                        })(e);
+                        return false;
+                      }}
                       className="space-y-6"
+                      noValidate
                     >
                       <FormField
                         control={forgotForm.control}
@@ -196,7 +202,12 @@ const ForgotPasswordPage = () => {
 
                       <div className="space-y-3">
                         <button
-                          type="submit"
+                          type="button"
+                          onClick={() => {
+                            forgotForm.handleSubmit(async (data) => {
+                              await handleForgotPassword(data.email);
+                            })();
+                          }}
                           disabled={loading}
                           className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-primary active:scale-[0.99] transition-all shadow-lg shadow-green-200 disabled:opacity-70 disabled:cursor-not-allowed"
                         >

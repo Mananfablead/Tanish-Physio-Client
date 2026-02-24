@@ -48,6 +48,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserSubscriptions } from "@/store/slices/subscriptionSlice";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
+import { decrementSubscriptionSessions } from "@/store/slices/authSlice";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { RootState } from "@/store";
 import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
@@ -159,6 +160,37 @@ export default function SchedulePage() {
         const response: any = await createBookingWithSubscription(subscriptionBookingData);
         
         if (response.data?.success) {
+          // Decrement subscription sessions after successful booking
+          dispatch(decrementSubscriptionSessions());
+          
+          // Refresh subscription eligibility to get updated counts from API
+          const updatedEligibility = await checkSubscriptionEligibility();
+          const updatedData = updatedEligibility.data.data;
+          const { remainingSessions: newRemainingSessions, totalSessions: newTotalSessions, usedSessions: newUsedSessions, totalUsed: newTotalUsed } = updatedData;
+          
+          // Update subscriptionInfo with fresh API data
+          if (subscriptionInfo) {
+            const safeRemainingSessions = (newRemainingSessions != null && !isNaN(newRemainingSessions)) ? newRemainingSessions : 0;
+            const safeTotalSessions = (newTotalSessions != null && !isNaN(newTotalSessions)) ? newTotalSessions : 0;
+            const safeUsedSessions = newTotalUsed || newUsedSessions || 0;
+            
+            setSubscriptionInfo({
+              ...subscriptionInfo,
+              remainingSessions: safeRemainingSessions,
+              remainingServices: safeRemainingSessions,
+              totalSessions: safeTotalSessions,
+              usedSessions: safeUsedSessions,
+              totalUsed: newTotalUsed || safeUsedSessions
+            });
+            
+            console.log('Updated subscription info after booking:', {
+              remainingSessions: safeRemainingSessions,
+              totalSessions: safeTotalSessions,
+              usedSessions: safeUsedSessions,
+              totalUsed: newTotalUsed || safeUsedSessions
+            });
+          }
+          
           // Add the new booking to sessions list if available in response
           if (response.data.data?.booking) {
             const newBooking = response.data.data.booking;
@@ -180,17 +212,8 @@ export default function SchedulePage() {
               : `Session booked for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`
           );
           
-          // Refresh subscription info
-          const refreshResponse = await checkSubscriptionEligibility();
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = refreshResponse.data.data;
-          setSubscriptionInfo({
-            eligible,
-            message,
-            remainingSessions,
-            planName,
-            totalSessions,
-            usedSessions
-          });
+          // Note: Not refreshing subscription info from API to avoid stale data override
+          // The local subscriptionInfo update is the source of truth for session counts
           
           // Navigate to profile page after 5 seconds
           setTimeout(() => {
@@ -519,13 +542,13 @@ export default function SchedulePage() {
           setCheckingSubscription(true);
           const response = await checkSubscriptionEligibility();
           const data = response.data.data;
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = data;
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions, totalUsed, remainingServices, usedServices } = data;
           
-          // Ensure we have proper values, fallback to 0 if null/undefined
+          // Use API values directly since they now include combined counting
           const safeRemainingSessions = (remainingSessions != null && !isNaN(remainingSessions)) ? remainingSessions : 0;
           const safeTotalSessions = (totalSessions != null && !isNaN(totalSessions)) ? totalSessions : 0;
-          const safeUsedSessions = (usedSessions != null && !isNaN(usedSessions)) ? usedSessions : 0;
-          const safePlanName = planName || 'your plan';
+          const safeUsedSessions = totalUsed || usedSessions || 0; // Use totalUsed if available, otherwise usedSessions
+          const safePlanName = planName || user.subscriptionData?.planName || 'your plan';
           
           setSubscriptionEligible(eligible);
           setSubscriptionInfo({
@@ -534,7 +557,19 @@ export default function SchedulePage() {
             remainingSessions: safeRemainingSessions,
             planName: safePlanName,
             totalSessions: safeTotalSessions,
-            usedSessions: safeUsedSessions
+            usedSessions: safeUsedSessions,
+            totalUsed: totalUsed || safeUsedSessions,
+            remainingServices: remainingServices || safeRemainingSessions,
+            usedServices: usedServices || 0
+          });
+
+          console.log('Subscription info updated:', {
+            eligible,
+            remainingSessions: safeRemainingSessions,
+            totalSessions: safeTotalSessions,
+            usedSessions: safeUsedSessions,
+            totalUsed: totalUsed || safeUsedSessions,
+            planName: safePlanName
           });
 
           // If eligible, use all available services instead of subscription-specific services
@@ -624,73 +659,74 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                 </p>
               </div>
             </div> */}
-            {/* Subscription Status Display */}
-            {user && subscriptionInfo && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <Package className="h-4 w-4 text-blue-600" />
+            {/* Subscription Status Display and Notification */}
+            <div className="flex gap-4 mb-6">
+              {/* {user && subscriptionInfo && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex-1">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <Package className="h-4 w-4 text-blue-600" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-bold text-blue-800">{subscriptionInfo.planName}</h3>
-                    <div className="mt-2 text-sm text-blue-700">
-                      {subscriptionInfo.eligible ? (
-                        <>
-                          <p>You have <span className="font-bold">{subscriptionInfo.remainingSessions}</span> sessions remaining</p>
-                          <p className="mt-1 text-xs">Book sessions for free with your subscription!</p>
-                        </>
-                      ) : (
-                        <p>{subscriptionInfo.message}</p>
+                    <div className="ml-3 flex-1">
+                      <h3 className="text-sm font-bold text-blue-800">{subscriptionInfo.planName}</h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        {subscriptionInfo.eligible ? (
+                          <>
+                            <p>You have <span className="font-bold">{subscriptionInfo.remainingSessions === 'unlimited' ? 'unlimited' : subscriptionInfo.remainingSessions}</span> sessions remaining</p>
+                            <p className="mt-1 text-xs">Book sessions for free with your subscription!</p>
+                          </>
+                        ) : (
+                          <p>{subscriptionInfo.message}</p>
+                        )}
+                      </div>
+                      {subscriptionInfo.totalSessions !== 'unlimited' && (
+                        <div className="mt-2">
+                          <div className="w-full bg-blue-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full" 
+                              style={{ width: `${((subscriptionInfo.totalSessions - subscriptionInfo.remainingSessions) / subscriptionInfo.totalSessions) * 100}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-blue-600 mt-1">
+                            {subscriptionInfo.usedSessions} of {subscriptionInfo.totalSessions} sessions used
+                          </p>
+                        </div>
                       )}
                     </div>
-                    {subscriptionInfo.totalSessions !== 'unlimited' && (
-                      <div className="mt-2">
-                        <div className="w-full bg-blue-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${((subscriptionInfo.totalSessions - subscriptionInfo.remainingSessions) / subscriptionInfo.totalSessions) * 100}%` }}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-blue-600 mt-1">
-                          {subscriptionInfo.usedSessions} of {subscriptionInfo.totalSessions} sessions used
-                        </p>
+                  </div>
+                </div>
+              )} */}
+              
+              {(user && subscriptionInfo && subscriptionInfo.reason === "USER_NO_SUBSCRIPTION") && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex-1">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <span className="text-yellow-600 font-bold text-sm">!</span>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Notification for users without services or subscriptions */}
-            {(user && (!user.purchasedServices || user.purchasedServices.length === 0) && !user.subscriptionData && !subscriptionInfo?.eligible) && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 ">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                      <span className="text-yellow-600 font-bold text-sm">!</span>
                     </div>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-bold text-yellow-800">No Plans or Services</h3>
-                    <div className="mt-2 text-sm text-yellow-700">
-                      <p>You don't have any plans or services purchased yet.</p>
-                      <p className="mt-1">Please select a plan to book a session.</p>
-                    </div>
-                    <div className="mt-3">
-                      <Button 
-                        onClick={() => setIsPlansModalOpen(true)}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                        size="sm"
-                      >
-                      Explore Our Plans
-                      </Button>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-bold text-yellow-800">No Plans or Services</h3>
+                      <div className="mt-2 text-sm text-yellow-700">
+                        <p>You don't have any plans or services purchased yet.</p>
+                        <p className="mt-1">Please select a plan to book a session.</p>
+                      </div>
+                      <div className="mt-3">
+                        <Button 
+                          onClick={() => setIsPlansModalOpen(true)}
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                          size="sm"
+                        >
+                        Explore Our Plans
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div className="space-y-2">
               <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -949,11 +985,11 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                                       {session.type || session.sessionType || "1-on-1"}
                                     </Badge>
                                   
-                                    {session.bookingId && (
+                                    {/* {session.bookingId && (
                                       <Badge variant="outline" className="text-xs font-bold bg-blue-100 text-blue-800">
                                         Booking: {String(session.bookingId).substring(0, 8)}...
                                       </Badge>
-                                    )}
+                                    )} */}
                                   </div>
                                 </div>
                                 <Badge className={`text-xs font-bold ${getStatusBadgeClass(session.status)}`}>
@@ -971,13 +1007,13 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                                 {session.relatedTo || session.serviceName || session.service?.name || "General Physiotherapy"}
                               </p>
 
-                              {session.notes && (
+                              {/* {session.notes && (
                                 <p className="text-sm text-slate-500 mt-1 flex gap-1">
                                   <FileText className="h-4 w-4 mt-0.5" />
                                   <span className="font-bold">Notes:</span>{" "}
                                   {session.notes}
                                 </p>
-                              )}
+                              )} */}
 
                               {session.location && (
                                 <p className="text-sm text-slate-500 mt-1 flex gap-1">
@@ -1122,32 +1158,35 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                 {/* SERVICE OR SUBSCRIPTION DROPDOWN */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    {subscriptionEligible ? 'Select Free Service (Active Plan Covered)' : 'Select Service or Subscription'}
+                    Select Service or Subscription
                   </label>
                   <select
                     value={selectedServiceOrSubscription}
-                    onChange={(e) => setSelectedServiceOrSubscription(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === 'free-service') {
+                        navigate('/services');
+                        return;
+                      }
+                      setSelectedServiceOrSubscription(value);
+                    }}
                     className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="">
-                      {subscriptionEligible 
-                        ? 'Select a free service with your active plan' 
-                        : 'Select a service or subscription'}
+                      Select a service or subscription
                     </option>
 
-                    {/* Show all services as free when eligible for active plan */}
-                    {subscriptionEligible && allServices && allServices.length > 0 && allServices.map((service: any) => {
-                      const serviceId = 'id' in service ? service.id : service._id;
-                      const serviceName = service.title || service.name || 'Unnamed Service';
-                      const serviceDuration = service.details?.sessionDuration || service.duration || 'N/A';
-                      const serviceCategory = service.category || service.details?.category || '';
-                      
-                      return (
-                        <option key={serviceId} value={serviceId}>
-                          🎁 FREE: {serviceName} {serviceCategory ? `(${serviceCategory})` : ''} - {serviceDuration} (Active Plan Covered)
-                        </option>
-                      );
-                    })}
+                    {/* Show free service option */}
+                    <option value="free-service">
+                      🎁 Use Free Service
+                    </option>
+
+                    {/* Show subscription plan option when user has active plan */}
+                    {subscriptionEligible && user?.subscriptionData && (
+                      <option value={user.subscriptionData.id}>
+                        📋 Continue booking with {user.subscriptionData.planName} ({user.subscriptionData.status})
+                      </option>
+                    )}
 
                     {/* Show purchased services normally when not eligible for subscription */}
                     {!subscriptionEligible && user?.purchasedServices?.map((service: any) => (
@@ -1156,8 +1195,8 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                       </option>
                     ))}
 
-                    {/* Show subscription plan when user has one */}
-                    {user?.subscriptionData && (
+                    {/* Show subscription plan when user has one but not eligible */}
+                    {!subscriptionEligible && user?.subscriptionData && (
                       <option value={user.subscriptionData.id}>
                         {user.subscriptionData.planName} ({user.subscriptionData.status})
                       </option>
@@ -1379,6 +1418,7 @@ console.log("user?.purchasedServices",user?.purchasedServices)
         {isPlansModalOpen && (
           <motion.div 
             className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setIsPlansModalOpen(false)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1386,15 +1426,26 @@ console.log("user?.purchasedServices",user?.purchasedServices)
           >
             <motion.div 
               className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl"
+              onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               transition={{ duration: 0.3, type: "spring", damping: 25 }}
             >
               <div className="p-0">
-                <div className="p-6 pb-4 border-b">
-                  <h2 className="text-2xl font-bold text-center text-slate-900">Choose Your Wellness Plan</h2>
-                  <p className="text-center text-slate-600 mt-2">Select the perfect plan for your recovery journey</p>
+                <div className="flex items-center justify-between px-6 py-4 border-b">
+                  <h2 className="text-2xl font-bold text-slate-900">Choose Your Wellness Plan</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsPlansModalOpen(false)}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="p-6 pb-4">
+                  <p className="text-center text-slate-600">Select the perfect plan for your recovery journey</p>
                 </div>
                 
                 <div className="p-6">

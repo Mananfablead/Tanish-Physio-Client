@@ -180,47 +180,52 @@ const LoginPage = () => {
                             )}
                             
                             <Form {...loginForm}>
-                                <form onSubmit={loginForm.handleSubmit(async (data) => { 
-                                    try {
-                                        const result = await dispatch(login({
-                                            email: data.email,
-                                            password: data.password
-                                        }));
-                                        
-                                        if (login.fulfilled.match(result)) {
-                                            // Show success toast
-                                            toast({
-                                                title: "Login Successful",
-                                                description: `Welcome back, ${data.email}!`,
-                                            });
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    loginForm.handleSubmit(async (data) => { 
+                                        try {
+                                            const result = await dispatch(login({
+                                                email: data.email,
+                                                password: data.password
+                                            }));
                                             
-                                            // Check if there was a pending booking from guest checkout
-                                            const pendingBooking = sessionStorage.getItem('qw_pending_booking');
-                                            if (pendingBooking) {
-                                                // Remove the pending booking data
-                                                sessionStorage.removeItem('qw_pending_booking');
-                                                // Navigate to profile where they can manage their booking
-                                                navigate('/profile', { replace: true });
-                                            } else {
-                                                // Check for redirect after login in sessionStorage
-                                                const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
-                                                if (redirectAfterLogin) {
-                                                    sessionStorage.removeItem('redirect_after_login'); // Clean up
-                                                    navigate(redirectAfterLogin, { replace: true });
+                                            if (login.fulfilled.match(result)) {
+                                                // Show success toast
+                                                toast({
+                                                    title: "Login Successful",
+                                                    description: `Welcome back, ${data.email}!`,
+                                                });
+                                                
+                                                // Check if there was a pending booking from guest checkout
+                                                const pendingBooking = sessionStorage.getItem('qw_pending_booking');
+                                                if (pendingBooking) {
+                                                    // Remove the pending booking data
+                                                    sessionStorage.removeItem('qw_pending_booking');
+                                                    // Navigate to profile where they can manage their booking
+                                                    navigate('/profile', { replace: true });
                                                 } else {
-                                                    // Redirect to intended location or home
-                                                    const from = location.state?.from?.pathname || '/';
-                                                    navigate(from, { replace: true });
+                                                    // Check for redirect after login in sessionStorage
+                                                    const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
+                                                    if (redirectAfterLogin) {
+                                                        sessionStorage.removeItem('redirect_after_login'); // Clean up
+                                                        navigate(redirectAfterLogin, { replace: true });
+                                                    } else {
+                                                        // Redirect to intended location or home
+                                                        const from = location.state?.from?.pathname || '/';
+                                                        navigate(from, { replace: true });
+                                                    }
                                                 }
+                                            } else {
+                                                // Handle error
+                                                throw result.payload;
                                             }
-                                        } else {
-                                            // Handle error
-                                            throw result.payload;
+                                        } catch (error) {
+                                            // Error is handled by Redux and displayed through useSelector
                                         }
-                                    } catch (error) {
-                                        // Error is handled by Redux and displayed through useSelector
-                                    }
-                                })} className="space-y-5" noValidate>
+                                    })(e);
+                                    return false;
+                                }} className="space-y-5" noValidate>
                                     <FormField
                                         control={loginForm.control}
                                         name="email"
@@ -295,7 +300,50 @@ const LoginPage = () => {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <button 
-                                                type="submit" 
+                                                type="button"
+                                                onClick={() => {
+                                                    loginForm.handleSubmit(async (data) => { 
+                                                        try {
+                                                            const result = await dispatch(login({
+                                                                email: data.email,
+                                                                password: data.password
+                                                            }));
+                                                            
+                                                            if (login.fulfilled.match(result)) {
+                                                                // Show success toast
+                                                                toast({
+                                                                    title: "Login Successful",
+                                                                    description: `Welcome back, ${data.email}!`,
+                                                                });
+                                                                
+                                                                // Check if there was a pending booking from guest checkout
+                                                                const pendingBooking = sessionStorage.getItem('qw_pending_booking');
+                                                                if (pendingBooking) {
+                                                                    // Remove the pending booking data
+                                                                    sessionStorage.removeItem('qw_pending_booking');
+                                                                    // Navigate to profile where they can manage their booking
+                                                                    navigate('/profile', { replace: true });
+                                                                } else {
+                                                                    // Check for redirect after login in sessionStorage
+                                                                    const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
+                                                                    if (redirectAfterLogin) {
+                                                                        sessionStorage.removeItem('redirect_after_login'); // Clean up
+                                                                        navigate(redirectAfterLogin, { replace: true });
+                                                                    } else {
+                                                                        // Redirect to intended location or home
+                                                                        const from = location.state?.from?.pathname || '/';
+                                                                        navigate(from, { replace: true });
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                // Handle error
+                                                                throw result.payload;
+                                                            }
+                                                        } catch (error) {
+                                                            // Error is handled by Redux and displayed through useSelector
+                                                        }
+                                                    })();
+                                                }}
                                                 disabled={loading}
                                                 className="w-full bg-primary text-white font-bold py-4 rounded-xl  active:scale-[0.99] transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                                             >

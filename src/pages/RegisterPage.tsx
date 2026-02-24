@@ -186,36 +186,42 @@ const RegisterPage = () => {
 
                   <Form {...registerForm}>
                     <form
-                      onSubmit={registerForm.handleSubmit(async (data) => {
-                        try {
-                          const result = await dispatch(
-                            register({
-                              name: data.name,
-                              email: data.email,
-                              phone: data.phone,
-                              password: data.password,
-                            })
-                          );
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        registerForm.handleSubmit(async (data) => {
+                          try {
+                            const result = await dispatch(
+                              register({
+                                name: data.name,
+                                email: data.email,
+                                phone: data.phone,
+                                password: data.password,
+                              })
+                            );
 
-                          if (register.fulfilled.match(result)) {
-                            // Show success toast
-                            toast({
-                              title: "Registration Successful",
-                              description: `Welcome, ${data.name}! Your account has been created.`,
-                            });
+                            if (register.fulfilled.match(result)) {
+                              // Show success toast
+                              toast({
+                                title: "Registration Successful",
+                                description: `Welcome, ${data.name}! Your account has been created.`,
+                              });
 
-                            // Redirect to intended location or home
-                            const from = location.state?.from?.pathname || "/";
-                            navigate(from, { replace: true });
-                          } else {
-                            // Handle error
-                            throw result.payload;
+                              // Redirect to intended location or home
+                              const from = location.state?.from?.pathname || "/";
+                              navigate(from, { replace: true });
+                            } else {
+                              // Handle error
+                              throw result.payload;
+                            }
+                          } catch (error) {
+                            // Error is handled by Redux and displayed through useSelector
                           }
-                        } catch (error) {
-                          // Error is handled by Redux and displayed through useSelector
-                        }
-                      })}
+                        })(e);
+                        return false;
+                      }}
                       className="space-y-4"
+                      noValidate
                     >
                       <FormField
                         control={registerForm.control}
@@ -342,7 +348,38 @@ const RegisterPage = () => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
-                            type="submit"
+                            type="button"
+                            onClick={() => {
+                              registerForm.handleSubmit(async (data) => {
+                                try {
+                                  const result = await dispatch(
+                                    register({
+                                      name: data.name,
+                                      email: data.email,
+                                      phone: data.phone,
+                                      password: data.password,
+                                    })
+                                  );
+
+                                  if (register.fulfilled.match(result)) {
+                                    // Show success toast
+                                    toast({
+                                      title: "Registration Successful",
+                                      description: `Welcome, ${data.name}! Your account has been created.`,
+                                    });
+
+                                    // Redirect to intended location or home
+                                    const from = location.state?.from?.pathname || "/";
+                                    navigate(from, { replace: true });
+                                  } else {
+                                    // Handle error
+                                    throw result.payload;
+                                  }
+                                } catch (error) {
+                                  // Error is handled by Redux and displayed through useSelector
+                                }
+                              })();
+                            }}
                             disabled={loading}
                             className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:bg-primary active:scale-[0.99] transition-all shadow-lg shadow-green-200 mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
                           >

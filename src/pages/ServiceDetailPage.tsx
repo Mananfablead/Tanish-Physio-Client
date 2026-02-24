@@ -3,7 +3,8 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee, ChevronLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee, ChevronLeft, CircleAlert } from "lucide-react";
 import { Service } from "@/types/service";
 import {
   fetchServiceById,
@@ -304,6 +305,12 @@ const ServiceSidebar = ({
   hasActivePlan?: boolean;
   activePlan?: any;
   subscriptionInfo?: any;
+  // Modal state passed from parent
+  isSessionLimitExceededModalOpen?: boolean;
+  setIsSessionLimitExceededModalOpen?: (open: boolean) => void;
+  sessionLimitExceededInfo?: any;
+  setSessionLimitExceededInfo?: (info: any) => void;
+  subscriptionInfoProp?: any;
 }) => {
   const { isAuthenticated } = useAuth();
 
@@ -314,7 +321,18 @@ const ServiceSidebar = ({
       const planName = subscriptionInfo?.planName ?? activePlan?.planName ?? 'your';
       const usedSessions = subscriptionInfo?.usedSessions ?? 0;
       const message = subscriptionInfo?.message ?? `You have reached your session limit. Your ${planName} plan includes ${totalSessions} sessions and you have used ${usedSessions} of them.`;
-      alert(message);
+      
+      // Call the parent's function to handle session limit exceeded
+      if (setSessionLimitExceededInfo && setIsSessionLimitExceededModalOpen) {
+        setSessionLimitExceededInfo({
+          message,
+          planName,
+          totalSessions,
+          usedSessions,
+          remainingSessions: subscriptionInfo?.remainingSessions
+        });
+        setIsSessionLimitExceededModalOpen(true);
+      }
       return;
     }
     const bookingData = {
@@ -372,7 +390,7 @@ const ServiceSidebar = ({
           <div className="flex justify-between">
             <span className="text-slate-600">Price:</span>
             <span className="font-medium text-slate-900 flex items-center gap-1">
-              {hasActivePlan ? (
+              {hasActivePlan && ((subscriptionInfoProp && subscriptionInfoProp.remainingSessions > 0) || (activePlan?.availableSessions?.remaining > 0)) ? (
                 <>
                   <span className="text-green-600 font-bold">FREE</span>
                   <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full ml-2">
@@ -547,6 +565,10 @@ export default function ServiceDetailPage() {
   const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
+  
+  // Session limit exceeded modal state
+  const [isSessionLimitExceededModalOpen, setIsSessionLimitExceededModalOpen] = useState(false);
+  const [sessionLimitExceededInfo, setSessionLimitExceededInfo] = useState<any>(null);
 
   // Get service from Redux store
   const { selectedService, loading, error } = useSelector(
@@ -718,8 +740,62 @@ export default function ServiceDetailPage() {
                       navigate={navigate}
                       hasActivePlan={hasActivePlan}
                       activePlan={activePlan}
-                      subscriptionInfo={subscriptionInfo}
+                      subscriptionInfoProp={subscriptionInfo}
+                      isSessionLimitExceededModalOpen={isSessionLimitExceededModalOpen}
+                      setIsSessionLimitExceededModalOpen={setIsSessionLimitExceededModalOpen}
+                      sessionLimitExceededInfo={sessionLimitExceededInfo}
+                      setSessionLimitExceededInfo={setSessionLimitExceededInfo}
                     />
+                    
+                    {/* Session Limit Exceeded Modal */}
+                    <Dialog open={isSessionLimitExceededModalOpen} onOpenChange={setIsSessionLimitExceededModalOpen}>
+                      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
+                            <CircleAlert className="h-6 w-6" />
+                            Session Limit Reached
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <p className="text-red-800 mb-2">
+                              {sessionLimitExceededInfo?.message || 'Your subscription session limit has been reached.'}
+                            </p>
+                            <p className="text-red-700 text-sm">
+                              You have used all {sessionLimitExceededInfo?.usedSessions} sessions from your {sessionLimitExceededInfo?.planName} plan.
+                            </p>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <h3 className="font-semibold text-gray-800">Next Steps:</h3>
+                            <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                              <li>You can now book services by paying the regular price</li>
+                              <li>Your subscription benefits are no longer available for additional sessions</li>
+                              <li>Consider upgrading your subscription for more sessions</li>
+                            </ul>
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                            <Button 
+                              onClick={() => {
+                                setIsSessionLimitExceededModalOpen(false);
+                                navigate('/services');
+                              }}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            >
+                              Browse Services
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setIsSessionLimitExceededModalOpen(false)}
+                              className="flex-1"
+                            >
+                              Close
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </>

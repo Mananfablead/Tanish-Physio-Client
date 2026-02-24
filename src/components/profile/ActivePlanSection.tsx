@@ -67,6 +67,23 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
     activePlan?.endDate &&
     new Date(activePlan.endDate).getTime() < Date.now();
 
+  // Calculate availableSessions if not provided
+  const availableSessions = activePlan?.availableSessions || (() => {
+    if (activePlan?.totalService && typeof activePlan.sessions === 'number') {
+      const total = activePlan.totalService;
+      const remaining = activePlan.sessions;
+      const used = total - remaining;
+      const percentageUsed = total > 0 ? Math.round((used / total) * 100) : 0;
+      return {
+        total,
+        used,
+        remaining,
+        percentageUsed
+      };
+    }
+    return null;
+  })();
+
   return (
     <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
       <div className="space-y-6">
@@ -149,7 +166,7 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
             </div>
 
             {/* Session Usage Progress */}
-            {activePlan?.availableSessions && (
+            {availableSessions && (
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-primary" />
@@ -161,26 +178,26 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="font-medium text-slate-700">
-                        Sessions Used: {activePlan.availableSessions.used}/{activePlan.availableSessions.total}
+                        Sessions Used: {availableSessions.used}/{availableSessions.total}
                       </span>
                       <span className="font-semibold text-slate-900">
-                        {activePlan.availableSessions.percentageUsed}%
+                        {availableSessions.percentageUsed}%
                       </span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-3">
                       <div
-                        className={`h-3 rounded-full transition-all duration-500 ${activePlan.availableSessions.percentageUsed >= 90
+                        className={`h-3 rounded-full transition-all duration-500 ${availableSessions.percentageUsed >= 90
                             ? "bg-destructive"
-                            : activePlan.availableSessions.percentageUsed >= 70
+                            : availableSessions.percentageUsed >= 70
                               ? "bg-warning"
                               : "bg-primary"
                           }`}
-                        style={{ width: `${activePlan.availableSessions.percentageUsed}%` }}
+                        style={{ width: `${availableSessions.percentageUsed}%` }}
                       ></div>
                     </div>
                     <div className="text-xs text-slate-500 mt-2">
-                      {activePlan.availableSessions.remaining > 0 ? (
-                        <span>{activePlan.availableSessions.remaining} sessions remaining</span>
+                      {availableSessions.remaining > 0 ? (
+                        <span>{availableSessions.remaining} sessions remaining</span>
                       ) : (
                         <span className="text-destructive font-medium">All sessions used</span>
                       )}
@@ -190,19 +207,19 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
                   {/* Detailed session info */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
                     <div className="text-center p-3 bg-primary/5 rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{activePlan.availableSessions.total}</div>
+                      <div className="text-2xl font-bold text-primary">{availableSessions.total}</div>
                       <div className="text-xs text-slate-500">Total Sessions</div>
                     </div>
                     <div className="text-center p-3 bg-success/5 rounded-lg">
-                      <div className="text-2xl font-bold text-success">{activePlan.availableSessions.used}</div>
+                      <div className="text-2xl font-bold text-success">{availableSessions.used}</div>
                       <div className="text-xs text-slate-500">Used</div>
                     </div>
                     <div className="text-center p-3 bg-warning/5 rounded-lg">
-                      <div className="text-2xl font-bold text-warning">{activePlan.availableSessions.remaining}</div>
+                      <div className="text-2xl font-bold text-warning">{availableSessions.remaining}</div>
                       <div className="text-xs text-slate-500">Remaining</div>
                     </div>
                     <div className="text-center p-3 bg-info/5 rounded-lg">
-                      <div className="text-2xl font-bold text-info">{activePlan.availableSessions.percentageUsed}%</div>
+                      <div className="text-2xl font-bold text-info">{availableSessions.percentageUsed}%</div>
                       <div className="text-xs text-slate-500">Utilization</div>
                     </div>
                   </div>

@@ -13,21 +13,62 @@ import {
 } from "lucide-react";
 
 import { fetchAllServices } from "@/store/slices/serviceSlice";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from "@/store";
 import type { AppDispatch } from "@/store";
 import { selectCurrentUser } from "@/store/slices/authSlice";
+import { checkSubscriptionEligibility } from "@/lib/api";
 
 export default function ServicesPage() {
   const dispatch: AppDispatch = useDispatch();
   const { services, loading, error } = useSelector((state: RootState) => state.services);
   const user = useSelector(selectCurrentUser);
   
+    // Subscription state
+  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
+  
   // Check if user has active subscription
   const hasActivePlan = user?.subscriptionData && 
                        user.subscriptionData.status === 'active' && 
                        !user.subscriptionData.isExpired;
+  
+  // Check subscription eligibility when user changes
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (user) {
+        try {
+          setCheckingSubscription(true);
+          const response = await checkSubscriptionEligibility();
+          const data = response.data.data;
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = data;
+          
+          setSubscriptionEligible(eligible);
+          setSubscriptionInfo({
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions
+          });
+        } catch (error) {
+          console.error('Error checking subscription status:', error);
+          setSubscriptionEligible(false);
+          setSubscriptionInfo(null);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else {
+        setSubscriptionEligible(false);
+        setSubscriptionInfo(null);
+      }
+    };
+    
+    checkSubscriptionStatus();
+  }, [user]);
   
   useEffect(() => {
     dispatch(fetchAllServices());
@@ -107,6 +148,7 @@ export default function ServicesPage() {
           services={services} 
           hasActivePlan={hasActivePlan}
           activePlan={user?.subscriptionData}
+          subscriptionInfo={subscriptionInfo}
         />
       </div>
 

@@ -29,12 +29,14 @@ interface EnhancedServicesGridProps {
   services?: Service[];
   hasActivePlan?: boolean;
   activePlan?: any;
+  subscriptionInfo?: any;
 }
 
 export function EnhancedServicesGrid({
   services = [],
   hasActivePlan = false,
-  activePlan = null
+  activePlan = null,
+  subscriptionInfo = null
 }: EnhancedServicesGridProps) {
   const servicesToDisplay = services;
   const navigate = useNavigate();
@@ -179,7 +181,7 @@ export function EnhancedServicesGrid({
                       Duration: {service.details.sessionDuration}
                     </span>
                     <span className="font-bold">
-                      {hasActivePlan ? (
+                      {hasActivePlan && ((subscriptionInfo && subscriptionInfo.remainingSessions > 0) || (activePlan?.availableSessions?.remaining > 0)) ? (
                         <span className="text-green-600">FREE</span>
                       ) : (
                         <span className="text-primary">{service.details.price}</span>

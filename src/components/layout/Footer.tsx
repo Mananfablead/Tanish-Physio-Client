@@ -48,7 +48,7 @@ export function Footer() {
           <div className="space-y-4">
             <Link
               to="/"
-              className="flex flex-col items-center gap-2"
+              className="flex flex-col items-start gap-2"
             >
               <img
                 src={logo}

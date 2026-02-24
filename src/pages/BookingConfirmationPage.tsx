@@ -208,11 +208,18 @@ export default function BookingConfirmationPage() {
     bookingData?.plan?.name ||
     "Physiotherapy";
 
+  // Special handling for free consultation
+  const isFreeConsultation = bookingData?.service?.name?.toLowerCase().includes('free') || 
+                            bookingData?.service?.name?.toLowerCase().includes('consultation') ||
+                            bookingData?.plan?.name?.toLowerCase().includes('free') ||
+                            bookingData?.isFreeConsultation === true;
+
   const serviceDuration =
     bookingDetails?.serviceId?.duration ||
     bookingData?.session?.duration ||
     bookingData?.service?.duration ||
-    bookingData?.plan?.duration;
+    bookingData?.plan?.duration ||
+    (isFreeConsultation ? "30 mins" : "60 mins");
 
   const servicePrice =
     // bookingDetails?.amount ||
@@ -234,14 +241,25 @@ export default function BookingConfirmationPage() {
         day: "numeric",
         year: "numeric",
       })
-      : new Date().toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      : bookingData?.selectedSlot?.date
+        ? new Date(bookingData.selectedSlot.date).toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+        : new Date().toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
 
-  const sessionTime = bookingDetails?.time || bookingData?.scheduleTime || "Scheduled";
+  const sessionTime = bookingDetails?.time || 
+    bookingData?.scheduleTime || 
+    bookingData?.selectedSlot?.time || 
+    bookingData?.timeSlot?.start || 
+    "Scheduled";
 
   const therapist = {
     name: bookingDetails?.therapistName ||
@@ -679,10 +697,12 @@ export default function BookingConfirmationPage() {
                   <CheckCircle className="h-10 w-10 text-success" />
                 </div>
 
-                <h1 className="text-3xl font-bold mb-2">Booking Confirmed!</h1>
+                <h1 className="text-3xl font-bold mb-2">
+                  {isFreeConsultation ? "Free Consultation" : "Booking"} Confirmed!
+                </h1>
 
                 <p className="text-muted-foreground mb-8">
-                  Your <strong>{serviceName}</strong> session has been booked
+                  Your <strong>{serviceName}</strong> {isFreeConsultation ? "consultation" : "session"} has been booked
                   successfully.
                 </p>
 
@@ -731,7 +751,7 @@ export default function BookingConfirmationPage() {
                           <Video className="h-4 w-4 text-primary" />
                           <div>
                             <p className="text-sm text-muted-foreground">
-                              Time
+                              {isFreeConsultation ? "Slot" : "Time"}
                             </p>
                             <p className="font-medium">{sessionTime}</p>
                           </div>
@@ -741,10 +761,11 @@ export default function BookingConfirmationPage() {
                       <div className="pt-4 space-y-2">
                         <p>
                           <span className="text-muted-foreground">
-                            Duration:
+                            {isFreeConsultation ? "Consultation Duration:" : "Duration:"}
                           </span>{" "}
                           <span className="font-medium">
-                            {serviceDuration || "60 mins"}
+                            {serviceDuration}
+                            {isFreeConsultation && " (Free Consultation)" }
                           </span>
                         </p>
 
@@ -753,9 +774,9 @@ export default function BookingConfirmationPage() {
                           <span className="font-medium">₹{servicePrice}</span>
                         </p>
 
-                        <p className="text-xs text-muted-foreground">
+                        {/* <p className="text-xs text-muted-foreground">
                           Booking ID: {bookingData?.bookingId}
-                        </p>
+                        </p> */}
 
                         {bookingDetails?.status && (
                           <p className="text-xs">

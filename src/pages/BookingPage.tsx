@@ -40,7 +40,7 @@ import { ScheduleModal } from "@/components/profile/ScheduleModal";
 import { fetchPublicAdmins } from '@/store/slices/adminSlice';
 import { getAvailability } from '@/lib/api';
 import { fetchOffers, validateCoupon, resetCouponValidation } from '@/store/slices/offersSlice';
-import { register, setCredentials } from '@/store/slices/authSlice';
+import { register, setCredentials, decrementSubscriptionSessions } from '@/store/slices/authSlice';
 import BookingLoginModal from '@/components/BookingLoginModal';
 import { fetchAllServices } from "@/store/slices/serviceSlice";
 export default function BookingPage() {
@@ -118,6 +118,10 @@ export default function BookingPage() {
   // Login modal state
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
+  
+  // Session limit exceeded modal state
+  const [isSessionLimitExceededModalOpen, setIsSessionLimitExceededModalOpen] = useState(false);
+  const [sessionLimitExceededInfo, setSessionLimitExceededInfo] = useState<any>(null);
 
   // Fetch available offers from API
   useEffect(() => {
@@ -153,13 +157,13 @@ export default function BookingPage() {
           setCheckingSubscription(true);
           const response = await checkSubscriptionEligibility();
           const data = response.data.data;
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = data;
+          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions, totalUsed, remainingServices, usedServices } = data;
           
-          // Ensure we have proper values, fallback to 0 if null/undefined
+          // Use API values directly since they now include combined counting
           const safeRemainingSessions = (remainingSessions != null && !isNaN(remainingSessions)) ? remainingSessions : 0;
           const safeTotalSessions = (totalSessions != null && !isNaN(totalSessions)) ? totalSessions : 0;
-          const safeUsedSessions = (usedSessions != null && !isNaN(usedSessions)) ? usedSessions : 0;
-          const safePlanName = planName || 'your plan';
+          const safeUsedSessions = totalUsed || usedSessions || 0; // Use totalUsed if available, otherwise usedSessions
+          const safePlanName = planName || user.subscriptionData?.planName || 'your plan';
           
           setSubscriptionEligible(eligible);
           setSubscriptionInfo({
@@ -168,7 +172,10 @@ export default function BookingPage() {
             remainingSessions: safeRemainingSessions,
             planName: safePlanName,
             totalSessions: safeTotalSessions,
-            usedSessions: safeUsedSessions
+            usedSessions: safeUsedSessions,
+            totalUsed: totalUsed || safeUsedSessions,
+            remainingServices: remainingServices || safeRemainingSessions,
+            usedServices: usedServices || 0
           });
           
           console.log('Subscription info updated:', {
@@ -176,6 +183,7 @@ export default function BookingPage() {
             remainingSessions: safeRemainingSessions,
             totalSessions: safeTotalSessions,
             usedSessions: safeUsedSessions,
+            totalUsed: totalUsed || safeUsedSessions,
             planName: safePlanName
           });
         } catch (error) {
@@ -193,6 +201,56 @@ export default function BookingPage() {
     
     checkSubscriptionStatus();
   }, [user]);
+
+  // Helper function to refresh subscription eligibility
+  const refreshSubscriptionEligibility = async () => {
+    if (!user) return;
+    try {
+      setCheckingSubscription(true);
+      const response = await checkSubscriptionEligibility();
+      const data = response.data.data;
+      const { eligible, message, remainingSessions, planName, totalSessions, usedSessions, totalUsed, remainingServices, usedServices } = data;
+      
+      const safeRemainingSessions = (remainingSessions != null && !isNaN(remainingSessions)) ? remainingSessions : 0;
+      const safeTotalSessions = (totalSessions != null && !isNaN(totalSessions)) ? totalSessions : 0;
+      const safeUsedSessions = totalUsed || usedSessions || 0;
+      const safePlanName = planName || user.subscriptionData?.planName || 'your plan';
+      
+      setSubscriptionEligible(eligible);
+      setSubscriptionInfo({
+        eligible,
+        message,
+        remainingSessions: safeRemainingSessions,
+        planName: safePlanName,
+        totalSessions: safeTotalSessions,
+        usedSessions: safeUsedSessions,
+        totalUsed: totalUsed || safeUsedSessions,
+        remainingServices: remainingServices || safeRemainingSessions,
+        usedServices: usedServices || 0
+      });
+      
+      console.log('Subscription eligibility refreshed:', {
+        eligible,
+        remainingSessions: safeRemainingSessions,
+        totalSessions: safeTotalSessions,
+        usedSessions: safeUsedSessions,
+        totalUsed: totalUsed || safeUsedSessions,
+        planName: safePlanName
+      });
+      
+      return {
+        eligible,
+        remainingSessions: safeRemainingSessions
+      };
+    } catch (error) {
+      console.error('Error refreshing subscription status:', error);
+      setSubscriptionEligible(false);
+      setSubscriptionInfo(null);
+      return null;
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
 
   // Check if user is a guest (not logged in)
   // User is considered logged in if either qw_user exists in sessionStorage OR token exists in localStorage
@@ -568,8 +626,14 @@ export default function BookingPage() {
   };
 
   const handlePayment = async () => {
+    // Calculate remaining sessions from local user data for accurate session management
+    const remainingSessions = user?.subscriptionData?.sessions || 0;
+    const totalSessions = user?.subscriptionData?.totalService || 0;
+    const usedSessions = totalSessions - remainingSessions;
+    const planName = user?.subscriptionData?.planName || 'your plan';
+
     // 🔹 NEW: Check if user has active subscription and can book for free
-    if (hasActivePlan && !subscriptionBooking && subscriptionInfo?.remainingSessions > 0) {
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo && subscriptionInfo.remainingSessions > 0) {
       // User has active subscription, create booking directly without payment
       try {
         setIsProcessing(true);
@@ -604,6 +668,12 @@ export default function BookingPage() {
         const response: any = await createBookingWithSubscription(subscriptionBookingData);
         
         if (response.data?.success) {
+          // Decrement subscription sessions after successful booking
+          dispatch(decrementSubscriptionSessions());
+          
+          // Refresh subscription eligibility to get updated counts from API
+          const updatedEligibility = await refreshSubscriptionEligibility();
+          
           toast.success("Session booked successfully with your subscription!");
           
           // Navigate to confirmation page
@@ -632,12 +702,18 @@ export default function BookingPage() {
     }
     
     // If user has an active plan but no remaining sessions or invalid plan
-    if (hasActivePlan && !subscriptionBooking && subscriptionInfo && (subscriptionInfo?.remainingSessions <= 0 || subscriptionInfo?.reason === 'NO_VALID_SESSIONS' || subscriptionInfo?.reason === 'INVALID_PLAN' || subscriptionInfo?.reason === 'PLAN_CONFIG_ERROR' || subscriptionInfo?.reason === 'SESSIONS_EXHAUSTED')) {
-      const totalSessions = subscriptionInfo?.totalSessions ?? user?.subscriptionData?.plan?.sessions ?? 'unknown';
-      const planName = subscriptionInfo?.planName ?? user?.subscriptionData?.planName ?? 'your';
-      const usedSessions = subscriptionInfo?.usedSessions ?? 0;
-      const message = subscriptionInfo?.message ?? `You have reached your session limit. Your ${planName} plan includes ${totalSessions} sessions and you have used ${usedSessions} of them.`;
-      toast.error(message);
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo && subscriptionInfo.remainingSessions <= 0) {
+      const message = `You have reached your session limit. Your ${subscriptionInfo.planName} includes ${subscriptionInfo.totalSessions} sessions/services and you have used ${subscriptionInfo.totalUsed || subscriptionInfo.usedSessions} of them.`;
+      
+      // Set the session limit exceeded info and open the modal
+      setSessionLimitExceededInfo({
+        message,
+        planName: subscriptionInfo.planName,
+        totalSessions: subscriptionInfo.totalSessions,
+        usedSessions: subscriptionInfo.totalUsed || subscriptionInfo.usedSessions,
+        remainingSessions: subscriptionInfo.remainingSessions
+      });
+      setIsSessionLimitExceededModalOpen(true);
       setIsProcessing(false);
       return;
     }
@@ -2709,6 +2785,56 @@ export default function BookingPage() {
         setSelectedTimeSlot={setSelectedTimeSlot}
         bookingType={bookingType}
       />
+
+      {/* Session Limit Exceeded Modal */}
+      <Dialog open={isSessionLimitExceededModalOpen} onOpenChange={setIsSessionLimitExceededModalOpen}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
+              <CircleAlert className="h-6 w-6" />
+              Session Limit Reached
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800 mb-2">
+                {sessionLimitExceededInfo?.message || 'Your subscription session limit has been reached.'}
+              </p>
+              <p className="text-red-700 text-sm">
+                You have used all {sessionLimitExceededInfo?.usedSessions} sessions from your {sessionLimitExceededInfo?.planName} plan.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-800">Next Steps:</h3>
+              <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                <li>You can now book services by paying the regular price</li>
+                <li>Your subscription benefits are no longer available for additional sessions</li>
+                <li>Consider upgrading your subscription for more sessions</li>
+              </ul>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button 
+                onClick={() => {
+                  setIsSessionLimitExceededModalOpen(false);
+                  navigate('/services');
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                Browse Services
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsSessionLimitExceededModalOpen(false)}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Login Modal for existing users */}
       <BookingLoginModal
