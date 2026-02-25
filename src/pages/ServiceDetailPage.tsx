@@ -298,7 +298,12 @@ const ServiceSidebar = ({
   navigate,
   hasActivePlan = false,
   activePlan = null,
-  subscriptionInfo = null
+  subscriptionInfo = null,
+  subscriptionInfoProp = null,
+  isSessionLimitExceededModalOpen = false,
+  setIsSessionLimitExceededModalOpen,
+  sessionLimitExceededInfo = null,
+  setSessionLimitExceededInfo,
 }: {
   service: ExtendedService;
   navigate: any;

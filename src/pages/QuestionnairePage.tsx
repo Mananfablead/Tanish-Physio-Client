@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SkalaetonQuestion } from "@/components/SkalaetonQuestion";
+import { useToast } from "@/hooks/use-toast";
 import {
   CheckCircle,
   Edit2,
@@ -315,6 +316,7 @@ export default function QuestionnairePage() {
   };
 
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const { toast } = useToast();
 
   const handleNext = () => {
     // Check if current question is required and hasn't been answered
@@ -389,6 +391,13 @@ export default function QuestionnairePage() {
           newErrors[q._id] = `${q.question} is required`;
         });
         setValidationErrors(newErrors);
+
+        // Show toast notification
+        toast({
+          title: "Required Fields Missing",
+          description: `Please complete all required fields before reviewing. ${unansweredRequired.length} field(s) need to be filled.`,
+          variant: "destructive",
+        });
 
         // Navigate to the first unanswered question
         const firstUnansweredIndex = activeQuestionnaire?.questions.findIndex((q: any) => 
@@ -1598,18 +1607,52 @@ export default function QuestionnairePage() {
 
                                 <div className="space-y-4">
                                   {activeQuestionnaire?.questions.map(
-                                    (question: any, index: number) => (
-                                      <div
-                                        key={question._id}
-                                        className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors"
-                                      >
+                                    (question: any, index: number) => {
+                                      // Check if question is required and unanswered
+                                      const isRequired = question.required;
+                                      const answer = data[question._id];
+                                      let isUnanswered = false;
+                                      
+                                      if (isRequired) {
+                                        if (question.hasCommonField) {
+                                          if (typeof answer === 'object' && answer !== null && answer.commonField !== undefined) {
+                                            isUnanswered = !answer.mainAnswer || answer.mainAnswer.toString().trim() === '';
+                                          } else {
+                                            isUnanswered = !answer || answer.toString().trim() === '';
+                                          }
+                                        } else {
+                                          isUnanswered = !answer || answer.toString().trim() === '';
+                                        }
+                                      }
+                                      
+                                      return (
+                                        <div
+                                          key={question._id}
+                                          className={`flex items-start gap-4 p-4 rounded-xl border transition-colors ${
+                                            isUnanswered && isRequired 
+                                              ? 'bg-red-50 border-red-200 hover:bg-red-100' 
+                                              : 'bg-slate-50 border-slate-100 hover:bg-slate-100'
+                                          }`}
+                                        >
                                         <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 shadow-sm flex items-center justify-center text-primary flex-shrink-0 mt-1">
                                           <Edit2 className="h-4 w-4" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-xs uppercase font-black tracking-[0.15em] text-slate-400 mb-1.5">
-                                            {question.question}
-                                          </p>
+                                          <div className="flex items-center gap-2 mb-1.5">
+                                            <p className="text-xs uppercase font-black tracking-[0.15em] text-slate-400">
+                                              {question.question}
+                                            </p>
+                                            {isRequired && (
+                                              <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                                                Required
+                                              </Badge>
+                                            )}
+                                            {isUnanswered && isRequired && (
+                                              <Badge variant="outline" className="text-red-600 border-red-300 text-xs px-2 py-0.5">
+                                                Missing
+                                              </Badge>
+                                            )}
+                                          </div>
                                           <p className="text-base font-medium text-slate-800 break-words flex items-center gap-2">
                                             {question.type === 'skalaeton' && Array.isArray(data[question._id]) && data[question._id].length > 0 ? (
                                               <span className="flex flex-wrap gap-2">
@@ -1730,7 +1773,7 @@ export default function QuestionnairePage() {
                                           <Edit className="h-4 w-4" />
                                         </button>
                                       </div>
-                                    )
+                                    )}
                                   )}
                                 </div>
                               </div>

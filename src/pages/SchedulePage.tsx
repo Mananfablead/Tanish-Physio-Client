@@ -124,6 +124,8 @@ export default function SchedulePage() {
   // Handle session booking
   const handleBooking = async () => {
     try {
+      setIsBookingLoading(true); // Set loading state to true when booking starts
+      
       // Extract start and end time from the selected time format (e.g., "10:00 - 11:00" -> startTime: "10:00", endTime: "11:00")
       let startTime, endTime;
       if (selectedTime.includes(' - ')) {
@@ -220,6 +222,7 @@ export default function SchedulePage() {
             setIsSuccessDialogOpen(false);
             navigate("/profile");
           }, 5000);
+          setIsBookingLoading(false); // Set loading state to false after successful booking
           return;
         }
       }
@@ -335,6 +338,8 @@ export default function SchedulePage() {
         // Clear the error after 5 seconds
         setTimeout(() => setBookingError(null), 5000);
       }
+    } finally {
+      setIsBookingLoading(false); // Set loading state to false regardless of success or failure
     }
   };
 
@@ -363,6 +368,9 @@ export default function SchedulePage() {
 
   // State for displaying error messages in the booking dialog
   const [bookingError, setBookingError] = useState<string | null>(null);
+
+  // Loading state for booking button
+  const [isBookingLoading, setIsBookingLoading] = useState<boolean>(false);
 
   // Subscription state
   const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
@@ -453,8 +461,9 @@ export default function SchedulePage() {
     // Check if user is a guest
     const isGuestUser = bookingData?.guestUser || sessionStorage.getItem("qw_guest_user") || (!user && !localStorage.getItem("token"));
     
-    const hasNoServices = !user?.purchasedServices || user.purchasedServices.length === 0;
-    const hasNoSubscription = !user?.subscriptionData;
+    const hasServices = user?.purchasedServices && user.purchasedServices.length > 0;
+    const hasActiveSubscription = user?.subscriptionData?.status === 'active';
+    const hasNoActivePlanAndNoServices = !hasActiveSubscription && !hasServices;
 
     // Automatically show plans modal for guest users
     if (isGuestUser && plans && plans.length > 0 && !subscriptionLoading) {
@@ -464,11 +473,23 @@ export default function SchedulePage() {
       }
     }
     
-    if (isBookingModalOpen && hasNoServices && hasNoSubscription) {
+    if (isBookingModalOpen && hasNoActivePlanAndNoServices) {
       setIsPlansModalOpen(true);
       setIsBookingModalOpen(false);
     }
-  }, [isBookingModalOpen, isSuccessDialogOpen, user?.purchasedServices, user?.subscriptionData, userSubscriptions, user, plans, subscriptionLoading, bookingData]);
+  }, [isBookingModalOpen, isSuccessDialogOpen, user?.purchasedServices, user?.subscriptionData?.status, userSubscriptions, user, plans, subscriptionLoading, bookingData]);
+  
+  // Effect to show plans modal when user visits the page and has no active plan and no services
+  useEffect(() => {
+    const hasServices = user?.purchasedServices && user.purchasedServices.length > 0;
+    const hasActiveSubscription = user?.subscriptionData?.status === 'active';
+    const hasNoActivePlanAndNoServices = !hasActiveSubscription && !hasServices;
+    
+    // Show plans modal when user has no active plan and no services, and no other modals are open
+    if (user && hasNoActivePlanAndNoServices && !isBookingModalOpen && !isSuccessDialogOpen && !isPlansModalOpen && !subscriptionLoading) {
+      setIsPlansModalOpen(true);
+    }
+  }, [user, subscriptionInfo, user?.purchasedServices, user?.subscriptionData?.status, isBookingModalOpen, isSuccessDialogOpen, isPlansModalOpen, subscriptionLoading]);
 
   // Debug effect to see what booking data is available
   useEffect(() => {
@@ -699,7 +720,9 @@ console.log("user?.purchasedServices",user?.purchasedServices)
                 </div>
               )} */}
               
-              {(user && subscriptionInfo && subscriptionInfo.reason === "USER_NO_SUBSCRIPTION") && (
+              {(user && subscriptionInfo && 
+                ((subscriptionInfo.reason === "USER_NO_SUBSCRIPTION") || 
+                 (!subscriptionInfo.eligible && user?.subscriptionData?.status !== 'active' && (!user?.purchasedServices || user?.purchasedServices.length === 0)))) && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex-1">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
@@ -1400,10 +1423,17 @@ console.log("user?.purchasedServices",user?.purchasedServices)
               <div className="flex-1">
                 <Button
                   className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                  disabled={!selectedTime || !selectedServiceOrSubscription}
+                  disabled={!selectedTime || !selectedServiceOrSubscription || isBookingLoading}
                   onClick={handleBooking}
                 >
-                  {user?.subscriptionData?.status === 'active' ? 'Book Free Session' : 'Confirm'}
+                  {isBookingLoading ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      {user?.subscriptionData?.status === 'active' ? 'Booking Free Session...' : 'Confirming...'}
+                    </>
+                  ) : (
+                    user?.subscriptionData?.status === 'active' ? 'Book Free Session' : 'Confirm'
+                  )}
                 </Button>
               </div>
             </div>
