@@ -1388,16 +1388,37 @@ export default function BookingPage() {
 
         if (
           !createBookingAsync.fulfilled.match(bookingResult) &&
-          !createGuestBookingAsync.fulfilled.match(bookingResult)
+          !createGuestBookingAsync.fulfilled.match(bookingResult) &&
+          !createSubscriptionBookingAsync.fulfilled.match(bookingResult)
         ) {
-          toast.error("Failed to create booking. Please try again.");
+          // Handle specific subscription booking errors
+          const errorMessage = bookingResult.payload?.message || bookingResult.error?.message || "Failed to create booking. Please try again.";
+          
+          // Check for specific session limit errors
+          if (errorMessage.includes('Session limit reached') || 
+              errorMessage.includes('used all sessions') ||
+              errorMessage.includes('no sessions in plan')) {
+            // Show session limit exceeded modal
+            const sessionLimitMessage = errorMessage;
+            setSessionLimitExceededInfo({
+              message: sessionLimitMessage,
+              planName: subscriptionInfo?.planName || 'your plan',
+              totalSessions: subscriptionInfo?.totalSessions || 0,
+              usedSessions: subscriptionInfo?.usedSessions || 0,
+              remainingSessions: subscriptionInfo?.remainingSessions || 0
+            });
+            setIsSessionLimitExceededModalOpen(true);
+          } else {
+            toast.error(errorMessage);
+          }
           setIsProcessing(false);
           return;
         }
 
         const bookingId =
-          bookingResult.payload?._id ||
-          (bookingResult.payload as any)?.booking?._id;
+          (bookingResult.payload as any)?._id ||
+          (bookingResult.payload as any)?.booking?._id ||
+          (bookingResult.payload as any)?.data?._id;
 
         // Create payment order with booking ID
         let paymentOrderResult;

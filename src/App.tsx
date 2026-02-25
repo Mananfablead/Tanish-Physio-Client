@@ -17,6 +17,7 @@ import ChatWidget from "@/components/ChatWidget";
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const QuestionnairePage = lazy(() => import("./pages/QuestionnairePage"));
+const InvoicePage = lazy(() => import("./pages/InvoicePage"));
 const TherapistDiscoveryPage = lazy(
   () => import("./pages/TherapistDiscoveryPage")
 );
@@ -144,6 +145,15 @@ const App = () => (
                     <Route
                       path="/booking-confirmation"
                       element={<BookingConfirmationPage />}
+                    />
+                    {/* Invoice page - for printing and downloading invoices */}
+                    <Route
+                      path="/invoice"
+                      element={<InvoicePage />}
+                    />
+                    <Route
+                      path="/invoice/:bookingId"
+                      element={<InvoicePage />}
                     />
                     <Route
                       path="/profile"

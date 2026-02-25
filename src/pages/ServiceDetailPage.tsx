@@ -321,11 +321,21 @@ const ServiceSidebar = ({
 
   const handleBooking = () => {
     // Check if user has an active plan but no remaining sessions or invalid plan
-    if (hasActivePlan && subscriptionInfo && (subscriptionInfo?.remainingSessions <= 0 || subscriptionInfo?.reason === 'NO_VALID_SESSIONS' || subscriptionInfo?.reason === 'INVALID_PLAN' || subscriptionInfo?.reason === 'PLAN_CONFIG_ERROR' || subscriptionInfo?.reason === 'SESSIONS_EXHAUSTED')) {
+    if (hasActivePlan && subscriptionInfo && (
+      subscriptionInfo?.remainingSessions <= 0 || 
+      subscriptionInfo?.reason === 'NO_VALID_SESSIONS' || 
+      subscriptionInfo?.reason === 'INVALID_PLAN' || 
+      subscriptionInfo?.reason === 'PLAN_CONFIG_ERROR' || 
+      subscriptionInfo?.reason === 'SESSIONS_EXHAUSTED' ||
+      subscriptionInfo?.reason === 'NO_SESSIONS_IN_PLAN'
+    )) {
       const totalSessions = subscriptionInfo?.totalSessions ?? activePlan?.sessions ?? 'unknown';
       const planName = subscriptionInfo?.planName ?? activePlan?.planName ?? 'your';
       const usedSessions = subscriptionInfo?.usedSessions ?? 0;
-      const message = subscriptionInfo?.message ?? `You have reached your session limit. Your ${planName} plan includes ${totalSessions} sessions and you have used ${usedSessions} of them.`;
+      const message = subscriptionInfo?.message ?? 
+        (subscriptionInfo?.reason === 'NO_SESSIONS_IN_PLAN' 
+          ? `Your ${planName} plan does not include any sessions. Please upgrade your plan.`
+          : `You have reached your session limit. Your ${planName} plan includes ${totalSessions} sessions and you have used ${usedSessions} of them.`);
       
       // Call the parent's function to handle session limit exceeded
       if (setSessionLimitExceededInfo && setIsSessionLimitExceededModalOpen) {
@@ -334,7 +344,8 @@ const ServiceSidebar = ({
           planName,
           totalSessions,
           usedSessions,
-          remainingSessions: subscriptionInfo?.remainingSessions
+          remainingSessions: subscriptionInfo?.remainingSessions,
+          reason: subscriptionInfo?.reason
         });
         setIsSessionLimitExceededModalOpen(true);
       }

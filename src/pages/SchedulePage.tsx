@@ -305,7 +305,20 @@ export default function SchedulePage() {
         }, 5000);
       } else {
         const errorMessage = response.data?.message || "Failed to book session";
-        setBookingError(errorMessage);
+        
+        // Handle specific session limit errors
+        if (errorMessage.includes('Session limit reached') || 
+            errorMessage.includes('used all sessions') ||
+            errorMessage.includes('no sessions in plan')) {
+          setBookingError(`❌ Session Limit Reached\n\n${errorMessage}`);
+        } else if (errorMessage.includes("Session is not active at this time")) {
+          setBookingError(
+            "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later."
+          );
+        } else {
+          setBookingError(errorMessage);
+        }
+        
         // If it's a slot duration error, don't clear selected time so user can pick a different slot
         if (!errorMessage.includes("selected slot is only") && !errorMessage.includes("larger time slot")) {
           // Clear the error after 5 seconds
@@ -317,14 +330,19 @@ export default function SchedulePage() {
       if (err?.response?.data?.message) {
         const errorMessage = err.response.data.message;
 
-        // Handle specific session not active error
-        if (errorMessage.includes("Session is not active at this time")) {
+        // Handle specific session limit errors
+        if (errorMessage.includes('Session limit reached') || 
+            errorMessage.includes('used all sessions') ||
+            errorMessage.includes('no sessions in plan')) {
+          setBookingError(`❌ Session Limit Reached\n\n${errorMessage}`);
+        } else if (errorMessage.includes("Session is not active at this time")) {
           setBookingError(
             "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later."
           );
         } else {
           setBookingError(errorMessage);
         }
+        
         // If it's a slot duration error, don't clear selected time so user can pick a different slot
         if (
           !errorMessage.includes("selected slot is only") &&

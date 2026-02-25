@@ -12,9 +12,11 @@ import {
   FileText,
   Package,
   Activity,
+  Printer,
+  Download,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { updateGuestBookingStatus, getBookingDetails, updateProfile, getUserSubscriptions, checkUserExists } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -24,6 +26,7 @@ import { AppDispatch, RootState } from "@/store";
 import { register, login, fetchProfile, setCredentials } from "@/store/slices/authSlice";
 import { checkUserExistsAsync } from "@/store/slices/bookingsSlice";
 import { fetchActiveQuestionnaire, selectActiveQuestionnaire } from "@/store/slices/questionnaireSlice";
+import InvoiceComponent from "@/components/InvoiceComponent";
 
 export default function BookingConfirmationPage() {
   // Transform questionnaire data to health profile format
@@ -130,6 +133,9 @@ export default function BookingConfirmationPage() {
   const dispatch = useDispatch<AppDispatch>();
   const guestUser = bookingData?.guestUser;
   const user = useSelector((state: RootState) => state.auth.user);
+
+  // Refs for invoice printing and downloading
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   // Auto-login for guest users who just purchased a subscription
   useEffect(() => {
@@ -655,6 +661,261 @@ export default function BookingConfirmationPage() {
     fetchSubscriptionInfo();
   }, [isAuthenticated, user]);
 
+  /* ---------------- Print and Download Functions ---------------- */
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownload = async () => {
+    try {
+      // Show loading state
+      toast.loading("Generating invoice PDF...");
+      
+      // Dynamically import the required libraries
+      const html2canvasModule = await import('html2canvas');
+      const jsPDFModule = await import('jspdf');
+      
+      const html2canvas = html2canvasModule.default;
+      const jsPDF = jsPDFModule.jsPDF || jsPDFModule.default;
+      
+      if (!html2canvas || !jsPDF) {
+        throw new Error('Failed to load required libraries');
+      }
+      
+      // Create a temporary invoice element to render the content
+      const tempInvoiceDiv = document.createElement('div');
+      tempInvoiceDiv.id = 'temp-invoice';
+      tempInvoiceDiv.style.position = 'absolute';
+      tempInvoiceDiv.style.left = '-9999px';
+      tempInvoiceDiv.style.top = '-9999px';
+      tempInvoiceDiv.style.width = '800px';
+      tempInvoiceDiv.style.backgroundColor = 'white';
+      tempInvoiceDiv.style.padding = '30px';
+      tempInvoiceDiv.style.zIndex = '9999';
+
+      // Create the invoice HTML content
+      const invoiceHTML = `
+        <div class="invoice-container bg-white p-8 m-4">
+          <div class="invoice-header border-b pb-4 mb-6">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center">
+                <img 
+                  src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png" 
+                  alt="Tanish Physio Logo"
+                  style="width: 64px; height: 64px; margin-right: 16px;"
+                />
+               
+              </div>
+              <div class="text-right">
+                <h2 class="text-xl font-semibold">Tanish Physio</h2>
+                <p class="text-gray-600">Physical Therapy & Rehabilitation</p>
+                <p class="text-gray-600">India</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="invoice-details grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Bill To:</h3>
+              <p class="font-medium">${user?.name || guestUser?.name || "Guest User"}</p>
+              <p class="text-gray-600">${user?.email || guestUser?.email || "N/A"}</p>
+              <p class="text-gray-600">${user?.phone || guestUser?.phone || "N/A"}</p>
+            </div>
+            
+            <div class="text-right">
+              <div class="mb-4">
+                <p class="text-gray-600">Invoice Date:</p>
+                <p class="font-medium">${new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+                })}</p>
+              </div>
+              <div>
+                <p class="text-gray-600">Due Date:</p>
+                <p class="font-medium">${new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+                })}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="invoice-items mb-8">
+            <div class="border rounded-lg overflow-hidden">
+              <table class="w-full">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="text-left p-3 font-semibold">Description</th>
+                    <th class="text-left p-3 font-semibold">Date & Time</th>
+                    <th class="text-left p-3 font-semibold">Therapist</th>
+                    <th class="text-right p-3 font-semibold">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="p-3 border-t">
+                      <div class="font-medium">${serviceName}</div>
+                      <div class="text-gray-600 text-sm">
+                        ${isSubscription ? "Subscription Plan" : "Service Booking"}
+                      </div>
+                    </td>
+                    <td class="p-3 border-t">
+                      <div>${sessionDate}</div>
+                      <div>${sessionTime}</div>
+                    </td>
+                    <td class="p-3 border-t">
+                      <div>${therapist.name}</div>
+                      <div class="text-gray-600 text-sm">${therapist.title}</div>
+                    </td>
+                    <td class="p-3 border-t text-right">
+                      ₹${servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="invoice-summary grid grid-cols-2 gap-8">
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Payment Method</h3>
+              <p class="text-gray-600">
+                ${bookingDetails?.paymentMethod || bookingData?.paymentMethod || "Online Payment"}
+              </p>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-4">
+              <div class="flex justify-between mb-2">
+                <span class="text-gray-600">Subtotal:</span>
+                <span>₹${servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+              </div>
+              <div class="flex justify-between mb-2">
+                <span class="text-gray-600">Tax:</span>
+                <span>₹0.00</span>
+              </div>
+              <div class="flex justify-between mb-2">
+                <span class="text-gray-600">Discount:</span>
+                <span>
+                  ₹${(bookingDetails?.discountAmount || 0)?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                </span>
+              </div>
+              <div class="flex justify-between font-bold text-lg border-t pt-2">
+                <span>Total:</span>
+                <span>
+                  ₹${servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="invoice-footer mt-8 pt-6 border-t">
+            <div class="text-center text-gray-600">
+              <p>Thank you for choosing Tanish Physio for your healthcare needs.</p>
+              <p class="mt-2">For any inquiries, please contact our support team.</p>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      tempInvoiceDiv.innerHTML = invoiceHTML;
+      document.body.appendChild(tempInvoiceDiv);
+      
+      // Wait for the content to render
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Capture the invoice as canvas
+      const canvas = await html2canvas(tempInvoiceDiv, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+      
+      // Remove the temporary element
+      document.body.removeChild(tempInvoiceDiv);
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG for better compression
+      
+      // Validate canvas dimensions
+      if (!canvas.width || !canvas.height) {
+        throw new Error('Canvas is empty or has invalid dimensions');
+      }
+      
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      // Save the PDF directly to the user's device
+      const fileName = `invoice-${bookingData?.bookingId || 'booking'}.pdf`;
+      pdf.save(fileName);
+      
+      // Success message
+      toast.dismiss(); // Remove loading toast
+      toast.success("Invoice downloaded successfully!");
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      
+      // Remove loading toast before showing error
+      toast.dismiss();
+      
+      // Provide more specific error messages
+      if (error.message?.includes('load required libraries')) {
+        toast.error("Failed to load required libraries. Please check your internet connection and try again.");
+      } else if (error.message?.includes('Canvas is empty')) {
+        toast.error("Invoice content is empty. Please refresh the page and try again.");
+      } else if (error.name === 'NetworkError') {
+        toast.error("Network error occurred. Please check your internet connection and try again.");
+      } else {
+        toast.error("Failed to download invoice. Please try again.");
+      }
+    }
+  };
+
+  /* ---------------- Print Styles ---------------- */
+  const printStyles = `
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .invoice-container,
+      .invoice-container * {
+        visibility: visible;
+      }
+      .invoice-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: auto;
+      }
+    }
+  `;
+
   /* ---------------- Action Buttons ---------------- */
   const renderActionButtons = () => {
     // Show login option for guests who just completed payment
@@ -710,7 +971,27 @@ export default function BookingConfirmationPage() {
 
     if (isQuestionnaireFilled) {
       return (
-        <div className="flex justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            onClick={handlePrint}
+          >
+            <Printer className="h-5 w-5 mr-2" />
+            Print Invoice
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            onClick={handleDownload}
+          >
+            <Download className="h-5 w-5 mr-2" />
+            Download Invoice
+          </Button>
+          
           <Link to="/profile">
             <Button variant="hero" size="lg">
               <User className="h-5 w-5 mr-2" />
@@ -722,7 +1003,27 @@ export default function BookingConfirmationPage() {
     }
 
     return (
-      <div className="flex justify-center">
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full"
+          onClick={handlePrint}
+        >
+          <Printer className="h-5 w-5 mr-2" />
+          Print Invoice
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full"
+          onClick={handleDownload}
+        >
+          <Download className="h-5 w-5 mr-2" />
+          Download Invoice
+        </Button>
+        
         <Link
           to="/questionnaire"
           state={{
@@ -1051,6 +1352,35 @@ export default function BookingConfirmationPage() {
           </motion.div>
         </div>
       </div>
+      
+      {/* Hidden Invoice Component for Printing/Downloading */}
+      <div 
+        ref={invoiceRef} 
+        className="fixed top-[-9999px] left-[-9999px] w-[800px] h-auto min-h-[1000px] bg-white z-[9999] overflow-auto opacity-0 pointer-events-none print:static print:top-0 print:left-0 print:opacity-100 print:pointer-events-auto print:block print:w-full print:p-8 print:shadow-none"
+        style={{ 
+          minHeight: '100vh',
+          maxHeight: 'none'
+        }}
+      >
+        <InvoiceComponent
+          bookingData={bookingData}
+          bookingDetails={bookingDetails}
+          guestUser={guestUser}
+          user={user}
+          primaryDoctor={primaryDoctor}
+          serviceName={serviceName}
+          serviceDuration={serviceDuration}
+          servicePrice={servicePrice}
+          sessionDate={sessionDate}
+          sessionTime={sessionTime}
+          therapist={therapist}
+          isFreeConsultation={isFreeConsultation}
+          isSubscription={isSubscription}
+        />
+      </div>
+      
+      {/* Print Styles */}
+      <style>{printStyles}</style>
     </Layout>
   );
 }
