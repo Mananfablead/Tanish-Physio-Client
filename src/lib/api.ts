@@ -453,6 +453,18 @@ export const checkUserExists = (email: string) => {
   return api.post("/users/check-exists", { email });
 };
 
+// Questionnaire file upload API function
+export const uploadQuestionnaireFile = (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return api.post("/questionnaires/upload-file", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
 // Booking details API function
 export const getBookingDetails = (id: string, clientEmail: string) => {
   return api.post(`/bookings/details/${id}`, { clientEmail });

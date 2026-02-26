@@ -313,6 +313,10 @@ export function ScheduleModal({
                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
                     <span className="text-slate-600">Booked</span>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                    <span className="text-slate-600">Past</span>
+                  </div>
                 </div>
               </div>
 
@@ -342,6 +346,18 @@ export function ScheduleModal({
                     );
                   }
                   
+                  // Helper function to check if a time slot is in the past
+                  const isTimeSlotPast = (date: any, time: any): boolean => {
+                    if (!date || !time) return false;
+                    
+                    const [hours, minutes] = time.split(':').map(Number);
+                    const slotDateTime = new Date(date);
+                    slotDateTime.setHours(hours, minutes, 0, 0);
+                    
+                    const now = new Date();
+                    return slotDateTime < now;
+                  };
+                  
                   // Filter slots based on booking type
                   const filteredSlots = dayAvailability.timeSlots.filter((slot: any) => {
                     // Only show available slots
@@ -365,15 +381,19 @@ export function ScheduleModal({
                         return (
                           <button
                             key={i}
-                            disabled={slot.status !== "available"}
-                            onClick={() =>
-                              slot.status === "available" &&
-                              handleTimeSlotClick(scheduleDate, slot)
-                            }
+                            disabled={slot.status !== "available" || isTimeSlotPast(scheduleDate, slot.start)}
+                            onClick={() => {
+                              const isPast = isTimeSlotPast(scheduleDate, slot.start);
+                              if (slot.status === "available" && !isPast) {
+                                handleTimeSlotClick(scheduleDate, slot);
+                              }
+                            }}
                             className={`
                               w-full p-2 rounded-lg border text-left text-sm font-medium transition-all
                               ${isSelected
                                 ? "bg-green-600 text-white border-green-600"
+                                : isTimeSlotPast(scheduleDate, slot.start)
+                                ? "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
                                 : slot.status === "available"
                                 ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
                                 : slot.status === "booked"

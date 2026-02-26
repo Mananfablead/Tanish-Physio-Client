@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SkalaetonQuestion } from "@/components/SkalaetonQuestion";
 import { useToast } from "@/hooks/use-toast";
+import { uploadQuestionnaireFile } from "@/lib/api";
 import {
   CheckCircle,
   Edit2,
@@ -794,15 +795,27 @@ export default function QuestionnairePage() {
       commonFieldValue = questionData.commonField || '';
     } else if (question.hasCommonField) {
       // Simple value format - user only provided main answer
-      currentValue = questionData;
+      // Check if questionData is an error object and handle appropriately
+      if (questionData && typeof questionData === 'object' && questionData.error !== undefined) {
+        // If questionData is an error object, treat as empty/unanswered
+        currentValue = '';
+      } else {
+        currentValue = questionData;
+      }
       commonFieldValue = ''; // Common field is empty
     } else {
       // Regular question without common field
-      currentValue = questionData;
+      // Check if questionData is an error object and handle appropriately
+      if (questionData && typeof questionData === 'object' && questionData.error !== undefined) {
+        // If questionData is an error object, treat as empty/unanswered
+        currentValue = '';
+      } else {
+        currentValue = questionData;
+      }
     }
     
     const isRequired = question.required;
-    const isAnswered = !!currentValue && currentValue.toString().trim() !== '';
+    const isAnswered = !!currentValue && typeof currentValue === 'string' && currentValue.trim() !== '';
     const hasError = validationErrors[question._id];
 
     // Render main question content
@@ -813,7 +826,7 @@ export default function QuestionnairePage() {
         mainQuestionContent = (
           <div className="space-y-4">
             <Input
-              value={currentValue}
+              value={typeof currentValue === 'string' ? currentValue : ''}
               onChange={(e) => {
                 // Clear validation error when user starts typing
                 if (validationErrors[question._id]) {
@@ -838,7 +851,7 @@ export default function QuestionnairePage() {
           <div className="space-y-4">
             <Input
               type="number"
-              value={currentValue}
+              value={typeof currentValue === 'string' ? currentValue : ''}
               onChange={(e) => {
                 // Clear validation error when user starts typing
                 if (validationErrors[question._id]) {
@@ -863,7 +876,7 @@ export default function QuestionnairePage() {
       case 'mcq':
         mainQuestionContent = (
           <RadioGroup
-            value={currentValue}
+            value={typeof currentValue === 'string' ? currentValue : ''}
             onValueChange={(value) => {
               // Clear validation error when user selects an option
               if (validationErrors[question._id]) {
@@ -895,7 +908,7 @@ export default function QuestionnairePage() {
         break;
 
       case 'slider':
-        const sliderValue = parseInt(currentValue) || 0;
+        const sliderValue = typeof currentValue === 'string' ? (parseInt(currentValue) || 0) : 0;
         mainQuestionContent = (
           <div className={`bg-gradient-to-br from-primary/5 to-secondary/10 p-2 rounded-3xl ${hasError ? 'border border-red-500' : isRequired && !isAnswered ? 'border border-red-300' : 'border border-primary/20'} space-y-12 shadow-inner`}>
             <div className="text-center relative">
@@ -1050,28 +1063,16 @@ export default function QuestionnairePage() {
                       });
 
                       try {
-                        // Upload file to backend
-                        const formData = new FormData();
-                        formData.append('file', file);
-
-                        const response = await fetch('/questionnaires/upload-file', {
-                          method: 'POST',
-                          body: formData
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('File upload failed');
-                        }
-
-                        const result = await response.json();
+                        // Upload file to backend using API function
+                        const result = await uploadQuestionnaireFile(file);
                         
-                        if (result.success && result.data) {
+                        if (result && result.data) {
                           // Store the uploaded file URL and details
                           updateAnswer(question._id, {
-                            url: result.data.url,
-                            name: result.data.filename,
-                            size: result.data.size,
-                            type: result.data.mimetype,
+                            url: result.data.data.url,
+                            name: result.data.data.filename,
+                            size: result.data.data.size,
+                            type: result.data.data.mimetype,
                             uploading: false
                           });
 
@@ -1079,7 +1080,7 @@ export default function QuestionnairePage() {
                           const fileInput = document.getElementById(`file-upload-${question._id}`) as HTMLInputElement;
                           if (fileInput) fileInput.value = '';
                         } else {
-                          throw new Error(result.message || 'Upload failed');
+                          throw new Error('Upload failed');
                         }
                       } catch (error) {
                         console.error('Error uploading file:', error);
@@ -1167,7 +1168,7 @@ export default function QuestionnairePage() {
         mainQuestionContent = (
           <div className="space-y-4">
             <Input
-              value={currentValue}
+              value={typeof currentValue === 'string' ? currentValue : ''}
               onChange={(e) => {
                 // Clear validation error when user starts typing
                 if (validationErrors[question._id]) {
@@ -1685,13 +1686,12 @@ export default function QuestionnairePage() {
                                             ) : question.type === 'age' ? (
                                               <span className="flex items-center gap-2">
                                                 <User className="w-4 h-4 text-primary" />
-                                                {data[question._id] || "Not answered"}
+                                                {typeof data[question._id] === 'string' ? data[question._id] || "Not answered" : (typeof data[question._id] === 'object' && (data[question._id] as any).name ? (data[question._id] as any).name || 'File Uploaded' : "Not answered")}
                                               </span>
                                             ) : typeof data[question._id] === 'object' && data[question._id] !== null && (data[question._id] as any).commonField !== undefined ? (
                                               <div className="space-y-1">
                                                 <span>
-                                                  {(data[question._id] as any).mainAnswer || 
-                                                   ((data[question._id] as any).mainAnswer === null ? "Not answered" : (data[question._id] as any).mainAnswer)}
+                                                  {typeof (data[question._id] as any).mainAnswer === 'string' ? ((data[question._id] as any).mainAnswer || "Not answered") : "Not answered"}
                                                 </span>
                                                 {(data[question._id] as any).commonField && (
                                                   <div className="text-sm text-slate-500 italic mt-1">
@@ -1702,7 +1702,7 @@ export default function QuestionnairePage() {
                                             ) : question.hasCommonField && data[question._id] !== undefined && data[question._id] !== null ? (
                                               // Handle case where user only provided main answer (simple value format)
                                               <div className="space-y-1">
-                                                <span>{data[question._id].toString() || "Not answered"}</span>
+                                                <span>{typeof data[question._id] === 'string' ? data[question._id] || "Not answered" : (typeof data[question._id] === 'object' && (data[question._id] as any).name ? (data[question._id] as any).name || 'File Uploaded' : "Not answered")}</span>
                                                 {/* No additional field since user didn't provide it */}
                                               </div>
                                             ) : typeof data[question._id] === 'string' && data[question._id].includes(' | Additional: ') ? (
@@ -1757,7 +1757,14 @@ export default function QuestionnairePage() {
                                                 Uploading...
                                               </span>
                                             ) : (
-                                              data[question._id] ||
+                                              typeof data[question._id] === 'string' ? 
+                                                data[question._id] || "Not answered" :
+                                              typeof data[question._id] === 'object' && (data[question._id] as any).name ?
+                                                (data[question._id] as any).name || 'File Uploaded' :
+                                              typeof data[question._id] === 'object' && (data[question._id] as any).error ?
+                                                `Upload failed: ${(data[question._id] as any).errorMessage || 'Unknown error'}` :
+                                              typeof data[question._id] === 'object' && (data[question._id] as any).uploading ?
+                                                'Uploading...' :
                                               "Not answered"
                                             )}
                                           </p>
