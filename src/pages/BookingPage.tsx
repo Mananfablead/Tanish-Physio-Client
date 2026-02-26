@@ -946,6 +946,9 @@ export default function BookingPage() {
             // Set processing to false as payment was successful and we're moving to verification
             setIsProcessing(false);
 
+            // Set loading state for API verification
+            setIsProcessing(true);
+            
             // Dispatch subscription payment verification action
             let verifyResult;
             if (isGuestUser) {
@@ -957,6 +960,9 @@ export default function BookingPage() {
                 verifySubscriptionPaymentTransaction(paymentVerificationData)
               );
             }
+            
+            // Reset loading state after API call
+            setIsProcessing(false);
             if (
               (isGuestUser &&
                 verifyGuestSubscriptionPaymentAsync.fulfilled.match(
