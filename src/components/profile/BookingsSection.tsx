@@ -31,7 +31,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
   const getServiceExpirationStatus = (booking: Booking) => {
     if (booking.isExpired) {
-      return { status: 'expired', text: 'Expire', color: 'text-red-600 bg-red-100' };
+      return { status: 'expired', text: 'Expired', color: 'text-red-600 bg-red-100' };
     }
     if (booking.expiryDate) {
       const expiryDate = new Date(booking.expiryDate);
@@ -49,7 +49,16 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
         color: 'text-green-600 bg-green-100'
       };
     }
-    return { status: 'unlimited', text: 'Unlimited', color: 'text-blue-600 bg-blue-100' };
+    // If no expiry date, show created date as reference
+    if (booking.createdAt) {
+      const createdDate = new Date(booking.createdAt);
+      return {
+        status: 'no-expiry',
+        text: `Created ${createdDate.toLocaleDateString()}`,
+        color: 'text-blue-600 bg-blue-100'
+      };
+    }
+    return { status: 'unknown', text: 'No expiry date', color: 'text-gray-600 bg-gray-100' };
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -203,44 +212,32 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                       {/* STATUS */}
                       <td className="px-6 py-4 text-center">
                         <div className="space-y-2 flex flex-col items-center">
-                          {(() => {
-                            const expirationStatus = getServiceExpirationStatus(booking);
-                            const isExpired = expirationStatus.text === "Expire";
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-black uppercase
+                ${booking.status === "confirmed"
+                                    ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                                    : booking.status === "cancelled"
+                                      ? "bg-red-100 text-red-700"
+                                      : booking.status === "pending"
+                                        ? "bg-yellow-100 text-yellow-700"
+                                        : booking.status === "scheduled"
+                                          ? "bg-purple-100 text-purple-700"
+                                          : booking.status === "completed"
+                                            ? "bg-emerald-100 text-emerald-700"
+                                            : "bg-blue-100 text-blue-700"
+                                  }`}
+                          >
+                            {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
+                              ? "Accepted" 
+                              : booking.bookingType === 'subscription-covered' && booking.status === "pending"
+                                ? "Pending Review"
+                                : booking.status || "Unknown"}
+                          </span>
 
-                            return (
-                              <>
-                                {/* Status badge hide if expired */}
-                                {!isExpired && (
-                                  <span
-                                    className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                    ${booking.status === "confirmed"
-                                        ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
-                                        : booking.status === "cancelled"
-                                          ? "bg-red-100 text-red-700"
-                                          : booking.status === "pending"
-                                            ? "bg-yellow-100 text-yellow-700"
-                                            : booking.status === "scheduled"
-                                              ? "bg-purple-100 text-purple-700"
-                                              : booking.status === "completed"
-                                                ? "bg-emerald-100 text-emerald-700"
-                                                : "bg-blue-100 text-blue-700"
-                                      }`}
-                                  >
-                                    {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
-                                      ? "Accepted" 
-                                      : booking.bookingType === 'subscription-covered' && booking.status === "pending"
-                                        ? "Pending Review"
-                                        : booking.status || "Unknown"}
-                                  </span>
-                                )}
-
-                                {/* Expiration badge always show */}
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${expirationStatus.color}`}>
-                                  {expirationStatus.text}
-                                </span>
-                              </>
-                            );
-                          })()}
+                          {/* Expiration badge always show */}
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getServiceExpirationStatus(booking).color}`}>
+                            {getServiceExpirationStatus(booking).text}
+                          </span>
                         </div>
                       </td>
 
@@ -365,44 +362,32 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
                   <div className="pt-2 border-t border-slate-100">
                     <div className="space-y-2 flex flex-col items-center">
-                      {(() => {
-                        const expirationStatus = getServiceExpirationStatus(booking);
-                        const isExpired = expirationStatus.text === "Expire";
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-black uppercase
+                        ${booking.status === "confirmed"
+                            ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                            : booking.status === "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : booking.status === "pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : booking.status === "scheduled"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : booking.status === "completed"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-blue-100 text-blue-700"
+                          }`}
+                      >
+                        {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
+                          ? "Accepted" 
+                          : booking.bookingType === 'subscription-covered' && booking.status === "pending"
+                            ? "Pending Review"
+                            : booking.status || "Unknown"}
+                      </span>
 
-                        return (
-                          <>
-                            {/* Status badge hide if expired */}
-                            {!isExpired && (
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-black uppercase
-                                ${booking.status === "confirmed"
-                                    ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
-                                    : booking.status === "cancelled"
-                                      ? "bg-red-100 text-red-700"
-                                      : booking.status === "pending"
-                                        ? "bg-yellow-100 text-yellow-700"
-                                        : booking.status === "scheduled"
-                                          ? "bg-purple-100 text-purple-700"
-                                          : booking.status === "completed"
-                                            ? "bg-emerald-100 text-emerald-700"
-                                            : "bg-blue-100 text-blue-700"
-                                  }`}
-                              >
-                                {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
-                                  ? "Accepted" 
-                                  : booking.bookingType === 'subscription-covered' && booking.status === "pending"
-                                    ? "Pending Review"
-                                    : booking.status || "Unknown"}
-                              </span>
-                            )}
-
-                            {/* Expiration badge always show */}
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${expirationStatus.color}`}>
-                              {expirationStatus.text}
-                            </span>
-                          </>
-                        );
-                      })()}
+                      {/* Expiration badge always show */}
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getServiceExpirationStatus(booking).color}`}>
+                        {getServiceExpirationStatus(booking).text}
+                      </span>
                     </div>
                   </div>
                 </div>
