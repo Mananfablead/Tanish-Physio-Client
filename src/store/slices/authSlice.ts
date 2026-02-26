@@ -59,7 +59,11 @@ export const login = createAsyncThunk<
   { rejectValue: string }
 >("auth/login", async ({ email, password }, { rejectWithValue }) => {
   try {
-    const response = await api.post("/auth/login", { email, password });
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+      appType: "client",
+    });
     const apiResponse = response.data as ApiResponse<LoginResponse>;
     const { token, user } = apiResponse.data;
 
@@ -123,7 +127,7 @@ export const logout = createAsyncThunk(
 );
 
 // Async thunk for fetching user profile
-export const  fetchProfile = createAsyncThunk(
+export const fetchProfile = createAsyncThunk(
   "auth/fetchProfile",
   async (_, { rejectWithValue }) => {
     try {
@@ -208,10 +212,16 @@ export const updateProfile = createAsyncThunk(
 // Async thunk for handling guest user transition after successful payment
 export const handleGuestUserTransition = createAsyncThunk(
   "auth/handleGuestUserTransition",
-  async (credentials: { email: string; password: string }, { dispatch, rejectWithValue }) => {
+  async (
+    credentials: { email: string; password: string },
+    { dispatch, rejectWithValue }
+  ) => {
     try {
       // Attempt to login with the provided credentials
-      const response = await api.post("/auth/login", credentials);
+      const response = await api.post("/auth/login", {
+        ...credentials,
+        appType: "client",
+      });
       const apiResponse = response.data as ApiResponse<LoginResponse>;
       const { token, user } = apiResponse.data;
 
@@ -225,7 +235,8 @@ export const handleGuestUserTransition = createAsyncThunk(
       return { token, user };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to transition guest user to logged-in user"
+        error.response?.data?.message ||
+          "Failed to transition guest user to logged-in user"
       );
     }
   }
