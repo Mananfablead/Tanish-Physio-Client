@@ -235,9 +235,9 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                           </span>
 
                           {/* Expiration badge always show */}
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getServiceExpirationStatus(booking).color}`}>
+                          {/* <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getServiceExpirationStatus(booking).color}`}>
                             {getServiceExpirationStatus(booking).text}
-                          </span>
+                          </span> */}
                         </div>
                       </td>
 
