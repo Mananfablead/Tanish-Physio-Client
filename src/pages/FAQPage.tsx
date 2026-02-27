@@ -5,15 +5,16 @@ import { fetchFaqsPublic } from '../store/slices/cmsSlice';
 import { useAccordion } from '../hooks/useAccordion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 export default function FAQPage() {
   const dispatch = useAppDispatch();
-  const { faqs, loading, error } = useAppSelector(state => ({
+  const { faqs, loading, error } = useAppSelector((state) => ({
     faqs: state.cms.faqs,
     loading: state.cms.loading,
-    error: state.cms.error
+    error: state.cms.error,
   }));
-  
+
   const { openIndex, toggleAccordion } = useAccordion();
 
   useEffect(() => {
@@ -22,13 +23,7 @@ export default function FAQPage() {
 
   return (
     <Layout>
-      <SEOHead
-        title="Frequently Asked Questions | Tanish Physio Fitness"
-        description="Find answers to common questions about our physiotherapy services, appointments, treatments, and policies in Surat. Get comprehensive information about our physiotherapy clinic."
-        keywords="physiotherapy FAQ, physio questions, therapy questions, physiotherapy answers, appointment FAQ, treatment FAQ, physiotherapy clinic Surat"
-        ogImage="/api/og/faq"
-        canonicalUrl="https://tanishphysiofitness.in/faq"
-      />
+      <SEOHead {...getSEOConfig("/faq")} />
 
       <div className="min-h-screen bg-background py-12">
         <div className="container mx-auto px-4 max-w-4xl">

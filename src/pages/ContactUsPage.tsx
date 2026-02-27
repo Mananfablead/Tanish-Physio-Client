@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { SEOHead } from "@/components/SEO/SEOHead";
-import { PAGE_SEO } from "@/components/SEO/seoConfig";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Button } from "../components/ui/button";
@@ -83,7 +83,7 @@ export default function ContactUsPage() {
 
   return (
     <Layout>
-      <SEOHead {...PAGE_SEO["/contact"]} />
+      <SEOHead {...getSEOConfig("/contact")} />
 
       <div className="min-h-screen bg-background ">
         <div>

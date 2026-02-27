@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { SEOHead } from "@/components/SEO/SEOHead";
-import { PAGE_SEO } from "@/components/SEO/seoConfig";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import { Quote, ArrowRight } from "lucide-react";
 import { fetchAboutPublic, fetchWhyUsPublic } from "../store/slices/cmsSlice";
 import { RootState, useAppDispatch } from "../store";
@@ -57,7 +57,7 @@ export default function AboutUsPage() {
 
   return (
     <Layout>
-      <SEOHead {...PAGE_SEO["/about"]} />
+      <SEOHead {...getSEOConfig("/about")} />
 
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
         {/* Hero Section */}

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 export default function TermsOfServicePage() {
   const dispatch = useAppDispatch();
@@ -145,13 +146,7 @@ export default function TermsOfServicePage() {
 
   return (
     <Layout>
-      <SEOHead
-        title="Terms of Service | Tanish Physio Fitness"
-        description="Read the terms of service for Tanish Physio & Fitness. Understand your rights and responsibilities when using our physiotherapy services and platform in Surat."
-        keywords="terms of service physiotherapy, physiotherapy terms, therapy terms, physiotherapy legal, terms and conditions physio, physiotherapy agreement"
-        ogImage="/api/og/terms"
-        canonicalUrl="https://tanishphysiofitness.in/terms"
-      />
+      <SEOHead {...getSEOConfig("/terms")} />
 
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="w-full px-0 md:px-0 lg:px-0">

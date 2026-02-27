@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import {
   Card,
   CardContent,
@@ -100,13 +101,7 @@ export default function SubscriptionPlansPage() {
 
   return (
     <Layout>
-      <SEOHead
-        title="Physiotherapy Subscription Plans & Pricing | Tanish Physio Fitness"
-        description="Choose from our flexible physiotherapy subscription plans. Individual and group therapy sessions with expert care. Affordable pricing for your recovery journey in Surat."
-        keywords="physiotherapy subscription, therapy plans, physiotherapy pricing, recovery packages, individual therapy, group therapy, Surat physio"
-        ogImage="/api/og/plans"
-        canonicalUrl="https://tanishphysiofitness.in/plans"
-      />
+      <SEOHead {...getSEOConfig("/plans")} />
 
       <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-6 pt-8 pb-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>

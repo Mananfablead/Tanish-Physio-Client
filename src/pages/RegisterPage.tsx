@@ -30,6 +30,7 @@ import { register } from '@/store/slices/authSlice';
 import { selectAuthLoading, selectCurrentUser } from '@/store/slices/authSlice';
 import { useToast } from '@/hooks/use-toast';
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 import {
   Tooltip,
@@ -108,13 +109,7 @@ const RegisterPage = () => {
 
   return (
     <TooltipProvider>
-      <SEOHead
-        title="Register | Create Account | Tanish Physio Fitness"
-        description="Create your account with Tanish Physio & Fitness to access expert physiotherapy services, book consultations, and manage your recovery journey in Surat."
-        keywords="register physiotherapy, sign up physio, physiotherapy account, create physio account, physiotherapy registration Surat"
-        ogImage="/api/og/register"
-        canonicalUrl="https://tanishphysiofitness.in/register"
-      />
+      <SEOHead {...getSEOConfig("/register")} />
 
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50/30 flex items-center justify-center p-4 md:p-6 lg:p-8">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">

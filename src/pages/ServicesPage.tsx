@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { SEOHead } from "@/components/SEO/SEOHead";
-import { PAGE_SEO } from "@/components/SEO/seoConfig";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import { SocialShareButtons } from "@/components/social/SocialShareButtons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,7 +104,7 @@ export default function ServicesPage() {
 
   return (
     <Layout>
-      <SEOHead {...PAGE_SEO["/services"]} />
+      <SEOHead {...getSEOConfig("/services")} />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-secondary/10 pt-8 pb-10">

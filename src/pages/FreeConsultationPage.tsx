@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import {
   Dialog,
   DialogContent,
@@ -291,13 +292,7 @@ export default function FreeConsultationPage() {
 
   return (
     <Layout>
-      <SEOHead
-        title="Free Physiotherapy Consultation | Book Online | Tanish Physio Fitness"
-        description="Book your free 15-minute video consultation with expert physiotherapists. Get personalized advice and treatment recommendations from certified professionals in Surat."
-        keywords="free physiotherapy consultation, online physio consultation, free physio advice, physiotherapy consultation Surat, video physio consultation, free physio session"
-        ogImage="/api/og/free-consultation"
-        canonicalUrl="https://tanishphysiofitness.in/free-consultation"
-      />
+      <SEOHead {...getSEOConfig("/free-consultation")} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">

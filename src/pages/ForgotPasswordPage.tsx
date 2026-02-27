@@ -26,6 +26,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthRedux } from '@/hooks/useAuthRedux';
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 import {
   Tooltip,
@@ -74,13 +75,7 @@ const ForgotPasswordPage = () => {
 
   return (
     <TooltipProvider>
-      <SEOHead
-        title="Reset Password | Forgot Password | Tanish Physio Fitness"
-        description="Reset your password for Tanish Physio & Fitness. Enter your email to receive secure password recovery instructions for your physiotherapy account in Surat."
-        keywords="reset password physiotherapy, forgot password physio, password recovery physio, physiotherapy account recovery, reset physio account"
-        ogImage="/api/og/forgot-password"
-        canonicalUrl="https://tanishphysiofitness.in/forgot-password"
-      />
+      <SEOHead {...getSEOConfig("/forgot-password")} />
 
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50/30 flex items-center justify-center p-4 md:p-6 lg:p-8">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">

@@ -35,6 +35,7 @@ import { login } from '@/store/slices/authSlice';
 import { selectAuthLoading, selectCurrentUser } from '@/store/slices/authSlice';
 import { useToast } from '@/hooks/use-toast';
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 import {
   Tooltip,
@@ -108,13 +109,7 @@ const LoginPage = () => {
 
   return (
     <TooltipProvider>
-      <SEOHead
-        title="Login | Sign In | Tanish Physio Fitness"
-        description="Log in to your Tanish Physio & Fitness account to access your personalized physiotherapy dashboard, manage appointments, and continue your recovery journey in Surat."
-        keywords="login physiotherapy, sign in physio, physiotherapy account login, physiotherapy dashboard, patient login Surat"
-        ogImage="/api/og/login"
-        canonicalUrl="https://tanishphysiofitness.in/login"
-      />
+      <SEOHead {...getSEOConfig("/login")} />
 
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50/30 flex items-center justify-center p-4 md:p-6 lg:p-8">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">

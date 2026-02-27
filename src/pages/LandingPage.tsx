@@ -2,9 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { SEOHead } from "@/components/SEO/SEOHead";
-import { PAGE_SEO } from "@/components/SEO/seoConfig";
-import { SocialShareButtons } from "@/components/social/SocialShareButtons";
-import { SocialFollowButtons } from "@/components/social/SocialFollowButtons";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import {
   ClipboardList,
   UserCheck,
@@ -308,7 +306,7 @@ export default function LandingPage() {
 
   return (
     <Layout>
-      <SEOHead {...PAGE_SEO["/"]} />
+      <SEOHead {...getSEOConfig("/")} />
 
       {/* Sticky Floating CTA */}
       {/* <motion.div
@@ -395,18 +393,6 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <CTA />
-
-      {/* Social Follow Section - Bottom of Page */}
-      <div className="bg-muted py-12">
-        <div className="container text-center">
-          <h3 className="text-2xl font-bold mb-6">Follow Us on Social Media</h3>
-          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Stay updated with our latest health tips, success stories, and
-            physiotherapy insights
-          </p>
-          <SocialFollowButtons variant="card" className="max-w-2xl mx-auto" />
-        </div>
-      </div>
     </Layout>
   );
 }

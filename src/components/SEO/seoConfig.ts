@@ -143,3 +143,20 @@ export const STRUCTURED_DATA = {
     },
   },
 };
+
+// Utility function to get SEO configuration with fallback to DEFAULT_SEO
+export const getSEOConfig = (pathname: string): SEOConfig => {
+  // Check if we have specific SEO config for this pathname
+  if (PAGE_SEO[pathname]) {
+    return PAGE_SEO[pathname];
+  }
+
+  // If not found, try with trailing slash removed or added
+  const normalizedPath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname + '/';
+  if (PAGE_SEO[normalizedPath]) {
+    return PAGE_SEO[normalizedPath];
+  }
+
+  // If still not found, return the default SEO config
+  return DEFAULT_SEO;
+};

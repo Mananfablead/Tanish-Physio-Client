@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { API_BASE_URL } from '@/lib/api';
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 // Helper function to truncate text to specified number of lines
 const truncateText = (text: string, maxLines: number = 3) => {
@@ -107,13 +108,7 @@ const TestimonialsPage: React.FC = () => {
 
   return (
     <Layout>
-      <SEOHead
-        title="Patient Testimonials & Success Stories | Tanish Physio Fitness"
-        description="Read real patient testimonials and success stories from our physiotherapy clinic. See how our expert care helped people recover from injuries, manage pain, and improve mobility."
-        keywords="physiotherapy testimonials, patient success stories, recovery testimonials, physiotherapy reviews, patient feedback, therapy success stories"
-        ogImage="/api/og/testimonials"
-        canonicalUrl="https://tanishphysiofitness.in/testimonials"
-      />
+      <SEOHead {...getSEOConfig("/testimonials")} />
 
       {/* Header Section with Gradient Background */}
       <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-4 pb-8">

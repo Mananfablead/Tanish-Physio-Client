@@ -13,6 +13,7 @@ import { SkalaetonQuestion } from "@/components/SkalaetonQuestion";
 import { useToast } from "@/hooks/use-toast";
 import { uploadQuestionnaireFile } from "@/lib/api";
 import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import {
   CheckCircle,
   Edit2,
@@ -1609,13 +1610,7 @@ export default function QuestionnairePage() {
 
   return (
     <Layout>
-      <SEOHead
-        title="Patient Intake Form | Health Assessment | Tanish Physio Fitness"
-        description="Complete our comprehensive health assessment questionnaire to help us understand your condition and match you with the right physiotherapist. Secure and confidential health intake form."
-        keywords="health questionnaire, physiotherapy intake form, patient assessment, health evaluation, physio assessment, medical questionnaire, health screening"
-        ogImage="/api/og/questionnaire"
-        canonicalUrl="https://tanishphysiofitness.in/questionnaire"
-      />
+      <SEOHead {...getSEOConfig("/questionnaire")} />
 
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-primary/5 pb-20">
         {/* Progress Header */}
