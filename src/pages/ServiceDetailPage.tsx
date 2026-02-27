@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckCircle, ChevronRight, Star, Play, X, IndianRupee, ChevronLeft, CircleAlert } from "lucide-react";
 import { Service } from "@/types/service";
+import { SEOHead } from "@/components/SEO/SEOHead";
 import {
   fetchServiceById,
   fetchServiceBySlug,
@@ -321,22 +322,27 @@ const ServiceSidebar = ({
 
   const handleBooking = () => {
     // Check if user has an active plan but no remaining sessions or invalid plan
-    if (hasActivePlan && subscriptionInfo && (
-      subscriptionInfo?.remainingSessions <= 0 || 
-      subscriptionInfo?.reason === 'NO_VALID_SESSIONS' || 
-      subscriptionInfo?.reason === 'INVALID_PLAN' || 
-      subscriptionInfo?.reason === 'PLAN_CONFIG_ERROR' || 
-      subscriptionInfo?.reason === 'SESSIONS_EXHAUSTED' ||
-      subscriptionInfo?.reason === 'NO_SESSIONS_IN_PLAN'
-    )) {
-      const totalSessions = subscriptionInfo?.totalSessions ?? activePlan?.sessions ?? 'unknown';
-      const planName = subscriptionInfo?.planName ?? activePlan?.planName ?? 'your';
+    if (
+      hasActivePlan &&
+      subscriptionInfo &&
+      (subscriptionInfo?.remainingSessions <= 0 ||
+        subscriptionInfo?.reason === "NO_VALID_SESSIONS" ||
+        subscriptionInfo?.reason === "INVALID_PLAN" ||
+        subscriptionInfo?.reason === "PLAN_CONFIG_ERROR" ||
+        subscriptionInfo?.reason === "SESSIONS_EXHAUSTED" ||
+        subscriptionInfo?.reason === "NO_SESSIONS_IN_PLAN")
+    ) {
+      const totalSessions =
+        subscriptionInfo?.totalSessions ?? activePlan?.sessions ?? "unknown";
+      const planName =
+        subscriptionInfo?.planName ?? activePlan?.planName ?? "your";
       const usedSessions = subscriptionInfo?.usedSessions ?? 0;
-      const message = subscriptionInfo?.message ?? 
-        (subscriptionInfo?.reason === 'NO_SESSIONS_IN_PLAN' 
+      const message =
+        subscriptionInfo?.message ??
+        (subscriptionInfo?.reason === "NO_SESSIONS_IN_PLAN"
           ? `Your ${planName} plan does not include any sessions. Please upgrade your plan.`
           : `You have reached your session limit. Your ${planName} plan includes ${totalSessions} sessions and you have used ${usedSessions} of them.`);
-      
+
       // Call the parent's function to handle session limit exceeded
       if (setSessionLimitExceededInfo && setIsSessionLimitExceededModalOpen) {
         setSessionLimitExceededInfo({
@@ -345,7 +351,7 @@ const ServiceSidebar = ({
           totalSessions,
           usedSessions,
           remainingSessions: subscriptionInfo?.remainingSessions,
-          reason: subscriptionInfo?.reason
+          reason: subscriptionInfo?.reason,
         });
         setIsSessionLimitExceededModalOpen(true);
       }
@@ -406,7 +412,10 @@ const ServiceSidebar = ({
           <div className="flex justify-between">
             <span className="text-slate-600">Price:</span>
             <span className="font-medium text-slate-900 flex items-center gap-1">
-              {hasActivePlan && ((subscriptionInfoProp && subscriptionInfoProp.remainingSessions > 0) || (activePlan?.availableSessions?.remaining > 0)) ? (
+              {hasActivePlan &&
+              ((subscriptionInfoProp &&
+                subscriptionInfoProp.remainingSessions > 0) ||
+                activePlan?.availableSessions?.remaining > 0) ? (
                 <>
                   <span className="text-green-600 font-bold">FREE</span>
                   <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full ml-2">
@@ -428,7 +437,7 @@ const ServiceSidebar = ({
               )}
             </span>
           </div>
-          
+
           {/* Show subscription session information if user has active plan */}
           {/* {hasActivePlan && activePlan?.availableSessions && (
             <div className="mt-3 pt-3 border-t border-slate-200">
@@ -570,21 +579,26 @@ export default function ServiceDetailPage() {
   const dispatch: AppDispatch = useDispatch();
   const { isAuthenticated } = useAuth();
   const user = useSelector(selectCurrentUser);
-  
+
   // Check if user has active subscription
-  const hasActivePlan = user?.subscriptionData && 
-                       user.subscriptionData.status === 'active' && 
-                       !user.subscriptionData.isExpired;
+  const hasActivePlan =
+    user?.subscriptionData &&
+    user.subscriptionData.status === "active" &&
+    !user.subscriptionData.isExpired;
   const activePlan = user?.subscriptionData || null;
 
   // Subscription state
-  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionEligible, setSubscriptionEligible] =
+    useState<boolean>(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
-  
+  const [checkingSubscription, setCheckingSubscription] =
+    useState<boolean>(false);
+
   // Session limit exceeded modal state
-  const [isSessionLimitExceededModalOpen, setIsSessionLimitExceededModalOpen] = useState(false);
-  const [sessionLimitExceededInfo, setSessionLimitExceededInfo] = useState<any>(null);
+  const [isSessionLimitExceededModalOpen, setIsSessionLimitExceededModalOpen] =
+    useState(false);
+  const [sessionLimitExceededInfo, setSessionLimitExceededInfo] =
+    useState<any>(null);
 
   // Get service from Redux store
   const { selectedService, loading, error } = useSelector(
@@ -601,8 +615,15 @@ export default function ServiceDetailPage() {
         try {
           setCheckingSubscription(true);
           const response = await checkSubscriptionEligibility();
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = response.data.data;
-          
+          const {
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions,
+          } = response.data.data;
+
           setSubscriptionEligible(eligible);
           setSubscriptionInfo({
             eligible,
@@ -610,10 +631,10 @@ export default function ServiceDetailPage() {
             remainingSessions,
             planName,
             totalSessions,
-            usedSessions
+            usedSessions,
           });
         } catch (error) {
-          console.error('Error checking subscription status:', error);
+          console.error("Error checking subscription status:", error);
           setSubscriptionEligible(false);
           setSubscriptionInfo(null);
         } finally {
@@ -624,7 +645,7 @@ export default function ServiceDetailPage() {
         setSubscriptionInfo(null);
       }
     };
-    
+
     checkSubscriptionStatus();
   }, [user]);
 
@@ -686,6 +707,21 @@ export default function ServiceDetailPage() {
 
   return (
     <Layout>
+      {service && (
+        <SEOHead
+          title={`${service.details.title} | Tanish Physio Fitness`}
+          description={`${service.details.detailedDescription.substring(
+            0,
+            150
+          )}... Expert ${service.details.title.toLowerCase()} treatment in Surat. Book your session today.`}
+          keywords={`${service.details.title.toLowerCase()}, physiotherapy ${service.details.title.toLowerCase()}, ${service.details.title.toLowerCase()} treatment Surat, rehabilitation ${service.details.title.toLowerCase()}, therapy ${service.details.title.toLowerCase()}`}
+          ogImage={service.media?.heroImage || "/api/og/services"}
+          canonicalUrl={`https://tanishphysiofitness.in/services/${
+            slug || serviceId
+          }`}
+        />
+      )}
+
       <div className="py-8 bg-gradient-to-b from-primary/5 to-secondary/5">
         <div className="container">
           {/* Breadcrumb */}
@@ -757,14 +793,21 @@ export default function ServiceDetailPage() {
                       hasActivePlan={hasActivePlan}
                       activePlan={activePlan}
                       subscriptionInfoProp={subscriptionInfo}
-                      isSessionLimitExceededModalOpen={isSessionLimitExceededModalOpen}
-                      setIsSessionLimitExceededModalOpen={setIsSessionLimitExceededModalOpen}
+                      isSessionLimitExceededModalOpen={
+                        isSessionLimitExceededModalOpen
+                      }
+                      setIsSessionLimitExceededModalOpen={
+                        setIsSessionLimitExceededModalOpen
+                      }
                       sessionLimitExceededInfo={sessionLimitExceededInfo}
                       setSessionLimitExceededInfo={setSessionLimitExceededInfo}
                     />
-                    
+
                     {/* Session Limit Exceeded Modal */}
-                    <Dialog open={isSessionLimitExceededModalOpen} onOpenChange={setIsSessionLimitExceededModalOpen}>
+                    <Dialog
+                      open={isSessionLimitExceededModalOpen}
+                      onOpenChange={setIsSessionLimitExceededModalOpen}
+                    >
                       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
@@ -775,35 +818,52 @@ export default function ServiceDetailPage() {
                         <div className="py-4 space-y-4">
                           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <p className="text-red-800 mb-2">
-                              {sessionLimitExceededInfo?.message || 'Your subscription session limit has been reached.'}
+                              {sessionLimitExceededInfo?.message ||
+                                "Your subscription session limit has been reached."}
                             </p>
                             <p className="text-red-700 text-sm">
-                              You have used all {sessionLimitExceededInfo?.usedSessions} sessions from your {sessionLimitExceededInfo?.planName} plan.
+                              You have used all{" "}
+                              {sessionLimitExceededInfo?.usedSessions} sessions
+                              from your {sessionLimitExceededInfo?.planName}{" "}
+                              plan.
                             </p>
                           </div>
-                          
+
                           <div className="space-y-3">
-                            <h3 className="font-semibold text-gray-800">Next Steps:</h3>
+                            <h3 className="font-semibold text-gray-800">
+                              Next Steps:
+                            </h3>
                             <ul className="list-disc pl-5 space-y-2 text-gray-700">
-                              <li>You can now book services by paying the regular price</li>
-                              <li>Your subscription benefits are no longer available for additional sessions</li>
-                              <li>Consider upgrading your subscription for more sessions</li>
+                              <li>
+                                You can now book services by paying the regular
+                                price
+                              </li>
+                              <li>
+                                Your subscription benefits are no longer
+                                available for additional sessions
+                              </li>
+                              <li>
+                                Consider upgrading your subscription for more
+                                sessions
+                              </li>
                             </ul>
                           </div>
-                          
+
                           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                            <Button 
+                            <Button
                               onClick={() => {
                                 setIsSessionLimitExceededModalOpen(false);
-                                navigate('/services');
+                                navigate("/services");
                               }}
                               className="flex-1 bg-blue-600 hover:bg-blue-700"
                             >
                               Browse Services
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              onClick={() => setIsSessionLimitExceededModalOpen(false)}
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                setIsSessionLimitExceededModalOpen(false)
+                              }
                               className="flex-1"
                             >
                               Close

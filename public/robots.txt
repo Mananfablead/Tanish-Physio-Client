@@ -1,14 +1,78 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://tanishphysiofitness.in/sitemap.xml
+
+# Specific directories to allow
+Allow: /assets/
+Allow: /favicon.png
+Allow: /placeholder.svg
+
+# Disallow certain paths that don't need indexing
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+Disallow: /*?*
+Disallow: /*.json$
+Disallow: /*.txt$
+
+# Crawl delay for better server performance
+Crawl-delay: 10
+
+# Specific rules for major search engines
 User-agent: Googlebot
 Allow: /
 
 User-agent: Bingbot
 Allow: /
 
-User-agent: Twitterbot
+User-agent: Slurp
 Allow: /
 
-User-agent: facebookexternalhit
+User-agent: DuckDuckBot
 Allow: /
 
-User-agent: *
-Allow: /
+# Block malicious bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MegaIndex
+Disallow: /
+
+# Block AI bots and data miners
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+# Host directive
+Host: https://tanishphysiofitness.in

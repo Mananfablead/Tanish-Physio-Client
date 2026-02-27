@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import { SEOHead } from "@/components/SEO/SEOHead";
 import {
   Dialog,
   DialogContent,
@@ -25,22 +26,41 @@ import {
   User,
   Wallet,
   CalendarClock,
-  CircleAlert
+  CircleAlert,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { createBookingAsync, updateBookingAsync, updateGuestBookingAsync, createPaymentOrderAsync, verifyPaymentAsync, createGuestBookingAsync, createGuestPaymentOrderAsync, verifyGuestPaymentAsync, createSubscriptionPaymentOrderAsync, checkSlotAvailabilityAsync, checkUserExistsAsync } from '@/store/slices/bookingsSlice';
-import { verifySubscriptionPaymentTransaction } from '@/store/slices/paymentSlice';
-import { createGuestSubscriptionPaymentOrderAsync, verifyGuestSubscriptionPaymentAsync } from '@/store/slices/bookingsSlice';
-import { useAppDispatch, useAppSelector, RootState } from '@/store';
+import {
+  createBookingAsync,
+  updateBookingAsync,
+  updateGuestBookingAsync,
+  createPaymentOrderAsync,
+  verifyPaymentAsync,
+  createGuestBookingAsync,
+  createGuestPaymentOrderAsync,
+  verifyGuestPaymentAsync,
+  createSubscriptionPaymentOrderAsync,
+  checkSlotAvailabilityAsync,
+  checkUserExistsAsync,
+} from "@/store/slices/bookingsSlice";
+import { verifySubscriptionPaymentTransaction } from "@/store/slices/paymentSlice";
+import {
+  createGuestSubscriptionPaymentOrderAsync,
+  verifyGuestSubscriptionPaymentAsync,
+} from "@/store/slices/bookingsSlice";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { ScheduleModal } from "@/components/profile/ScheduleModal";
-import { fetchPublicAdmins } from '@/store/slices/adminSlice';
-import { getAvailability, checkSubscriptionEligibility } from '@/lib/api';
-import { fetchOffers, validateCoupon, resetCouponValidation } from '@/store/slices/offersSlice';
-import { register, setCredentials } from '@/store/slices/authSlice';
-import BookingLoginModal from '@/components/BookingLoginModal';
+import { fetchPublicAdmins } from "@/store/slices/adminSlice";
+import { getAvailability, checkSubscriptionEligibility } from "@/lib/api";
+import {
+  fetchOffers,
+  validateCoupon,
+  resetCouponValidation,
+} from "@/store/slices/offersSlice";
+import { register, setCredentials } from "@/store/slices/authSlice";
+import BookingLoginModal from "@/components/BookingLoginModal";
 
 export default function FreeConsultationPage() {
   const navigate = useNavigate();
@@ -59,12 +79,15 @@ export default function FreeConsultationPage() {
   });
 
   // Subscription state
-  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+  const [subscriptionEligible, setSubscriptionEligible] =
+    useState<boolean>(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
+  const [checkingSubscription, setCheckingSubscription] =
+    useState<boolean>(false);
 
   // Check if user is a guest (not logged in)
-  const isGuestUser = !sessionStorage.getItem("qw_user") && !localStorage.getItem("token");
+  const isGuestUser =
+    !sessionStorage.getItem("qw_user") && !localStorage.getItem("token");
 
   // Fetch public admins for therapist selection
   const {
@@ -95,14 +118,26 @@ export default function FreeConsultationPage() {
           setCheckingSubscription(true);
           const response = await checkSubscriptionEligibility();
           const data = response.data.data;
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = data;
-          
+          const {
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions,
+          } = data;
+
           // Ensure we have proper values, fallback to 0 if null/undefined
-          const safeRemainingSessions = (remainingSessions != null && !isNaN(remainingSessions)) ? remainingSessions : 0;
-          const safeTotalSessions = (totalSessions != null && !isNaN(totalSessions)) ? totalSessions : 0;
-          const safeUsedSessions = (usedSessions != null && !isNaN(usedSessions)) ? usedSessions : 0;
-          const safePlanName = planName || 'your plan';
-          
+          const safeRemainingSessions =
+            remainingSessions != null && !isNaN(remainingSessions)
+              ? remainingSessions
+              : 0;
+          const safeTotalSessions =
+            totalSessions != null && !isNaN(totalSessions) ? totalSessions : 0;
+          const safeUsedSessions =
+            usedSessions != null && !isNaN(usedSessions) ? usedSessions : 0;
+          const safePlanName = planName || "your plan";
+
           setSubscriptionEligible(eligible);
           setSubscriptionInfo({
             eligible,
@@ -110,10 +145,10 @@ export default function FreeConsultationPage() {
             remainingSessions: safeRemainingSessions,
             planName: safePlanName,
             totalSessions: safeTotalSessions,
-            usedSessions: safeUsedSessions
+            usedSessions: safeUsedSessions,
           });
         } catch (error) {
-          console.error('Error checking subscription status:', error);
+          console.error("Error checking subscription status:", error);
           setSubscriptionEligible(false);
           setSubscriptionInfo(null);
         } finally {
@@ -124,7 +159,7 @@ export default function FreeConsultationPage() {
         setSubscriptionInfo(null);
       }
     };
-    
+
     checkSubscriptionStatus();
   }, [user]);
 
@@ -139,12 +174,13 @@ export default function FreeConsultationPage() {
 
       // Filter for free consultation slots only (available slots with bookingType 'free-consultation' from admin therapists)
       const freeConsultationSlots = allAvailability
-        .filter((avail: any) => avail.therapistId.role === 'admin')
+        .filter((avail: any) => avail.therapistId.role === "admin")
         .flatMap((avail: any) =>
           avail.timeSlots
-            .filter((slot: any) => 
-              slot.status === 'available' && 
-              slot.bookingType === 'free-consultation'
+            .filter(
+              (slot: any) =>
+                slot.status === "available" &&
+                slot.bookingType === "free-consultation"
             )
             .map((slot: any) => ({
               ...slot,
@@ -180,7 +216,12 @@ export default function FreeConsultationPage() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedDate || !selectedTime || !guestUserData.name || !guestUserData.email) {
+    if (
+      !selectedDate ||
+      !selectedTime ||
+      !guestUserData.name ||
+      !guestUserData.email
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -204,21 +245,25 @@ export default function FreeConsultationPage() {
         scheduledDate: selectedDate,
         scheduledTime: selectedTime,
         timeSlot: {
-          start: selectedTime.split('-')[0],
-          end: selectedTime.split('-')[1],
+          start: selectedTime.split("-")[0],
+          end: selectedTime.split("-")[1],
         },
         bookingType: "free-consultation", // Add this field
       };
 
       if (isGuestUser) {
         // Handle guest booking
-        const result = await dispatch(createGuestBookingAsync({
-          ...bookingData,
-          clientEmail: guestUserData.email,
-          clientPhone: guestUserData.phone,
-        })).unwrap();
+        const result = await dispatch(
+          createGuestBookingAsync({
+            ...bookingData,
+            clientEmail: guestUserData.email,
+            clientPhone: guestUserData.phone,
+          })
+        ).unwrap();
 
-        toast.success("Free consultation booked successfully! You are now logged in.");
+        toast.success(
+          "Free consultation booked successfully! You are now logged in."
+        );
         navigate("/booking-confirmation", {
           state: {
             booking: result,
@@ -246,6 +291,14 @@ export default function FreeConsultationPage() {
 
   return (
     <Layout>
+      <SEOHead
+        title="Free Physiotherapy Consultation | Book Online | Tanish Physio Fitness"
+        description="Book your free 15-minute video consultation with expert physiotherapists. Get personalized advice and treatment recommendations from certified professionals in Surat."
+        keywords="free physiotherapy consultation, online physio consultation, free physio advice, physiotherapy consultation Surat, video physio consultation, free physio session"
+        ogImage="/api/og/free-consultation"
+        canonicalUrl="https://tanishphysiofitness.in/free-consultation"
+      />
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <motion.div
@@ -258,7 +311,8 @@ export default function FreeConsultationPage() {
                 Free Consultation Booking
               </h1>
               <p className="text-lg text-gray-600">
-                Book a free 15-minute video consultation with our expert physiotherapist
+                Book a free 15-minute video consultation with our expert
+                physiotherapist
               </p>
             </div>
 
@@ -272,27 +326,45 @@ export default function FreeConsultationPage() {
                     </div>
                   </div>
                   <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-bold text-blue-800">{subscriptionInfo.planName}</h3>
+                    <h3 className="text-sm font-bold text-blue-800">
+                      {subscriptionInfo.planName}
+                    </h3>
                     <div className="mt-2 text-sm text-blue-700">
                       {subscriptionInfo.eligible ? (
                         <>
-                          <p>You have <span className="font-bold">{subscriptionInfo.remainingSessions}</span> sessions remaining</p>
-                          <p className="mt-1 text-xs">Book sessions for free with your subscription!</p>
+                          <p>
+                            You have{" "}
+                            <span className="font-bold">
+                              {subscriptionInfo.remainingSessions}
+                            </span>{" "}
+                            sessions remaining
+                          </p>
+                          <p className="mt-1 text-xs">
+                            Book sessions for free with your subscription!
+                          </p>
                         </>
                       ) : (
                         <p>{subscriptionInfo.message}</p>
                       )}
                     </div>
-                    {subscriptionInfo.totalSessions !== 'unlimited' && (
+                    {subscriptionInfo.totalSessions !== "unlimited" && (
                       <div className="mt-2">
                         <div className="w-full bg-blue-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${((subscriptionInfo.totalSessions - subscriptionInfo.remainingSessions) / subscriptionInfo.totalSessions) * 100}%` }}
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{
+                              width: `${
+                                ((subscriptionInfo.totalSessions -
+                                  subscriptionInfo.remainingSessions) /
+                                  subscriptionInfo.totalSessions) *
+                                100
+                              }%`,
+                            }}
                           ></div>
                         </div>
                         <p className="text-xs text-blue-600 mt-1">
-                          {subscriptionInfo.usedSessions} of {subscriptionInfo.totalSessions} sessions used
+                          {subscriptionInfo.usedSessions} of{" "}
+                          {subscriptionInfo.totalSessions} sessions used
                         </p>
                       </div>
                     )}
@@ -318,7 +390,10 @@ export default function FreeConsultationPage() {
                           id="name"
                           value={guestUserData.name}
                           onChange={(e) =>
-                            setGuestUserData({ ...guestUserData, name: e.target.value })
+                            setGuestUserData({
+                              ...guestUserData,
+                              name: e.target.value,
+                            })
                           }
                           placeholder="Enter your full name"
                           required
@@ -331,7 +406,10 @@ export default function FreeConsultationPage() {
                           type="email"
                           value={guestUserData.email}
                           onChange={(e) =>
-                            setGuestUserData({ ...guestUserData, email: e.target.value })
+                            setGuestUserData({
+                              ...guestUserData,
+                              email: e.target.value,
+                            })
                           }
                           placeholder="Enter your email"
                           required
@@ -343,7 +421,10 @@ export default function FreeConsultationPage() {
                           id="phone"
                           value={guestUserData.phone}
                           onChange={(e) =>
-                            setGuestUserData({ ...guestUserData, phone: e.target.value })
+                            setGuestUserData({
+                              ...guestUserData,
+                              phone: e.target.value,
+                            })
                           }
                           placeholder="Enter your phone number"
                         />
@@ -363,7 +444,7 @@ export default function FreeConsultationPage() {
                         type="date"
                         value={selectedDate}
                         onChange={(e) => handleDateChange(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={new Date().toISOString().split("T")[0]}
                         required
                       />
                     </div>
@@ -372,18 +453,26 @@ export default function FreeConsultationPage() {
                   {/* Time Slot Selection */}
                   {selectedDate && (
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Available Time Slots</h3>
+                      <h3 className="text-lg font-semibold">
+                        Available Time Slots
+                      </h3>
                       {loadingSlots ? (
                         <div className="text-center py-4">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                          <p className="mt-2 text-sm text-gray-600">Loading available slots...</p>
+                          <p className="mt-2 text-sm text-gray-600">
+                            Loading available slots...
+                          </p>
                         </div>
                       ) : availableSlots.length > 0 ? (
                         <div className="grid grid-cols-2 gap-2">
                           {availableSlots.map((slot, index) => (
                             <Button
                               key={index}
-                              variant={selectedTime === `${slot.start}-${slot.end}` ? "default" : "outline"}
+                              variant={
+                                selectedTime === `${slot.start}-${slot.end}`
+                                  ? "default"
+                                  : "outline"
+                              }
                               onClick={() => handleTimeSelect(slot)}
                               className="text-sm"
                             >
@@ -394,7 +483,8 @@ export default function FreeConsultationPage() {
                         </div>
                       ) : (
                         <p className="text-center py-4 text-gray-600">
-                          No available slots for this date. Please select a different date.
+                          No available slots for this date. Please select a
+                          different date.
                         </p>
                       )}
                     </div>
@@ -405,7 +495,13 @@ export default function FreeConsultationPage() {
                   {/* Submit Button */}
                   <Button
                     onClick={handleSubmit}
-                    disabled={isProcessing || !selectedDate || !selectedTime || !guestUserData.name || !guestUserData.email}
+                    disabled={
+                      isProcessing ||
+                      !selectedDate ||
+                      !selectedTime ||
+                      !guestUserData.name ||
+                      !guestUserData.email
+                    }
                     className="w-full"
                     size="lg"
                   >
@@ -435,7 +531,8 @@ export default function FreeConsultationPage() {
                     <div>
                       <h4 className="font-semibold">15-Minute Session</h4>
                       <p className="text-sm text-gray-600">
-                        A focused consultation to understand your needs and provide initial guidance.
+                        A focused consultation to understand your needs and
+                        provide initial guidance.
                       </p>
                     </div>
                   </div>
@@ -473,10 +570,13 @@ export default function FreeConsultationPage() {
                   <Separator />
 
                   <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">After Booking</h4>
+                    <h4 className="font-semibold text-blue-900 mb-2">
+                      After Booking
+                    </h4>
                     <p className="text-sm text-blue-800">
-                      Once booked, our admin will review and confirm your consultation.
-                      You'll receive a confirmation email with the meeting link and instructions.
+                      Once booked, our admin will review and confirm your
+                      consultation. You'll receive a confirmation email with the
+                      meeting link and instructions.
                     </p>
                   </div>
                 </CardContent>

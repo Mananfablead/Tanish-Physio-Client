@@ -1,4 +1,7 @@
 import { Layout } from "@/components/layout/Layout";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { PAGE_SEO } from "@/components/SEO/seoConfig";
+import { SocialShareButtons } from "@/components/social/SocialShareButtons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EnhancedServicesGrid } from "@/components/ui/EnhancedServicesGrid";
@@ -14,7 +17,7 @@ import {
 
 import { fetchAllServices } from "@/store/slices/serviceSlice";
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import type { AppDispatch } from "@/store";
 import { selectCurrentUser } from "@/store/slices/authSlice";
@@ -22,19 +25,24 @@ import { checkSubscriptionEligibility } from "@/lib/api";
 
 export default function ServicesPage() {
   const dispatch: AppDispatch = useDispatch();
-  const { services, loading, error } = useSelector((state: RootState) => state.services);
+  const { services, loading, error } = useSelector(
+    (state: RootState) => state.services
+  );
   const user = useSelector(selectCurrentUser);
-  
-    // Subscription state
-  const [subscriptionEligible, setSubscriptionEligible] = useState<boolean>(false);
+
+  // Subscription state
+  const [subscriptionEligible, setSubscriptionEligible] =
+    useState<boolean>(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState<boolean>(false);
-  
+  const [checkingSubscription, setCheckingSubscription] =
+    useState<boolean>(false);
+
   // Check if user has active subscription
-  const hasActivePlan = user?.subscriptionData && 
-                       user.subscriptionData.status === 'active' && 
-                       !user.subscriptionData.isExpired;
-  
+  const hasActivePlan =
+    user?.subscriptionData &&
+    user.subscriptionData.status === "active" &&
+    !user.subscriptionData.isExpired;
+
   // Check subscription eligibility when user changes
   useEffect(() => {
     const checkSubscriptionStatus = async () => {
@@ -43,8 +51,15 @@ export default function ServicesPage() {
           setCheckingSubscription(true);
           const response = await checkSubscriptionEligibility();
           const data = response.data.data;
-          const { eligible, message, remainingSessions, planName, totalSessions, usedSessions } = data;
-          
+          const {
+            eligible,
+            message,
+            remainingSessions,
+            planName,
+            totalSessions,
+            usedSessions,
+          } = data;
+
           setSubscriptionEligible(eligible);
           setSubscriptionInfo({
             eligible,
@@ -52,10 +67,10 @@ export default function ServicesPage() {
             remainingSessions,
             planName,
             totalSessions,
-            usedSessions
+            usedSessions,
           });
         } catch (error) {
-          console.error('Error checking subscription status:', error);
+          console.error("Error checking subscription status:", error);
           setSubscriptionEligible(false);
           setSubscriptionInfo(null);
         } finally {
@@ -66,10 +81,10 @@ export default function ServicesPage() {
         setSubscriptionInfo(null);
       }
     };
-    
+
     checkSubscriptionStatus();
   }, [user]);
-  
+
   useEffect(() => {
     dispatch(fetchAllServices());
   }, []);
@@ -87,9 +102,10 @@ export default function ServicesPage() {
     );
   }
 
-
   return (
     <Layout>
+      <SEOHead {...PAGE_SEO["/services"]} />
+
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-secondary/10 pt-8 pb-10">
         <div className="absolute inset-0 overflow-hidden">
@@ -100,18 +116,18 @@ export default function ServicesPage() {
 
         <div className="container relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4">
               Expert-Led Physiotherapy Care
             </h1>
 
             <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
-              Personalized treatment and dedicated guidance from an experienced physiotherapy expert to support faster recovery and lasting results.
+              Personalized treatment and dedicated guidance from an experienced
+              physiotherapy expert to support faster recovery and lasting
+              results.
             </p>
 
             {/* Badges */}
             <div className="flex flex-wrap justify-center gap-4">
-
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200">
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-slate-700">
@@ -132,27 +148,20 @@ export default function ServicesPage() {
                   Confidential & Secure Care
                 </span>
               </div>
-
             </div>
-
-           
           </div>
         </div>
-
-
       </div>
 
       {/* Services Grid Section */}
       <div className="container ">
-        <EnhancedServicesGrid 
-          services={services} 
+        <EnhancedServicesGrid
+          services={services}
           hasActivePlan={hasActivePlan}
           activePlan={user?.subscriptionData}
           subscriptionInfo={subscriptionInfo}
         />
       </div>
-
-
     </Layout>
   );
 }

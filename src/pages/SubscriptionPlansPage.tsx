@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { SEOHead } from "@/components/SEO/SEOHead";
 import {
   Card,
   CardContent,
@@ -49,12 +50,16 @@ export default function SubscriptionPlansPage() {
   const [searchParams] = useSearchParams();
 
   // Get tab from URL parameter or default to 'individual'
-  const urlTab = searchParams.get('tab') as 'individual' | 'group' | null;
-  const [activeTab, setActiveTab] = useState<'individual' | 'group'>(urlTab || 'individual');
-
-  const { plans: subscriptionPlans, loading, error } = useSelector(
-    (state: RootState) => state.subscriptions
+  const urlTab = searchParams.get("tab") as "individual" | "group" | null;
+  const [activeTab, setActiveTab] = useState<"individual" | "group">(
+    urlTab || "individual"
   );
+
+  const {
+    plans: subscriptionPlans,
+    loading,
+    error,
+  } = useSelector((state: RootState) => state.subscriptions);
   const user = useSelector(selectCurrentUser);
   const activePlan = user?.subscriptionData || null;
   const activePlanId = activePlan?.planId ?? null;
@@ -64,8 +69,12 @@ export default function SubscriptionPlansPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [promoApplied] = useState(false);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
-  const [expandedFeatures, setExpandedFeatures] = useState<Record<string, boolean>>({});
+  const [expandedDescriptions, setExpandedDescriptions] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedFeatures, setExpandedFeatures] = useState<
+    Record<string, boolean>
+  >({});
   // activeTab is now declared above with URL parameter support
 
   useEffect(() => {
@@ -73,24 +82,36 @@ export default function SubscriptionPlansPage() {
     if (localStorage.getItem("token")) dispatch(fetchProfile());
   }, [dispatch, activeTab]);
 
-  const [viewMode, setViewMode] = useState<'cards' | 'comparison'>('cards');
+  const [viewMode, setViewMode] = useState<"cards" | "comparison">("cards");
 
   // Function to get plan icon based on plan type
   const getPlanIcon = (planName: string) => {
-    if (planName.toLowerCase().includes('basic')) return <Heart className="h-6 w-6" />;
-    if (planName.toLowerCase().includes('premium')) return <Dumbbell className="h-6 w-6" />;
-    if (planName.toLowerCase().includes('pro') || planName.toLowerCase().includes('advanced')) return <Brain className="h-6 w-6" />;
+    if (planName.toLowerCase().includes("basic"))
+      return <Heart className="h-6 w-6" />;
+    if (planName.toLowerCase().includes("premium"))
+      return <Dumbbell className="h-6 w-6" />;
+    if (
+      planName.toLowerCase().includes("pro") ||
+      planName.toLowerCase().includes("advanced")
+    )
+      return <Brain className="h-6 w-6" />;
     return <Target className="h-6 w-6" />;
   };
 
   return (
     <Layout>
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-6 pt-8 pb-10">
+      <SEOHead
+        title="Physiotherapy Subscription Plans & Pricing | Tanish Physio Fitness"
+        description="Choose from our flexible physiotherapy subscription plans. Individual and group therapy sessions with expert care. Affordable pricing for your recovery journey in Surat."
+        keywords="physiotherapy subscription, therapy plans, physiotherapy pricing, recovery packages, individual therapy, group therapy, Surat physio"
+        ogImage="/api/og/plans"
+        canonicalUrl="https://tanishphysiofitness.in/plans"
+      />
 
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-6 pt-8 pb-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent"></div>
 
         <div className="container relative z-10 text-center space-y-4">
-         
           {/* Heading */}
           <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-snug">
             Start Your Recovery, Guided by
@@ -98,12 +119,11 @@ export default function SubscriptionPlansPage() {
           </h1>
 
           <p className="text-sm md:text-base text-slate-600 mb-8 max-w-2xl mx-auto">
-            Choose a therapy plan tailored to your recovery goals with guidance from our experienced physiotherapist.
+            Choose a therapy plan tailored to your recovery goals with guidance
+            from our experienced physiotherapist.
           </p>
-
         </div>
       </div>
-
 
       {/* PLANS SECTION */}
       <div className="container py-10">
@@ -112,21 +132,21 @@ export default function SubscriptionPlansPage() {
           <div className="inline-flex rounded-lg border bg-muted p-1">
             <button
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === 'individual'
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                activeTab === "individual"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => setActiveTab('individual')}
+              onClick={() => setActiveTab("individual")}
             >
               Individual
             </button>
             <button
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === 'group'
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                activeTab === "group"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => setActiveTab('group')}
+              onClick={() => setActiveTab("group")}
             >
               Group
             </button>
@@ -140,21 +160,32 @@ export default function SubscriptionPlansPage() {
             </div>
             <h2 className="text-2xl font-bold mb-2">No Plans Available</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Our subscription plans are currently being updated. Please check back later.
+              Our subscription plans are currently being updated. Please check
+              back later.
             </p>
           </div>
-        ) : viewMode === 'cards' ? (
-          <div className={`${
-            subscriptionPlans.length === 2 
-              ? 'flex flex-col md:flex-row justify-center gap-8 max-w-4xl mx-auto' 
-              : 'grid md:grid-cols-3 gap-8 max-w-6xl mx-auto'
-          } mb-0`}>
+        ) : viewMode === "cards" ? (
+          <div
+            className={`${
+              subscriptionPlans.length === 2
+                ? "flex flex-col md:flex-row justify-center gap-8 max-w-4xl mx-auto"
+                : "grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+            } mb-0`}
+          >
             {loading ? (
-              <div className={`${subscriptionPlans.length === 2 ? 'w-full' : 'col-span-full'} flex justify-center py-12`}>
+              <div
+                className={`${
+                  subscriptionPlans.length === 2 ? "w-full" : "col-span-full"
+                } flex justify-center py-12`}
+              >
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : error ? (
-              <p className={`${subscriptionPlans.length === 2 ? 'w-full' : 'col-span-full'} text-center text-destructive text-lg`}>
+              <p
+                className={`${
+                  subscriptionPlans.length === 2 ? "w-full" : "col-span-full"
+                } text-center text-destructive text-lg`}
+              >
                 {error}
               </p>
             ) : subscriptionPlans.length === 0 ? (
@@ -162,20 +193,27 @@ export default function SubscriptionPlansPage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
                   <Zap className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">No {activeTab} Plans Available</h2>
+                <h2 className="text-2xl font-bold mb-2">
+                  No {activeTab} Plans Available
+                </h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  We don't have any {activeTab} subscription plans available at the moment.
+                  We don't have any {activeTab} subscription plans available at
+                  the moment.
                 </p>
               </div>
             ) : (
               subscriptionPlans.map((plan, index) => {
                 const planId = plan.planId || plan.id;
                 const isSelected = selectedPlan === planId;
-                const isActive = activePlanId === planId && !isSubscriptionExpired;
+                const isActive =
+                  activePlanId === planId && !isSubscriptionExpired;
 
                 // Calculate discount percentage
                 const discountPercentage = plan.originalPrice
-                  ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
+                  ? Math.round(
+                      ((plan.originalPrice - plan.price) / plan.originalPrice) *
+                        100
+                    )
                   : 0;
 
                 return (
@@ -183,23 +221,49 @@ export default function SubscriptionPlansPage() {
                     key={planId}
                     initial={{ opacity: 0, y: 40, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+                    transition={{
+                      delay: index * 0.1,
+                      duration: 0.5,
+                      ease: "easeOut",
+                    }}
                     className="relative"
                   >
                     <Card
                       onClick={() => {
-                        if ((!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId)) && !isActive) {
+                        if (
+                          (!hasActiveSubscription ||
+                            (isSubscriptionExpired &&
+                              activePlanId === planId)) &&
+                          !isActive
+                        ) {
                           setSelectedPlan(planId);
                         }
                       }}
-                      className={`relative h-full flex flex-col rounded-3xl cursor-pointer border-2 overflow-hidden group transition-all duration-300 hover:shadow-xl ${isSelected ? "ring-2 ring-primary scale-[1.02]" : "scale-100"} ${plan.popular ? "border-primary shadow-lg" : "border-border shadow-md"}`}
+                      className={`relative h-full flex flex-col rounded-3xl cursor-pointer border-2 overflow-hidden group transition-all duration-300 hover:shadow-xl ${
+                        isSelected
+                          ? "ring-2 ring-primary scale-[1.02]"
+                          : "scale-100"
+                      } ${
+                        plan.popular
+                          ? "border-primary shadow-lg"
+                          : "border-border shadow-md"
+                      }`}
                     >
                       {/* Gradient overlay */}
-                      <div className={`absolute inset-0 bg-gradient-to-br ${plan.popular ? "from-primary/5 to-secondary/5" : "from-muted/20 to-background"} pointer-events-none`} />
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-br ${
+                          plan.popular
+                            ? "from-primary/5 to-secondary/5"
+                            : "from-muted/20 to-background"
+                        } pointer-events-none`}
+                      />
 
                       {isSubscriptionExpired && activePlanId === planId && (
                         <div className="absolute top-4 right-4 z-10">
-                          <Badge variant="destructive" className="bg-destructive/90 text-white border-destructive">
+                          <Badge
+                            variant="destructive"
+                            className="bg-destructive/90 text-white border-destructive"
+                          >
                             Expired
                           </Badge>
                         </div>
@@ -220,10 +284,14 @@ export default function SubscriptionPlansPage() {
                           {plan.originalPrice && (
                             <div className="flex items-center justify-center gap-2">
                               <span className="line-through text-muted-foreground text-lg">
-                                {plan.currency || '₹'}{plan.originalPrice}
+                                {plan.currency || "₹"}
+                                {plan.originalPrice}
                               </span>
                               {discountPercentage > 0 && (
-                                <Badge variant="secondary" className="bg-destructive/20 text-destructive">
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-destructive/20 text-destructive"
+                                >
                                   {discountPercentage}% OFF
                                 </Badge>
                               )}
@@ -231,7 +299,8 @@ export default function SubscriptionPlansPage() {
                           )}
                           <div className="flex items-baseline justify-center gap-1">
                             <span className="text-4xl font-bold">
-                              {plan.currency || '₹'}{plan.price}
+                              {plan.currency || "₹"}
+                              {plan.price}
                             </span>
                             <span className="text-muted-foreground">
                               /{plan.duration}
@@ -244,7 +313,8 @@ export default function SubscriptionPlansPage() {
                           <p className="text-lg font-semibold text-primary">
                             {typeof plan.sessions === "number"
                               ? `Up to ${plan.sessions} sessions`
-                              : plan.sessions} sessions
+                              : plan.sessions}{" "}
+                            sessions
                           </p>
                         </div>
 
@@ -297,9 +367,15 @@ export default function SubscriptionPlansPage() {
                           </h4>
                           <div className="space-y-1">
                             {plan.features
-                              .slice(0, expandedFeatures[planId] ? undefined : 6)
+                              .slice(
+                                0,
+                                expandedFeatures[planId] ? undefined : 6
+                              )
                               .map((f, i) => (
-                                <div key={i} className="flex gap-1 items-start text-lg">
+                                <div
+                                  key={i}
+                                  className="flex gap-1 items-start text-lg"
+                                >
                                   <CheckCircle className="h-3 w-3 text-primary flex-shrink-0 mt-0.5" />
                                   <span>{f}</span>
                                 </div>
@@ -312,19 +388,21 @@ export default function SubscriptionPlansPage() {
                               className="mt-1 p-0 h-auto text-primary hover:text-primary/80 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setExpandedFeatures(prev => ({
+                                setExpandedFeatures((prev) => ({
                                   ...prev,
-                                  [planId]: !prev[planId]
+                                  [planId]: !prev[planId],
                                 }));
                               }}
                             >
                               {expandedFeatures[planId] ? (
                                 <>
-                                  Show Less <ChevronUp className="h-3 w-3 ml-1" />
+                                  Show Less{" "}
+                                  <ChevronUp className="h-3 w-3 ml-1" />
                                 </>
                               ) : (
                                 <>
-                                  Show More <ChevronDown className="h-3 w-3 ml-1" />
+                                  Show More{" "}
+                                  <ChevronDown className="h-3 w-3 ml-1" />
                                 </>
                               )}
                             </Button>
@@ -337,14 +415,24 @@ export default function SubscriptionPlansPage() {
                           variant={
                             isActive
                               ? "secondary"
-                              : (hasActiveSubscription && activePlanId === planId)
-                                ? "outline"
-                                : "default"
+                              : hasActiveSubscription && activePlanId === planId
+                              ? "outline"
+                              : "default"
                           }
-                          disabled={isActive || (hasActiveSubscription && !isSubscriptionExpired && activePlanId !== planId)}
+                          disabled={
+                            isActive ||
+                            (hasActiveSubscription &&
+                              !isSubscriptionExpired &&
+                              activePlanId !== planId)
+                          }
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!isActive && (!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId))) {
+                            if (
+                              !isActive &&
+                              (!hasActiveSubscription ||
+                                (isSubscriptionExpired &&
+                                  activePlanId === planId))
+                            ) {
                               setSelectedPlan(planId);
                               setIsModalOpen(true);
                             }
@@ -352,11 +440,11 @@ export default function SubscriptionPlansPage() {
                         >
                           {isActive
                             ? "Active Plan"
-                            : (hasActiveSubscription && activePlanId === planId)
-                              ? "Plan Already Active"
-                              : isSubscriptionExpired && activePlanId === planId
-                                ? "Renew Plan"
-                                : "Select Plan"}
+                            : hasActiveSubscription && activePlanId === planId
+                            ? "Plan Already Active"
+                            : isSubscriptionExpired && activePlanId === planId
+                            ? "Renew Plan"
+                            : "Select Plan"}
                         </Button>
                       </CardContent>
                     </Card>
@@ -370,9 +458,12 @@ export default function SubscriptionPlansPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
               <Zap className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h2 className="text-2xl font-bold mb-2">No {activeTab} Plans Available</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              No {activeTab} Plans Available
+            </h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              We don't have any {activeTab} subscription plans available at the moment.
+              We don't have any {activeTab} subscription plans available at the
+              moment.
             </p>
           </div>
         ) : (
@@ -383,10 +474,15 @@ export default function SubscriptionPlansPage() {
                 <tr className="border-b bg-muted/50">
                   <th className="p-4 text-left font-semibold">Feature</th>
                   {subscriptionPlans.map((plan, index) => (
-                    <th key={plan.planId || plan.id} className="p-4 text-center font-semibold">
+                    <th
+                      key={plan.planId || plan.id}
+                      className="p-4 text-center font-semibold"
+                    >
                       <div className="flex flex-col items-center">
                         <span className="font-bold">{plan.name}</span>
-                        <span className="text-sm text-muted-foreground">₹{plan.price}/{plan.duration}</span>
+                        <span className="text-sm text-muted-foreground">
+                          ₹{plan.price}/{plan.duration}
+                        </span>
                       </div>
                     </th>
                   ))}
@@ -396,7 +492,10 @@ export default function SubscriptionPlansPage() {
                 <tr className="border-b hover:bg-muted/20">
                   <td className="p-4 font-medium">Sessions</td>
                   {subscriptionPlans.map((plan) => (
-                    <td key={`sessions-${plan.planId || plan.id}`} className="p-4 text-center">
+                    <td
+                      key={`sessions-${plan.planId || plan.id}`}
+                      className="p-4 text-center"
+                    >
                       {typeof plan.sessions === "number"
                         ? `Up to ${plan.sessions}`
                         : plan.sessions}
@@ -406,7 +505,10 @@ export default function SubscriptionPlansPage() {
                 <tr className="border-b hover:bg-muted/20">
                   <td className="p-4 font-medium">Duration</td>
                   {subscriptionPlans.map((plan) => (
-                    <td key={`duration-${plan.planId || plan.id}`} className="p-4 text-center">
+                    <td
+                      key={`duration-${plan.planId || plan.id}`}
+                      className="p-4 text-center"
+                    >
                       {plan.planId}
                     </td>
                   ))}
@@ -414,7 +516,10 @@ export default function SubscriptionPlansPage() {
                 <tr className="border-b hover:bg-muted/20">
                   <td className="p-4 font-medium">Price</td>
                   {subscriptionPlans.map((plan) => (
-                    <td key={`price-${plan.planId || plan.id}`} className="p-4 text-center">
+                    <td
+                      key={`price-${plan.planId || plan.id}`}
+                      className="p-4 text-center"
+                    >
                       <div className="flex flex-col items-center">
                         {plan.originalPrice && (
                           <span className="line-through text-muted-foreground text-sm">
@@ -422,25 +527,35 @@ export default function SubscriptionPlansPage() {
                           </span>
                         )}
                         <span className="text-lg font-bold">₹{plan.price}</span>
-                        <span className="text-sm text-muted-foreground">/{plan.duration}</span>
+                        <span className="text-sm text-muted-foreground">
+                          /{plan.duration}
+                        </span>
                       </div>
                     </td>
                   ))}
                 </tr>
-                {subscriptionPlans.some(plan => plan.features) && (
+                {subscriptionPlans.some((plan) => plan.features) && (
                   <tr className="border-b hover:bg-muted/20">
                     <td className="p-4 font-medium">Features</td>
                     {subscriptionPlans.map((plan) => (
-                      <td key={`features-${plan.planId || plan.id}`} className="p-4">
+                      <td
+                        key={`features-${plan.planId || plan.id}`}
+                        className="p-4"
+                      >
                         <ul className="space-y-1">
                           {plan.features.slice(0, 6).map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-1 text-xs">
+                            <li
+                              key={idx}
+                              className="flex items-center gap-1 text-xs"
+                            >
                               <CheckCircle className="h-2 w-2 text-primary" />
                               <span>{feature}</span>
                             </li>
                           ))}
                           {plan.features.length > 6 && (
-                            <li className="text-xs text-primary/70">+{plan.features.length - 3} more</li>
+                            <li className="text-xs text-primary/70">
+                              +{plan.features.length - 3} more
+                            </li>
                           )}
                         </ul>
                       </td>
@@ -451,7 +566,8 @@ export default function SubscriptionPlansPage() {
                   <td className="p-4 font-medium">Action</td>
                   {subscriptionPlans.map((plan) => {
                     const planId = plan.planId || plan.id;
-                    const isActive = activePlanId === planId && !isSubscriptionExpired;
+                    const isActive =
+                      activePlanId === planId && !isSubscriptionExpired;
                     const isSelected = selectedPlan === planId;
                     return (
                       <td key={`action-${planId}`} className="p-4 text-center">
@@ -459,14 +575,24 @@ export default function SubscriptionPlansPage() {
                           variant={
                             isActive
                               ? "secondary"
-                              : (hasActiveSubscription && activePlanId === planId)
-                                ? "outline"
-                                : "default"
+                              : hasActiveSubscription && activePlanId === planId
+                              ? "outline"
+                              : "default"
                           }
                           size="sm"
-                          disabled={isActive || (hasActiveSubscription && !isSubscriptionExpired && activePlanId !== planId)}
+                          disabled={
+                            isActive ||
+                            (hasActiveSubscription &&
+                              !isSubscriptionExpired &&
+                              activePlanId !== planId)
+                          }
                           onClick={() => {
-                            if (!isActive && (!hasActiveSubscription || (isSubscriptionExpired && activePlanId === planId))) {
+                            if (
+                              !isActive &&
+                              (!hasActiveSubscription ||
+                                (isSubscriptionExpired &&
+                                  activePlanId === planId))
+                            ) {
                               setSelectedPlan(planId);
                               setIsModalOpen(true);
                             }
@@ -474,11 +600,11 @@ export default function SubscriptionPlansPage() {
                         >
                           {isActive
                             ? "Active"
-                            : (hasActiveSubscription && activePlanId === planId)
-                              ? "Active"
-                              : isSubscriptionExpired && activePlanId === planId
-                                ? "Renew"
-                                : "Select"}
+                            : hasActiveSubscription && activePlanId === planId
+                            ? "Active"
+                            : isSubscriptionExpired && activePlanId === planId
+                            ? "Renew"
+                            : "Select"}
                         </Button>
                       </td>
                     );
@@ -501,15 +627,22 @@ export default function SubscriptionPlansPage() {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg text-destructive mb-2">Subscription Expired</h3>
+                    <h3 className="font-bold text-lg text-destructive mb-2">
+                      Subscription Expired
+                    </h3>
                     <p className="text-base text-muted-foreground mb-3">
-                      Your {activePlan.planName} expired {Math.abs(activePlan.daysRemaining || 0)} day(s) ago.
-                      Please select a new plan to continue your therapy sessions.
+                      Your {activePlan.planName} expired{" "}
+                      {Math.abs(activePlan.daysRemaining || 0)} day(s) ago.
+                      Please select a new plan to continue your therapy
+                      sessions.
                     </p>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        <span>Expired on: {new Date(activePlan.endDate).toLocaleDateString()}</span>
+                        <span>
+                          Expired on:{" "}
+                          {new Date(activePlan.endDate).toLocaleDateString()}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Award className="h-4 w-4" />
@@ -528,7 +661,9 @@ export default function SubscriptionPlansPage() {
           <DialogContent className="max-w-lg rounded-2xl p-0 overflow-hidden">
             <div className="bg-gradient-to-r from-primary/5 to-secondary/5 p-6 border-b">
               <DialogHeader className="text-left">
-                <DialogTitle className="text-2xl font-bold">Confirm Your Selection</DialogTitle>
+                <DialogTitle className="text-2xl font-bold">
+                  Confirm Your Selection
+                </DialogTitle>
                 <DialogDescription>
                   Please review your selected plan before proceeding
                 </DialogDescription>
@@ -540,16 +675,21 @@ export default function SubscriptionPlansPage() {
                 <div className="bg-gradient-to-br from-muted/50 to-background border rounded-2xl p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold">
-                      {subscriptionPlans.find(
-                        (p) => (p.planId || p.id) === selectedPlan
-                      )?.name}
+                      {
+                        subscriptionPlans.find(
+                          (p) => (p.planId || p.id) === selectedPlan
+                        )?.name
+                      }
                     </h3>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-3xl font-bold text-primary">
-                      {(subscriptionPlans.find(
-                        (p) => (p.planId || p.id) === selectedPlan
-                      ) as any)?.currency || '₹'}{
+                      {(
+                        subscriptionPlans.find(
+                          (p) => (p.planId || p.id) === selectedPlan
+                        ) as any
+                      )?.currency || "₹"}
+                      {
                         subscriptionPlans.find(
                           (p) => (p.planId || p.id) === selectedPlan
                         )?.price
@@ -557,21 +697,26 @@ export default function SubscriptionPlansPage() {
                     </span>
                     <span className="text-muted-foreground">
                       /
-                      {subscriptionPlans.find(
-                        (p) => (p.planId || p.id) === selectedPlan
-                      )?.duration}
+                      {
+                        subscriptionPlans.find(
+                          (p) => (p.planId || p.id) === selectedPlan
+                        )?.duration
+                      }
                     </span>
                   </div>
                   <p className="text-base text-muted-foreground">
                     {typeof subscriptionPlans.find(
                       (p) => (p.planId || p.id) === selectedPlan
                     )?.sessions === "number"
-                      ? `Up to ${subscriptionPlans.find(
-                        (p) => (p.planId || p.id) === selectedPlan
-                      )?.sessions} sessions`
+                      ? `Up to ${
+                          subscriptionPlans.find(
+                            (p) => (p.planId || p.id) === selectedPlan
+                          )?.sessions
+                        } sessions`
                       : subscriptionPlans.find(
-                        (p) => (p.planId || p.id) === selectedPlan
-                      )?.sessions} sessions
+                          (p) => (p.planId || p.id) === selectedPlan
+                        )?.sessions}{" "}
+                    sessions
                   </p>
                 </div>
 
@@ -614,9 +759,12 @@ export default function SubscriptionPlansPage() {
                   <p className="text-muted-foreground flex items-center gap-2">
                     <Zap className="h-4 w-4 text-primary" />
                     Auto-renews every{" "}
-                    {subscriptionPlans.find(
-                      (p) => (p.planId || p.id) === selectedPlan
-                    )?.duration}. Cancel anytime.
+                    {
+                      subscriptionPlans.find(
+                        (p) => (p.planId || p.id) === selectedPlan
+                      )?.duration
+                    }
+                    . Cancel anytime.
                   </p>
                 </div>
               </div>
@@ -639,7 +787,7 @@ export default function SubscriptionPlansPage() {
                   if (!plan) return;
 
                   setIsModalOpen(false);
-                  
+
                   const bookingData = {
                     service: {
                       id: plan.planId || plan.id,
@@ -649,7 +797,7 @@ export default function SubscriptionPlansPage() {
                     },
                     fromSubscription: true,
                   };
-                  
+
                   // Navigate to questionnaire first, then to booking
                   navigate("/questionnaire", {
                     state: bookingData,

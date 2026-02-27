@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { 
-  ClipboardList, 
-  UserCheck, 
-  Video, 
-  Star, 
-  Shield, 
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { PAGE_SEO } from "@/components/SEO/seoConfig";
+import { SocialShareButtons } from "@/components/social/SocialShareButtons";
+import { SocialFollowButtons } from "@/components/social/SocialFollowButtons";
+import {
+  ClipboardList,
+  UserCheck,
+  Video,
+  Star,
+  Shield,
   Award,
   ArrowRight,
   CheckCircle,
@@ -75,7 +79,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import {
   Carousel,
   CarouselContent,
@@ -84,18 +92,33 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 // Import images
 import heroImage from "@/assets/hero-physio.jpg";
 
-import { useSelector } from 'react-redux';
-import { RootState, useAppDispatch } from '@/store';
-import { fetchSubscriptionPlans } from '@/store/slices/subscriptionSlice';
-import { fetchFeaturedTestimonials } from '@/store/slices/testimonialSlice';
-import { selectFeaturedTestimonials, selectTestimonialsLoading, selectTestimonialsError } from '@/store/slices/testimonialSlice';
-import { fetchHeroPublic, fetchStepsPublic, fetchWhyUsPublic, fetchFaqsPublic, fetchConditionsPublic } from '@/store/slices/cmsSlice';
-import { fetchPublicAdmins } from '@/store/slices/adminSlice';
+import { useSelector } from "react-redux";
+import { RootState, useAppDispatch } from "@/store";
+import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
+import { fetchFeaturedTestimonials } from "@/store/slices/testimonialSlice";
+import {
+  selectFeaturedTestimonials,
+  selectTestimonialsLoading,
+  selectTestimonialsError,
+} from "@/store/slices/testimonialSlice";
+import {
+  fetchHeroPublic,
+  fetchStepsPublic,
+  fetchWhyUsPublic,
+  fetchFaqsPublic,
+  fetchConditionsPublic,
+} from "@/store/slices/cmsSlice";
+import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { fetchFeaturedServices } from "@/store/slices/serviceSlice";
 import {
   selectFeaturedServices,
@@ -216,7 +239,7 @@ export default function LandingPage() {
     loading: subscriptionLoading,
     error: subscriptionError,
   } = useSelector((state: RootState) => state.subscriptions);
-  console.log("object", subscriptionPlans)
+  console.log("object", subscriptionPlans);
   // Fetch testimonials from Redux store
   const featuredTestimonials = useSelector(selectFeaturedTestimonials);
   const testimonialsLoading = useSelector(selectTestimonialsLoading);
@@ -246,16 +269,15 @@ export default function LandingPage() {
   const servicesError = useSelector(selectServicesError);
 
   // State to track which session type to fetch
- const [sessionTypeFilter, setSessionTypeFilter] =
-    useState<'individual' | 'group'>('individual');
+  const [sessionTypeFilter, setSessionTypeFilter] = useState<
+    "individual" | "group"
+  >("individual");
   // Fetch subscription plans when component mounts or session type changes
-useEffect(() => {
-  dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
-}, [dispatch, sessionTypeFilter]);
-;
-
+  useEffect(() => {
+    dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
+  }, [dispatch, sessionTypeFilter]);
   // Fetch featured testimonials when component mounts
- useEffect(() => {
+  useEffect(() => {
     dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
   }, [dispatch, sessionTypeFilter]);
 
@@ -286,6 +308,8 @@ useEffect(() => {
 
   return (
     <Layout>
+      <SEOHead {...PAGE_SEO["/"]} />
+
       {/* Sticky Floating CTA */}
       {/* <motion.div
         className="fixed bottom-6 right-6 z-50 pointer-events-none"
@@ -352,7 +376,6 @@ useEffect(() => {
         subscriptionLoading={subscriptionLoading}
         subscriptionError={subscriptionError}
         onTabChange={setSessionTypeFilter}
-
         stagger={stagger}
         fadeInUp={fadeInUp}
       />
@@ -372,6 +395,18 @@ useEffect(() => {
 
       {/* CTA Section */}
       <CTA />
-    </Layout> 
+
+      {/* Social Follow Section - Bottom of Page */}
+      <div className="bg-muted py-12">
+        <div className="container text-center">
+          <h3 className="text-2xl font-bold mb-6">Follow Us on Social Media</h3>
+          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Stay updated with our latest health tips, success stories, and
+            physiotherapy insights
+          </p>
+          <SocialFollowButtons variant="card" className="max-w-2xl mx-auto" />
+        </div>
+      </div>
+    </Layout>
   );
 }

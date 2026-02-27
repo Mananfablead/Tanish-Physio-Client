@@ -1,17 +1,21 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
-import {
-  Quote, ArrowRight
-} from 'lucide-react';
-import { fetchAboutPublic, fetchWhyUsPublic } from '../store/slices/cmsSlice';
-import { RootState, useAppDispatch } from '../store';
-import { Button } from '@/components/ui/button';
-import { useSelector } from 'react-redux';
-import { fetchPublicAdmins } from '@/store/slices/adminSlice';
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { PAGE_SEO } from "@/components/SEO/seoConfig";
+import { Quote, ArrowRight } from "lucide-react";
+import { fetchAboutPublic, fetchWhyUsPublic } from "../store/slices/cmsSlice";
+import { RootState, useAppDispatch } from "../store";
+import { Button } from "@/components/ui/button";
+import { useSelector } from "react-redux";
+import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 export default function AboutUsPage() {
   const dispatch = useAppDispatch();
-  const { about, whyUs, loading: cmsLoading } = useSelector((state: RootState) => state.cms);
+  const {
+    about,
+    whyUs,
+    loading: cmsLoading,
+  } = useSelector((state: RootState) => state.cms);
   const {
     admins: publicAdmins,
     loading: adminsLoading,
@@ -22,7 +26,6 @@ export default function AboutUsPage() {
     dispatch(fetchWhyUsPublic());
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
-
 
   if (cmsLoading) {
     return (
@@ -54,6 +57,8 @@ export default function AboutUsPage() {
 
   return (
     <Layout>
+      <SEOHead {...PAGE_SEO["/about"]} />
+
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-secondary/10 to-accent/20 py-20 md:py-12">
@@ -68,8 +73,6 @@ export default function AboutUsPage() {
               viewport={{ once: true }}
               className="space-y-2"
             >
-
-
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-6 leading-tight">
                 {about?.title}
               </h1>
@@ -123,7 +126,6 @@ export default function AboutUsPage() {
                       />
                     </div>
 
-
                     {/* <motion.div 
                       className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 bg-white rounded-2xl shadow-2xl p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4 w-[280px] sm:w-[320px] md:w-[350px] border border-primary/10"
                       initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
@@ -160,18 +162,25 @@ export default function AboutUsPage() {
                 >
                   <div className="max-w-2xl">
                     <div className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-primary/10 rounded-full mb-4 sm:mb-6 border border-primary/20">
-                      <span className="text-primary font-semibold text-sm uppercase tracking-wider">  {about?.title}</span>
+                      <span className="text-primary font-semibold text-sm uppercase tracking-wider">
+                        {" "}
+                        {about?.title}
+                      </span>
                     </div>
 
                     {/* <h2 className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 mb-4 sm:mb-6 md:mb-8 leading-tight">
                       {about.aboutheadline}
                     </h2> */}
                     <motion.div
-                      className="  mb-6   flex items-center gap-2 sm:gap-3 md:gap-4 " 
+                      className="  mb-6   flex items-center gap-2 sm:gap-3 md:gap-4 "
                       initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
                       whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+                      transition={{
+                        delay: 0.5,
+                        type: "spring",
+                        stiffness: 100,
+                      }}
                     >
                       <div className="">
                         <img
@@ -182,30 +191,34 @@ export default function AboutUsPage() {
                         {/* <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div> */}
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900">{publicAdmins[0]?.name}</h4>
+                        <h4 className="font-bold text-slate-900">
+                          {publicAdmins[0]?.name}
+                        </h4>
                         <p className="text-xs text-slate-500 mt-1">
                           {publicAdmins[0]?.doctorProfile?.education}
                         </p>
-
                       </div>
                     </motion.div>
 
                     <div className="space-y-2">
-                      {about?.aboutheadlDescription?.split('\n\n').map((paragraph: string, index: number) => (
-                        <motion.p
-                          key={index}
-                          className="text-slate-600 leading-relaxed text-base sm:text-lg font-light"
-                          initial={{ opacity: 0, y: 20 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.6, delay: 0.4 + (index * 0.1) }}
-                        >
-                          {highlightTanish(paragraph)}
-                        </motion.p>
-                      ))}
+                      {about?.aboutheadlDescription
+                        ?.split("\n\n")
+                        .map((paragraph: string, index: number) => (
+                          <motion.p
+                            key={index}
+                            className="text-slate-600 leading-relaxed text-base sm:text-lg font-light"
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{
+                              duration: 0.6,
+                              delay: 0.4 + index * 0.1,
+                            }}
+                          >
+                            {highlightTanish(paragraph)}
+                          </motion.p>
+                        ))}
                     </div>
-
-
                   </div>
                 </motion.div>
               </div>
@@ -215,7 +228,6 @@ export default function AboutUsPage() {
 
         {/* Stats Section (if Why Us section exists) */}
         <div className="bg-primary mt-16">
-
           {whyUs && whyUs.stats && whyUs.stats.length > 0 && (
             <div className="container px-4 max-w-7xl mx-auto py-16 ">
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
@@ -228,9 +240,15 @@ export default function AboutUsPage() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
-                    <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-1 sm:mb-2">{stat.value}</div>
-                    <div className="text-sm sm:text-base md:text-lg font-semibold text-slate-900 mb-1">{stat.label}</div>
-                    <div className="text-xs sm:text-sm text-slate-600">{stat.description}</div>
+                    <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-1 sm:mb-2">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm sm:text-base md:text-lg font-semibold text-slate-900 mb-1">
+                      {stat.label}
+                    </div>
+                    <div className="text-xs sm:text-sm text-slate-600">
+                      {stat.description}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -254,7 +272,9 @@ export default function AboutUsPage() {
                     transition={{ duration: 0.6 }}
                     className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 md:px-5 md:py-2 bg-gradient-to-r from-primary/15 to-secondary/15 rounded-full mb-4 sm:mb-6 border border-primary/20"
                   >
-                    <span className="text-primary font-bold text-xs sm:text-sm uppercase tracking-widest">Why Choose Us</span>
+                    <span className="text-primary font-bold text-xs sm:text-sm uppercase tracking-widest">
+                      Why Choose Us
+                    </span>
                   </motion.div>
 
                   <motion.h2
@@ -287,25 +307,40 @@ export default function AboutUsPage() {
                       transition={{ duration: 0.8 }}
                     >
                       <div className="">
-                        {whyUs.features.map((feature: string, index: number) => (
-                          <motion.div
-                            key={index}
-                            className="flex items-start space-x-2 sm:space-x-3 py-1.5 sm:py-2"
-                            initial={{ opacity: 0, x: -30 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                          >
-                            <div className="flex-shrink-0 mt-1">
-                              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
-                                <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
+                        {whyUs.features.map(
+                          (feature: string, index: number) => (
+                            <motion.div
+                              key={index}
+                              className="flex items-start space-x-2 sm:space-x-3 py-1.5 sm:py-2"
+                              initial={{ opacity: 0, x: -30 }}
+                              whileInView={{ opacity: 1, x: 0 }}
+                              viewport={{ once: true }}
+                              transition={{ duration: 0.5, delay: index * 0.1 }}
+                            >
+                              <div className="flex-shrink-0 mt-1">
+                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                                  <svg
+                                    className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M5 13l4 4L19 7"
+                                    ></path>
+                                  </svg>
+                                </div>
                               </div>
-                            </div>
-                            <span className="text-sm sm:text-base text-slate-700 font-medium group-hover:text-slate-900 transition-colors">{feature}</span>
-                          </motion.div>
-                        ))}
+                              <span className="text-sm sm:text-base text-slate-700 font-medium group-hover:text-slate-900 transition-colors">
+                                {feature}
+                              </span>
+                            </motion.div>
+                          )
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -335,8 +370,6 @@ export default function AboutUsPage() {
             </div>
           </section>
         )}
-
-
       </div>
     </Layout>
   );

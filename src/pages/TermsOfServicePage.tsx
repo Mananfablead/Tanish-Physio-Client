@@ -6,10 +6,13 @@ import { RootState, useAppDispatch } from '../store';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { SEOHead } from "@/components/SEO/SEOHead";
 
 export default function TermsOfServicePage() {
   const dispatch = useAppDispatch();
-  const { terms, loading, error } = useSelector((state: RootState) => state.cms);
+  const { terms, loading, error } = useSelector(
+    (state: RootState) => state.cms
+  );
 
   useEffect(() => {
     dispatch(fetchTermsPublic());
@@ -140,10 +143,16 @@ export default function TermsOfServicePage() {
     </div>
   );
 
-
-  
   return (
     <Layout>
+      <SEOHead
+        title="Terms of Service | Tanish Physio Fitness"
+        description="Read the terms of service for Tanish Physio & Fitness. Understand your rights and responsibilities when using our physiotherapy services and platform in Surat."
+        keywords="terms of service physiotherapy, physiotherapy terms, therapy terms, physiotherapy legal, terms and conditions physio, physiotherapy agreement"
+        ogImage="/api/og/terms"
+        canonicalUrl="https://tanishphysiofitness.in/terms"
+      />
+
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="w-full px-0 md:px-0 lg:px-0">
           <Card className="shadow-2xl border-0 rounded-none overflow-hidden">
@@ -154,27 +163,28 @@ export default function TermsOfServicePage() {
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] pointer-events-none" />
               </div>
               <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight relative z-10 text-slate-900">
-                {loading ? 'Loading...' : terms?.title || 'Terms of Service'}
+                {loading ? "Loading..." : terms?.title || "Terms of Service"}
               </CardTitle>
               {/* <p className="text-slate-600 mt-3 text-lg font-medium relative z-10">
                 Last updated: {terms?.lastUpdated ? new Date(terms.lastUpdated).toLocaleDateString() : new Date().toLocaleDateString()}
               </p> */}
-            
             </CardHeader>
             <CardContent className="p-0 bg-gradient-to-b from-white via-gray-50 to-gray-100">
               <div className="flex flex-col">
                 {/* Main Content */}
                 <div className="w-full p-8 md:p-12 lg:p-16">
-                  
-                  
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-16">
                       <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent mb-6"></div>
-                      <p className="text-gray-600 text-lg">Loading terms of service...</p>
+                      <p className="text-gray-600 text-lg">
+                        Loading terms of service...
+                      </p>
                     </div>
                   ) : terms && terms.content ? (
                     <div className="prose prose-lg max-w-none">
-                      <div dangerouslySetInnerHTML={{ __html: terms.content }} />
+                      <div
+                        dangerouslySetInnerHTML={{ __html: terms.content }}
+                      />
                     </div>
                   ) : (
                     <div className="prose prose-lg max-w-none">
@@ -183,12 +193,8 @@ export default function TermsOfServicePage() {
                   )}
                 </div>
               </div>
-              
-             
             </CardContent>
           </Card>
-          
-          
         </div>
       </div>
     </Layout>

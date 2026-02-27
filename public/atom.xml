@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Tanish Physio & Fitness - Blog</title>
+  <link href="https://tanishphysiofitness.in/atom.xml" rel="self"/>
+  <link href="https://tanishphysiofitness.in/"/>
+  <updated>2026-02-27T10:00:00Z</updated>
+  <id>https://tanishphysiofitness.in/</id>
+  <author>
+    <name>Tanish Physio & Fitness</name>
+    <email>drkhushboo26@gmail.com</email>
+  </author>
+  
+  <entry>
+    <title>Benefits of Online Physiotherapy</title>
+    <link href="https://tanishphysiofitness.in/blog/online-physiotherapy-benefits"/>
+    <id>https://tanishphysiofitness.in/blog/online-physiotherapy-benefits</id>
+    <updated>2026-02-27T10:00:00Z</updated>
+    <summary>Discover how online physiotherapy provides convenient access to professional care from the comfort of your home.</summary>
+  </entry>
+  
+  <entry>
+    <title>Common Physiotherapy Myths Debunked</title>
+    <link href="https://tanishphysiofitness.in/blog/physiotherapy-myths"/>
+    <id>https://tanishphysiofitness.in/blog/physiotherapy-myths</id>
+    <updated>2026-02-27T09:00:00Z</updated>
+    <summary>Separate fact from fiction with our expert insights on common physiotherapy misconceptions.</summary>
+  </entry>
+</feed>

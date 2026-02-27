@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
-import { Input } from '../components/ui/input';
-import { Textarea } from '../components/ui/textarea';
-import { Button } from '../components/ui/button';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchContactPublic } from '../store/slices/cmsSlice';
-import { RootState } from '../store';
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { PAGE_SEO } from "@/components/SEO/seoConfig";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Button } from "../components/ui/button";
+import { Mail, Phone, MapPin, Send } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchContactPublic } from "../store/slices/cmsSlice";
+import { RootState } from "../store";
 import { toast } from "sonner";
 
 export default function ContactUsPage() {
@@ -81,6 +83,8 @@ export default function ContactUsPage() {
 
   return (
     <Layout>
+      <SEOHead {...PAGE_SEO["/contact"]} />
+
       <div className="min-h-screen bg-background ">
         <div>
           <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-6 pt-8 pb-10">
@@ -112,7 +116,7 @@ export default function ContactUsPage() {
                   <div>
                     <h3 className="font-semibold">Email</h3>
                     <p className="text-muted-foreground">
-                      {contact?.email || "drkhushboo26@gmail.com"}
+                      drkhushboo26@gmail.com
                     </p>
                   </div>
                 </div>
@@ -123,9 +127,7 @@ export default function ContactUsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Phone</h3>
-                    <p className="text-muted-foreground">
-                      {contact?.phone || "+91 9427555696"}
-                    </p>
+                    <p className="text-muted-foreground">+91 9427555696</p>
                   </div>
                 </div>
 
