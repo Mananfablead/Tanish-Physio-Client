@@ -430,7 +430,7 @@ const ServiceSidebar = ({
           </div>
           
           {/* Show subscription session information if user has active plan */}
-          {hasActivePlan && activePlan?.availableSessions && (
+          {/* {hasActivePlan && activePlan?.availableSessions && (
             <div className="mt-3 pt-3 border-t border-slate-200">
               <div className="text-sm">
                 <p className="text-green-700 font-medium">
@@ -444,7 +444,7 @@ const ServiceSidebar = ({
                 </div>
               </div>
             </div>
-          )}
+          )} */}
           <div className="flex justify-between">
             <span className="text-slate-600">Results Timeline:</span>
             <span className="font-medium text-slate-900">

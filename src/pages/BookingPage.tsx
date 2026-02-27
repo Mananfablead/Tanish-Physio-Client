@@ -701,17 +701,21 @@ export default function BookingPage() {
       return;
     }
     
-    // If user has an active plan but no remaining sessions or invalid plan
-    if (hasActivePlan && !subscriptionBooking && subscriptionInfo && subscriptionInfo.remainingSessions <= 0) {
-      const message = `You have reached your session limit. Your ${subscriptionInfo.planName} includes ${subscriptionInfo.totalSessions} sessions/services and you have used ${subscriptionInfo.totalUsed || subscriptionInfo.usedSessions} of them.`;
-      
+    // If user has an active plan but no remaining sessions or services
+    if (hasActivePlan && !subscriptionBooking && subscriptionInfo && 
+        (subscriptionInfo.remainingSessions <= 0 || subscriptionInfo.remainingServices <= 0)) {
+      const message = `You have reached your ${subscriptionInfo.remainingSessions <= 0 ? 'session' : 'service'} limit. Your ${subscriptionInfo.planName} includes ${subscriptionInfo.totalSessions} sessions and ${subscriptionInfo.totalService || subscriptionInfo.totalServices} services. You have used ${subscriptionInfo.usedSessions} sessions and ${subscriptionInfo.usedServices} services.`;
+      console.log(hasActivePlan, subscriptionBooking, subscriptionInfo);
       // Set the session limit exceeded info and open the modal
       setSessionLimitExceededInfo({
         message,
         planName: subscriptionInfo.planName,
         totalSessions: subscriptionInfo.totalSessions,
-        usedSessions: subscriptionInfo.totalUsed || subscriptionInfo.usedSessions,
-        remainingSessions: subscriptionInfo.remainingSessions
+        totalServices: subscriptionInfo.totalService || subscriptionInfo.totalServices,
+        usedSessions: subscriptionInfo.usedSessions,
+        usedServices: subscriptionInfo.usedServices,
+        remainingSessions: subscriptionInfo.remainingSessions,
+        remainingServices: subscriptionInfo.remainingServices
       });
       setIsSessionLimitExceededModalOpen(true);
       setIsProcessing(false);
@@ -2362,7 +2366,7 @@ export default function BookingPage() {
                       <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                         with {activePlan?.planName || "your plan"}
                       </p>
-                      {activePlan?.availableSessions && (
+                      {/* {activePlan?.availableSessions && (
                         <div className="mt-1 text-xs">
                           <p className="text-green-700">
                             {activePlan.availableSessions.remaining} of {activePlan.availableSessions.total} sessions left
@@ -2374,7 +2378,7 @@ export default function BookingPage() {
                             ></div>
                           </div>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   ) : (
                     <p className="font-semibold">₹{plan.price}</p>
@@ -2818,10 +2822,10 @@ export default function BookingPage() {
           <div className="py-4 space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 mb-2">
-                {sessionLimitExceededInfo?.message || 'Your subscription session limit has been reached.'}
+                {sessionLimitExceededInfo?.message || 'Your subscription session/service limit has been reached.'}
               </p>
               <p className="text-red-700 text-sm">
-                You have used all {sessionLimitExceededInfo?.usedSessions} sessions from your {sessionLimitExceededInfo?.planName} plan.
+                You have used {sessionLimitExceededInfo?.usedSessions || 0} of {sessionLimitExceededInfo?.totalSessions || 0} sessions and {sessionLimitExceededInfo?.usedServices || 0} of {sessionLimitExceededInfo?.totalServices || 0} services from your {sessionLimitExceededInfo?.planName} plan.
               </p>
             </div>
             
