@@ -453,6 +453,12 @@ export const checkUserExists = (email: string) => {
   return api.post("/users/check-exists", { email });
 };
 
+// Token validation API function
+export const validateAuthToken = (appType?: 'client' | 'admin') => {
+  const data = appType ? { appType } : {};
+  return api.post("/auth/validate-token", data);
+};
+
 // Questionnaire file upload API function
 export const uploadQuestionnaireFile = (file: File) => {
   const formData = new FormData();
