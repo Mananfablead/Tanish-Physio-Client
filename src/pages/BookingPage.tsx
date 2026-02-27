@@ -1402,8 +1402,8 @@ export default function BookingPage() {
           !createSubscriptionBookingAsync.fulfilled.match(bookingResult)
         ) {
           // Handle specific subscription booking errors
-          const errorMessage = bookingResult.payload?.message || bookingResult.error?.message || "Failed to create booking. Please try again.";
-          
+          const errorMessage = (bookingResult.payload as any)?.message || bookingResult.error?.message || "Failed to create booking. Please try again.";
+                        
           // Check for specific session limit errors
           if (errorMessage.includes('Session limit reached') || 
               errorMessage.includes('used all sessions') ||
@@ -2812,7 +2812,7 @@ export default function BookingPage() {
 
       {/* Session Limit Exceeded Modal */}
       <Dialog open={isSessionLimitExceededModalOpen} onOpenChange={setIsSessionLimitExceededModalOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-2">
               <CircleAlert className="h-6 w-6" />
@@ -2839,6 +2839,387 @@ export default function BookingPage() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button 
+                onClick={async () => {
+                  setIsSessionLimitExceededModalOpen(false);
+                  setIsProcessing(true);
+                  
+                  // Get service information
+                  const serviceInfo = serviceBooking ? bookingData.service : null;
+                  
+                  // Create booking payload
+                  const bookingPayload = {
+                    serviceId: serviceInfo?.id || null,
+                    serviceName: serviceInfo?.name || plan.name,
+                    therapistId: therapist?.id || null,
+                    therapistName: therapist?.name || "Default Therapist",
+                    userId: localStorage.getItem("user"),
+                    clientName: guestUserData.name,
+                    date: date,
+                    time: time,
+                    status: "pending",
+                    notes: "Session booking from frontend",
+                    paymentStatus: "pending",
+                    amount: plan.price,
+                    finalAmount: finalPrice,
+                    couponCode: isCouponApplied ? couponCode : undefined,
+                    discountAmount: isCouponApplied ? couponDiscount : 0,
+                    bookingId: serviceInfo?.bookingId || null,
+                    scheduleType: scheduleOption || "now",
+                    scheduledDate: scheduleOption === "now" ? scheduleDate : null,
+                    scheduledTime: scheduleOption === "now" ? (selectedTimeSlot ? `${selectedTimeSlot.start}-${selectedTimeSlot.end}` : scheduleTime) : null,
+                    timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+                    bookingType: serviceInfo?.name?.toLowerCase().includes('free') ? 'free-consultation' : 'regular',
+                  };
+                  
+                  try {
+                    // Execute the createBookingAsync API call
+                    const bookingResult = await dispatch(createBookingAsync(bookingPayload));
+                    
+                    if (createBookingAsync.fulfilled.match(bookingResult)) {
+                      // Proceed with payment flow after successful booking creation
+                      const bookingId =
+                        (bookingResult.payload as any)?._id ||
+                        (bookingResult.payload as any)?.booking?._id ||
+                        (bookingResult.payload as any)?.data?._id;
+                      
+                      // Create payment order with booking ID
+                      const paymentOrderData = {
+                        bookingId: bookingId,
+                        amount: finalPrice,
+                        currency: "INR",
+                        couponCode: isCouponApplied ? couponCode : undefined,
+                        discountAmount: isCouponApplied ? couponDiscount : 0,
+                      };
+                      
+                      const paymentOrderResult = await dispatch(
+                        createPaymentOrderAsync(paymentOrderData)
+                      );
+                      
+                      if (!createPaymentOrderAsync.fulfilled.match(paymentOrderResult)) {
+                        toast.error("Failed to create payment order. Please try again.");
+                        setIsProcessing(false);
+                        return;
+                      }
+                      
+                      if (!paymentOrderResult.payload) {
+                        console.error("Payment order creation failed:", paymentOrderResult);
+                        toast.error(
+                          paymentOrderResult.payload?.message ||
+                          "Payment order creation failed. Please try again."
+                        );
+                        setIsProcessing(false);
+                        return;
+                      }
+                      
+                      // Extract order details from the response
+                      const orderData =
+                        paymentOrderResult.payload.order || paymentOrderResult.payload;
+                      const { orderId, key: razorpayKey } = orderData;
+                      
+                      // Prepare Razorpay options
+                      const options = {
+                        key:
+                          razorpayKey ||
+                          "rzp_test_SHYwF83mxS594F",
+                        order_id: orderId, // Use the order ID from the backend
+                        amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
+                        currency: "INR",
+                        name: "Tanish physio & fitness",
+                        description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""}`,
+                        image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
+                        handler: async function (response: any) {
+                          // Payment successful - send response to backend for verification
+                          const paymentVerificationData = {
+                            paymentId: response.razorpay_payment_id,
+                            orderId: response.razorpay_order_id,
+                            signature: response.razorpay_signature,
+                          };
+                          
+                          setIsProcessing(false);
+                          
+                          // Dispatch payment verification action
+                          const verifyResult = await dispatch(
+                            verifyPaymentAsync(paymentVerificationData)
+                          );
+                          
+                          if (verifyPaymentAsync.fulfilled.match(verifyResult)) {
+                            // Verification successful - update booking status
+                            await dispatch(
+                              updateBookingAsync({
+                                id: bookingId,
+                                bookingData: {
+                                  status: "pending",
+                                  paymentStatus: "paid",
+                                  couponCode: isCouponApplied ? couponCode : undefined,
+                                  discountAmount: isCouponApplied ? couponDiscount : 0,
+                                  finalAmount: finalPrice,
+                                },
+                              })
+                            );
+                            
+                            // Process success flow
+                            try {
+                              // Persist plan as active subscription
+                              sessionStorage.setItem(
+                                "qw_plan",
+                                JSON.stringify({
+                                  plan,
+                                  purchasedAt: Date.now(),
+                                  active: true,
+                                })
+                              );
+                              
+                              // Check for existing intake
+                              let stored = null;
+                              try {
+                                const raw = sessionStorage.getItem("qw_questionnaire");
+                                if (raw) stored = JSON.parse(raw);
+                              } catch (e) {
+                                stored = null;
+                              }
+                              const RECENT_DAYS = 90;
+                              const now = Date.now();
+                              const isRecent = (ts: number | undefined | null) =>
+                                ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
+                              
+                              // Check for any previously reserved session (from intake-first scheduling)
+                              let scheduled = null;
+                              try {
+                                const raw = sessionStorage.getItem("qw_scheduled_session");
+                                if (raw) scheduled = JSON.parse(raw);
+                              } catch (e) {
+                                scheduled = null;
+                              }
+                              
+                              if (!stored || !isRecent(stored?.updatedAt)) {
+                                // Plan purchased, but intake missing or outdated: require intake to unlock sessions
+                                toast.success(
+                                  "Payment successful! Please complete a short intake to unlock sessions."
+                                );
+                                // Save a pending marker to ensure plan activation after intake
+                                try {
+                                  sessionStorage.setItem(
+                                    "qw_pending_plan",
+                                    JSON.stringify(plan)
+                                  );
+                                } catch (e) { }
+                              }
+                              
+                              // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
+                              try {
+                                if (scheduled) {
+                                  scheduled.locked = false;
+                                  scheduled.therapist = therapist;
+                                  scheduled.confirmedAt = Date.now();
+                                  sessionStorage.setItem(
+                                    "qw_scheduled_session",
+                                    JSON.stringify(scheduled)
+                                  );
+                                }
+                              } catch (e) { }
+                              
+                              toast.success("Payment successful! You can now book sessions by paying the regular price.");
+                              
+                              // Show loading state for 1 second before navigating to confirmation page
+                              setIsProcessing(true);
+                              
+                              // Wait for 1 second to show the loader
+                              await new Promise(resolve => setTimeout(resolve, 1000));
+                              
+                              navigate("/booking-confirmation", {
+                                state: {
+                                  ...bookingData,
+                                  bookingId: bookingId,
+                                  finalPrice,
+                                  guestUser: undefined,
+                                  fromServices: true,
+                                  scheduleOption: scheduleOption,
+                                  scheduleDate:
+                                    scheduleOption === "now" ? scheduleDate : null,
+                                  scheduleTime:
+                                    scheduleOption === "now" ? scheduleTime : null,
+                                  timeSlot:
+                                    scheduleOption === "now" ? selectedTimeSlot : null,
+                                },
+                              });
+                            } catch (error) {
+                              console.error("Error processing payment success:", error);
+                              toast.error(
+                                "Something went wrong after payment. Please contact support."
+                              );
+                            }
+                          } else {
+                            console.error(
+                              "Payment verification failed:",
+                              verifyResult.payload
+                            );
+                            
+                            await dispatch(
+                              updateBookingAsync({
+                                id: bookingId,
+                                bookingData: { status: "pending" },
+                              })
+                            );
+                            
+                            try {
+                              // Persist plan as active subscription
+                              sessionStorage.setItem(
+                                "qw_plan",
+                                JSON.stringify({
+                                  plan,
+                                  purchasedAt: Date.now(),
+                                  active: true,
+                                })
+                              );
+                              
+                              // Check for existing intake
+                              let stored = null;
+                              try {
+                                const raw = sessionStorage.getItem("qw_questionnaire");
+                                if (raw) stored = JSON.parse(raw);
+                              } catch (e) {
+                                stored = null;
+                              }
+                              const RECENT_DAYS = 90;
+                              const now = Date.now();
+                              const isRecent = (ts: number | undefined | null) =>
+                                ts && now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
+                              
+                              // Check for any previously reserved session (from intake-first scheduling)
+                              let scheduled = null;
+                              try {
+                                const raw = sessionStorage.getItem("qw_scheduled_session");
+                                if (raw) scheduled = JSON.parse(raw);
+                              } catch (e) {
+                                scheduled = null;
+                              }
+                              
+                              if (!stored || !isRecent(stored?.updatedAt)) {
+                                toast.success(
+                                  "Payment successful! Please complete a short intake to unlock sessions."
+                                );
+                                // Save a pending marker to ensure plan activation after intake
+                                try {
+                                  sessionStorage.setItem(
+                                    "qw_pending_plan",
+                                    JSON.stringify(plan)
+                                  );
+                                } catch (e) { }
+                              }
+                              
+                              // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
+                              try {
+                                const therapist = {
+                                  id: publicAdmins?.[0]?.id || "",
+                                  name: publicAdmins?.[0]?.name || "",
+                                  role: publicAdmins?.[0]?.role || "Therapist",
+                                  assignedAt: Date.now(),
+                                };
+                                sessionStorage.setItem(
+                                  "qw_assigned",
+                                  JSON.stringify(therapist)
+                                );
+                                
+                                if (scheduled) {
+                                  scheduled.locked = false;
+                                  scheduled.therapist = therapist;
+                                  scheduled.confirmedAt = Date.now();
+                                  sessionStorage.setItem(
+                                    "qw_scheduled_session",
+                                    JSON.stringify(scheduled)
+                                  );
+                                }
+                              } catch (e) { }
+                              
+                              toast.success("Payment successful!.");
+                              // Navigate to booking confirmation page for all users
+                              navigate("/booking-confirmation", {
+                                state: {
+                                  ...bookingData,
+                                  bookingId: bookingId,
+                                  finalPrice,
+                                  fromServices: true,
+                                },
+                              });
+                            } catch (innerError) {
+                              console.error("Error in fallback flow:", innerError);
+                              toast.error(
+                                "Payment was successful but there was an issue processing your booking. Please contact support."
+                              );
+                            }
+                          }
+                        },
+                        
+                        prefill: {
+                          name: guestUserData.name || "",
+                          email: guestUserData.email || "",
+                          contact: guestUserData.phone || "",
+                        },
+                        theme: {
+                          color: "#3b82f6", // Tailwind blue-500
+                        },
+                        modal: {
+                          ondismiss: function () {
+                            // Handle when user closes the payment modal without completing payment
+                            toast.info("Payment was cancelled. You can try again later.");
+                            setIsProcessing(false); // Close the loading state
+                          },
+                          escape: function () {
+                            // Handle when user presses escape key to close the modal
+                            setIsProcessing(false);
+                          },
+                          onload: function () {
+                            // Ensure processing state is set when modal loads
+                            setIsProcessing(true);
+                          },
+                        },
+                        callback: function (error) {
+                          // Handle payment failure
+                          if (error) {
+                            console.error("Payment failed:", error);
+                            toast.error(
+                              "Payment failed. Please try again or contact support."
+                            );
+                            setIsProcessing(false);
+                          }
+                        },
+                      };
+                      
+                      // Initialize and open Razorpay checkout
+                      if (typeof window !== "undefined" && (window as any).Razorpay) {
+                        // Check if key exists before creating Razorpay instance
+                        if (!options.key || options.key === "rzp_test_1234567890") {
+                          toast.error(
+                            "Razorpay key is not configured properly. Please contact support."
+                          );
+                          setIsProcessing(false);
+                          return;
+                        }
+                        
+                        const rzp = new (window as any).Razorpay(options);
+                        rzp.open();
+                      } else {
+                        console.error("Razorpay SDK not loaded");
+                        toast.error("Payment gateway not loaded. Please try again.");
+                        setIsProcessing(false);
+                      }
+                    } else {
+                      // Handle booking creation failure
+                      const errorMessage = (bookingResult.payload as any)?.message || bookingResult.error?.message || "Failed to create booking. Please try again.";
+                      toast.error(errorMessage);
+                      setIsProcessing(false);
+                    }
+                  } catch (error) {
+                    console.error("Error creating booking after session limit exceeded:", error);
+                    toast.error("Failed to create booking. Please try again.");
+                    setIsProcessing(false);
+                  }
+                }}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                Book Now (Pay Regular Price)
+              </Button>
               <Button 
                 onClick={() => {
                   setIsSessionLimitExceededModalOpen(false);

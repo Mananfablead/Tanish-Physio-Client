@@ -334,7 +334,7 @@ export default function SchedulePage() {
         if (errorMessage.includes('Session limit reached') || 
             errorMessage.includes('used all sessions') ||
             errorMessage.includes('no sessions in plan')) {
-          setBookingError(`❌ Session Limit Reached\n\n${errorMessage}`);
+          setBookingError(`${errorMessage}`);
         } else if (errorMessage.includes("Session is not active at this time")) {
           setBookingError(
             "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later."
