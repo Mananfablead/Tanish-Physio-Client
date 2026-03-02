@@ -755,7 +755,7 @@ export default function BookingPage() {
             scheduleOption === "now"
               ? scheduleDate
               : new Date().toISOString().split("T")[0],
-          time: scheduleOption === "now" ? scheduleTime : "09:00",
+          time: scheduleOption === "now" ? scheduleTime : "le",
           notes: "",
           clientName: user?.name || "",
           scheduleType: scheduleOption || "now",
@@ -2392,7 +2392,7 @@ export default function BookingPage() {
                     </div>
                   )}
 
-                  {scheduleOption && (
+                  {scheduleOption && (  
                     <div className="pt-2">
                       <Button
                         variant="outline"
@@ -3046,6 +3046,8 @@ export default function BookingPage() {
                       .includes("free")
                       ? "free-consultation"
                       : "regular",
+                    // For schedule later option, mark as to-be-scheduled
+                    isScheduledLater: scheduleOption === "later",
                   };
 
                   try {

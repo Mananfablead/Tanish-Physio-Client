@@ -1351,7 +1351,7 @@ export default function BookingConfirmationPage() {
                           </p>
                           <p className="font-medium">
                             {bookingData?.scheduleOption === "later"
-                              ? "Sessions can be booked later from your profile"
+                              ? "No session scheduled yet. You can schedule your session later from your profile"
                               : "Sessions can be booked from your profile"}
                           </p>
                         </div>
@@ -1401,10 +1401,19 @@ export default function BookingConfirmationPage() {
                         )}
                       </div>
 
-                      <p className="text-xs text-muted-foreground pt-3">
-                        You can book multiple sessions during the active
-                        subscription period.
-                      </p>
+                      {bookingData?.scheduleOption === "later" ? (
+                        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            <strong>Important:</strong> No session has been scheduled yet. 
+                            You can schedule your session anytime from your profile after payment.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground pt-3">
+                          You can book multiple sessions during the active
+                          subscription period.
+                        </p>
+                      )}
                     </div>
                   )}
 

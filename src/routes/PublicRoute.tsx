@@ -11,7 +11,12 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   // This prevents incorrect redirects when the store is still loading after page refresh
   if (isLoading && !user) {
     // Show a loading indicator while auth status is being determined
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-4 text-lg text-slate-600">Loading...</p>
+      </div>
+    </div>
   }
 
   // If user is authenticated, redirect to home (or dashboard)
