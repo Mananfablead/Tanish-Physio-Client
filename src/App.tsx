@@ -31,7 +31,7 @@ const BookingPage = lazy(() => import("./pages/BookingPage"));
 const BookingConfirmationPage = lazy(
   () => import("./pages/BookingConfirmationPage")
 );
-const NotFound = lazy(() => import("./pages/NotFound"));
+const NotFound = lazy(() => import("./pages/NotFoundPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));

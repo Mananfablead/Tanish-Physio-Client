@@ -22,7 +22,6 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
     <section className="relative  overflow-hidden gradient-hero border-b border-primary/5">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
       <div className="container relative py-5 lg:py-6">
-
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
             className="space-y-8"
@@ -53,9 +52,9 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-balance">
                 {cmsHero?.heading || "Start Your Recovery Journey Today"}
               </h1>
-              <h3 className="text-xl font-semibold tracking-wide text-balance">
+              <h2 className="text-xl font-semibold tracking-wide text-balance">
                 {cmsHero?.subHeading || "Recovery"}
-              </h3>
+              </h2>
               <p className="text-lg text-muted-foreground max-w-lg">
                 {cmsHero?.description ||
                   "Connect with certified physiotherapists from home. Get personalized treatment plans and video consultations tailored to your needs."}
@@ -63,12 +62,15 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-start">
-
               {/* Primary CTA */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link to="/questionnaire" state={{ goToSchedule: true }}>
-                    <Button variant="hero" size="lg" className="w-full sm:w-auto">
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="w-full sm:w-auto"
+                    >
                       {cmsHero?.ctaText || "Start Your Recovery"}
                       <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
@@ -97,16 +99,14 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                   <p>Book a free 15-minute consultation session</p>
                 </TooltipContent>
               </Tooltip>
-
             </div>
-
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-6">
               {cmsHero?.certifiedTherapists && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Star className="h-5 w-5 text-primary" />
-                 <span>Expert Therapist</span>
+                  <span>Expert Therapist</span>
                 </div>
               )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

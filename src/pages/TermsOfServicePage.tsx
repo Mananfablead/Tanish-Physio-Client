@@ -157,9 +157,9 @@ export default function TermsOfServicePage() {
                 <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] translate-y-1/2" />
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] pointer-events-none" />
               </div>
-              <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight relative z-10 text-slate-900">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight relative z-10 text-slate-900">
                 {loading ? "Loading..." : terms?.title || "Terms of Service"}
-              </CardTitle>
+              </h1>
               {/* <p className="text-slate-600 mt-3 text-lg font-medium relative z-10">
                 Last updated: {terms?.lastUpdated ? new Date(terms.lastUpdated).toLocaleDateString() : new Date().toLocaleDateString()}
               </p> */}

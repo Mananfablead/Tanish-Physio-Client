@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 import { Booking } from "@/types/user";
@@ -31,34 +31,44 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
   const getServiceExpirationStatus = (booking: Booking) => {
     if (booking.isExpired) {
-      return { status: 'expired', text: 'Expired', color: 'text-red-600 bg-red-100' };
+      return {
+        status: "expired",
+        text: "Expired",
+        color: "text-red-600 bg-red-100",
+      };
     }
     if (booking.expiryDate) {
       const expiryDate = new Date(booking.expiryDate);
-      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const daysUntilExpiry = Math.ceil(
+        (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
       if (daysUntilExpiry <= 7) {
         return {
-          status: 'expiring-soon',
+          status: "expiring-soon",
           text: `Expires in ${daysUntilExpiry} days`,
-          color: 'text-yellow-600 bg-yellow-100'
+          color: "text-yellow-600 bg-yellow-100",
         };
       }
       return {
-        status: 'active',
+        status: "active",
         text: `Expires ${expiryDate.toLocaleDateString()}`,
-        color: 'text-green-600 bg-green-100'
+        color: "text-green-600 bg-green-100",
       };
     }
     // If no expiry date, show created date as reference
     if (booking.createdAt) {
       const createdDate = new Date(booking.createdAt);
       return {
-        status: 'no-expiry',
+        status: "no-expiry",
         text: `Created ${createdDate.toLocaleDateString()}`,
-        color: 'text-blue-600 bg-blue-100'
+        color: "text-blue-600 bg-blue-100",
       };
     }
-    return { status: 'unknown', text: 'No expiry date', color: 'text-gray-600 bg-gray-100' };
+    return {
+      status: "unknown",
+      text: "No expiry date",
+      color: "text-gray-600 bg-gray-100",
+    };
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -106,25 +116,16 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
             Your Bookings
           </h2>
-
-
         </div>
 
         {/* CREATE SESSION BUTTON */}
-        {bookingList.filter((b) => b.status === "confirmed")
-          .length > 0 && (
-            <Badge className="bg-green-100 text-green-700 font-black flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" />
-              {
-                bookingList.filter(
-                  (b) => b.status === "confirmed"
-                ).length
-              }{" "}
-              Confirmed
-            </Badge>
-          )}
-
-
+        {bookingList.filter((b) => b.status === "confirmed").length > 0 && (
+          <Badge className="bg-green-100 text-green-700 font-black flex items-center gap-1">
+            <CheckCircle className="h-3 w-3" />
+            {bookingList.filter((b) => b.status === "confirmed").length}{" "}
+            Confirmed
+          </Badge>
+        )}
       </div>
 
       {/* DESKTOP TABLE VIEW */}
@@ -171,18 +172,13 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
                       {/* DATE & TIME */}
                       <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                        {new Date(booking.date).toLocaleDateString(
-                          "en-IN",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}
+                        {new Date(booking.date).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                         <br />
-                        <span className="text-xs">
-                          {booking.time}
-                        </span>
+                        <span className="text-xs">{booking.time}</span>
                       </td>
 
                       {/* THERAPIST */}
@@ -194,7 +190,10 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                       <td className="px-6 py-4 text-right">
                         <div className="text-right">
                           <span className="font-black text-slate-900">
-                            ₹{(booking.finalAmount?.toLocaleString() ?? booking.amount?.toLocaleString()) ?? 0}
+                            ₹
+                            {booking.finalAmount?.toLocaleString() ??
+                              booking.amount?.toLocaleString() ??
+                              0}
                           </span>
                           {booking.discountAmount > 0 && (
                             <div className="text-slate-500 text-sm line-through">
@@ -214,24 +213,30 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                         <div className="space-y-2 flex flex-col items-center">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-black uppercase
-                ${booking.status === "confirmed"
-                                    ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
-                                    : booking.status === "cancelled"
-                                      ? "bg-red-100 text-red-700"
-                                      : booking.status === "pending"
-                                        ? "bg-yellow-100 text-yellow-700"
-                                        : booking.status === "scheduled"
-                                          ? "bg-purple-100 text-purple-700"
-                                          : booking.status === "completed"
-                                            ? "bg-emerald-100 text-emerald-700"
-                                            : "bg-blue-100 text-blue-700"
-                                  }`}
+                ${
+                  booking.status === "confirmed"
+                    ? booking.bookingType === "free-consultation"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-green-100 text-green-700"
+                    : booking.status === "cancelled"
+                    ? "bg-red-100 text-red-700"
+                    : booking.status === "pending"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : booking.status === "scheduled"
+                    ? "bg-purple-100 text-purple-700"
+                    : booking.status === "completed"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}
                           >
-                            {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
-                              ? "Accepted" 
-                              : booking.bookingType === 'subscription-covered' && booking.status === "pending"
-                                ? "Pending Review"
-                                : booking.status || "Unknown"}
+                            {booking.bookingType === "free-consultation" &&
+                            booking.status === "confirmed"
+                              ? "Accepted"
+                              : booking.bookingType ===
+                                  "subscription-covered" &&
+                                booking.status === "pending"
+                              ? "Pending Review"
+                              : booking.status || "Unknown"}
                           </span>
 
                           {/* Expiration badge always show */}
@@ -240,7 +245,6 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                           </span> */}
                         </div>
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -251,13 +255,17 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
             {totalPages > 1 && (
               <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
                 <div className="text-sm text-slate-500">
-                  Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, bookingList.length)} of {bookingList.length} bookings
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                  {Math.min(currentPage * ITEMS_PER_PAGE, bookingList.length)}{" "}
+                  of {bookingList.length} bookings
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                     disabled={currentPage === 1}
                     className="flex items-center"
                   >
@@ -266,23 +274,29 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                   </Button>
 
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className="w-10 h-10"
-                      >
-                        {pageNum}
-                      </Button>
-                    ))}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (pageNum) => (
+                        <Button
+                          key={pageNum}
+                          variant={
+                            currentPage === pageNum ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="w-10 h-10"
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    )}
                   </div>
 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     disabled={currentPage === totalPages}
                     className="flex items-center"
                   >
@@ -308,11 +322,11 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                 <p className="text-slate-500 font-medium">
                   You haven't made any bookings yet.
                 </p>
-                <Button
-                  className="h-11 rounded-xl px-8 font-black"
-                >
-                  <a href="/services">Explore Services</a>
-                </Button>
+                <Link to="/services">
+                  <Button className="h-11 rounded-xl px-8 font-black">
+                    Explore Services
+                  </Button>
+                </Link>
               </div>
             </div>
           </Card>
@@ -324,7 +338,10 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
         {bookingList.length > 0 ? (
           <div className="space-y-4">
             {paginatedBookings.map((booking) => (
-              <Card key={booking._id} className="p-4 border border-slate-200 rounded-lg">
+              <Card
+                key={booking._id}
+                className="p-4 border border-slate-200 rounded-lg"
+              >
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -336,7 +353,9 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-slate-900">₹{booking.amount || 0}</p>
+                      <p className="font-black text-slate-900">
+                        ₹{booking.amount || 0}
+                      </p>
                     </div>
                   </div>
 
@@ -344,14 +363,11 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                     <div>
                       <p className="text-xs text-slate-500">Date</p>
                       <p className="text-sm text-slate-900">
-                        {new Date(booking.date).toLocaleDateString(
-                          "en-IN",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}
+                        {new Date(booking.date).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </p>
                     </div>
                     <div>
@@ -364,28 +380,37 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                     <div className="space-y-2 flex flex-col items-center">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-black uppercase
-                        ${booking.status === "confirmed"
-                            ? booking.bookingType === 'free-consultation' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                        ${
+                          booking.status === "confirmed"
+                            ? booking.bookingType === "free-consultation"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-green-100 text-green-700"
                             : booking.status === "cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : booking.status === "pending"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : booking.status === "scheduled"
-                                  ? "bg-purple-100 text-purple-700"
-                                  : booking.status === "completed"
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : "bg-blue-100 text-blue-700"
-                          }`}
+                            ? "bg-red-100 text-red-700"
+                            : booking.status === "pending"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : booking.status === "scheduled"
+                            ? "bg-purple-100 text-purple-700"
+                            : booking.status === "completed"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
                       >
-                        {booking.bookingType === 'free-consultation' && booking.status === "confirmed" 
-                          ? "Accepted" 
-                          : booking.bookingType === 'subscription-covered' && booking.status === "pending"
-                            ? "Pending Review"
-                            : booking.status || "Unknown"}
+                        {booking.bookingType === "free-consultation" &&
+                        booking.status === "confirmed"
+                          ? "Accepted"
+                          : booking.bookingType === "subscription-covered" &&
+                            booking.status === "pending"
+                          ? "Pending Review"
+                          : booking.status || "Unknown"}
                       </span>
 
                       {/* Expiration badge always show */}
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getServiceExpirationStatus(booking).color}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          getServiceExpirationStatus(booking).color
+                        }`}
+                      >
                         {getServiceExpirationStatus(booking).text}
                       </span>
                     </div>
@@ -398,13 +423,17 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
             {totalPages > 1 && (
               <div className="flex flex-col items-center space-y-4 pt-4">
                 <div className="text-sm text-slate-500 text-center">
-                  Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, bookingList.length)} of {bookingList.length} bookings
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                  {Math.min(currentPage * ITEMS_PER_PAGE, bookingList.length)}{" "}
+                  of {bookingList.length} bookings
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                     disabled={currentPage === 1}
                     className="flex items-center"
                   >
@@ -412,23 +441,29 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                   </Button>
 
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className="w-8 h-8"
-                      >
-                        {pageNum}
-                      </Button>
-                    ))}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (pageNum) => (
+                        <Button
+                          key={pageNum}
+                          variant={
+                            currentPage === pageNum ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="w-8 h-8"
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    )}
                   </div>
 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     disabled={currentPage === totalPages}
                     className="flex items-center"
                   >
@@ -453,11 +488,11 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                 <p className="text-slate-500 font-medium">
                   You haven't made any bookings yet.
                 </p>
-                <Button
-                  className="h-11 rounded-xl px-8 font-black"
-                >
-                  <a href="/services">Explore Services</a>
-                </Button>
+                <Link to="/services">
+                  <Button className="h-11 rounded-xl px-8 font-black">
+                    Explore Services
+                  </Button>
+                </Link>
               </div>
             </div>
           </Card>
