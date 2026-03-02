@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useAuthRedux } from "@/hooks/useAuthRedux";
 import api from "@/lib/api";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 interface GroupSession {
   _id: string;
@@ -250,6 +252,7 @@ export default function GroupSessionRegistrationPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <SEOHead {...getSEOConfig("/group-sessions/register")} />
       <div className="mb-6">
         <Button
           variant="ghost"

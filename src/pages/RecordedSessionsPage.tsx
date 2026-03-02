@@ -11,6 +11,8 @@ import {
 } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 import { PlayIcon, DownloadIcon, EyeIcon } from "lucide-react";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 interface Recording {
   _id: string;
@@ -157,6 +159,7 @@ const RecordedSessionsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEOHead {...getSEOConfig("/recorded-sessions")} />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Recorded Sessions</h1>
         <p className="text-gray-600 mt-2">

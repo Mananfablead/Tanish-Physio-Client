@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calendar, ArrowRight, Heart } from "lucide-react";
 import logo from "../assets/logo.webp";
+import { Layout } from "@/components/layout/Layout";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 let confetti: any;
 
@@ -55,111 +58,114 @@ const ComingSoonPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full opacity-20"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-purple-200 rounded-full opacity-20"
-          animate={{
-            x: [0, -80, 0],
-            y: [0, 60, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 max-w-4xl w-full text-center">
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="mb-8"
-        >
-          <img
-            src={logo}
-            alt="Tanish Physio & Fitness Logo"
-            className="mx-auto h-20 w-auto"
+    <Layout>
+      <SEOHead {...getSEOConfig("/coming-soon")} />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full opacity-20"
+            animate={{
+              x: [0, 100, 0],
+              y: [0, -50, 0],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           />
-        </motion.div>
+          <motion.div
+            className="absolute bottom-20 right-10 w-96 h-96 bg-purple-200 rounded-full opacity-20"
+            animate={{
+              x: [0, -80, 0],
+              y: [0, 60, 0],
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </div>
 
-        {/* Main Heading */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-7xl font-bold text-gray-900 mb-6"
-        >
-          Coming <span className="text-blue-600">Soon</span>
-        </motion.h1>
+        <div className="relative z-10 max-w-4xl w-full text-center">
+          {/* Logo */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="mb-8"
+          >
+            <img
+              src={logo}
+              alt="Tanish Physio & Fitness Logo"
+              className="mx-auto h-20 w-auto"
+            />
+          </motion.div>
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-xl md:text-2xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed"
-        >
-          Revolutionizing physiotherapy with cutting-edge video consultation
-          technology. Your health journey is about to get smarter.
-        </motion.p>
+          {/* Main Heading */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-5xl md:text-7xl font-bold text-gray-900 mb-6"
+          >
+            Coming <span className="text-blue-600">Soon</span>
+          </motion.h1>
 
-        {/* Features Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
-        >
-          {[
-            {
-              icon: <Heart className="w-8 h-8 text-red-500" />,
-              title: "Expert Care",
-              desc: "Certified physiotherapists at your fingertips",
-            },
-            {
-              icon: <Calendar className="w-8 h-8 text-blue-500" />,
-              title: "Flexible Scheduling",
-              desc: "Book sessions anytime, anywhere",
-            },
-            {
-              icon: <ArrowRight className="w-8 h-8 text-purple-500" />,
-              title: "Personalized Plans",
-              desc: "Tailored treatment programs for you",
-            },
-          ].map((feature, index) => (
-            <div
-              key={index}
-              className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <div className="flex flex-col items-center text-center">
-                {feature.icon}
-                <h3 className="font-semibold text-gray-900 mt-4 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600 text-sm">{feature.desc}</p>
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-xl md:text-2xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed"
+          >
+            Revolutionizing physiotherapy with cutting-edge video consultation
+            technology. Your health journey is about to get smarter.
+          </motion.p>
+
+          {/* Features Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
+          >
+            {[
+              {
+                icon: <Heart className="w-8 h-8 text-red-500" />,
+                title: "Expert Care",
+                desc: "Certified physiotherapists at your fingertips",
+              },
+              {
+                icon: <Calendar className="w-8 h-8 text-blue-500" />,
+                title: "Flexible Scheduling",
+                desc: "Book sessions anytime, anywhere",
+              },
+              {
+                icon: <ArrowRight className="w-8 h-8 text-purple-500" />,
+                title: "Personalized Plans",
+                desc: "Tailored treatment programs for you",
+              },
+            ].map((feature, index) => (
+              <div
+                key={index}
+                className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <div className="flex flex-col items-center text-center">
+                  {feature.icon}
+                  <h3 className="font-semibold text-gray-900 mt-4 mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm">{feature.desc}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

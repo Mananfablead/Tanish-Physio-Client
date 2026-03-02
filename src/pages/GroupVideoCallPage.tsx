@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuthRedux } from "@/hooks/useAuthRedux";
 import VideoCall from "@/components/VideoCall/VideoCall";
 import { videoCallApi } from "@/lib/videoCallApi";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 export default function GroupVideoCallPage() {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +55,9 @@ export default function GroupVideoCallPage() {
         }
 
         // Participants will be populated through peer connections, not API calls
-        console.log("Group session participants will be populated through peer connections");
+        console.log(
+          "Group session participants will be populated through peer connections"
+        );
 
         // Generate call token for group session
         const response = await videoCallApi.generateGroupJoinLink(
@@ -168,16 +172,19 @@ export default function GroupVideoCallPage() {
   }
 
   return (
-    <VideoCall
-      key={groupSessionDetails ? groupSessionDetails._id : "initial"}
-      roomId={id}
-      roomType="group"
-      user={user}
-      isTherapist={user?.role === "therapist"}
-      onEndCall={handleEndCall}
-      sessionId={id}
-      sessionDetails={groupSessionDetails}
-      connected={connected}
-    />
+    <>
+      <SEOHead {...getSEOConfig("/group-video-call")} />
+      <VideoCall
+        key={groupSessionDetails ? groupSessionDetails._id : "initial"}
+        roomId={id}
+        roomType="group"
+        user={user}
+        isTherapist={user?.role === "therapist"}
+        onEndCall={handleEndCall}
+        sessionId={id}
+        sessionDetails={groupSessionDetails}
+        connected={connected}
+      />
+    </>
   );
 }

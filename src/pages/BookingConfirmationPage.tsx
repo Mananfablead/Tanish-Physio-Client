@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -18,26 +20,43 @@ import {
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { updateGuestBookingStatus, getBookingDetails, updateProfile, getUserSubscriptions, checkUserExists } from "@/lib/api";
+import {
+  updateGuestBookingStatus,
+  getBookingDetails,
+  updateProfile,
+  getUserSubscriptions,
+  checkUserExists,
+} from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { register, login, fetchProfile, setCredentials } from "@/store/slices/authSlice";
+import {
+  register,
+  login,
+  fetchProfile,
+  setCredentials,
+} from "@/store/slices/authSlice";
 import { checkUserExistsAsync } from "@/store/slices/bookingsSlice";
-import { fetchActiveQuestionnaire, selectActiveQuestionnaire } from "@/store/slices/questionnaireSlice";
+import {
+  fetchActiveQuestionnaire,
+  selectActiveQuestionnaire,
+} from "@/store/slices/questionnaireSlice";
 import InvoiceComponent from "@/components/InvoiceComponent";
 
 export default function BookingConfirmationPage() {
   // Transform questionnaire data to health profile format
-  const transformQuestionnaireToHealthProfile = (questionnaireData: any, questions: any[] = []) => {
+  const transformQuestionnaireToHealthProfile = (
+    questionnaireData: any,
+    questions: any[] = []
+  ) => {
     const healthProfile: any = {};
 
     // Initialize questionnaire metadata
     const questionnaireMetadata = {
       questionnaireId: null,
       completedAt: new Date(),
-      responses: [] as any[]
+      responses: [] as any[],
     };
 
     // Initialize questionnaire responses map
@@ -50,17 +69,21 @@ export default function BookingConfirmationPage() {
       // Handle common field structure
       let answerValue: any = answer;
       let mainAnswer: any = answer;
-      let commonField: string = '';
-      
-      if (typeof answer === 'object' && answer !== null && (answer as any).commonField !== undefined) {
+      let commonField: string = "";
+
+      if (
+        typeof answer === "object" &&
+        answer !== null &&
+        (answer as any).commonField !== undefined
+      ) {
         mainAnswer = (answer as any).mainAnswer;
-        commonField = (answer as any).commonField || '';
+        commonField = (answer as any).commonField || "";
         // For storage, we want to preserve both values separately
         answerValue = mainAnswer;
       }
 
       // Convert file objects/URLs to displayable format for storage
-      if (typeof answerValue === 'object' && answerValue !== null) {
+      if (typeof answerValue === "object" && answerValue !== null) {
         // If it's an uploaded file with URL, use the URL
         if ((answerValue as any).url) {
           answerValue = (answerValue as any).url;
@@ -69,41 +92,47 @@ export default function BookingConfirmationPage() {
           answerValue = (answerValue as any).name;
         } else {
           // For arrays and other objects, convert to string representation
-          answerValue = Array.isArray(answerValue) 
-            ? JSON.stringify(answerValue) 
+          answerValue = Array.isArray(answerValue)
+            ? JSON.stringify(answerValue)
             : JSON.stringify(answerValue);
         }
       }
 
       // Store in questionnaire responses map - preserve both values for proper display
-      let responseValue = String(answerValue || '');
-      
+      let responseValue = String(answerValue || "");
+
       // Store the structured data for better retrieval
-      if (typeof answer === 'object' && answer !== null && (answer as any).commonField !== undefined) {
+      if (
+        typeof answer === "object" &&
+        answer !== null &&
+        (answer as any).commonField !== undefined
+      ) {
         // Store as JSON string to preserve structure
         responseValue = JSON.stringify({
           mainAnswer: mainAnswer,
-          commonField: commonField
+          commonField: commonField,
         });
       } else {
         // Simple value
-        responseValue = String(answerValue || '');
+        responseValue = String(answerValue || "");
       }
-      
+
       questionnaireResponses.set(questionId, responseValue);
 
       // Find the actual question text from the questions array
-      const questionObj = questions.find(q => q._id === questionId);
-      const actualQuestionText = questionObj ? questionObj.question : questionId;
-      const questionType = questionObj ? questionObj.type : 'unknown';
-      
+      const questionObj = questions.find((q) => q._id === questionId);
+      const actualQuestionText = questionObj
+        ? questionObj.question
+        : questionId;
+      const questionType = questionObj ? questionObj.type : "unknown";
+
       // Store detailed response metadata
       questionnaireMetadata.responses.push({
         questionId: questionId,
         questionText: actualQuestionText,
         answer: responseValue,
         questionType: questionType,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Map based on question content or type (for backward compatibility)
@@ -115,7 +144,7 @@ export default function BookingConfirmationPage() {
     questionnaireResponses.forEach((value, key) => {
       responsesObject[key] = value;
     });
-    
+
     healthProfile.questionnaireResponses = responsesObject;
     healthProfile.questionnaireMetadata = questionnaireMetadata;
 
@@ -124,12 +153,14 @@ export default function BookingConfirmationPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { admins: publicAdmins, } = useSelector((state: RootState) => state.admins);
+  const { admins: publicAdmins } = useSelector(
+    (state: RootState) => state.admins
+  );
   const primaryDoctor = publicAdmins?.[0];
   const activeQuestionnaire = useSelector(selectActiveQuestionnaire);
-  console.log("isAuthenticated", isAuthenticated)
+  console.log("isAuthenticated", isAuthenticated);
   const bookingData = location.state;
-  console.log("booking data", bookingData)
+  console.log("booking data", bookingData);
   const dispatch = useDispatch<AppDispatch>();
   const guestUser = bookingData?.guestUser;
   const user = useSelector((state: RootState) => state.auth.user);
@@ -140,31 +171,32 @@ export default function BookingConfirmationPage() {
   // Auto-login for guest users who just purchased a subscription
   useEffect(() => {
     const autoLoginGuestUser = async () => {
-      if (!isAuthenticated && guestUser?.email && bookingData?.fromSubscription) {
+      if (
+        !isAuthenticated &&
+        guestUser?.email &&
+        bookingData?.fromSubscription
+      ) {
         try {
           // Check if user exists and get token for auto-login
           const userCheckResult = await dispatch(
             checkUserExistsAsync(guestUser.email)
           );
-          
+
           if (checkUserExistsAsync.fulfilled.match(userCheckResult)) {
             const userData = userCheckResult.payload;
             if (userData.exists && userData.token) {
               // Set the token for auto-login
               localStorage.setItem("token", userData.token);
-              localStorage.setItem(
-                "user",
-                JSON.stringify(userData.user)
-              );
+              localStorage.setItem("user", JSON.stringify(userData.user));
               localStorage.setItem("isAuthenticated", "true");
-              
+
               dispatch(
                 setCredentials({
                   user: userData.user,
                   token: userData.token,
                 })
               );
-              
+
               toast.success("Successfully logged in!");
               setIsAutoLoginCompleted(true);
             }
@@ -204,7 +236,10 @@ export default function BookingConfirmationPage() {
         const parsed = JSON.parse(stored);
         const now = Date.now();
         const RECENT_DAYS = 90;
-        if (parsed.updatedAt && now - parsed.updatedAt < RECENT_DAYS * 86400000) {
+        if (
+          parsed.updatedAt &&
+          now - parsed.updatedAt < RECENT_DAYS * 86400000
+        ) {
           setIsQuestionnaireFilled(true);
         }
       }
@@ -234,7 +269,10 @@ export default function BookingConfirmationPage() {
           return;
         }
 
-        const response = await getBookingDetails(bookingData.bookingId, clientEmail);
+        const response = await getBookingDetails(
+          bookingData.bookingId,
+          clientEmail
+        );
         if (response.data?.success) {
           setBookingDetails(response.data.data.booking);
         }
@@ -258,10 +296,11 @@ export default function BookingConfirmationPage() {
     "Physiotherapy";
 
   // Special handling for free consultation
-  const isFreeConsultation = bookingData?.service?.name?.toLowerCase().includes('free') || 
-                            bookingData?.service?.name?.toLowerCase().includes('consultation') ||
-                            bookingData?.plan?.name?.toLowerCase().includes('free') ||
-                            bookingData?.isFreeConsultation === true;
+  const isFreeConsultation =
+    bookingData?.service?.name?.toLowerCase().includes("free") ||
+    bookingData?.service?.name?.toLowerCase().includes("consultation") ||
+    bookingData?.plan?.name?.toLowerCase().includes("free") ||
+    bookingData?.isFreeConsultation === true;
 
   const serviceDuration =
     bookingDetails?.serviceId?.duration ||
@@ -278,60 +317,66 @@ export default function BookingConfirmationPage() {
 
   const sessionDate = bookingDetails?.date
     ? new Date(bookingDetails.date).toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
-    : bookingData?.scheduleDate
-      ? new Date(bookingData.scheduleDate).toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
       })
-      : bookingData?.selectedSlot?.date
-        ? new Date(bookingData.selectedSlot.date).toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-        : new Date().toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
+    : bookingData?.scheduleDate
+    ? new Date(bookingData.scheduleDate).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : bookingData?.selectedSlot?.date
+    ? new Date(bookingData.selectedSlot.date).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : new Date().toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 
-  const sessionTime = bookingDetails?.time || 
-    bookingData?.scheduleTime || 
-    bookingData?.selectedSlot?.time || 
-    bookingData?.timeSlot?.start || 
+  const sessionTime =
+    bookingDetails?.time ||
+    bookingData?.scheduleTime ||
+    bookingData?.selectedSlot?.time ||
+    bookingData?.timeSlot?.start ||
     "Scheduled";
 
   const therapist = {
-    name: bookingDetails?.therapistName ||
+    name:
+      bookingDetails?.therapistName ||
       primaryDoctor?.name ||
       "Physiotherapy Specialist",
-    title: bookingDetails?.therapistId?.doctorProfile?.specialization ||
+    title:
+      bookingDetails?.therapistId?.doctorProfile?.specialization ||
       primaryDoctor?.doctorProfile?.specialization ||
       bookingData?.session?.type ||
       "Senior Physiotherapist",
-    avatar: bookingDetails?.therapistId?.profilePicture ||
+    avatar:
+      bookingDetails?.therapistId?.profilePicture ||
       primaryDoctor?.profilePicture ||
       "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face",
     experience: bookingDetails?.therapistId?.doctorProfile?.experience
       ? `${bookingDetails.therapistId.doctorProfile.experience}+ Years`
       : primaryDoctor?.doctorProfile?.experience
-        ? `${primaryDoctor.doctorProfile.experience}+ Years`
-        : "Experienced",
-    qualification: bookingDetails?.therapistId?.doctorProfile?.education ||
+      ? `${primaryDoctor.doctorProfile.experience}+ Years`
+      : "Experienced",
+    qualification:
+      bookingDetails?.therapistId?.doctorProfile?.education ||
       primaryDoctor?.doctorProfile?.education ||
       "MPT (Physiotherapy)",
     languages: (() => {
       try {
-        const langs = bookingDetails?.therapistId?.doctorProfile?.languages?.[0] ||
+        const langs =
+          bookingDetails?.therapistId?.doctorProfile?.languages?.[0] ||
           primaryDoctor?.doctorProfile?.languages?.[0];
         return langs ? JSON.parse(langs).join(", ") : "";
       } catch {
@@ -373,16 +418,18 @@ export default function BookingConfirmationPage() {
     // Check for auto-login token on component mount
     const autoLoginToken = localStorage.getItem("qw_auto_login_token");
     const storedUser = localStorage.getItem("user");
-    
+
     if (autoLoginToken && !isAuthenticated && storedUser) {
       console.log("Auto-login token found on mount:", autoLoginToken);
       try {
         const user = JSON.parse(storedUser);
         // Set credentials immediately
-        dispatch(setCredentials({
-          user: user,
-          token: autoLoginToken
-        }));
+        dispatch(
+          setCredentials({
+            user: user,
+            token: autoLoginToken,
+          })
+        );
         // Clean up the temporary token
         localStorage.removeItem("qw_auto_login_token");
         // Set authentication flag
@@ -403,73 +450,86 @@ export default function BookingConfirmationPage() {
       // Remove guest user from session storage if user is now logged in
       sessionStorage.removeItem("qw_guest_user");
     }
-  
+
     // Check if we have an auto-login token from payment verification
     const autoLoginToken = localStorage.getItem("qw_auto_login_token");
     const storedUser = localStorage.getItem("user");
     console.log("Auto-login token found:", autoLoginToken);
     console.log("Is authenticated:", isAuthenticated);
     console.log("Stored user:", storedUser);
-      
+
     if (autoLoginToken && !isAuthenticated && storedUser) {
       console.log("Processing auto-login...");
       // Set the token in the main storage location
       localStorage.setItem("token", autoLoginToken);
       localStorage.removeItem("qw_auto_login_token"); // Clean up
-    
+
       // Set credentials immediately to ensure Redux state is updated
       try {
         const user = JSON.parse(storedUser);
-        dispatch(setCredentials({
-          user: user,
-          token: autoLoginToken
-        }));
+        dispatch(
+          setCredentials({
+            user: user,
+            token: autoLoginToken,
+          })
+        );
       } catch (e) {
         console.error("Error parsing stored user:", e);
       }
-    
+
       // Refresh user data
       dispatch(fetchProfile())
         .unwrap()
         .then(async (userData) => {
           console.log("Profile fetched successfully:", userData);
           // Update Redux store with fresh user data
-          dispatch(setCredentials({
-            user: userData,
-            token: autoLoginToken
-          }));
+          dispatch(
+            setCredentials({
+              user: userData,
+              token: autoLoginToken,
+            })
+          );
           // Update the authentication context
           localStorage.setItem("isAuthenticated", "true");
           setIsAutoLoginCompleted(true);
           toast.success("Account created and logged in successfully!");
-          
+
           // Automatically navigate to profile page after successful auto-login
           setTimeout(() => {
             navigate("/profile");
           }, 2000); // Small delay to show the success message
-            
+
           // Get questionnaire data from session storage and update profile
           try {
-            const questionnaireData = sessionStorage.getItem("qw_questionnaire");
+            const questionnaireData =
+              sessionStorage.getItem("qw_questionnaire");
             console.log("Questionnaire data found:", questionnaireData);
             if (questionnaireData) {
               const parsedQuestionnaire = JSON.parse(questionnaireData);
-                
+
               // Transform questionnaire data to health profile format
               // The stored data structure is { data: payload, updatedAt: timestamp }
-              const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
-              console.log("healthProfileData", healthProfileData)
+              const healthProfileData = transformQuestionnaireToHealthProfile(
+                parsedQuestionnaire.data,
+                activeQuestionnaire?.questions || []
+              );
+              console.log("healthProfileData", healthProfileData);
               // Update profile with questionnaire data
               await updateProfile({
-                healthProfile: healthProfileData
+                healthProfile: healthProfileData,
               });
-                
-              console.log("Profile updated with questionnaire data successfully");
+
+              console.log(
+                "Profile updated with questionnaire data successfully"
+              );
               // Clear the questionnaire data after successful profile update
               sessionStorage.removeItem("qw_questionnaire");
             }
           } catch (questionnaireError) {
-            console.error("Error updating profile with questionnaire data:", questionnaireError);
+            console.error(
+              "Error updating profile with questionnaire data:",
+              questionnaireError
+            );
           }
         })
         .catch(async (error) => {
@@ -479,62 +539,80 @@ export default function BookingConfirmationPage() {
           localStorage.removeItem("user");
           localStorage.removeItem("isAuthenticated");
           toast.error("Failed to log in. Please try logging in manually.");
-            
+
           // Don't set credentials with null user
           // Continue with the flow without auto-login
         });
-  
+
       return;
     }
-  
+
     // If user is a guest and hasn't registered yet, register them automatically
     // Skip for subscription guests since they should already be created by payment verification
-    if (!isAuthenticated && guestUser && guestUser.email && !bookingData?.fromSubscription) {
+    if (
+      !isAuthenticated &&
+      guestUser &&
+      guestUser.email &&
+      !bookingData?.fromSubscription
+    ) {
       const registerGuestUser = async () => {
         try {
           // Attempt to register the guest user with a default password
-          const result = await dispatch(register({
-            name: guestUser.name || "Guest User",
-            email: guestUser.email,
-            password: "123456",
-            phone: guestUser.phone
-          }));
-  
+          const result = await dispatch(
+            register({
+              name: guestUser.name || "Guest User",
+              email: guestUser.email,
+              password: "123456",
+              phone: guestUser.phone,
+            })
+          );
+
           toast.success("Account created successfully!");
-            
+
           // After successful registration, try to log in
-          const loginResult = await dispatch(login({
-            email: guestUser.email,
-            password: "123456"
-          }));
-            
+          const loginResult = await dispatch(
+            login({
+              email: guestUser.email,
+              password: "123456",
+            })
+          );
+
           if (login.fulfilled.match(loginResult)) {
             toast.success("Successfully logged in!");
-              
+
             // Get questionnaire data from session storage and update profile
             try {
-              const questionnaireData = sessionStorage.getItem("qw_questionnaire");
+              const questionnaireData =
+                sessionStorage.getItem("qw_questionnaire");
               console.log("Questionnaire data found:", questionnaireData);
               if (questionnaireData) {
                 const parsedQuestionnaire = JSON.parse(questionnaireData);
-                  
+
                 // Transform questionnaire data to health profile format
                 // The stored data structure is { data: payload, updatedAt: timestamp }
-                const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
-                console.log("healthProfileData", healthProfileData)
+                const healthProfileData = transformQuestionnaireToHealthProfile(
+                  parsedQuestionnaire.data,
+                  activeQuestionnaire?.questions || []
+                );
+                console.log("healthProfileData", healthProfileData);
                 // Update profile with questionnaire data
                 await updateProfile({
-                  healthProfile: healthProfileData
+                  healthProfile: healthProfileData,
                 });
-                  
-                console.log("Profile updated with questionnaire data successfully");
+
+                console.log(
+                  "Profile updated with questionnaire data successfully"
+                );
                 // Clear the questionnaire data after successful profile update
                 sessionStorage.removeItem("qw_questionnaire");
               }
             } catch (questionnaireError) {
-              console.error("Error updating profile with questionnaire data:", questionnaireError);
+              console.error(
+                "Error updating profile with questionnaire data:",
+                questionnaireError
+              );
             }
-              
+
             // Auto-navigate to questionnaire if not already completed
             if (!isQuestionnaireFilled) {
               setTimeout(() => {
@@ -548,7 +626,7 @@ export default function BookingConfirmationPage() {
                       serviceId: bookingData?.service?.id,
                     },
                     guestUser: guestUser,
-                  }
+                  },
                 });
               }, 2000);
             }
@@ -558,38 +636,50 @@ export default function BookingConfirmationPage() {
           // If user already exists, try to log them in
           if (error.message?.includes("User already exists with this email")) {
             try {
-              const loginResult = await dispatch(login({
-                email: guestUser.email,
-                password: "123456"
-              }));
-                
+              const loginResult = await dispatch(
+                login({
+                  email: guestUser.email,
+                  password: "123456",
+                })
+              );
+
               if (login.fulfilled.match(loginResult)) {
                 toast.success("Successfully logged in!");
-                                  
+
                 // Get questionnaire data from session storage and update profile
                 try {
-                  const questionnaireData = sessionStorage.getItem("qw_questionnaire");
+                  const questionnaireData =
+                    sessionStorage.getItem("qw_questionnaire");
                   console.log("Questionnaire data found:", questionnaireData);
                   if (questionnaireData) {
                     const parsedQuestionnaire = JSON.parse(questionnaireData);
-                                            
+
                     // Transform questionnaire data to health profile format
                     // The stored data structure is { data: payload, updatedAt: timestamp }
-                    const healthProfileData = transformQuestionnaireToHealthProfile(parsedQuestionnaire.data, activeQuestionnaire?.questions || []);
-                    console.log("healthProfileData", healthProfileData)
+                    const healthProfileData =
+                      transformQuestionnaireToHealthProfile(
+                        parsedQuestionnaire.data,
+                        activeQuestionnaire?.questions || []
+                      );
+                    console.log("healthProfileData", healthProfileData);
                     // Update profile with questionnaire data
                     await updateProfile({
-                      healthProfile: healthProfileData
+                      healthProfile: healthProfileData,
                     });
-                                            
-                    console.log("Profile updated with questionnaire data successfully");
+
+                    console.log(
+                      "Profile updated with questionnaire data successfully"
+                    );
                     // Clear the questionnaire data after successful profile update
                     sessionStorage.removeItem("qw_questionnaire");
                   }
                 } catch (questionnaireError) {
-                  console.error("Error updating profile with questionnaire data:", questionnaireError);
+                  console.error(
+                    "Error updating profile with questionnaire data:",
+                    questionnaireError
+                  );
                 }
-                  
+
                 // Auto-navigate to questionnaire if not already completed
                 if (!isQuestionnaireFilled) {
                   setTimeout(() => {
@@ -603,7 +693,7 @@ export default function BookingConfirmationPage() {
                           serviceId: bookingData?.service?.id,
                         },
                         guestUser: guestUser,
-                      }
+                      },
                     });
                   }, 2000);
                 }
@@ -618,16 +708,27 @@ export default function BookingConfirmationPage() {
           }
         }
       };
-  
+
       // Delay the registration slightly to allow other UI updates to complete
       const timer = setTimeout(() => {
         registerGuestUser();
       }, 1000);
-  
+
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, guestUser, dispatch, isQuestionnaireFilled, serviceName, servicePrice, serviceDuration, bookingData, navigate, transformQuestionnaireToHealthProfile]);
-  
+  }, [
+    isAuthenticated,
+    guestUser,
+    dispatch,
+    isQuestionnaireFilled,
+    serviceName,
+    servicePrice,
+    serviceDuration,
+    bookingData,
+    navigate,
+    transformQuestionnaireToHealthProfile,
+  ]);
+
   /* ---------------- Fetch Subscription Information ---------------- */
   useEffect(() => {
     const fetchSubscriptionInfo = async () => {
@@ -638,26 +739,31 @@ export default function BookingConfirmationPage() {
           if (response.data?.success && response.data.data?.subscriptions) {
             // Get the most recent active subscription
             const activeSubscriptions = response.data.data.subscriptions.filter(
-              (sub: any) => sub.status === 'active' && !sub.isExpired
+              (sub: any) => sub.status === "active" && !sub.isExpired
             );
-              
+
             if (activeSubscriptions.length > 0) {
               // Get the most recently purchased subscription
-              const latestSubscription = activeSubscriptions.reduce((latest: any, current: any) => {
-                return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
-              });
-                
+              const latestSubscription = activeSubscriptions.reduce(
+                (latest: any, current: any) => {
+                  return new Date(current.createdAt) >
+                    new Date(latest.createdAt)
+                    ? current
+                    : latest;
+                }
+              );
+
               setSubscriptionInfo(latestSubscription);
             }
           }
         } catch (error) {
-          console.error('Failed to fetch subscription info:', error);
+          console.error("Failed to fetch subscription info:", error);
         } finally {
           setLoadingSubscription(false);
         }
       }
     };
-      
+
     fetchSubscriptionInfo();
   }, [isAuthenticated, user]);
 
@@ -670,28 +776,28 @@ export default function BookingConfirmationPage() {
     try {
       // Show loading state
       toast.loading("Generating invoice PDF...");
-      
+
       // Dynamically import the required libraries
-      const html2canvasModule = await import('html2canvas');
-      const jsPDFModule = await import('jspdf');
-      
+      const html2canvasModule = await import("html2canvas");
+      const jsPDFModule = await import("jspdf");
+
       const html2canvas = html2canvasModule.default;
       const jsPDF = jsPDFModule.jsPDF || jsPDFModule.default;
-      
+
       if (!html2canvas || !jsPDF) {
-        throw new Error('Failed to load required libraries');
+        throw new Error("Failed to load required libraries");
       }
-      
+
       // Create a temporary invoice element to render the content
-      const tempInvoiceDiv = document.createElement('div');
-      tempInvoiceDiv.id = 'temp-invoice';
-      tempInvoiceDiv.style.position = 'absolute';
-      tempInvoiceDiv.style.left = '-9999px';
-      tempInvoiceDiv.style.top = '-9999px';
-      tempInvoiceDiv.style.width = '800px';
-      tempInvoiceDiv.style.backgroundColor = 'white';
-      tempInvoiceDiv.style.padding = '30px';
-      tempInvoiceDiv.style.zIndex = '9999';
+      const tempInvoiceDiv = document.createElement("div");
+      tempInvoiceDiv.id = "temp-invoice";
+      tempInvoiceDiv.style.position = "absolute";
+      tempInvoiceDiv.style.left = "-9999px";
+      tempInvoiceDiv.style.top = "-9999px";
+      tempInvoiceDiv.style.width = "800px";
+      tempInvoiceDiv.style.backgroundColor = "white";
+      tempInvoiceDiv.style.padding = "30px";
+      tempInvoiceDiv.style.zIndex = "9999";
 
       // Create the invoice HTML content
       const invoiceHTML = `
@@ -717,29 +823,41 @@ export default function BookingConfirmationPage() {
           <div class="invoice-details grid grid-cols-2 gap-8 mb-8">
             <div>
               <h3 class="text-lg font-semibold mb-2">Bill To:</h3>
-              <p class="font-medium">${user?.name || guestUser?.name || "Guest User"}</p>
-              <p class="text-gray-600">${user?.email || guestUser?.email || "N/A"}</p>
-              <p class="text-gray-600">${user?.phone || guestUser?.phone || "N/A"}</p>
+              <p class="font-medium">${
+                user?.name || guestUser?.name || "Guest User"
+              }</p>
+              <p class="text-gray-600">${
+                user?.email || guestUser?.email || "N/A"
+              }</p>
+              <p class="text-gray-600">${
+                user?.phone || guestUser?.phone || "N/A"
+              }</p>
             </div>
             
             <div class="text-right">
               <div class="mb-4">
                 <p class="text-gray-600">Invoice Date:</p>
-                <p class="font-medium">${new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric"
-                })}</p>
+                <p class="font-medium">${new Date().toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}</p>
               </div>
               <div>
                 <p class="text-gray-600">Due Date:</p>
-                <p class="font-medium">${new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric"
-                })}</p>
+                <p class="font-medium">${new Date().toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}</p>
               </div>
             </div>
           </div>
@@ -760,7 +878,11 @@ export default function BookingConfirmationPage() {
                     <td class="p-3 border-t">
                       <div class="font-medium">${serviceName}</div>
                       <div class="text-gray-600 text-sm">
-                        ${isSubscription ? "Subscription Plan" : "Service Booking"}
+                        ${
+                          isSubscription
+                            ? "Subscription Plan"
+                            : "Service Booking"
+                        }
                       </div>
                     </td>
                     <td class="p-3 border-t">
@@ -769,10 +891,14 @@ export default function BookingConfirmationPage() {
                     </td>
                     <td class="p-3 border-t">
                       <div>${therapist.name}</div>
-                      <div class="text-gray-600 text-sm">${therapist.title}</div>
+                      <div class="text-gray-600 text-sm">${
+                        therapist.title
+                      }</div>
                     </td>
                     <td class="p-3 border-t text-right">
-                      ₹${servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                      ₹${servicePrice
+                        ?.toString()
+                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                     </td>
                   </tr>
                 </tbody>
@@ -784,14 +910,20 @@ export default function BookingConfirmationPage() {
             <div>
               <h3 class="text-lg font-semibold mb-2">Payment Method</h3>
               <p class="text-gray-600">
-                ${bookingDetails?.paymentMethod || bookingData?.paymentMethod || "Online Payment"}
+                ${
+                  bookingDetails?.paymentMethod ||
+                  bookingData?.paymentMethod ||
+                  "Online Payment"
+                }
               </p>
             </div>
             
             <div class="bg-gray-50 rounded-lg p-4">
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Subtotal:</span>
-                <span>₹${servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+                <span>₹${servicePrice
+                  ?.toString()
+                  .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
               </div>
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Tax:</span>
@@ -800,13 +932,17 @@ export default function BookingConfirmationPage() {
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Discount:</span>
                 <span>
-                  ₹${(bookingDetails?.discountAmount || 0)?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  ₹${(bookingDetails?.discountAmount || 0)
+                    ?.toString()
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </span>
               </div>
               <div class="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Total:</span>
                 <span>
-                  ₹${servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  ₹${servicePrice
+                    ?.toString()
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </span>
               </div>
             </div>
@@ -820,76 +956,82 @@ export default function BookingConfirmationPage() {
           </div>
         </div>
       `;
-      
+
       tempInvoiceDiv.innerHTML = invoiceHTML;
       document.body.appendChild(tempInvoiceDiv);
-      
+
       // Wait for the content to render
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Capture the invoice as canvas
       const canvas = await html2canvas(tempInvoiceDiv, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false
+        backgroundColor: "#ffffff",
+        logging: false,
       });
-      
+
       // Remove the temporary element
       document.body.removeChild(tempInvoiceDiv);
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG for better compression
-      
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.8); // Use JPEG for better compression
+
       // Validate canvas dimensions
       if (!canvas.width || !canvas.height) {
-        throw new Error('Canvas is empty or has invalid dimensions');
+        throw new Error("Canvas is empty or has invalid dimensions");
       }
-      
+
       const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
       });
-      
+
       const imgWidth = 210; // A4 width in mm
       const pageHeight = 295; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
       // Add additional pages if needed
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      
+
       // Save the PDF directly to the user's device
-      const fileName = `invoice-${bookingData?.bookingId || 'booking'}.pdf`;
+      const fileName = `invoice-${bookingData?.bookingId || "booking"}.pdf`;
       pdf.save(fileName);
-      
+
       // Success message
       toast.dismiss(); // Remove loading toast
       toast.success("Invoice downloaded successfully!");
     } catch (error: any) {
-      console.error('Error generating PDF:', error);
-      
+      console.error("Error generating PDF:", error);
+
       // Remove loading toast before showing error
       toast.dismiss();
-      
+
       // Provide more specific error messages
-      if (error.message?.includes('load required libraries')) {
-        toast.error("Failed to load required libraries. Please check your internet connection and try again.");
-      } else if (error.message?.includes('Canvas is empty')) {
-        toast.error("Invoice content is empty. Please refresh the page and try again.");
-      } else if (error.name === 'NetworkError') {
-        toast.error("Network error occurred. Please check your internet connection and try again.");
+      if (error.message?.includes("load required libraries")) {
+        toast.error(
+          "Failed to load required libraries. Please check your internet connection and try again."
+        );
+      } else if (error.message?.includes("Canvas is empty")) {
+        toast.error(
+          "Invoice content is empty. Please refresh the page and try again."
+        );
+      } else if (error.name === "NetworkError") {
+        toast.error(
+          "Network error occurred. Please check your internet connection and try again."
+        );
       } else {
         toast.error("Failed to download invoice. Please try again.");
       }
@@ -929,7 +1071,10 @@ export default function BookingConfirmationPage() {
             onClick={() => {
               // Store booking info in session storage before login
               if (bookingData) {
-                sessionStorage.setItem("qw_pending_booking", JSON.stringify(bookingData));
+                sessionStorage.setItem(
+                  "qw_pending_booking",
+                  JSON.stringify(bookingData)
+                );
               }
               navigate("/login");
             }}
@@ -981,7 +1126,7 @@ export default function BookingConfirmationPage() {
             <Printer className="h-5 w-5 mr-2" />
             Print Invoice
           </Button>
-          
+
           <Button
             variant="outline"
             size="lg"
@@ -991,7 +1136,7 @@ export default function BookingConfirmationPage() {
             <Download className="h-5 w-5 mr-2" />
             Download Invoice
           </Button>
-          
+
           <Link to="/profile">
             <Button variant="hero" size="lg">
               <User className="h-5 w-5 mr-2" />
@@ -1013,7 +1158,7 @@ export default function BookingConfirmationPage() {
           <Printer className="h-5 w-5 mr-2" />
           Print Invoice
         </Button>
-        
+
         <Button
           variant="outline"
           size="lg"
@@ -1023,7 +1168,7 @@ export default function BookingConfirmationPage() {
           <Download className="h-5 w-5 mr-2" />
           Download Invoice
         </Button>
-        
+
         <Link
           to="/questionnaire"
           state={{
@@ -1050,6 +1195,7 @@ export default function BookingConfirmationPage() {
   /* ---------------- UI ---------------- */
   return (
     <Layout>
+      <SEOHead {...getSEOConfig("/booking-confirmation")} />
       <div className="min-h-[70vh] flex items-center justify-center py-12">
         <div className="container max-w-6xl">
           <motion.div
@@ -1064,12 +1210,14 @@ export default function BookingConfirmationPage() {
                 </div>
 
                 <h1 className="text-3xl font-bold mb-2">
-                  {isFreeConsultation ? "Free Consultation" : "Booking"} Confirmed!
+                  {isFreeConsultation ? "Free Consultation" : "Booking"}{" "}
+                  Confirmed!
                 </h1>
 
                 <p className="text-muted-foreground mb-8">
-                  Your <strong>{serviceName}</strong> {isFreeConsultation ? "consultation" : "session"} has been booked
-                  successfully.
+                  Your <strong>{serviceName}</strong>{" "}
+                  {isFreeConsultation ? "consultation" : "session"} has been
+                  booked successfully.
                 </p>
 
                 {loadingDetails && (
@@ -1127,11 +1275,13 @@ export default function BookingConfirmationPage() {
                       <div className="pt-4 space-y-2">
                         <p>
                           <span className="text-muted-foreground">
-                            {isFreeConsultation ? "Consultation Duration:" : "Duration:"}
+                            {isFreeConsultation
+                              ? "Consultation Duration:"
+                              : "Duration:"}
                           </span>{" "}
                           <span className="font-medium">
                             {serviceDuration}
-                            {isFreeConsultation && " (Free Consultation)" }
+                            {isFreeConsultation && " (Free Consultation)"}
                           </span>
                         </p>
 
@@ -1290,27 +1440,37 @@ export default function BookingConfirmationPage() {
                       </h3>
 
                       {loadingSubscription ? (
-                        <p className="text-green-700 mb-3">Loading subscription details...</p>
+                        <p className="text-green-700 mb-3">
+                          Loading subscription details...
+                        </p>
                       ) : subscriptionInfo ? (
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-green-700">Plan:</span>
-                            <span className="font-medium">{subscriptionInfo.planName}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-green-700">Sessions Available:</span>
                             <span className="font-medium">
-                              {subscriptionInfo.availableSessions?.remaining !== undefined 
-                                ? `${subscriptionInfo.availableSessions.remaining} of ${subscriptionInfo.availableSessions.total} sessions remaining`
-                                : 'Unlimited'}
+                              {subscriptionInfo.planName}
                             </span>
                           </div>
-                          {subscriptionInfo.availableSessions?.percentageUsed !== undefined && (
+                          <div className="flex justify-between">
+                            <span className="text-green-700">
+                              Sessions Available:
+                            </span>
+                            <span className="font-medium">
+                              {subscriptionInfo.availableSessions?.remaining !==
+                              undefined
+                                ? `${subscriptionInfo.availableSessions.remaining} of ${subscriptionInfo.availableSessions.total} sessions remaining`
+                                : "Unlimited"}
+                            </span>
+                          </div>
+                          {subscriptionInfo.availableSessions
+                            ?.percentageUsed !== undefined && (
                             <div>
                               <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                                <div 
-                                  className="bg-green-600 h-2 rounded-full" 
-                                  style={{ width: `${subscriptionInfo.availableSessions.percentageUsed}%` }}
+                                <div
+                                  className="bg-green-600 h-2 rounded-full"
+                                  style={{
+                                    width: `${subscriptionInfo.availableSessions.percentageUsed}%`,
+                                  }}
                                 ></div>
                               </div>
                               <p className="text-xs text-green-700 text-right">
@@ -1321,19 +1481,27 @@ export default function BookingConfirmationPage() {
                           <div className="flex justify-between">
                             <span className="text-green-700">Valid Until:</span>
                             <span className="font-medium">
-                              {new Date(subscriptionInfo.endDate).toLocaleDateString()}
+                              {new Date(
+                                subscriptionInfo.endDate
+                              ).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       ) : (
-                        <p className="text-green-700 mb-3">No active subscription found.</p>
+                        <p className="text-green-700 mb-3">
+                          No active subscription found.
+                        </p>
                       )}
 
                       <div className="mt-4 pt-4 border-t border-green-200">
-                        <h4 className="font-semibold text-green-800 mb-2">Next Steps:</h4>
+                        <h4 className="font-semibold text-green-800 mb-2">
+                          Next Steps:
+                        </h4>
                         <ul className="list-disc pl-5 space-y-1 text-green-800 text-sm">
                           <li>View upcoming sessions in your profile</li>
-                          <li>Book new sessions from the Book Session section</li>
+                          <li>
+                            Book new sessions from the Book Session section
+                          </li>
                           <li>Select service, date & time slot</li>
                           <li>Confirm to complete booking</li>
                         </ul>
@@ -1352,14 +1520,14 @@ export default function BookingConfirmationPage() {
           </motion.div>
         </div>
       </div>
-      
+
       {/* Hidden Invoice Component for Printing/Downloading */}
-      <div 
-        ref={invoiceRef} 
+      <div
+        ref={invoiceRef}
         className="fixed top-[-9999px] left-[-9999px] w-[800px] h-auto min-h-[1000px] bg-white z-[9999] overflow-auto opacity-0 pointer-events-none print:static print:top-0 print:left-0 print:opacity-100 print:pointer-events-auto print:block print:w-full print:p-8 print:shadow-none"
-        style={{ 
-          minHeight: '100vh',
-          maxHeight: 'none'
+        style={{
+          minHeight: "100vh",
+          maxHeight: "none",
         }}
       >
         <InvoiceComponent
@@ -1378,7 +1546,7 @@ export default function BookingConfirmationPage() {
           isSubscription={isSubscription}
         />
       </div>
-      
+
       {/* Print Styles */}
       <style>{printStyles}</style>
     </Layout>

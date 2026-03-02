@@ -27,21 +27,25 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthRedux } from '@/hooks/useAuthRedux';
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
-import { 
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  TooltipProvider
+  TooltipProvider,
 } from "@/components/ui/tooltip";
 
-const resetSchema = z.object({
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const resetSchema = z
+  .object({
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type ResetForm = z.infer<typeof resetSchema>;
 
@@ -55,9 +59,9 @@ const ResetPasswordPage = () => {
 
   const resetForm = useForm<ResetForm>({
     resolver: zodResolver(resetSchema),
-    defaultValues: { 
-      password: '', 
-      confirmPassword: '' 
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -65,18 +69,18 @@ const ResetPasswordPage = () => {
     {
       icon: Stethoscope,
       title: "Professional Oversight",
-      description: "Direct connection with certified physiotherapy experts."
+      description: "Direct connection with certified physiotherapy experts.",
     },
     {
       icon: Activity,
       title: "Evidence-Based Plans",
-      description: "Personalized recovery paths based on clinical assessments."
+      description: "Personalized recovery paths based on clinical assessments.",
     },
     {
       icon: Clock,
       title: "Seamless Access",
-      description: "Manage your appointments and exercises from any device."
-    }
+      description: "Manage your appointments and exercises from any device.",
+    },
   ];
 
   const onSubmit = async (data: ResetForm) => {
@@ -84,13 +88,14 @@ const ResetPasswordPage = () => {
       try {
         await handleResetPassword(token, data.password);
       } catch (error) {
-        console.error('Reset password error:', error);
+        console.error("Reset password error:", error);
       }
     }
   };
 
   return (
     <TooltipProvider>
+      <SEOHead {...getSEOConfig("/reset-password")} />
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50/30 flex items-center justify-center p-4 md:p-6 lg:p-8">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Column: Brand & Value Props (Hidden on mobile) */}

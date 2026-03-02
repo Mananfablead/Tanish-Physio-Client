@@ -61,23 +61,25 @@ const InvoiceComponent: React.FC<InvoiceProps> = ({
           }
         }
       `}</style>
-      
+
       <div className="invoice-header border-b pb-4 mb-6">
         <div className="flex justify-between items-start">
           <div className="flex items-center">
-            <img 
-              src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png" 
+            <img
+              src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
               alt="Tanish Physio Logo"
               className="w-16 h-16 mr-4"
               onError={(e) => {
                 // Fallback if logo fails to load
-                e.currentTarget.style.display = 'none';
+                e.currentTarget.style.display = "none";
               }}
             />
-            {/* <div>
+            <div>
               <h1 className="text-3xl font-bold text-gray-800">INVOICE</h1>
-              <p className="text-gray-600 mt-2">Invoice #: {bookingData?.bookingId || "N/A"}</p>
-            </div> */}
+              <p className="text-gray-600 mt-2">
+                Invoice #: {bookingData?.bookingId || "N/A"}
+              </p>
+            </div>
           </div>
           <div className="text-right">
             <h2 className="text-xl font-semibold">Tanish Physio</h2>
@@ -93,8 +95,12 @@ const InvoiceComponent: React.FC<InvoiceProps> = ({
           <p className="font-medium">
             {user?.name || guestUser?.name || "Guest User"}
           </p>
-          <p className="text-gray-600">{user?.email || guestUser?.email || "N/A"}</p>
-          <p className="text-gray-600">{user?.phone || guestUser?.phone || "N/A"}</p>
+          <p className="text-gray-600">
+            {user?.email || guestUser?.email || "N/A"}
+          </p>
+          <p className="text-gray-600">
+            {user?.phone || guestUser?.phone || "N/A"}
+          </p>
         </div>
 
         <div className="text-right">
@@ -137,7 +143,10 @@ const InvoiceComponent: React.FC<InvoiceProps> = ({
                   <div className="text-gray-600 text-sm">{therapist.title}</div>
                 </td>
                 <td className="p-3 border-t text-right">
-                  ₹{servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  ₹
+                  {servicePrice
+                    ?.toString()
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </td>
               </tr>
             </tbody>
@@ -149,14 +158,18 @@ const InvoiceComponent: React.FC<InvoiceProps> = ({
         <div>
           <h3 className="text-lg font-semibold mb-2">Payment Method</h3>
           <p className="text-gray-600">
-            {bookingDetails?.paymentMethod || bookingData?.paymentMethod || "Online Payment"}
+            {bookingDetails?.paymentMethod ||
+              bookingData?.paymentMethod ||
+              "Online Payment"}
           </p>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Subtotal:</span>
-            <span>₹{servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+            <span>
+              ₹{servicePrice?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+            </span>
           </div>
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Tax:</span>
@@ -165,7 +178,10 @@ const InvoiceComponent: React.FC<InvoiceProps> = ({
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Discount:</span>
             <span>
-              ₹{(bookingDetails?.discountAmount || 0)?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+              ₹
+              {(bookingDetails?.discountAmount || 0)
+                ?.toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
             </span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-2">
@@ -180,13 +196,15 @@ const InvoiceComponent: React.FC<InvoiceProps> = ({
       <div className="invoice-footer mt-8 pt-6 border-t">
         <div className="text-center text-gray-600">
           <p>Thank you for choosing Tanish Physio for your healthcare needs.</p>
-          <p className="mt-2">For any inquiries, please contact our support team.</p>
+          <p className="mt-2">
+            For any inquiries, please contact our support team.
+          </p>
         </div>
       </div>
-      
+
       {/* Print Controls - Hidden during PDF generation */}
       <div className="print-controls mt-6 text-center print:hidden">
-        <button 
+        <button
           onClick={(e) => {
             e.preventDefault();
             window.print();

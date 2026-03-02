@@ -1,11 +1,14 @@
 import React from "react";
 import { useAuthRedux } from "../hooks/useAuthRedux";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 const LiveChatHistory = () => {
   const { user } = useAuthRedux();
 
   return (
     <div className=" bg-gray-50 min-h-screen">
+      <SEOHead {...getSEOConfig("/chat-history")} />
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">
           Live Chat History

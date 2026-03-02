@@ -168,9 +168,9 @@ export default function AboutUsPage() {
                       </span>
                     </div>
 
-                    {/* <h2 className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 mb-4 sm:mb-6 md:mb-8 leading-tight">
+                    <h2 className="text-2xl sm:text-3xl md:text-3xl font-bold text-slate-900 mb-4 sm:mb-6 md:mb-8 leading-tight">
                       {about.aboutheadline}
-                    </h2> */}
+                    </h2>
                     <motion.div
                       className="  mb-6   flex items-center gap-2 sm:gap-3 md:gap-4 "
                       initial={{ opacity: 0, scale: 0.8, rotate: -5 }}

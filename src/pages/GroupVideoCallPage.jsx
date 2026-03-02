@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuthRedux } from "@/hooks/useAuthRedux";
 import VideoCall from "@/components/VideoCall/VideoCall";
 import { videoCallApi } from "@/lib/videoCallApi";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 export default function GroupVideoCallPage() {
   const { id } = useParams();
@@ -179,16 +181,19 @@ export default function GroupVideoCallPage() {
   }
 
   return (
-    <VideoCall
-      key={groupSessionDetails ? groupSessionDetails._id : "initial"}
-      roomId={id}
-      roomType="group"
-      user={user}
-      isTherapist={user?.role === "therapist"}
-      onEndCall={handleEndCall}
-      sessionId={id}
-      groupSessionDetails={groupSessionDetails}
-      connected={connected}
-    />
+    <>
+      <SEOHead {...getSEOConfig("/group-video-call")} />
+      <VideoCall
+        key={groupSessionDetails ? groupSessionDetails._id : "initial"}
+        roomId={id}
+        roomType="group"
+        user={user}
+        isTherapist={user?.role === "therapist"}
+        onEndCall={handleEndCall}
+        sessionId={id}
+        groupSessionDetails={groupSessionDetails}
+        connected={connected}
+      />
+    </>
   );
 }

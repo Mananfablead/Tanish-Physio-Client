@@ -17,6 +17,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuthRedux } from "@/hooks/useAuthRedux";
 import api from "@/lib/api";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 
 interface GroupSession {
   _id: string;
@@ -205,6 +207,7 @@ export default function GroupSessionDiscoveryPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      <SEOHead {...getSEOConfig("/group-sessions")} />
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">

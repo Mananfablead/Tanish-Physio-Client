@@ -1,6 +1,8 @@
 import { Layout } from "@/components/layout/Layout";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import {
   User,
   Mail,
@@ -22,7 +24,7 @@ import {
   Video,
   Camera,
   ReceiptText,
-  NotebookTabs
+  NotebookTabs,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useToast } from "@/hooks/use-toast";
@@ -77,7 +79,6 @@ interface Section {
 export default function ProfilePage() {
   const user = useSelector(selectCurrentUser);
 
-
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [selectedSection, setSelectedSection] = useState<string>(() => {
@@ -128,21 +129,21 @@ export default function ProfilePage() {
   const bookingList = bookings || [];
   // const activePlan = user?.subscriptionData;
 
-  
   // Set state based on Redux data - separate sessions by current status
   // Filtered upcoming sessions: pending and scheduled sessions
-  const filteredUpcomingSessions = sessions.filter((session: any) => 
-    (session.status === "pending" || session.status === "scheduled")
+  const filteredUpcomingSessions = sessions.filter(
+    (session: any) =>
+      session.status === "pending" || session.status === "scheduled"
   );
-  
+
   // Live sessions: currently live sessions
-  const liveSessions = sessions.filter((session: any) => 
-    session.status === "live"
+  const liveSessions = sessions.filter(
+    (session: any) => session.status === "live"
   );
-  
+
   const nextSession =
-  sessions?.find((session: any) => session.status === "live") || null;
-  
+    sessions?.find((session: any) => session.status === "live") || null;
+
   const [sessionCompleted, setSessionCompleted] = useState<any[]>([]);
 
   // Update completed sessions when sessions data changes
@@ -362,14 +363,17 @@ export default function ProfilePage() {
       // For guest users, we'll use a different approach
       // Instead of calling guest API, we'll navigate directly to booking
       const isGuestUser = !user || !localStorage.getItem("token");
-      
+
       if (isGuestUser) {
         // For guest users, store plan info and navigate to booking
-        sessionStorage.setItem("qw_selected_plan", JSON.stringify({
-          plan: selectedPlan,
-          selectedAt: Date.now()
-        }));
-        
+        sessionStorage.setItem(
+          "qw_selected_plan",
+          JSON.stringify({
+            plan: selectedPlan,
+            selectedAt: Date.now(),
+          })
+        );
+
         // Navigate to booking page with plan parameter
         navigate("/booking", {
           state: {
@@ -380,8 +384,8 @@ export default function ProfilePage() {
               duration: selectedPlan.duration,
             },
             fromSubscription: true,
-            isGuestFlow: true
-          }
+            isGuestFlow: true,
+          },
         });
       } else {
         // For logged-in users, proceed with normal subscription flow
@@ -395,11 +399,11 @@ export default function ProfilePage() {
               duration: selectedPlan.duration,
             },
             fromSubscription: true,
-            isGuestFlow: false
-          }
+            isGuestFlow: false,
+          },
         });
       }
-      
+
       toast({
         title: "Plan Selected",
         description: `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`,
@@ -409,7 +413,7 @@ export default function ProfilePage() {
       toast({
         title: "Error",
         description: "Failed to process plan selection. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -477,6 +481,7 @@ export default function ProfilePage() {
 
   return (
     <Layout>
+      <SEOHead {...getSEOConfig("/profile")} />
       {/* Profile Header */}
       <ProfileHeader
         user={user}
@@ -506,17 +511,17 @@ export default function ProfilePage() {
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
                 {selectedSection === "activePlan" && (
-                  <ActivePlanSection 
-                    activePlan={activePlan} 
+                  <ActivePlanSection
+                    activePlan={activePlan}
                     onPlanSelect={handlePayment}
                   />
                 )}
 
                 {selectedSection === "upcoming" && (
-                  <UpcomingSessionsSection 
-                    upcomingSessions={filteredUpcomingSessions} 
+                  <UpcomingSessionsSection
+                    upcomingSessions={filteredUpcomingSessions}
                     liveSessions={liveSessions}
-                    nextSession={nextSession} 
+                    nextSession={nextSession}
                   />
                 )}
 

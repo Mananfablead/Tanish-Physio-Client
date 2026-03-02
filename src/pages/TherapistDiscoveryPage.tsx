@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
+import { SEOHead } from "@/components/SEO/SEOHead";
+import { getSEOConfig } from "@/components/SEO/seoConfig";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -121,12 +123,16 @@ export default function TherapistDiscoveryPage() {
 
   return (
     <Layout>
+      <SEOHead {...getSEOConfig("/therapists")} />
       <div className="bg-muted/30 py-8">
         <div className="container">
           <div className="max-w-2xl">
-            <h1 className="text-3xl font-bold mb-2">Find Your Physiotherapist</h1>
+            <h1 className="text-3xl font-bold mb-2">
+              Find Your Physiotherapist
+            </h1>
             <p className="text-muted-foreground">
-              Browse our certified therapists and find the perfect match for your recovery needs.
+              Browse our certified therapists and find the perfect match for
+              your recovery needs.
             </p>
           </div>
         </div>
@@ -135,7 +141,11 @@ export default function TherapistDiscoveryPage() {
       <div className="container py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
-          <aside className={`lg:w-72 space-y-6 ${showFilters ? "block" : "hidden lg:block"}`}>
+          <aside
+            className={`lg:w-72 space-y-6 ${
+              showFilters ? "block" : "hidden lg:block"
+            }`}
+          >
             <Card variant="outline" className="p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Filter className="h-4 w-4" />
@@ -143,8 +153,6 @@ export default function TherapistDiscoveryPage() {
               </h3>
 
               <div className="space-y-6">
-
-
                 <div>
                   <Label className="text-sm font-medium">Session Type</Label>
                   <Select value={sessionType} onValueChange={setSessionType}>
@@ -174,8 +182,8 @@ export default function TherapistDiscoveryPage() {
                   </Select>
                 </div>
 
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => {
                     setSessionType("all");
@@ -240,11 +248,19 @@ export default function TherapistDiscoveryPage() {
                         <div className="flex-1 space-y-3">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
-                              <h3 className="text-lg font-semibold">{therapist.name}</h3>
-                              <p className="text-sm text-muted-foreground">{therapist.specialization}</p>
+                              <h3 className="text-lg font-semibold">
+                                {therapist.name}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {therapist.specialization}
+                              </p>
                             </div>
-                            <Badge 
-                              variant={therapist.availability.includes("Today") ? "success" : "secondary"}
+                            <Badge
+                              variant={
+                                therapist.availability.includes("Today")
+                                  ? "success"
+                                  : "secondary"
+                              }
                               className="flex-shrink-0"
                             >
                               <Clock className="h-3 w-3 mr-1" />
@@ -255,8 +271,12 @@ export default function TherapistDiscoveryPage() {
                           <div className="flex flex-wrap items-center gap-4 text-sm">
                             <div className="flex items-center gap-1">
                               <Star className="h-4 w-4 fill-warning text-warning" />
-                              <span className="font-medium">{therapist.rating}</span>
-                              <span className="text-muted-foreground">({therapist.reviews} reviews)</span>
+                              <span className="font-medium">
+                                {therapist.rating}
+                              </span>
+                              <span className="text-muted-foreground">
+                                ({therapist.reviews} reviews)
+                              </span>
                             </div>
                             <div className="text-muted-foreground">
                               {therapist.experience} years experience
@@ -265,7 +285,11 @@ export default function TherapistDiscoveryPage() {
 
                           <div className="flex flex-wrap gap-2">
                             {therapist.tags.map((tag) => (
-                              <Badge key={tag} variant="muted" className="text-xs">
+                              <Badge
+                                key={tag}
+                                variant="muted"
+                                className="text-xs"
+                              >
                                 {tag}
                               </Badge>
                             ))}
@@ -298,9 +322,11 @@ export default function TherapistDiscoveryPage() {
 
             {filteredTherapists.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No therapists found matching your criteria.</p>
-                <Button 
-                  variant="link" 
+                <p className="text-muted-foreground">
+                  No therapists found matching your criteria.
+                </p>
+                <Button
+                  variant="link"
                   onClick={() => {
                     setSearchQuery("");
                     setSessionType("all");
