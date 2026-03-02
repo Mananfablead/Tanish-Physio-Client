@@ -13,6 +13,7 @@ import { store, persistor } from "./store";
 import ScrollToTop from "@/components/ScrollToTop";
 import ChatWidget from "@/components/ChatWidget";
 import { HelmetProvider } from "react-helmet-async";
+import PerformanceOptimizer from "@/components/PerformanceOptimizer";
 
 // Lazy load pages for better performance and loading states
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -234,6 +235,8 @@ const App = () => (
                     </Routes>
                     {/* Add the ChatWidget here - it now has access to SocketProvider */}
                     <ChatWidget />
+                    {/* Add Performance Optimizer */}
+                    <PerformanceOptimizer />
                   </Suspense>
                 </BrowserRouter>
               </TooltipProvider>

@@ -40,9 +40,15 @@ export const SEOHead = ({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords || defaultKeywords} />
       <meta name="author" content={author || "Tanish Physio & Fitness"} />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="theme-color" content="#0ea5e9" />
 
       {/* Canonical URL */}
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      {canonicalUrl ? (
+        <link rel="canonical" href={canonicalUrl} />
+      ) : (
+        <link rel="canonical" href={fullUrl} />
+      )}
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
@@ -74,10 +80,6 @@ export const SEOHead = ({
         </>
       )}
 
-      {/* Viewport and Mobile */}
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta name="theme-color" content="#0ea5e9" />
-
       {/* Favicon */}
       <link rel="icon" type="image/png" href="/favicon.png" />
       <link rel="apple-touch-icon" href="/favicon.png" />
@@ -102,12 +104,30 @@ export const SEOHead = ({
             availableLanguage: "en",
           },
           sameAs: [
-            "https://www.facebook.com/TanishPhysioFitnessandLaserClinic",
-            "https://www.instagram.com/tanish_physio_fitness_clinic",
+            "https://www.facebook.com/tanishphysio",
+            "https://www.instagram.com/tanishphysio",
             "https://www.linkedin.com/company/tanishphysio",
-            "https://www.youtube.com/@tanishphysiofitnessclinic3230",
+            "https://www.youtube.com/@tanishphysio",
           ],
         })}
+      </script>
+
+      {/* Google Analytics Script - Loaded Asynchronously */}
+      <script
+        async
+        src={`https://www.googletagmanager.com/gtag/js?id=${
+          import.meta.env.VITE_GA_ID || "GA_MEASUREMENT_ID"
+        }`}
+      ></script>
+      <script>
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${
+            import.meta.env.VITE_GA_ID || "GA_MEASUREMENT_ID"
+          }');
+        `}
       </script>
     </Helmet>
   );

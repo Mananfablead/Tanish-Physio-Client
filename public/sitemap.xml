@@ -61,25 +61,9 @@
   <url>
     <loc>https://tanishphysiofitness.in/booking</loc>
   </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/booking-confirmation</loc>
-  </url>
-  
+ 
   <url>
     <loc>https://tanishphysiofitness.in/coming-soon</loc>
-  </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/group-sessions</loc>
-  </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/group-sessions/register</loc>
-  </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/group-video-call</loc>
   </url>
   
   <url>
@@ -87,26 +71,10 @@
   </url>
   
   <url>
-    <loc>https://tanishphysiofitness.in/404</loc>
-  </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/recorded-sessions</loc>
+    <loc>https://tanishphysiofitness.in/404</loc>fv
   </url>
   
   <url>
     <loc>https://tanishphysiofitness.in/reset-password</loc>
-  </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/schedule</loc>
-  </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/chat-history</loc>
-  </url>
-  
-  <url>
-    <loc>https://tanishphysiofitness.in/video-call</loc>
   </url>
 </urlset>
