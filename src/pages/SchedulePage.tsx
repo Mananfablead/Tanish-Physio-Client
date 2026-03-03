@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import {
@@ -193,8 +194,8 @@ export default function SchedulePage() {
         // Determine scheduleType based on whether we have specific scheduled date/time
         const scheduleType =
           selectedDate > new Date() ||
-          (selectedDate.toDateString() === new Date().toDateString() &&
-            startTime > new Date().toTimeString().substring(0, 5))
+            (selectedDate.toDateString() === new Date().toDateString() &&
+              startTime > new Date().toTimeString().substring(0, 5))
             ? "later"
             : "now";
 
@@ -282,15 +283,14 @@ export default function SchedulePage() {
           toast.success(
             user?.subscriptionData?.status === "active"
               ? `Session booked for ${format(
-                  selectedDate,
-                  "MMM d, yyyy"
-                )} at ${selectedTime} with your ${
-                  user.subscriptionData.planName
-                } subscription!`
+                selectedDate,
+                "MMM d, yyyy"
+              )} at ${selectedTime} with your ${user.subscriptionData.planName
+              } subscription!`
               : `Session booked for ${format(
-                  selectedDate,
-                  "MMM d, yyyy"
-                )} at ${selectedTime}`
+                selectedDate,
+                "MMM d, yyyy"
+              )} at ${selectedTime}`
           );
 
           // Note: Not refreshing subscription info from API to avoid stale data override
@@ -483,6 +483,7 @@ export default function SchedulePage() {
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] =
     useState<boolean>(false);
   const [isPlansModalOpen, setIsPlansModalOpen] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'individual' | 'group'>('individual');
 
   // UI Control States for Session Creation
   const [sessionTypeValue, setSessionTypeValue] = useState<string>("1-on-1");
@@ -606,71 +607,8 @@ export default function SchedulePage() {
   useEffect(() => {
     dispatch(fetchSubscriptionPlans(undefined) as any);
   }, [dispatch]);
-  // Show subscription plans modal when user has no services or subscriptions
-  useEffect(() => {
-    // Check if user is a guest
-    const isGuestUser =
-      bookingData?.guestUser ||
-      sessionStorage.getItem("qw_guest_user") ||
-      (!user && !localStorage.getItem("token"));
-
-    const hasServices =
-      user?.purchasedServices && user.purchasedServices.length > 0;
-    const hasActiveSubscription = user?.subscriptionData?.status === "active";
-    const hasNoActivePlanAndNoServices = !hasActiveSubscription && !hasServices;
-
-    // Automatically show plans modal for guest users
-    if (isGuestUser && plans && plans.length > 0 && !subscriptionLoading) {
-      // Only show if not already showing another modal
-      if (!isBookingModalOpen && !isSuccessDialogOpen && !isPlansModalOpen) {
-        setIsPlansModalOpen(true);
-      }
-    }
-
-    if (isBookingModalOpen && hasNoActivePlanAndNoServices) {
-      setIsPlansModalOpen(true);
-      setIsBookingModalOpen(false);
-    }
-  }, [
-    isBookingModalOpen,
-    isSuccessDialogOpen,
-    user?.purchasedServices,
-    user?.subscriptionData?.status,
-    userSubscriptions,
-    user,
-    plans,
-    subscriptionLoading,
-    bookingData,
-  ]);
-
-  // Effect to show plans modal when user visits the page and has no active plan and no services
-  useEffect(() => {
-    const hasServices =
-      user?.purchasedServices && user.purchasedServices.length > 0;
-    const hasActiveSubscription = user?.subscriptionData?.status === "active";
-    const hasNoActivePlanAndNoServices = !hasActiveSubscription && !hasServices;
-
-    // Show plans modal when user has no active plan and no services, and no other modals are open
-    if (
-      user &&
-      hasNoActivePlanAndNoServices &&
-      !isBookingModalOpen &&
-      !isSuccessDialogOpen &&
-      !isPlansModalOpen &&
-      !subscriptionLoading
-    ) {
-      setIsPlansModalOpen(true);
-    }
-  }, [
-    user,
-    subscriptionInfo,
-    user?.purchasedServices,
-    user?.subscriptionData?.status,
-    isBookingModalOpen,
-    isSuccessDialogOpen,
-    isPlansModalOpen,
-    subscriptionLoading,
-  ]);
+  // Removed automatic subscription plans modal opening
+  // The modal should only open when user explicitly clicks to view plans
 
   // Debug effect to see what booking data is available
   useEffect(() => {
@@ -1055,126 +993,125 @@ export default function SchedulePage() {
                       <div className="grid grid-cols-7 gap-1 max-h-[400px] overflow-y-auto">
                         {loading
                           ? // Show loading placeholders while availability data is loading
-                            Array.from({ length: 42 }).map((_, index) => (
-                              <div
-                                key={index}
-                                className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
-                              >
-                                <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
-                              </div>
-                            ))
+                          Array.from({ length: 42 }).map((_, index) => (
+                            <div
+                              key={index}
+                              className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
+                            >
+                              <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
+                            </div>
+                          ))
                           : getCalendarDays().map((day, index) => {
-                              if (!day) {
-                                return <div key={index} className="h-10" />;
+                            if (!day) {
+                              return <div key={index} className="h-10" />;
+                            }
+
+                            const hasAvailableSlots = (day: Date) => {
+                              if (
+                                !availability ||
+                                !Array.isArray(availability)
+                              )
+                                return false;
+
+                              const formattedDate = format(day, "yyyy-MM-dd");
+
+                              const dayAvailability = availability.find(
+                                (item: any) => item.date === formattedDate
+                              );
+
+                              if (
+                                !dayAvailability ||
+                                !Array.isArray(dayAvailability.timeSlots)
+                              ) {
+                                return false;
                               }
 
-                              const hasAvailableSlots = (day: Date) => {
-                                if (
-                                  !availability ||
-                                  !Array.isArray(availability)
-                                )
-                                  return false;
+                              return dayAvailability.timeSlots.some(
+                                (slot: any) => {
+                                  // Calculate slot duration in minutes
+                                  const [startHour, startMinute] = slot.start
+                                    .split(":")
+                                    .map(Number);
+                                  const [endHour, endMinute] = slot.end
+                                    .split(":")
+                                    .map(Number);
+                                  const now = new Date();
+                                  const slotStart = new Date(
+                                    now.getFullYear(),
+                                    now.getMonth(),
+                                    now.getDate(),
+                                    startHour,
+                                    startMinute,
+                                    0,
+                                    0
+                                  );
+                                  const slotEnd = new Date(
+                                    now.getFullYear(),
+                                    now.getMonth(),
+                                    now.getDate(),
+                                    endHour,
+                                    endMinute,
+                                    0,
+                                    0
+                                  );
+                                  const slotDurationMinutes = Math.round(
+                                    (slotEnd.getTime() -
+                                      slotStart.getTime()) /
+                                    (1000 * 60)
+                                  );
 
-                                const formattedDate = format(day, "yyyy-MM-dd");
-
-                                const dayAvailability = availability.find(
-                                  (item: any) => item.date === formattedDate
-                                );
-
-                                if (
-                                  !dayAvailability ||
-                                  !Array.isArray(dayAvailability.timeSlots)
-                                ) {
-                                  return false;
+                                  // Only consider 45-minute regular slots as available
+                                  return (
+                                    slot.status === "available" &&
+                                    slotDurationMinutes === 45
+                                  );
                                 }
-
-                                return dayAvailability.timeSlots.some(
-                                  (slot: any) => {
-                                    // Calculate slot duration in minutes
-                                    const [startHour, startMinute] = slot.start
-                                      .split(":")
-                                      .map(Number);
-                                    const [endHour, endMinute] = slot.end
-                                      .split(":")
-                                      .map(Number);
-                                    const now = new Date();
-                                    const slotStart = new Date(
-                                      now.getFullYear(),
-                                      now.getMonth(),
-                                      now.getDate(),
-                                      startHour,
-                                      startMinute,
-                                      0,
-                                      0
-                                    );
-                                    const slotEnd = new Date(
-                                      now.getFullYear(),
-                                      now.getMonth(),
-                                      now.getDate(),
-                                      endHour,
-                                      endMinute,
-                                      0,
-                                      0
-                                    );
-                                    const slotDurationMinutes = Math.round(
-                                      (slotEnd.getTime() -
-                                        slotStart.getTime()) /
-                                        (1000 * 60)
-                                    );
-
-                                    // Only consider 45-minute regular slots as available
-                                    return (
-                                      slot.status === "available" &&
-                                      slotDurationMinutes === 45
-                                    );
-                                  }
-                                );
-                              };
-                              const isToday = isSameDay(day, today);
-                              const isSelected = isSameDay(day, selectedDate);
-                              const isPast = day < today && !isToday;
-
-                              // ✅ NEW
-                              const isAvailableDate = hasAvailableSlots(day);
-
-                              const availabilityForDate =
-                                getAvailabilityForDate(day);
-                              return isPast ? (
-                                /* -------- Past Date (Disabled) -------- */
-                                <div
-                                  key={index}
-                                  className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center cursor-not-allowed"
-                                >
-                                  {format(day, "d")}
-                                </div>
-                              ) : (
-                                /* -------- Today & Future -------- */
-                                <button
-                                  key={index}
-                                  onClick={() => {
-                                    setSelectedDate(day);
-                                    setIsBookingModalOpen(true);
-                                    setBookingError(null); // Clear any previous error when opening modal
-                                  }}
-                                  className={`
-      h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all
-      ${
-        isSelected
-          ? "bg-primary text-white font-black shadow-md"
-          : availabilityForDate && !isAvailableDate
-          ? "bg-blue-100 text-blue-700 font-semibold" /* Booked */
-          : !availabilityForDate
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed" /* Not Booked */
-          : isToday
-          ? "border border-primary/30 text-primary font-bold"
-          : "bg-green-100 text-green-700 hover:bg-green-200" /* Available */
-      }
-    `}
-                                >
-                                  {format(day, "d")}
-                                </button>
                               );
-                            })}
+                            };
+                            const isToday = isSameDay(day, today);
+                            const isSelected = isSameDay(day, selectedDate);
+                            const isPast = day < today && !isToday;
+
+                            // ✅ NEW
+                            const isAvailableDate = hasAvailableSlots(day);
+
+                            const availabilityForDate =
+                              getAvailabilityForDate(day);
+                            return isPast ? (
+                              /* -------- Past Date (Disabled) -------- */
+                              <div
+                                key={index}
+                                className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center cursor-not-allowed"
+                              >
+                                {format(day, "d")}
+                              </div>
+                            ) : (
+                              /* -------- Today & Future -------- */
+                              <button
+                                key={index}
+                                onClick={() => {
+                                  setSelectedDate(day);
+                                  setIsBookingModalOpen(true);
+                                  setBookingError(null); // Clear any previous error when opening modal
+                                }}
+                                className={`
+      h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all
+      ${isSelected
+                                    ? "bg-primary text-white font-black shadow-md"
+                                    : availabilityForDate && !isAvailableDate
+                                      ? "bg-blue-100 text-blue-700 font-semibold" /* Booked */
+                                      : !availabilityForDate
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed" /* Not Booked */
+                                        : isToday
+                                          ? "border border-primary/30 text-primary font-bold"
+                                          : "bg-green-100 text-green-700 hover:bg-green-200" /* Available */
+                                  }
+    `}
+                              >
+                                {format(day, "d")}
+                              </button>
+                            );
+                          })}
                       </div>
                     </CardContent>
                   </Card>
@@ -1268,14 +1205,14 @@ export default function SchedulePage() {
                                         <Clock className="h-4 w-4" />
                                         {session.startTime
                                           ? new Date(
-                                              session.startTime
-                                            ).toLocaleTimeString([], {
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })
+                                            session.startTime
+                                          ).toLocaleTimeString([], {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })
                                           : session.time
-                                          ? session.time.split(" - ")[0]
-                                          : "N/A"}
+                                            ? session.time.split(" - ")[0]
+                                            : "N/A"}
                                         {session.endTime &&
                                           ` - ${new Date(
                                             session.endTime
@@ -1602,7 +1539,7 @@ export default function SchedulePage() {
                               );
                               const slotDurationMinutes = Math.round(
                                 (slotEnd.getTime() - slotStart.getTime()) /
-                                  (1000 * 60)
+                                (1000 * 60)
                               );
 
                               // Only show 45-minute regular slots (not 15-minute free consultation slots)
@@ -1671,7 +1608,7 @@ export default function SchedulePage() {
                               );
                               const slotDurationMinutes = Math.round(
                                 (slotEnd.getTime() - slotStart.getTime()) /
-                                  (1000 * 60)
+                                (1000 * 60)
                               );
 
                               // Check if this slot can accommodate the service duration
@@ -1701,19 +1638,18 @@ export default function SchedulePage() {
                                   }}
                                   className={`
           py-2 text-sm font-medium transition-all 
-          ${
-            isSelected
-              ? "bg-green-600 text-white hover:bg-green-600"
-              : isActuallyAvailable
-              ? isSuitableForService
-                ? "border border-green-500 text-green-600 bg-green-50"
-                : "border border-yellow-500 text-yellow-600 bg-yellow-50"
-              : isBooked
-              ? " text-red-500 cursor-not-allowed border border-red-500"
-              : isPast
-              ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
-              : " text-gray-400 cursor-not-allowed border border-gray-400"
-          }
+          ${isSelected
+                                      ? "bg-green-600 text-white hover:bg-green-600"
+                                      : isActuallyAvailable
+                                        ? isSuitableForService
+                                          ? "border border-green-500 text-green-600 bg-green-50"
+                                          : "border border-yellow-500 text-yellow-600 bg-yellow-50"
+                                        : isBooked
+                                          ? " text-red-500 cursor-not-allowed border border-red-500"
+                                          : isPast
+                                            ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
+                                            : " text-gray-400 cursor-not-allowed border border-gray-400"
+                                    }
         `}
                                   variant="outline"
                                 >
@@ -1735,9 +1671,9 @@ export default function SchedulePage() {
                           {loading
                             ? "Loading availability..."
                             : `No available times for ${format(
-                                selectedDate,
-                                "MMM d, yyyy"
-                              )}`}
+                              selectedDate,
+                              "MMM d, yyyy"
+                            )}`}
                         </p>
                       </div>
                     )}
@@ -1869,140 +1805,352 @@ export default function SchedulePage() {
                         </Button>
                       </div>
                     ) : plans && plans.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {plans.map((plan: any) => (
-                          <Card
-                            key={plan._id || plan.id}
-                            className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300"
+                      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'individual' | 'group')} className="w-full">
+                        <TabsList className="flex w-full bg-gray-100 p-1 rounded-full mb-8">
+
+                          <TabsTrigger
+                            value="individual"
+                            className="flex-1 flex items-center justify-center gap-2 
+               py-2.5 rounded-full text-sm font-medium transition-all
+               text-gray-600
+               data-[state=active]:bg-white
+               data-[state=active]:text-gray-900
+               data-[state=active]:shadow-sm"
                           >
-                            <div className="p-6 flex-1">
-                              <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold text-slate-900">
-                                  {plan.name}
-                                </h3>
-                              </div>
+                            <User className="w-4 h-4" />
+                            Individual Sessions
+                          </TabsTrigger>
 
-                              <div className="mb-6">
-                                <div className="text-3xl font-black text-primary mb-1">
-                                  ₹{plan.price?.toLocaleString()}
-                                </div>
-                                <div className="text-slate-500 text-sm">
-                                  {plan.duration}
-                                </div>
-                              </div>
+                          <TabsTrigger
+                            value="group"
+                            className="flex-1 flex items-center justify-center gap-2 
+               py-2.5 rounded-full text-sm font-medium transition-all
+               text-gray-600
+               data-[state=active]:bg-white
+               data-[state=active]:text-gray-900
+               data-[state=active]:shadow-sm"
+                          >
+                            <Users className="w-4 h-4" />
+                            Group Sessions
+                          </TabsTrigger>
 
-                              <p className="text-slate-600 text-sm mb-6 line-clamp-2">
-                                {plan.description}
+                        </TabsList>
+
+                        <TabsContent value="individual" className="mt-0">
+                          <div className="flex justify-center">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {plans
+                                .filter((plan: any) => plan.session_type === "individual")
+                                .map((plan: any) => (
+                                  <Card
+                                    key={plan._id || plan.id}
+                                    className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300"
+                                  >
+                                    <div className="p-6 flex-1">
+                                      <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-slate-900">
+                                          {plan.name}
+                                        </h3>
+                                        <Badge variant="secondary" className="text-xs">
+                                          Individual
+                                        </Badge>
+                                      </div>
+
+                                      <div className="mb-6">
+                                        <div className="text-3xl font-black text-primary mb-1">
+                                          ₹{plan.price?.toLocaleString()}
+                                        </div>
+                                        <div className="text-slate-500 text-sm">
+                                          {plan.duration}
+                                        </div>
+                                      </div>
+
+                                      <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                                        {plan.description}
+                                      </p>
+
+                                      <ul className="space-y-3 mb-6 flex-1">
+                                        {plan.features
+                                          ?.slice(0, 5)
+                                          .map((feature: string, index: number) => (
+                                            <li
+                                              key={index}
+                                              className="flex items-start gap-3"
+                                            >
+                                              <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                              <span className="text-sm text-slate-700">
+                                                {feature}
+                                              </span>
+                                            </li>
+                                          ))}
+                                      </ul>
+                                    </div>
+
+                                    <div className="p-6 pt-0">
+                                      <Button
+                                        className="w-full h-12 text-base font-semibold rounded-xl"
+                                        onClick={() => {
+                                          setIsPlansModalOpen(false);
+
+                                          if (plan.planId || plan.id) {
+                                            const handlePayment = async (
+                                              selectedPlan: any
+                                            ) => {
+                                              try {
+                                                // For guest users, we'll use a different approach
+                                                // Instead of calling guest API, we'll navigate directly to booking
+                                                const isGuestUser =
+                                                  !user ||
+                                                  !localStorage.getItem("token");
+
+                                                if (isGuestUser) {
+                                                  // For guest users, store plan info and navigate to booking
+                                                  sessionStorage.setItem(
+                                                    "qw_selected_plan",
+                                                    JSON.stringify({
+                                                      plan: selectedPlan,
+                                                      selectedAt: Date.now(),
+                                                    })
+                                                  );
+
+                                                  // Navigate to booking page with plan parameter
+                                                  navigate("/booking", {
+                                                    state: {
+                                                      service: {
+                                                        id:
+                                                          selectedPlan.planId ||
+                                                          selectedPlan.id,
+                                                        name: selectedPlan.name,
+                                                        price: String(
+                                                          selectedPlan.price
+                                                        ),
+                                                        duration: selectedPlan.duration,
+                                                      },
+                                                      fromSubscription: true,
+                                                      isGuestFlow: true,
+                                                    },
+                                                  });
+                                                } else {
+                                                  // For logged-in users, proceed with normal subscription flow
+                                                  // Navigate to booking page with subscription flow
+                                                  navigate("/booking", {
+                                                    state: {
+                                                      service: {
+                                                        id:
+                                                          selectedPlan.planId ||
+                                                          selectedPlan.id,
+                                                        name: selectedPlan.name,
+                                                        price: String(
+                                                          selectedPlan.price
+                                                        ),
+                                                        duration: selectedPlan.duration,
+                                                      },
+                                                      fromSubscription: true,
+                                                      isGuestFlow: false,
+                                                    },
+                                                  });
+                                                }
+
+                                                toast.success(
+                                                  `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
+                                                );
+                                              } catch (error) {
+                                                console.error(
+                                                  "Error handling plan selection:",
+                                                  error
+                                                );
+                                                toast.error(
+                                                  "Failed to process plan selection. Please try again."
+                                                );
+                                              }
+                                            };
+
+                                            // Actually call the handlePayment function
+                                            handlePayment(plan);
+                                          }
+                                        }}
+                                      >
+                                        Select Plan
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </Card>
+                                ))}
+                            </div>
+                          </div>
+                          {plans.filter((plan: any) => plan.session_type === "individual").length === 0 && (
+                            <div className="text-center py-12">
+                              <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                                <User className="h-8 w-8 text-slate-300" />
+                              </div>
+                              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                No Individual Plans Available
+                              </h3>
+                              <p className="text-slate-500">
+                                Please check back later or contact support.
                               </p>
-
-                              <ul className="space-y-3 mb-6 flex-1">
-                                {plan.features
-                                  ?.slice(0, 5)
-                                  .map((feature: string, index: number) => (
-                                    <li
-                                      key={index}
-                                      className="flex items-start gap-3"
-                                    >
-                                      <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                                      <span className="text-sm text-slate-700">
-                                        {feature}
-                                      </span>
-                                    </li>
-                                  ))}
-                              </ul>
                             </div>
+                          )}
 
-                            <div className="p-6 pt-0">
-                              <Button
-                                className="w-full h-12 text-base font-semibold rounded-xl"
-                                onClick={() => {
-                                  setIsPlansModalOpen(false);
+                        </TabsContent>
 
-                                  if (plan.planId || plan.id) {
-                                    const handlePayment = async (
-                                      selectedPlan: any
-                                    ) => {
-                                      try {
-                                        // For guest users, we'll use a different approach
-                                        // Instead of calling guest API, we'll navigate directly to booking
-                                        const isGuestUser =
-                                          !user ||
-                                          !localStorage.getItem("token");
+                        <TabsContent value="group" className="mt-0">
+                            <div className="flex justify-center">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {plans
+                              .filter((plan: any) => plan.session_type === "group")
+                              .map((plan: any) => (
+                                <Card
+                                  key={plan._id || plan.id}
+                                  className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300"
+                                >
+                                  <div className="p-6 flex-1">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <h3 className="text-xl font-bold text-slate-900">
+                                        {plan.name}
+                                      </h3>
+                                      <Badge variant="secondary" className="text-xs">
+                                        Group
+                                      </Badge>
+                                    </div>
 
-                                        if (isGuestUser) {
-                                          // For guest users, store plan info and navigate to booking
-                                          sessionStorage.setItem(
-                                            "qw_selected_plan",
-                                            JSON.stringify({
-                                              plan: selectedPlan,
-                                              selectedAt: Date.now(),
-                                            })
-                                          );
+                                    <div className="mb-6">
+                                      <div className="text-3xl font-black text-primary mb-1">
+                                        ₹{plan.price?.toLocaleString()}
+                                      </div>
+                                      <div className="text-slate-500 text-sm">
+                                        {plan.duration}
+                                      </div>
+                                    </div>
 
-                                          // Navigate to booking page with plan parameter
-                                          navigate("/booking", {
-                                            state: {
-                                              service: {
-                                                id:
-                                                  selectedPlan.planId ||
-                                                  selectedPlan.id,
-                                                name: selectedPlan.name,
-                                                price: String(
-                                                  selectedPlan.price
-                                                ),
-                                                duration: selectedPlan.duration,
-                                              },
-                                              fromSubscription: true,
-                                              isGuestFlow: true,
-                                            },
-                                          });
-                                        } else {
-                                          // For logged-in users, proceed with normal subscription flow
-                                          // Navigate to booking page with subscription flow
-                                          navigate("/booking", {
-                                            state: {
-                                              service: {
-                                                id:
-                                                  selectedPlan.planId ||
-                                                  selectedPlan.id,
-                                                name: selectedPlan.name,
-                                                price: String(
-                                                  selectedPlan.price
-                                                ),
-                                                duration: selectedPlan.duration,
-                                              },
-                                              fromSubscription: true,
-                                              isGuestFlow: false,
-                                            },
-                                          });
+                                    <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                                      {plan.description}
+                                    </p>
+
+                                    <ul className="space-y-3 mb-6 flex-1">
+                                      {plan.features
+                                        ?.slice(0, 5)
+                                        .map((feature: string, index: number) => (
+                                          <li
+                                            key={index}
+                                            className="flex items-start gap-3"
+                                          >
+                                            <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                            <span className="text-sm text-slate-700">
+                                              {feature}
+                                            </span>
+                                          </li>
+                                        ))}
+                                    </ul>
+                                  </div>
+
+                                  <div className="p-6 pt-0">
+                                    <Button
+                                      className="w-full h-12 text-base font-semibold rounded-xl"
+                                      onClick={() => {
+                                        setIsPlansModalOpen(false);
+
+                                        if (plan.planId || plan.id) {
+                                          const handlePayment = async (
+                                            selectedPlan: any
+                                          ) => {
+                                            try {
+                                              // For guest users, we'll use a different approach
+                                              // Instead of calling guest API, we'll navigate directly to booking
+                                              const isGuestUser =
+                                                !user ||
+                                                !localStorage.getItem("token");
+
+                                              if (isGuestUser) {
+                                                // For guest users, store plan info and navigate to booking
+                                                sessionStorage.setItem(
+                                                  "qw_selected_plan",
+                                                  JSON.stringify({
+                                                    plan: selectedPlan,
+                                                    selectedAt: Date.now(),
+                                                  })
+                                                );
+
+                                                // Navigate to booking page with plan parameter
+                                                navigate("/booking", {
+                                                  state: {
+                                                    service: {
+                                                      id:
+                                                        selectedPlan.planId ||
+                                                        selectedPlan.id,
+                                                      name: selectedPlan.name,
+                                                      price: String(
+                                                        selectedPlan.price
+                                                      ),
+                                                      duration: selectedPlan.duration,
+                                                    },
+                                                    fromSubscription: true,
+                                                    isGuestFlow: true,
+                                                  },
+                                                });
+                                              } else {
+                                                // For logged-in users, proceed with normal subscription flow
+                                                // Navigate to booking page with subscription flow
+                                                navigate("/booking", {
+                                                  state: {
+                                                    service: {
+                                                      id:
+                                                        selectedPlan.planId ||
+                                                        selectedPlan.id,
+                                                      name: selectedPlan.name,
+                                                      price: String(
+                                                        selectedPlan.price
+                                                      ),
+                                                      duration: selectedPlan.duration,
+                                                    },
+                                                    fromSubscription: true,
+                                                    isGuestFlow: false,
+                                                  },
+                                                });
+                                              }
+
+                                              toast.success(
+                                                `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
+                                              );
+                                            } catch (error) {
+                                              console.error(
+                                                "Error handling plan selection:",
+                                                error
+                                              );
+                                              toast.error(
+                                                "Failed to process plan selection. Please try again."
+                                              );
+                                            }
+                                          };
+
+                                          // Actually call the handlePayment function
+                                          handlePayment(plan);
                                         }
-
-                                        toast.success(
-                                          `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
-                                        );
-                                      } catch (error) {
-                                        console.error(
-                                          "Error handling plan selection:",
-                                          error
-                                        );
-                                        toast.error(
-                                          "Failed to process plan selection. Please try again."
-                                        );
-                                      }
-                                    };
-
-                                    // Actually call the handlePayment function
-                                    handlePayment(plan);
-                                  }
-                                }}
-                              >
-                                Select Plan
-                                <ArrowRight className="ml-2 h-4 w-4" />
-                              </Button>
+                                      }}
+                                    >
+                                      Select Plan
+                                      <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </Card>
+                              ))}
+                          </div>
+                          </div>
+                          {plans.filter((plan: any) => plan.session_type === "group").length === 0 && (
+                            <div className="text-center py-12">
+                              <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                                <Users className="h-8 w-8 text-slate-300" />
+                              </div>
+                              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                No Group Plans Available
+                              </h3>
+                              <p className="text-slate-500">
+                                Please check back later or contact support.
+                              </p>
                             </div>
-                          </Card>
-                        ))}
-                      </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
                     ) : (
                       <div className="text-center py-12">
                         <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
@@ -2059,15 +2207,14 @@ export default function SchedulePage() {
                   <p className="text-slate-600 mb-6">
                     {user?.subscriptionData?.status === "active"
                       ? `Your session for ${format(
-                          selectedDate,
-                          "MMMM d, yyyy"
-                        )} at ${selectedTime} has been successfully booked with your ${
-                          user.subscriptionData.planName
-                        } subscription.`
+                        selectedDate,
+                        "MMMM d, yyyy"
+                      )} at ${selectedTime} has been successfully booked with your ${user.subscriptionData.planName
+                      } subscription.`
                       : `Your session for ${format(
-                          selectedDate,
-                          "MMMM d, yyyy"
-                        )} at ${selectedTime} has been successfully booked.`}
+                        selectedDate,
+                        "MMMM d, yyyy"
+                      )} at ${selectedTime} has been successfully booked.`}
                   </p>
                   <p className="text-sm text-slate-500">
                     You will be redirected to your profile page in a moment...

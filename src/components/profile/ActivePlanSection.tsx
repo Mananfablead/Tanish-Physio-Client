@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Clock, Calendar, Activity, BarChart3, RefreshCw, CreditCard, FileText, CheckCircle, ArrowRight } from "lucide-react";
+import { Star, Clock, Calendar, Activity, BarChart3, RefreshCw, CreditCard, FileText, CheckCircle, ArrowRight, User, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useAppDispatch } from "@/store";
 import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
@@ -24,13 +25,14 @@ interface ActivePlanSectionProps {
 export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectionProps) {
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'individual' | 'group'>('individual');
   
   const { plans, loading, error } = useSelector(
     (state: any) => state.subscriptions
   );
 
   useEffect(() => {
-    dispatch(fetchSubscriptionPlans());
+      dispatch(fetchSubscriptionPlans(undefined));
   }, [dispatch]);
 
   const InfoBlock = ({
@@ -354,62 +356,176 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
               <Button 
                 variant="outline" 
                 className="mt-4"
-                onClick={() => dispatch(fetchSubscriptionPlans())}
+                onClick={() => dispatch(fetchSubscriptionPlans(undefined))}
               >
                 Retry
               </Button>
             </div>
           ) : plans && plans.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {plans.map((plan: any) => (
-                <Card key={plan._id || plan.id} className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300">
-                  <div className="p-6 flex-1">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
-                      {/* {plan.popular && (
-                        <Badge className="bg-primary text-white">Popular</Badge>
-                      )} */}
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'individual' | 'group')} className="w-full">
+           <TabsList className="flex w-full bg-gray-100 p-1 rounded-full mb-8">
+  <TabsTrigger
+    value="individual"
+    className="flex-1 flex items-center justify-center gap-2
+               py-2.5 rounded-full text-sm font-medium
+               text-gray-600 transition-all duration-300
+               data-[state=active]:bg-white
+               data-[state=active]:text-gray-900
+               data-[state=active]:shadow-sm"
+  >
+    <User className="w-5 h-5" />
+    Individual Sessions
+  </TabsTrigger>
+
+  <TabsTrigger
+    value="group"
+    className="flex-1 flex items-center justify-center gap-2
+               py-2.5 rounded-full text-sm font-medium
+               text-gray-600 transition-all duration-300
+               data-[state=active]:bg-white
+               data-[state=active]:text-gray-900
+               data-[state=active]:shadow-sm"
+  >
+    <Users className="w-5 h-5" />
+    Group Sessions
+  </TabsTrigger>
+</TabsList>
+              <TabsContent value="individual" className="mt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {plans
+                    .filter((plan: any) => plan.session_type === "individual")
+                    .map((plan: any) => (
+                      <Card key={plan._id || plan.id} className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300">
+                        <div className="p-6 flex-1">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                            <Badge variant="secondary" className="text-xs">
+                              Individual
+                            </Badge>
+                          </div>
+                          
+                          <div className="mb-6">
+                            <div className="text-3xl font-black text-primary mb-1">
+                              ₹{plan.price?.toLocaleString()}
+                            </div>
+                            <div className="text-slate-500 text-sm">{plan.duration}</div>
+                          </div>
+                          
+                          <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                            {plan.description}
+                          </p>
+                          
+                          <ul className="space-y-3 mb-6 flex-1">
+                            {plan.features?.slice(0, 5).map((feature: string, index: number) => (
+                              <li key={index} className="flex items-start gap-3">
+                                <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                <span className="text-sm text-slate-700">{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        
+                        <div className="p-6 pt-0">
+                          <Button 
+                            className="w-full h-12 text-base font-semibold rounded-xl"
+                            onClick={() => {
+                              setIsModalOpen(false);
+                              // Call the provided callback or fallback to default navigation
+                              if (onPlanSelect) {
+                                onPlanSelect(plan);
+                              } 
+                            }}
+                          >
+                            Select Plan
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                </div>
+                {plans.filter((plan: any) => plan.session_type === "individual").length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                      <User className="h-8 w-8 text-slate-300" />
                     </div>
-                    
-                    <div className="mb-6">
-                      <div className="text-3xl font-black text-primary mb-1">
-                        ₹{plan.price?.toLocaleString()}
-                      </div>
-                      <div className="text-slate-500 text-sm">{plan.duration}</div>
-                    </div>
-                    
-                    <p className="text-slate-600 text-sm mb-6 line-clamp-2">
-                      {plan.description}
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">
+                      No Individual Plans Available
+                    </h3>
+                    <p className="text-slate-500">
+                      Please check back later or contact support.
                     </p>
-                    
-                    <ul className="space-y-3 mb-6 flex-1">
-                      {plan.features?.slice(0, 5).map((feature: string, index: number) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-slate-700">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-                  
-                  <div className="p-6 pt-0">
-                    <Button 
-                      className="w-full h-12 text-base font-semibold rounded-xl"
-                      onClick={() => {
-                        setIsModalOpen(false);
-                        // Call the provided callback or fallback to default navigation
-                        if (onPlanSelect) {
-                          onPlanSelect(plan);
-                        } 
-                      }}
-                    >
-                      Select Plan
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                )}
+              </TabsContent>
+
+              <TabsContent value="group" className="mt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {plans
+                    .filter((plan: any) => plan.session_type === "group")
+                    .map((plan: any) => (
+                      <Card key={plan._id || plan.id} className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300">
+                        <div className="p-6 flex-1">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                            <Badge variant="secondary" className="text-xs">
+                              Group
+                            </Badge>
+                          </div>
+                          
+                          <div className="mb-6">
+                            <div className="text-3xl font-black text-primary mb-1">
+                              ₹{plan.price?.toLocaleString()}
+                            </div>
+                            <div className="text-slate-500 text-sm">{plan.duration}</div>
+                          </div>
+                          
+                          <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                            {plan.description}
+                          </p>
+                          
+                          <ul className="space-y-3 mb-6 flex-1">
+                            {plan.features?.slice(0, 5).map((feature: string, index: number) => (
+                              <li key={index} className="flex items-start gap-3">
+                                <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                <span className="text-sm text-slate-700">{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        
+                        <div className="p-6 pt-0">
+                          <Button 
+                            className="w-full h-12 text-base font-semibold rounded-xl"
+                            onClick={() => {
+                              setIsModalOpen(false);
+                              // Call the provided callback or fallback to default navigation
+                              if (onPlanSelect) {
+                                onPlanSelect(plan);
+                              } 
+                            }}
+                          >
+                            Select Plan
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                </div>
+                {plans.filter((plan: any) => plan.session_type === "group").length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                      <Users className="h-8 w-8 text-slate-300" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">
+                      No Group Plans Available
+                    </h3>
+                    <p className="text-slate-500">
+                      Please check back later or contact support.
+                    </p>
                   </div>
-                </Card>
-              ))}
-            </div>
+                )}
+              </TabsContent>
+            </Tabs>
           ) : (
             <div className="text-center py-12">
               <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">

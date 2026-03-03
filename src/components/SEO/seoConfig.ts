@@ -65,7 +65,7 @@ export const PAGE_SEO: Record<string, SEOConfig> = {
       "physiotherapy FAQ, common questions, online consultation FAQ, treatment questions, physiotherapy help",
     type: "website",
   },
-  "/therapists": {
+  "/therapist": {
     title:
       "Find Certified Physiotherapists - Expert Therapists Directory | Tanish Physio",
     description:

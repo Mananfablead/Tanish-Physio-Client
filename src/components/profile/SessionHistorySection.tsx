@@ -100,6 +100,53 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
     return now >= sessionStartTime;
   };
 
+  const isSessionInFuture = (session: any) => {
+    if (!session?.startTime) return false; // If no startTime, can't determine
+
+    const now = new Date();
+    
+    // If we have both date and time fields, use them for more accurate local time comparison
+    if (session.date && session.time) {
+      // Parse the local date and time
+      const [hours, minutes] = session.time.split(':').map(Number);
+      const sessionLocalTime = new Date(session.date);
+      sessionLocalTime.setHours(hours, minutes, 0, 0);
+      
+      return now < sessionLocalTime;
+    }
+    
+    // Fallback to startTime if date/time not available
+    const sessionStartTime = new Date(session.startTime);
+    return now < sessionStartTime;
+  };
+
+  const isWithinRescheduleWindow = (session: any) => {
+    if (!session?.startTime) return false; // If no startTime, can't determine
+
+    const now = new Date();
+    
+    // If we have both date and time fields, use them for more accurate local time comparison
+    if (session.date && session.time) {
+      // Parse the local date and time
+      const [hours, minutes] = session.time.split(':').map(Number);
+      const sessionLocalTime = new Date(session.date);
+      sessionLocalTime.setHours(hours, minutes, 0, 0);
+      
+      // Calculate 12-hour window (43200000 milliseconds)
+      const twelveHoursInMs = 12 * 60 * 60 * 1000;
+      
+      // Check if session is at least 12 hours away
+      return sessionLocalTime.getTime() - now.getTime() >= twelveHoursInMs;
+    }
+    
+    // Fallback to startTime if date/time not available
+    const sessionStartTime = new Date(session.startTime);
+    const twelveHoursInMs = 12 * 60 * 60 * 1000;
+    
+    // Check if session is at least 12 hours away
+    return sessionStartTime.getTime() - now.getTime() >= twelveHoursInMs;
+  };
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil(sessions?.length / ITEMS_PER_PAGE || 0);
@@ -388,8 +435,9 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {(s.status === "scheduled" ||
-                        s.status === "pending" ||
-                        s.status === "missed") && (
+                        s.status === "confirmed") && 
+                        isSessionInFuture(s) && 
+                        isWithinRescheduleWindow(s) && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -524,8 +572,9 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
 
                   <div className="pt-2 border-t border-slate-100">
                     {(s.status === "scheduled" ||
-                      s.status === "pending" ||
-                      s.status === "missed") && (
+                      s.status === "confirmed") && 
+                      isSessionInFuture(s) && 
+                      isWithinRescheduleWindow(s) && (
                       <Button
                         variant="outline"
                         size="sm"
