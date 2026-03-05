@@ -2242,8 +2242,8 @@ const VideoCall = ({
         </div>
       )}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 py-4 bg-slate-900 border-b border-slate-800 gap-3 sm:gap-0">
-        <div className="flex items-center gap-3 sm:gap-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-8 py-3 sm:py-4 bg-slate-900 border-b border-slate-800 gap-3 sm:gap-0">
+        <div className="flex items-center gap-2 sm:gap-6">
           <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-2xl bg-slate-800 flex items-center justify-center border border-slate-700">
             <Video className="h-4 sm:h-5 w-4 sm:w-5 text-slate-300" />
           </div>
@@ -2291,7 +2291,7 @@ const VideoCall = ({
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <Button
             variant="ghost"
             size="sm"
@@ -2343,7 +2343,7 @@ const VideoCall = ({
         {/* Side Panels */}
         {showParticipants && (
           <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50 max-h-screen md:max-h-full">
-            <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
+            <div className="p-3 sm:p-6 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-white font-semibold text-base">
                 Participants
               </h3>
@@ -2371,14 +2371,14 @@ const VideoCall = ({
               </pre>
             </div> */}
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4">
               {participants && participants.length > 0 ? (
                 participants.map((participant, index) => (
                   <div
                     key={`${participant.userId || "unknown"}-${
                       participant.socketId || "unknown"
                     }-${index}`}
-                    className="flex items-center gap-3 sm:gap-4 p-2 rounded-lg bg-slate-800/30"
+                    className="flex items-center gap-2 sm:gap-4 p-2 rounded-lg bg-slate-800/30"
                   >
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-sm">
                       {(participant.name &&
@@ -2451,7 +2451,7 @@ const VideoCall = ({
 
         {showChat && (
           <div className="md:w-80 w-full bg-slate-900 md:border-l border-slate-800 flex flex-col animate-in slide-in-from-right duration-300 md:relative absolute inset-0 md:inset-auto md:right-0 z-50 max-h-screen md:max-h-full">
-            <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between">
+            <div className="p-3 sm:p-6 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-white font-semibold text-base">
                 Clinical Chat
               </h3>
@@ -2484,51 +2484,51 @@ const VideoCall = ({
                   </p>
                 </div>
               ) : (
-                chatMessages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${
-                      message.senderId === socket?.id
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm ${
-                        message.senderId === socket?.id
-                          ? "bg-emerald-500 text-white rounded-br-md"
-                          : "bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700"
-                      }`}
-                    >
-                      <p className="text-[10px] font-semibold mb-1 opacity-80">
-                        {message.senderId === socket?.id
-                          ? user?.name || userName || "You"
-                          : message.senderName &&
-                            message.senderName !== "Clinician" &&
-                            message.senderName !== "User Unknown"
-                          ? message.senderName
-                          : "Clinician"}
-                      </p>
-                      <p>
-                        {message.text || message.content || message.message}
-                      </p>
-                      <p
-                        className={`text-[10px] mt-1 ${
-                          message.senderId === socket?.id
-                            ? "text-emerald-100 opacity-80"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        {new Date(
-                          message.timestamp || message.createdAt
-                        ).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))
+              chatMessages.map((message, index) => {
+
+                
+  const isSender = message.senderId === user?.id;
+console.log("isSender".isSender)
+  return (
+    <div
+      key={index}
+      className={`flex ${isSender ? "justify-end" : "justify-start"}`}
+    >
+      <div
+        className={`max-w-[80%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm ${
+          isSender
+            ? "bg-emerald-500 text-white rounded-br-md"
+            : "bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700"
+        }`}
+      >
+        <p className="text-[10px] font-semibold mb-1 opacity-80">
+          {isSender
+            ? user?.name || "You"
+            : message.senderName || "Clinician"}
+        </p>
+
+        <p>
+          {message.text || message.content || message.message}
+        </p>
+
+        <p
+          className={`text-[10px] mt-1 ${
+            isSender
+              ? "text-emerald-100 opacity-80"
+              : "text-slate-400"
+          }`}
+        >
+          {new Date(
+            message.timestamp || message.createdAt
+          ).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+      </div>
+    </div>
+  );
+})
               )}
 
               {/* Typing indicators */}
@@ -2590,7 +2590,7 @@ const VideoCall = ({
         )}
         {/* Self Video (Patient/Local) */}
         <div
-          className={`absolute md:bottom-8 md:right-8 bottom-24 right-4 md:w-64 md:h-44 w-44 h-36 rounded-[2rem] overflow-hidden border-4 border-slate-900 shadow-2xl transition-all duration-500 ${
+          className={`absolute md:bottom-8 md:right-8 bottom-20 right-4 md:w-64 md:h-44 w-40 h-32 rounded-[2rem] overflow-hidden border-4 border-slate-900 shadow-2xl transition-all duration-500 ${
             showParticipants || showChat ? "md:translate-x-[-320px]" : ""
           }`}
         >
@@ -2629,18 +2629,18 @@ const VideoCall = ({
       </div>
 
       {/* Controls */}
-      <div className="bg-slate-900 px-4 py-4 md:px-8 md:py-8 border-t border-slate-800 md:relative fixed bottom-0 left-0 right-0 z-40">
-        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
-          <div className="w-24 sm:w-32 hidden md:flex items-center gap-2">
-            <Badge
+      <div className="bg-slate-900 px-3 py-3 md:px-8 md:py-8 border-t border-slate-800 md:relative fixed bottom-0 left-0 right-0 z-40">
+        <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+          <div className="w-20 sm:w-32 hidden md:flex items-center gap-2">
+            {/* <Badge
               variant="outline"
               className="border-slate-700 text-slate-500 text-[10px] px-2 py-0.5"
             >
               HD 1080p
-            </Badge>
+            </Badge> */}
           </div>
 
-          <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
             <Button
               variant={audioEnabled ? "secondary" : "destructive"}
               size="icon"
@@ -2685,7 +2685,7 @@ const VideoCall = ({
 
             {/* Recording Button - Only for therapists */}
             {isTherapist && (
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-1">
                 <Button
                   variant={isRecording ? "destructive" : "secondary"}
                   size="icon"
@@ -2745,8 +2745,8 @@ const VideoCall = ({
             </Button>
           </div>
 
-          <div className="w-24 sm:w-32 flex justify-end">
-            <div className="flex items-center gap-2">
+          <div className="w-20 sm:w-32 flex justify-end">
+            <div className="flex items-center gap-1.5">
               <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
               <span className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Connected
