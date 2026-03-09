@@ -14,7 +14,6 @@ import ScrollToTop from "@/components/ScrollToTop";
 import ChatWidget from "@/components/ChatWidget";
 import { HelmetProvider } from "react-helmet-async";
 import PerformanceOptimizer from "@/components/PerformanceOptimizer";
-import { CsrfProvider } from "@/context/CsrfContext";
 
 // Lazy load pages for better performance and loading states
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -63,7 +62,6 @@ const App = () => (
       <QueryClientProvider client={queryClient}>
         <HelmetProvider>
           <AuthProvider>
-            <CsrfProvider>
               <SocketProvider>
                 <TooltipProvider>
                   <Toaster />
@@ -243,7 +241,6 @@ const App = () => (
                   </BrowserRouter>
                 </TooltipProvider>
               </SocketProvider>
-            </CsrfProvider>
           </AuthProvider>
         </HelmetProvider>
       </QueryClientProvider>
