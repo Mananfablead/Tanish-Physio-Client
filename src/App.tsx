@@ -14,6 +14,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import ChatWidget from "@/components/ChatWidget";
 import { HelmetProvider } from "react-helmet-async";
 import PerformanceOptimizer from "@/components/PerformanceOptimizer";
+import { CsrfProvider } from "@/context/CsrfContext";
 
 // Lazy load pages for better performance and loading states
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -62,14 +63,15 @@ const App = () => (
       <QueryClientProvider client={queryClient}>
         <HelmetProvider>
           <AuthProvider>
-            <SocketProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Suspense fallback={<LoadingScreen />}>
-                    <ScrollToTop />
-                    <Routes>
+            <CsrfProvider>
+              <SocketProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <Suspense fallback={<LoadingScreen />}>
+                      <ScrollToTop />
+                      <Routes>
                       {/* <Route path="/" element={<ComingSoonPage />} /> */}
                       <Route path="/" element={<LandingPage />} />
 
@@ -232,15 +234,16 @@ const App = () => (
                       />
 
                       <Route path="*" element={<NotFound />} />
-                    </Routes>
-                    {/* Add the ChatWidget here - it now has access to SocketProvider */}
-                    <ChatWidget />
-                    {/* Add Performance Optimizer */}
-                    <PerformanceOptimizer />
-                  </Suspense>
-                </BrowserRouter>
-              </TooltipProvider>
-            </SocketProvider>
+                      </Routes>
+                      {/* Add the ChatWidget here - it now has access to SocketProvider */}
+                      <ChatWidget />
+                      {/* Add Performance Optimizer */}
+                      <PerformanceOptimizer />
+                    </Suspense>
+                  </BrowserRouter>
+                </TooltipProvider>
+              </SocketProvider>
+            </CsrfProvider>
           </AuthProvider>
         </HelmetProvider>
       </QueryClientProvider>

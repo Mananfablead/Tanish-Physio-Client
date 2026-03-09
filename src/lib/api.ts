@@ -28,6 +28,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+    const csrfToken = sessionStorage.getItem('csrfToken');
+    if (csrfToken && ['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase() || '')) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
+    
     return config;
   },
   (error) => {
@@ -53,16 +60,49 @@ api.interceptors.request.use(
 //     // Handle specific session not active error globally
 //     if (
 //       error?.response?.data?.message?.includes(
-//         "Session is not active at this time"
-//       )
-//     ) {
-//       error.response.data.message =
-//         "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.";
-//     }
+//       //     "Session is not active at this time"
+//       //     )
+//       //   ) {
+//       // error.response.data.message =
+//       //   "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.";
+//       // }
 
 //     return Promise.reject(error);
 //   }
 // );
+
+// Response interceptor to handle CSRF token errors
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    // Handle CSRF token errors
+    if (error.response?.status === 403 && error.response?.data?.message?.includes('CSRF')) {
+      console.warn('CSRF token invalid, fetching new token...');
+      
+      try {
+        // Try to fetch a new CSRF token
+        const response = await axios.get(`${API_BASE_URL}/csrf-token`, {
+          withCredentials: true,
+        });
+        
+        if (response.data.success) {
+          const newCsrfToken = response.data.csrfToken;
+          sessionStorage.setItem('csrfToken', newCsrfToken);
+          
+          // Retry the original request with the new token
+          if (error.config) {
+            error.config.headers['X-CSRF-Token'] = newCsrfToken;
+            return api.request(error.config);
+          }
+        }
+      } catch (retryError) {
+        console.error('Failed to refresh CSRF token:', retryError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Availability API functions
 export const getAvailability = () => {

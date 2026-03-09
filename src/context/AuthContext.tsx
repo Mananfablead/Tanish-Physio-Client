@@ -10,6 +10,7 @@ import {
   // createTokenExpirationInterceptor,
 } from "../utils/tokenExpiration";
 import api from "../lib/api";
+import { clearCsrfToken } from "../utils/csrf";
 
 interface User {
   id: string;
@@ -96,6 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const logout = () => {
+    // Clear CSRF token on logout
+    clearCsrfToken();
     dispatch(logoutAction());
   };
 
