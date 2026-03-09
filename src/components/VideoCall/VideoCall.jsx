@@ -2255,9 +2255,9 @@ const VideoCall = ({
               >
                 Live Session
               </Badge>
-              <span className="text-slate-500 text-xs font-medium">
+              {/* <span className="text-slate-500 text-xs font-medium">
                 • {sessionDetails?.session?.time || "Time not specified"}
-              </span>
+              </span> */}
               {sessionDetails?.session?.googleMeetLink && (
                 <div className="flex items-center gap-1 ml-2">
                   <Link className="h-3 w-3 text-blue-400" />

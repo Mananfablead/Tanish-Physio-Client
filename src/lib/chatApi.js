@@ -103,6 +103,24 @@ export const chatApi = {
         const response = await apiClient.post('/stop-typing');
         return response.data;
     },
+
+    // Upload file
+    uploadFile: async (file, token) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await apiClient.post('/upload-file', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            // Authorization header is added by interceptor
+        });
+        
+        return response.data;
+    },
 };
+
+// Export apiClient for direct access if needed
+export { apiClient };
 
 export default chatApi;

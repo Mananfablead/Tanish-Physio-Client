@@ -47,7 +47,18 @@ const ITEMS_PER_PAGE = 5; // Adjust this number as needed
 
 export function SessionHistorySection({ sessions, onReschedule }: SessionHistorySectionProps) {
   const { toast } = useToast();
+  const [currentTime, setCurrentTime] = useState(new Date());
   
+  // Update current time every second for real-time button updates
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch testimonials on mount
   useEffect(() => {
     const fetchUserTestimonials = async () => {
       try {
@@ -83,7 +94,8 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
   const isSessionTimeArrived = (session: any) => {
     if (!session?.startTime) return true; // If no startTime, assume it's available
 
-    const now = new Date();
+    // Use currentTime state instead of new Date() for real-time updates
+    const now = currentTime;
     
     // If we have both date and time fields, use them for more accurate local time comparison
     if (session.date && session.time) {
@@ -407,9 +419,9 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                                     const [hours, minutes] = s.time.split(':').map(Number);
                                     const sessionLocalTime = new Date(s.date);
                                     sessionLocalTime.setHours(hours, minutes, 0, 0);
-                                    return Math.ceil((sessionLocalTime.getTime() - Date.now()) / (1000 * 60));
+                                    return Math.ceil((sessionLocalTime.getTime() - currentTime.getTime()) / (1000 * 60));
                                   })()
-                                : Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))
+                                : Math.ceil((new Date(s.startTime).getTime() - currentTime.getTime()) / (1000 * 60))
                             } min
                           </button>
                         )
@@ -529,9 +541,9 @@ export function SessionHistorySection({ sessions, onReschedule }: SessionHistory
                                     const [hours, minutes] = s.time.split(':').map(Number);
                                     const sessionLocalTime = new Date(s.date);
                                     sessionLocalTime.setHours(hours, minutes, 0, 0);
-                                    return Math.ceil((sessionLocalTime.getTime() - Date.now()) / (1000 * 60));
+                                    return Math.ceil((sessionLocalTime.getTime() - currentTime.getTime()) / (1000 * 60));
                                   })()
-                                : Math.ceil((new Date(s.startTime).getTime() - Date.now()) / (1000 * 60))
+                                : Math.ceil((new Date(s.startTime).getTime() - currentTime.getTime()) / (1000 * 60))
                             } min
                           </button>
                         )

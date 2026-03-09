@@ -5,7 +5,6 @@ import { useLocation } from "react-router-dom";
 import { chatApi } from "../../lib/chatApi";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { renderTextWithLinks } from "../../utils/linkUtils";
-import axios from 'axios';
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -420,19 +419,9 @@ const ChatWidget = () => {
     const uploadedAttachments = [];
     
     for (const file of files) {
-      const formData = new FormData();
-      formData.append('file', file);
-      
       try {
-        // Use axios instead of fetch for proper authorization handling
-        const token = localStorage.getItem('token');
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-        const response = await axios.post(`${API_BASE_URL}/api/chat/upload-file`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        // Use chatApi uploadFile method for proper authorization handling
+        const response = await chatApi.uploadFile(file);
         
         if (response.data.success) {
           uploadedAttachments.push(response.data.data.file);

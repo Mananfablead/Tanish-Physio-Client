@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Play, Calendar, VideoIcon, Activity, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 interface UpcomingSessionsSectionProps {
   upcomingSessions: any[];
@@ -11,6 +12,16 @@ interface UpcomingSessionsSectionProps {
 }
 
 export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSession }: UpcomingSessionsSectionProps) {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every second for real-time button updates
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
   const formatSessionDateTime = (startTime?: string, endTime?: string) => {
     if (!startTime) return "-";
 
@@ -43,11 +54,10 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
   const isSessionTimeArrived = (session: any) => {
     if (!session?.startTime) return false;
     
-    const now = new Date();
     const sessionStartTime = new Date(session.startTime);
     
-    // Enable join if current time is past or equal to session start time
-    return now >= sessionStartTime;
+    // Use currentTime state instead of new Date() for real-time updates
+    return currentTime >= sessionStartTime;
   };
 
   const InfoBlock = ({
@@ -123,7 +133,7 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     </span>
                     {session.status === "live" && !isSessionTimeArrived(session) && (
                       <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                        Starts in {Math.ceil((new Date(session.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                        Starts in {Math.ceil((new Date(session.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min
                       </span>
                     )}
                   </div>
@@ -169,7 +179,7 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     </span>
                     {session.timingStatus === "join_now" && !isSessionTimeArrived(session) && (
                       <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                        Starts in {Math.ceil((new Date(session.startTime).getTime() - Date.now()) / (1000 * 60))} min
+                        Starts in {Math.ceil((new Date(session.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min
                       </span>
                     )}
                     {session.timingStatus === "join_soon" && (
@@ -278,11 +288,11 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 >
                   <Play className="h-5 w-5 mr-2 fill-white" />
                   {nextSession.status === "live" && !isSessionTimeArrived(nextSession)
-                    ? `Starts in ${Math.ceil((new Date(nextSession.startTime).getTime() - Date.now()) / (1000 * 60))} min`
+                    ? `Starts in ${Math.ceil((new Date(nextSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`
                     : nextSession.timingStatus === "join_now"
                     ? isSessionTimeArrived(nextSession)
                       ? "Join Session"
-                      : `Join in ${Math.ceil((new Date(nextSession.startTime).getTime() - Date.now()) / (1000 * 60))} min`
+                      : `Join in ${Math.ceil((new Date(nextSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`
                     : nextSession.timingStatus === "join_soon"
                     ? "Join Soon"
                     : "Join Session"}
