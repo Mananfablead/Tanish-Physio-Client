@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,18 +18,38 @@ export function GoogleMeetDisplay({
   const [googleMeetData, setGoogleMeetData] = useState<any>(null);
   const [copied, setCopied] = useState(false);
 
+  const sessions = useSelector((state: any) => state.sessions.sessions || []);
+
   useEffect(() => {
-    // Check if Google Meet link exists in localStorage
-    const storedData = localStorage.getItem(`google_meet_link_${sessionId}`);
+    // first, check if Google Meet link exists in localStorage
+    const storageKey = `google_meet_link_${sessionId}`;
+    const storedData = localStorage.getItem(storageKey);
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
         setGoogleMeetData(parsedData);
+        return;
       } catch (error) {
         console.error("Error parsing Google Meet data:", error);
       }
     }
-  }, [sessionId]);
+
+    // if not found in storage, try to pull from sessions state (e.g. after refresh)
+    const sess = sessions.find((s: any) => s._id === sessionId || s.sessionId === sessionId);
+    if (sess && sess.googleMeetLink) {
+      const data = {
+        link: sess.googleMeetLink,
+        code: sess.googleMeetCode,
+        timestamp: new Date().toISOString(),
+      };
+      setGoogleMeetData(data);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      } catch (err) {
+        console.error("Failed to write google meet data to storage", err);
+      }
+    }
+  }, [sessionId, sessions]);
 
   const copyToClipboard = async () => {
     if (!googleMeetData?.link) return;
