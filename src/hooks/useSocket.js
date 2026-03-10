@@ -11,24 +11,18 @@ const useSocket = (roomId, roomType) => {
     // Initialize socket connection
     useEffect(() => {
         // Don't connect if we don't have required data
-        // Exception: Allow connection without roomId for waiting room scenarios
-        console.log('useSocket: Initializing with roomId:', roomId, 'roomType:', roomType);
-        console.log('useSocket: Token available:', !!token);
-        
+        // Exception: Allow connection without roomId for waiting room scenarios        
         if (!roomId && roomType !== 'waiting-room') {
-            console.log('Waiting for roomId...');
             return;
         }
 
         if (!token) {
-            console.log('Waiting for authentication token...');
             setError('Authentication required');
             return;
         }
 
         // Validate token format (basic check)
         if (typeof token !== 'string' || token.length < 10) {
-            console.log('Invalid token format');
             setError('Invalid authentication token');
             return;
         }
@@ -60,7 +54,7 @@ const useSocket = (roomId, roomType) => {
                 serverUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '');
             } else {
                 // Fallback to production WebSocket server URL based on project configuration
-                serverUrl = 'https://apitanishvideo.fableadtech.in'; // Production WebSocket server
+                serverUrl = 'https://tanishphysiofitness.in'; // Production WebSocket server
             }
 
             const newSocket = io(serverUrl, socketOptions);

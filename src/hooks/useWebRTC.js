@@ -175,6 +175,10 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         try {
             console.log(`Initializing local media (attempt ${retryCount + 1}/${maxRetries + 1})`);
 
+            // Detect if mobile device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
+
             // Create timeout promise
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => {
@@ -184,7 +188,12 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
 
             // Try to get media with timeout
             const constraints = {
-                video: {
+                video: isMobile ? {
+                    facingMode: 'user', // Use front camera by default on mobile
+                    width: { ideal: 640 }, // Lower resolution for mobile
+                    height: { ideal: 480 },
+                    frameRate: { ideal: 24 }
+                } : {
                     width: { ideal: 1280 },
                     height: { ideal: 720 },
                     frameRate: { ideal: 30 }
@@ -1032,8 +1041,14 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
             localStream.removeTrack(screenTrack);
             
             // Get new camera video track
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: {
+                video: isMobile ? {
+                    facingMode: 'user',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    frameRate: { ideal: 24 }
+                } : {
                     width: { ideal: 1280 },
                     height: { ideal: 720 },
                     frameRate: { ideal: 30 }
