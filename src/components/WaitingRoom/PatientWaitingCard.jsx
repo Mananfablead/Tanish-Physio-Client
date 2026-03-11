@@ -11,35 +11,44 @@ import {
   AlertCircle
 } from "lucide-react";
 
-const PatientWaitingCard = ({ 
-  patient, 
-  status = "waiting", 
-  onApprove, 
+const PatientWaitingCard = ({
+  patient,
+  status = "waiting",
+  onApprove,
   onReject,
-  showActions = true 
+  onCancel,
+  showActions = true,
 }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case "approved": return "bg-green-100 text-green-800";
-      case "rejected": return "bg-red-100 text-red-800";
-      case "waiting": return "bg-yellow-100 text-yellow-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "waiting":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "approved": return <CheckCircle className="h-4 w-4" />;
-      case "rejected": return <XCircle className="h-4 w-4" />;
-      case "waiting": return <Clock className="h-4 w-4 animate-spin" />;
-      default: return <AlertCircle className="h-4 w-4" />;
+      case "approved":
+        return <CheckCircle className="h-4 w-4" />;
+      case "rejected":
+        return <XCircle className="h-4 w-4" />;
+      case "waiting":
+        return <Clock className="h-4 w-4 animate-spin" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
     }
   };
 
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -65,7 +74,7 @@ const PatientWaitingCard = ({
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
@@ -74,20 +83,22 @@ const PatientWaitingCard = ({
           </div>
           <div>
             <p className="text-sm text-gray-500">User ID</p>
-            <p className="font-mono text-sm">{patient.userId.substring(0, 8)}...</p>
+            <p className="font-mono text-sm">
+              {patient.userId.substring(0, 8)}...
+            </p>
           </div>
         </div>
 
         {showActions && status === "waiting" && (
           <div className="flex space-x-3">
-            <Button 
+            <Button
               onClick={() => onApprove(patient.socketId)}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Approve
             </Button>
-            <Button 
+            <Button
               onClick={() => onReject(patient.socketId)}
               variant="outline"
               className="flex-1 border-red-600 text-red-600 hover:bg-red-50"
@@ -95,12 +106,23 @@ const PatientWaitingCard = ({
               <XCircle className="h-4 w-4 mr-2" />
               Reject
             </Button>
+            {onCancel && (
+              <Button
+                onClick={() => onCancel()}
+                variant="outline"
+                className="flex-1 border-gray-600 text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </Button>
+            )}
           </div>
         )}
 
         {status === "approved" && (
           <div className="text-center py-2 bg-green-50 rounded-lg">
-            <p className="text-green-700 font-medium">Patient approved and redirected to video call</p>
+            <p className="text-green-700 font-medium">
+              Patient approved and redirected to video call
+            </p>
           </div>
         )}
 

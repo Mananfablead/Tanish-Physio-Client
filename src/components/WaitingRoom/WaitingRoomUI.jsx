@@ -9,14 +9,16 @@ import {
   RefreshCw,
   AlertCircle
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import PatientWaitingCard from "./PatientWaitingCard";
 
-const WaitingRoomUI = ({ 
-  sessionId, 
-  socket, 
+const WaitingRoomUI = ({
+  sessionId,
+  socket,
   onPatientAction,
-  className = "" 
+  className = "",
 }) => {
+  const navigate = useNavigate();
   const [waitingPatients, setWaitingPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,9 +49,9 @@ const WaitingRoomUI = ({
 
     socket.on("patient-waiting", (data) => {
       console.log("📥 New patient waiting:", data);
-      setWaitingPatients(prev => {
+      setWaitingPatients((prev) => {
         // Check if patient already exists
-        const exists = prev.some(p => p.socketId === data.patient.socketId);
+        const exists = prev.some((p) => p.socketId === data.patient.socketId);
         if (!exists) {
           return [...prev, data.patient];
         }
@@ -59,10 +61,10 @@ const WaitingRoomUI = ({
 
     socket.on("patient-approved-success", (data) => {
       console.log("📥 Patient approved:", data);
-      setWaitingPatients(prev => 
-        prev.map(p => 
-          p.socketId === data.patient.socketId 
-            ? { ...p, status: "approved" } 
+      setWaitingPatients((prev) =>
+        prev.map((p) =>
+          p.socketId === data.patient.socketId
+            ? { ...p, status: "approved" }
             : p
         )
       );
@@ -71,10 +73,10 @@ const WaitingRoomUI = ({
 
     socket.on("patient-rejected-success", (data) => {
       console.log("📥 Patient rejected:", data);
-      setWaitingPatients(prev => 
-        prev.map(p => 
-          p.socketId === data.patient.socketId 
-            ? { ...p, status: "rejected" } 
+      setWaitingPatients((prev) =>
+        prev.map((p) =>
+          p.socketId === data.patient.socketId
+            ? { ...p, status: "rejected" }
             : p
         )
       );
@@ -83,8 +85,8 @@ const WaitingRoomUI = ({
 
     socket.on("patient-disconnected", (data) => {
       console.log("📥 Patient disconnected:", data);
-      setWaitingPatients(prev => 
-        prev.filter(p => p.socketId !== data.patient.socketId)
+      setWaitingPatients((prev) =>
+        prev.filter((p) => p.socketId !== data.patient.socketId)
       );
     });
 
@@ -107,26 +109,30 @@ const WaitingRoomUI = ({
 
   const handleApprovePatient = (patientSocketId) => {
     if (!socket) return;
-    
+
     socket.emit("approve-patient", {
       sessionId,
-      patientSocketId
+      patientSocketId,
     });
   };
 
   const handleRejectPatient = (patientSocketId) => {
     if (!socket) return;
-    
+
     socket.emit("reject-patient", {
       sessionId,
       patientSocketId,
-      reason: "Request rejected by therapist"
+      reason: "Request rejected by therapist",
     });
+  };
+
+  const handleCancel = () => {
+    navigate("/profile");
   };
 
   const handleRefresh = () => {
     if (!socket) return;
-    
+
     setLoading(true);
     setError(null);
     socket.emit("get-waiting-patients", { sessionId });
@@ -180,7 +186,8 @@ const WaitingRoomUI = ({
               Waiting Room
             </CardTitle>
             <CardDescription>
-              Manage patient requests for session {sessionId?.substring(0, 8)}...
+              Manage patient requests for session {sessionId?.substring(0, 8)}
+              ...
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
@@ -188,26 +195,32 @@ const WaitingRoomUI = ({
               <Clock className="h-3 w-3 mr-1" />
               {waitingPatients.length} waiting
             </Badge>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleRefresh}
               disabled={loading}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
             </Button>
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         {waitingPatients.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <Bell className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Patients Waiting</h3>
-            <p className="text-gray-500">Patients will appear here when they request to join your session.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Patients Waiting
+            </h3>
+            <p className="text-gray-500">
+              Patients will appear here when they request to join your session.
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -218,7 +231,10 @@ const WaitingRoomUI = ({
                 status={patient.status || "waiting"}
                 onApprove={handleApprovePatient}
                 onReject={handleRejectPatient}
-                showActions={patient.status !== "approved" && patient.status !== "rejected"}
+                onCancel={handleCancel}
+                showActions={
+                  patient.status !== "approved" && patient.status !== "rejected"
+                }
               />
             ))}
           </div>
