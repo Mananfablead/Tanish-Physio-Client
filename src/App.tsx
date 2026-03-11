@@ -4,8 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
-import { Provider } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
@@ -62,14 +62,14 @@ const App = () => (
       <QueryClientProvider client={queryClient}>
         <HelmetProvider>
           <AuthProvider>
-              <SocketProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <Suspense fallback={<LoadingScreen />}>
-                      <ScrollToTop />
-                      <Routes>
+            <SocketProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Suspense fallback={<LoadingScreen />}>
+                    <ScrollToTop />
+                    <Routes>
                       {/* <Route path="/" element={<ComingSoonPage />} /> */}
                       <Route path="/" element={<LandingPage />} />
 
@@ -161,9 +161,9 @@ const App = () => (
                       <Route
                         path="/profile"
                         element={
-                          // <ProtectedRoute>
-                          <ProfilePage />
-                          // </ProtectedRoute>
+                          <ProtectedRoute>
+                            <ProfilePage />
+                          </ProtectedRoute>
                         }
                       />
                       <Route
@@ -232,15 +232,15 @@ const App = () => (
                       />
 
                       <Route path="*" element={<NotFound />} />
-                      </Routes>
-                      {/* Add the ChatWidget here - it now has access to SocketProvider */}
-                      <ChatWidget />
-                      {/* Add Performance Optimizer */}
-                      <PerformanceOptimizer />
-                    </Suspense>
-                  </BrowserRouter>
-                </TooltipProvider>
-              </SocketProvider>
+                    </Routes>
+                    {/* Add the ChatWidget here - it now has access to SocketProvider */}
+                    <ChatWidget />
+                    {/* Add Performance Optimizer */}
+                    <PerformanceOptimizer />
+                  </Suspense>
+                </BrowserRouter>
+              </TooltipProvider>
+            </SocketProvider>
           </AuthProvider>
         </HelmetProvider>
       </QueryClientProvider>
