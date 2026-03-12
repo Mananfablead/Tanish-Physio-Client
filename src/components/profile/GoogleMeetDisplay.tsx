@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Video, Copy, Check } from "lucide-react";
 import { toast } from "../../hooks/use-toast";
+import { io } from "socket.io-client";
 
 interface GoogleMeetDisplayProps {
   sessionId: string;
@@ -21,22 +22,78 @@ export function GoogleMeetDisplay({
   const sessions = useSelector((state: any) => state.sessions.sessions || []);
 
   useEffect(() => {
-    // first, check if Google Meet link exists in localStorage
-    const storageKey = `google_meet_link_${sessionId}`;
-    const storedData = localStorage.getItem(storageKey);
-    if (storedData) {
-      try {
-        const parsedData = JSON.parse(storedData);
-        setGoogleMeetData(parsedData);
-        return;
-      } catch (error) {
-        console.error("Error parsing Google Meet data:", error);
+    // Setup socket listener for Google Meet updates
+    const socket = io(
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:5000",
+      {
+        transports: ["websocket", "polling"],
+        auth: {
+          token: localStorage.getItem("token"),
+        },
       }
-    }
+    );
 
-    // if not found in storage, try to pull from sessions state (e.g. after refresh)
-    const sess = sessions.find((s: any) => s._id === sessionId || s.sessionId === sessionId);
+    socket.on("connect", () => {
+      console.log("Socket connected for Google Meet updates");
+
+      // Join user notification room using correct event name
+      socket.emit("join-notifications", {});
+      console.log("Sent join-notifications event");
+    });
+
+    socket.on("notifications-joined", (data) => {
+      console.log("Successfully joined notifications:", data);
+    });
+
+    // Listen for Google Meet updated events
+    socket.on("client-notification", (data: any) => {
+      if (data.type === "google_meet_updated" && data.sessionId === sessionId) {
+        console.log("Google Meet link updated via socket:", data);
+
+        // Update local state with new link
+        const newData = {
+          link: data.googleMeetLink,
+          code: data.googleMeetCode,
+          timestamp: new Date().toISOString(),
+        };
+        setGoogleMeetData(newData);
+
+        // Update localStorage
+        const storageKey = `google_meet_link_${sessionId}`;
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(newData));
+        } catch (err) {
+          console.error("Failed to update google meet data in storage", err);
+        }
+
+        // Show toast notification
+        toast({
+          title: "Google Meet Link Updated",
+          description:
+            "Your therapist has updated the Google Meet link for your session.",
+        });
+      }
+    });
+
+    // Cleanup socket on unmount
+    return () => {
+      socket.off("connect");
+      socket.off("notifications-joined");
+      socket.off("client-notification");
+      socket.disconnect();
+    };
+  }, [sessionId]);
+
+  useEffect(() => {
+    // Priority 1: Always check sessions state first (most up-to-date)
+    const sess = sessions.find(
+      (s: any) => s._id === sessionId || s.sessionId === sessionId
+    );
     if (sess && sess.googleMeetLink) {
+      console.log(
+        "📊 GoogleMeetDisplay: Found session with link:",
+        sess.googleMeetLink
+      );
       const data = {
         link: sess.googleMeetLink,
         code: sess.googleMeetCode,
@@ -44,10 +101,35 @@ export function GoogleMeetDisplay({
       };
       setGoogleMeetData(data);
       try {
-        localStorage.setItem(storageKey, JSON.stringify(data));
+        localStorage.setItem(
+          `google_meet_link_${sessionId}`,
+          JSON.stringify(data)
+        );
+        console.log("✅ GoogleMeetDisplay: Updated localStorage with:", data);
       } catch (err) {
         console.error("Failed to write google meet data to storage", err);
       }
+      return;
+    } else {
+      console.log("ℹ️ GoogleMeetDisplay: No session data found in state");
+    }
+
+    // Priority 2: If no session data, check localStorage as fallback
+    const storageKey = `google_meet_link_${sessionId}`;
+    const storedData = localStorage.getItem(storageKey);
+    if (storedData) {
+      console.log(
+        "📦 GoogleMeetDisplay: Using localStorage fallback:",
+        storedData
+      );
+      try {
+        const parsedData = JSON.parse(storedData);
+        setGoogleMeetData(parsedData);
+      } catch (error) {
+        console.error("Error parsing Google Meet data:", error);
+      }
+    } else {
+      console.log("ℹ️ GoogleMeetDisplay: No localStorage data found");
     }
   }, [sessionId, sessions]);
 

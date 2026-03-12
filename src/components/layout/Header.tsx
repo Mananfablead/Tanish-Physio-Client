@@ -12,6 +12,7 @@ import {
   Calendar,
   User,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -21,16 +22,15 @@ import {
 } from "@/components/ui/tooltip";
 import { useDispatch, useSelector } from "react-redux";
 import { selectCurrentUser } from "@/store/slices/authSlice";
-import {
-
-  fetchProfile,
-} from "@/store/slices/authSlice";
+import { fetchProfile } from "@/store/slices/authSlice";
+import type { AppDispatch } from "@/store";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import NotificationCenter from "@/components/NotificationCenter";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -46,7 +46,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   // Get user from Redux store
   const user = useSelector(selectCurrentUser);
   const isAuthenticated = !!user;
@@ -84,9 +84,6 @@ export function Header() {
           <span className="text-[8px] md:text-[10px] font-semibold tracking-wider text-emerald-700">
             Practising Since 2004
           </span>
-
-
-
         </Link>
 
         {/* Desktop Navigation */}
@@ -96,7 +93,8 @@ export function Header() {
               <Button
                 variant={location.pathname === link.to ? "secondary" : "ghost"}
                 size="sm"
-                className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium">
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium"
+              >
                 {link.label}
               </Button>
             </Link>
@@ -104,40 +102,51 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
+          {/* Notification Center - Only show when authenticated */}
+          {isAuthenticated && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <NotificationCenter />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Notifications</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           {/* Show profile dropdown when authenticated */}
           <div className="hidden md:flex">
             {isAuthenticated ? (
               <DropdownMenu>
-             <DropdownMenuTrigger asChild>
-  <div
-    className="flex items-center gap-3 cursor-pointer
+                <DropdownMenuTrigger asChild>
+                  <div
+                    className="flex items-center gap-3 cursor-pointer
     hover:ring-2 hover:ring-primary/40 
     transition-all duration-200 px-2 py-1 rounded-lg"
-  >
-    {user?.profilePicture ? (
-      <img
-        src={user?.profilePicture}
-        alt={user?.name || "User profile"}
-        className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-border shadow-sm"
-      />
-    ) : (
-      <div className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-        <User className="h-5 w-5 sm:h-6 sm:w-6" />
-      </div>
-    )}
+                  >
+                    {user?.profilePicture ? (
+                      <img
+                        src={user?.profilePicture}
+                        alt={user?.name || "User profile"}
+                        className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-border shadow-sm"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                      </div>
+                    )}
 
-    {/* Name & Email */}
-    <div className="hidden md:block">
-      <p className="text-sm font-semibold truncate">
-        {user?.name || user?.email?.split("@")[0]}
-      </p>
-      <p className="text-xs text-muted-foreground truncate">
-        {user?.email}
-      </p>
-    </div>
-  </div>
-</DropdownMenuTrigger>
+                    {/* Name & Email */}
+                    <div className="hidden md:block">
+                      <p className="text-sm font-semibold truncate">
+                        {user?.name || user?.email?.split("@")[0]}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuTrigger>
 
                 <DropdownMenuContent
                   className="w-56 sm:w-64 md:w-72 mt-2 shadow-lg rounded-lg border border-border bg-popover text-popover-foreground"
@@ -159,8 +168,12 @@ export function Header() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{user?.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                        <p className="text-sm font-semibold truncate">
+                          {user?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {user?.email}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -170,7 +183,7 @@ export function Header() {
   focus:bg-primary/10 focus:text-primary
   data-[highlighted]:bg-primary/10 data-[highlighted]:text-primary
   transition-colors"
-                    onClick={() => navigate('/profile')}
+                    onClick={() => navigate("/profile")}
                   >
                     <div className="flex items-center gap-3 w-full">
                       <User className="h-4 w-4" />
@@ -191,7 +204,6 @@ export function Header() {
                       <span className="font-medium">Sign Out</span>
                     </div>
                   </DropdownMenuItem>
-
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
@@ -202,7 +214,7 @@ export function Header() {
                       variant="ghost"
                       size="sm"
                       className="hidden md:flex px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium"
-                      onClick={() => navigate('/login')}
+                      onClick={() => navigate("/login")}
                     >
                       Sign In
                     </Button>
@@ -214,7 +226,11 @@ export function Header() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link to="/register" className="hidden md:block">
-                      <Button variant="default" size="sm" className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm font-medium"
+                      >
                         Get Started
                       </Button>
                     </Link>
@@ -231,7 +247,6 @@ export function Header() {
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button
-
                 size="icon"
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg md:flex lg:hidden [&_svg]:size-8"
               >

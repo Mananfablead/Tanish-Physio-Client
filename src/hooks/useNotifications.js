@@ -57,6 +57,22 @@ export const useNotifications = () => {
                     description: "Your alternative meeting link is ready. Check your session details or join directly.",
                     variant: "default"
                 });
+            } else if (data.type === 'google_meet_updated') {
+                // Update Google Meet link in localStorage when it's updated by admin
+                if (data.googleMeetLink) {
+                    localStorage.setItem(`google_meet_link_${data.sessionId}`, JSON.stringify({
+                        link: data.googleMeetLink,
+                        code: data.googleMeetCode,
+                        timestamp: data.timestamp
+                    }));
+                }
+
+                // Show special toast for updated Google Meet
+                toast({
+                    title: "Google Meet Link Updated",
+                    description: "Your therapist has updated the Google Meet link for your session. Check your session details.",
+                    variant: "default"
+                });
             }
         });
 

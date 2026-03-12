@@ -13,6 +13,7 @@ import sessionReducer from "./slices/sessionSlice";
 import paymentReducer from "./slices/paymentSlice";
 import adminReducer from './slices/adminSlice';
 import offersReducer from './slices/offersSlice';
+import notificationReducer from "./slices/notificationSlice";
 
 // Redux Persist config
 const persistConfig = {
@@ -36,6 +37,7 @@ export const store = configureStore({
     payment: paymentReducer,
     admins: adminReducer,
     offers: offersReducer,
+    notifications: notificationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
