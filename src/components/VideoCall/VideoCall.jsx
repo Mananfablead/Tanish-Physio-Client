@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +15,11 @@ import {
   X,
   Clock,
   Link,
+  Paperclip,
+  Image,
+  FileText,
+  Play,
+  Upload,
 } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
 import useWebRTC from "../../hooks/useWebRTC";
@@ -69,7 +74,7 @@ const VideoCall = ({
 
   const stopMediaStreams = () => {
     if (localStream) {
-      localStream.getTracks().forEach(track => {
+      localStream.getTracks().forEach((track) => {
         track.stop();
         console.log("Stopped media track:", track.kind);
       });
@@ -233,16 +238,19 @@ const VideoCall = ({
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const chatContainerRef = React.useRef(null);
+  const fileInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [mediaError, setMediaError] = useState(null);
   const [isInitializingMedia, setIsInitializingMedia] = useState(false);
   const [therapistPresent, setTherapistPresent] = useState(false);
   const [waitingForTherapist, setWaitingForTherapist] = useState(false); // Add missing waitingForTherapist state
   const [userRole, setUserRole] = useState("patient"); // Add missing userRole state
-  
+
   // Get user role from URL params or session storage
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlUserRole = urlParams.get('userRole');
+    const urlUserRole = urlParams.get("userRole");
     if (urlUserRole) {
       setUserRole(urlUserRole);
     } else if (user && user.role) {
@@ -261,78 +269,96 @@ const VideoCall = ({
         try {
           console.log("Fetching participants data for session:", sessionId);
           const response = await videoCallApi.getSessionParticipants(sessionId);
-          
+
           if (response.success && response.data) {
             console.log("Participants API response:", response.data);
             setApiResponse(response); // Store full API response for display
-            
+
             // Handle different API response structures
             let participantsData = [];
-            
+
             // Check if response.data is an array
             if (Array.isArray(response.data)) {
               participantsData = response.data;
-            } 
+            }
             // Check if response.data has a participants array
-            else if (response.data.participants && Array.isArray(response.data.participants)) {
+            else if (
+              response.data.participants &&
+              Array.isArray(response.data.participants)
+            ) {
               participantsData = response.data.participants;
             }
             // Check if response.data is an object with participant data
-            else if (typeof response.data === 'object' && response.data !== null) {
+            else if (
+              typeof response.data === "object" &&
+              response.data !== null
+            ) {
               participantsData = [response.data];
             }
-            
+
             console.log("Processed participants data:", participantsData);
-            
+
             // Transform API data to match expected participant structure
-            const apiParticipants = participantsData.map(participant => ({
+            const apiParticipants = participantsData.map((participant) => ({
               userId: participant.userId || participant._id,
-              socketId: participant.socketId || `socket-${participant.userId || participant._id}`,
-              name: participant.name || 
-                    (participant.firstName && participant.lastName 
-                      ? `${participant.firstName} ${participant.lastName}`
-                      : null) || 
-                    participant.displayName || 
-                    `User ${participant.userId?.substring(0, 5) || 'Unknown'}`,
+              socketId:
+                participant.socketId ||
+                `socket-${participant.userId || participant._id}`,
+              name:
+                participant.name ||
+                (participant.firstName && participant.lastName
+                  ? `${participant.firstName} ${participant.lastName}`
+                  : null) ||
+                participant.displayName ||
+                `User ${participant.userId?.substring(0, 5) || "Unknown"}`,
               firstName: participant.firstName,
               lastName: participant.lastName,
               displayName: participant.displayName,
-              role: participant.role || 'user',
-              isTherapist: participant.role === 'therapist' || participant.role === 'admin',
-              isUser: participant.role === 'user' || participant.role === 'patient',
+              role: participant.role || "user",
+              isTherapist:
+                participant.role === "therapist" ||
+                participant.role === "admin",
+              isUser:
+                participant.role === "user" || participant.role === "patient",
               isSelf: participant.userId === user?.id, // Assuming user.id matches participant.userId
-              joinedAt: participant.joinedAt || new Date().toISOString()
+              joinedAt: participant.joinedAt || new Date().toISOString(),
             }));
-            
+
             // Merge with existing participants (preserve WebRTC participants)
-            setParticipants(prevParticipants => {
+            setParticipants((prevParticipants) => {
               // Keep existing WebRTC participants
-              const existingWebRTC = prevParticipants.filter(p => p.socketId && !p.socketId.startsWith('socket-'));
-              
+              const existingWebRTC = prevParticipants.filter(
+                (p) => p.socketId && !p.socketId.startsWith("socket-")
+              );
+
               // Add or update API participants
-              const updatedApiParticipants = apiParticipants.map(apiParticipant => {
-                const existing = existingWebRTC.find(p => p.userId === apiParticipant.userId);
-                if (existing) {
-                  // Update existing participant with API data
-                  return {
-                    ...existing,
-                    ...apiParticipant,
-                    // Preserve WebRTC specific properties
-                    socketId: existing.socketId, // Keep WebRTC socketId
-                    isSelf: existing.isSelf
-                  };
+              const updatedApiParticipants = apiParticipants.map(
+                (apiParticipant) => {
+                  const existing = existingWebRTC.find(
+                    (p) => p.userId === apiParticipant.userId
+                  );
+                  if (existing) {
+                    // Update existing participant with API data
+                    return {
+                      ...existing,
+                      ...apiParticipant,
+                      // Preserve WebRTC specific properties
+                      socketId: existing.socketId, // Keep WebRTC socketId
+                      isSelf: existing.isSelf,
+                    };
+                  }
+                  return apiParticipant;
                 }
-                return apiParticipant;
-              });
-              
+              );
+
               // Combine WebRTC participants with API participants
               const combined = [...existingWebRTC];
-              updatedApiParticipants.forEach(apiParticipant => {
-                if (!combined.some(p => p.userId === apiParticipant.userId)) {
+              updatedApiParticipants.forEach((apiParticipant) => {
+                if (!combined.some((p) => p.userId === apiParticipant.userId)) {
                   combined.push(apiParticipant);
                 }
               });
-              
+
               console.log("Combined participants:", combined);
               return combined;
             });
@@ -342,7 +368,7 @@ const VideoCall = ({
           setApiResponse({
             success: false,
             error: error.message,
-            data: null
+            data: null,
           });
           // Don't show error to user, just log it
         }
@@ -651,29 +677,35 @@ const VideoCall = ({
 
       const handleSocketError = (data) => {
         console.error("Video call error:", data);
-        
+
         // Handle specific error messages
-        if (data.message && data.message.includes("Patients must join through the waiting room")) {
+        if (
+          data.message &&
+          data.message.includes("Patients must join through the waiting room")
+        ) {
           // Check if this is an approved patient trying to join directly
           const urlParams = new URLSearchParams(window.location.search);
-          const isApproved = urlParams.get('approved') === 'true';
-          const userRole = urlParams.get('userRole') || sessionStorage.getItem('userRole');
-          
-          if (isApproved && userRole === 'patient') {
+          const isApproved = urlParams.get("approved") === "true";
+          const userRole =
+            urlParams.get("userRole") || sessionStorage.getItem("userRole");
+
+          if (isApproved && userRole === "patient") {
             // This is likely a timing issue where the backend hasn't processed the approval yet
             // Retry the join after a brief delay
-            console.log("Approved patient encountering waiting room error, retrying...");
+            console.log(
+              "Approved patient encountering waiting room error, retrying..."
+            );
             setTimeout(() => {
               if (socket) {
-                socket.emit('join-video-room', {
-                  sessionId: roomId
+                socket.emit("join-video-room", {
+                  sessionId: roomId,
                 });
               }
             }, 1000);
             return; // Don't treat this as a final error
           }
         }
-        
+
         // Handle specific session not active error
         if (
           data.message &&
@@ -693,7 +725,9 @@ const VideoCall = ({
           );
           setCallStatus("unauthorized");
         } else {
-          setCallError(data.message || "An error occurred during the video call");
+          setCallError(
+            data.message || "An error occurred during the video call"
+          );
         }
       };
 
@@ -738,12 +772,12 @@ const VideoCall = ({
       socket.emit("join-video-session", {
         sessionId: sessionId,
       });
-      
+
       // Listen for join confirmation
       socket.on("joined-video-session", (data) => {
         console.log("✅ Successfully joined video session:", data);
       });
-      
+
       socket.on("error", (data) => {
         console.error("❌ Error joining video session:", data);
       });
@@ -753,6 +787,7 @@ const VideoCall = ({
         console.log("📥 Client received message-received:", data);
         console.log("📥 Message content:", data.content);
         console.log("📥 Message ID:", data.messageId);
+        console.log("📥 Attachments:", data.attachments);
         console.log("📥 Timestamp:", data.timestamp);
 
         // Prevent duplicate processing of own messages
@@ -764,35 +799,49 @@ const VideoCall = ({
         // Comprehensive deduplication
         setChatMessages((prev) => {
           console.log("💬 Current messages count:", prev.length);
-          
+
           // Primary: Check by messageId if available
-          if (data.messageId && prev.some(m => m.messageId === data.messageId)) {
-            console.log("💬 Duplicate message ignored by messageId:", data.messageId);
-            return prev;
-          }
-          
-          // Secondary: Check by id/_id
-          if (data._id && prev.some(m => m.id === data._id)) {
-            console.log("💬 Duplicate message ignored by id:", data._id);
-            return prev;
-          }
-          
-          // Tertiary: Check by content and timestamp (fallback)
-          const messageContent = data.content;
-          const messageTimestamp = data.timestamp || new Date().toISOString();
-          
-          const isDuplicate = prev.some(m => 
-            m.text === messageContent && 
-            new Date(m.timestamp).getTime() === new Date(messageTimestamp).getTime()
-          );
-          
-          if (isDuplicate) {
-            console.log("💬 Duplicate message ignored by content+timestamp");
-            console.log("💬 Existing messages:", prev.map(m => ({text: m.text, timestamp: m.timestamp})));
+          if (
+            data.messageId &&
+            prev.some((m) => m.messageId === data.messageId)
+          ) {
+            console.log(
+              "💬 Duplicate message ignored by messageId:",
+              data.messageId
+            );
             return prev;
           }
 
-          console.log("💬 Adding new message to chat");
+          // Secondary: Check by id/_id
+          if (data._id && prev.some((m) => m.id === data._id)) {
+            console.log("💬 Duplicate message ignored by id:", data._id);
+            return prev;
+          }
+
+          // Tertiary: Check by content and timestamp (fallback)
+          const messageContent = data.content;
+          const messageTimestamp = data.timestamp || new Date().toISOString();
+
+          const isDuplicate = prev.some(
+            (m) =>
+              m.text === messageContent &&
+              new Date(m.timestamp).getTime() ===
+                new Date(messageTimestamp).getTime()
+          );
+
+          if (isDuplicate) {
+            console.log("💬 Duplicate message ignored by content+timestamp");
+            console.log(
+              "💬 Existing messages:",
+              prev.map((m) => ({ text: m.text, timestamp: m.timestamp }))
+            );
+            return prev;
+          }
+
+          console.log(
+            "💬 Adding new message to chat with attachments:",
+            data.attachments?.length || 0
+          );
           return [
             ...prev,
             {
@@ -803,6 +852,7 @@ const VideoCall = ({
               senderId: data.senderId,
               timestamp: messageTimestamp,
               senderName: data.senderName || "Clinician",
+              attachments: data.attachments || [], // Include attachments!
             },
           ];
         });
@@ -849,38 +899,60 @@ const VideoCall = ({
     console.log(`📤 Sending chat message: ${newMessage}`);
     console.log(`📤 Session ID: ${sessionId}`);
     console.log(`📤 Socket connected: ${socket?.connected}`);
-    
-    if (!newMessage.trim() || !sessionId || !externalConnected || !connected)
+    console.log(`📤 Uploaded files count: ${uploadedFiles.length}`);
+
+    // Allow sending if there's a message OR files
+    if (
+      (!newMessage.trim() && uploadedFiles.length === 0) ||
+      !sessionId ||
+      !externalConnected ||
+      !connected
+    )
       return;
 
     try {
       // Generate UUID for message deduplication
-      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
+      const messageId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+        /[xy]/g,
+        function (c) {
+          const r = (Math.random() * 16) | 0;
+          const v = c === "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        }
+      );
 
       console.log(`📤 Generated messageId: ${messageId}`);
-      
+
       const originalMessage = newMessage.trim();
       setNewMessage("");
+
+      // Get files to send and clear the list
+      const filesToSend = [...uploadedFiles];
+      setUploadedFiles([]);
 
       // Send message ONLY via socket (no API call, no optimistic update)
       if (socket) {
         console.log(`📤 Emitting send-message event`);
         console.log(`📤 Room ID: ${sessionId}`);
-        console.log(`📤 Room Type: ${sessionId.includes('group') ? 'group' : 'individual'}`);
-        
+        console.log(
+          `📤 Room Type: ${
+            sessionId.includes("group") ? "group" : "individual"
+          }`
+        );
+
         socket.emit("send-message", {
           roomId: sessionId,
-          roomType: sessionId.includes('group') ? 'group' : 'individual',
+          roomType: sessionId.includes("group") ? "group" : "individual",
           message: {
             content: originalMessage,
-            messageId: messageId
-          }
+            messageId: messageId,
+            attachments: filesToSend, // Include uploaded files
+          },
         });
-        console.log("📤 Message sent via socket");
+        console.log(
+          "📤 Message sent via socket",
+          filesToSend.length > 0 ? `with ${filesToSend.length} file(s)` : ""
+        );
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -904,6 +976,89 @@ const VideoCall = ({
       } catch (error) {
         console.error("Error sending stop typing indicator:", error);
       }
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file size (50MB limit)
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File size exceeds 50MB limit. Please choose a smaller file.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      console.log("📤 Uploading file:", file.name, file.type, file.size);
+
+      // Upload file using chatApi
+      const response = await chatApi.uploadFile(file);
+
+      console.log("✅ File uploaded successfully:", response);
+
+      if (response.success && response.data) {
+        const fileData = response.data.file;
+
+        // Add to uploaded files list (to be sent with message)
+        setUploadedFiles((prev) => [...prev, fileData]);
+
+        // Optionally auto-send the file immediately
+        // Or you can wait for user to add a message and click send
+        // For now, we'll just add it to the pending files
+      }
+    } catch (error) {
+      console.error("❌ Error uploading file:", error);
+      alert("Failed to upload file. Please try again.");
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Remove a file from the pending upload list
+  const removeFile = (fileIndex) => {
+    setUploadedFiles((prev) => prev.filter((_, index) => index !== fileIndex));
+  };
+
+  // Send file message via socket
+  const sendFileMessage = async (fileData) => {
+    if (!sessionId || !externalConnected || !connected) return;
+
+    try {
+      // Generate UUID for message deduplication
+      const messageId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+        /[xy]/g,
+        function (c) {
+          const r = (Math.random() * 16) | 0;
+          const v = c === "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        }
+      );
+
+      console.log(`📤 Sending file message with messageId: ${messageId}`);
+
+      // Send message via socket with attachment
+      if (socket) {
+        socket.emit("send-message", {
+          roomId: sessionId,
+          roomType: sessionId.includes("group") ? "group" : "individual",
+          message: {
+            content: "", // Empty text content for file-only messages
+            messageId: messageId,
+            attachments: [fileData],
+          },
+        });
+        console.log("📤 File message sent via socket");
+      }
+    } catch (error) {
+      console.error("Error sending file message:", error);
     }
   };
 
@@ -1422,10 +1577,6 @@ const VideoCall = ({
       }
     };
 
-
-
-
-
     // Handle typing indicator
     const typingListener = (data) => {
       setTypingUsers((prev) => {
@@ -1444,42 +1595,50 @@ const VideoCall = ({
     // Handle real-time message broadcast via message-received event
     socket.on("message-received", (data) => {
       console.log("Client received real-time message:", data);
-    
+
       // Determine sender name - use provided name or fallback
       const senderName =
         data.senderName ||
         (data.senderId === socket?.id
           ? user?.name || userName || "You"
           : "Clinician");
-    
+
       // Add the received message to chat messages with proper deduplication
       setChatMessages((prev) => {
         // Primary: Check by messageId if available
-        if (data.messageId && prev.some(m => m.messageId === data.messageId)) {
-          console.log("Duplicate message ignored by messageId:", data.messageId);
+        if (
+          data.messageId &&
+          prev.some((m) => m.messageId === data.messageId)
+        ) {
+          console.log(
+            "Duplicate message ignored by messageId:",
+            data.messageId
+          );
           return prev;
         }
-            
+
         // Secondary: Check by id/_id
-        if (data._id && prev.some(m => m.id === data._id)) {
+        if (data._id && prev.some((m) => m.id === data._id)) {
           console.log("Duplicate message ignored by id:", data._id);
           return prev;
         }
-            
+
         // Tertiary: Check by content and timestamp (fallback)
         const messageContent = data.content;
         const messageTimestamp = data.timestamp || new Date().toISOString();
-            
-        const isDuplicate = prev.some(m => 
-          m.text === messageContent && 
-          new Date(m.timestamp).getTime() === new Date(messageTimestamp).getTime()
+
+        const isDuplicate = prev.some(
+          (m) =>
+            m.text === messageContent &&
+            new Date(m.timestamp).getTime() ===
+              new Date(messageTimestamp).getTime()
         );
-            
+
         if (isDuplicate) {
           console.log("Duplicate message ignored by content+timestamp");
           return prev;
         }
-    
+
         return [
           ...prev,
           {
@@ -1494,7 +1653,7 @@ const VideoCall = ({
         ];
       });
     });
-    
+
     // Add WebRTC signaling listeners
     on("offer", offerListener);
     on("answer", answerListener);
@@ -2484,51 +2643,136 @@ const VideoCall = ({
                   </p>
                 </div>
               ) : (
-              chatMessages.map((message, index) => {
+                chatMessages.map((message, index) => {
+                  const isSender = message.senderId === user?.id;
 
-                
-  const isSender = message.senderId === user?.id;
-console.log("isSender".isSender)
-  return (
-    <div
-      key={index}
-      className={`flex ${isSender ? "justify-end" : "justify-start"}`}
-    >
-      <div
-        className={`max-w-[80%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm ${
-          isSender
-            ? "bg-emerald-500 text-white rounded-br-md"
-            : "bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700"
-        }`}
-      >
-        <p className="text-[10px] font-semibold mb-1 opacity-80">
-          {isSender
-            ? user?.name || "You"
-            : message.senderName || "Clinician"}
-        </p>
+                  // Get attachments from message.attachments array or legacy message.message.attachments
+                  const attachments =
+                    message.attachments ||
+                    (message.message && message.message.attachments) ||
+                    [];
+                  const hasAttachments = attachments.length > 0;
+                  const messageContent =
+                    message.text || message.content || message.message || "";
+                  // Check if message has real content (not just the placeholder)
+                  const hasRealContent =
+                    messageContent.trim() &&
+                    messageContent.trim() !== "📎 File attachment";
 
-        <p>
-          {message.text || message.content || message.message}
-        </p>
+                  return (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        isSender ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-sm ${
+                          isSender
+                            ? "bg-emerald-500 text-white rounded-br-md"
+                            : "bg-slate-800 text-slate-100 rounded-bl-md border border-slate-700"
+                        }`}
+                      >
+                        <p className="text-[10px] font-semibold mb-1 opacity-80">
+                          {isSender
+                            ? user?.name || "You"
+                            : message.senderName || "Clinician"}
+                        </p>
 
-        <p
-          className={`text-[10px] mt-1 ${
-            isSender
-              ? "text-emerald-100 opacity-80"
-              : "text-slate-400"
-          }`}
-        >
-          {new Date(
-            message.timestamp || message.createdAt
-          ).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
-      </div>
-    </div>
-  );
-})
+                        {/* Display message text (only if it's not just the placeholder) */}
+                        {hasRealContent && (
+                          <p className="mb-2">{messageContent}</p>
+                        )}
+
+                        {/* Display attachments */}
+                        {hasAttachments && (
+                          <div className="space-y-2 mb-2">
+                            {attachments.map((attachment, attIndex) => (
+                              <div key={attIndex}>
+                                {attachment.type === "image" ? (
+                                  // Display image with preview
+                                  <div className="mt-1">
+                                    <img
+                                      src={attachment.url}
+                                      alt={attachment.originalName}
+                                      className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
+                                      onClick={() =>
+                                        window.open(attachment.url, "_blank")
+                                      }
+                                    />
+                                    <a
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] mt-1 flex items-center gap-1 opacity-80 hover:underline"
+                                    >
+                                      <Image className="h-3 w-3" />
+                                      {attachment.originalName}
+                                    </a>
+                                  </div>
+                                ) : attachment.type === "video" ? (
+                                  // Display video with controls
+                                  <div className="mt-1">
+                                    <video
+                                      controls
+                                      className="max-w-full rounded-lg"
+                                      src={attachment.url}
+                                    >
+                                      Your browser does not support video
+                                      playback
+                                    </video>
+                                    <a
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] mt-1 flex items-center gap-1 opacity-80 hover:underline"
+                                    >
+                                      <Play className="h-3 w-3" />
+                                      {attachment.originalName}
+                                    </a>
+                                  </div>
+                                ) : (
+                                  // Display document with icon
+                                  <a
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 bg-slate-700/50 rounded p-2 hover:bg-slate-700 transition-colors"
+                                  >
+                                    <FileText className="h-5 w-5 text-orange-400 flex-shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs truncate">
+                                        {attachment.originalName}
+                                      </p>
+                                      <p className="text-[10px] opacity-60">
+                                        {(attachment.size / 1024).toFixed(1)} KB
+                                      </p>
+                                    </div>
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <p
+                          className={`text-[10px] mt-1 ${
+                            isSender
+                              ? "text-emerald-100 opacity-80"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {new Date(
+                            message.timestamp || message.createdAt
+                          ).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
               )}
 
               {/* Typing indicators */}
@@ -2559,7 +2803,65 @@ console.log("isSender".isSender)
             </div>
 
             <div className="p-3 sm:p-4 border-t border-slate-800">
+              {/* Show uploaded files preview */}
+              {uploadedFiles.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  {uploadedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 bg-slate-800 rounded-lg p-2 border border-slate-700"
+                    >
+                      <div className="flex-shrink-0">
+                        {file.type === "image" ? (
+                          <Image className="h-5 w-5 text-emerald-400" />
+                        ) : file.type === "video" ? (
+                          <Play className="h-5 w-5 text-blue-400" />
+                        ) : (
+                          <FileText className="h-5 w-5 text-orange-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-white truncate">
+                          {file.originalName}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="flex-shrink-0 text-slate-400 hover:text-red-400"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex gap-2">
+                {/* File upload button */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300 rounded-xl"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || !externalConnected || !connected}
+                >
+                  {isUploading ? (
+                    <Upload className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-4 w-4" />
+                  )}
+                </Button>
+
                 <input
                   type="text"
                   placeholder="Clinical note..."
@@ -2579,7 +2881,9 @@ console.log("isSender".isSender)
                   className="bg-slate-100 hover:bg-white text-slate-900 rounded-xl"
                   onClick={sendChatMessage}
                   disabled={
-                    !newMessage.trim() || !externalConnected || !connected
+                    (!newMessage.trim() && uploadedFiles.length === 0) ||
+                    !externalConnected ||
+                    !connected
                   }
                 >
                   <ArrowRight className="h-4 w-4" />

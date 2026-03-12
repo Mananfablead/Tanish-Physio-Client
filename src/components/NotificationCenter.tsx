@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   Check,
@@ -31,6 +32,7 @@ import axios from "axios";
 
 export default function NotificationCenter() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const notificationsState = useSelector((state: any) => state.notifications);
   const { list: notifications, unreadCount, pagination } = notificationsState;
   const [socketConnected, setSocketConnected] = useState(false);
@@ -196,20 +198,84 @@ export default function NotificationCenter() {
     }
   };
 
-  // Format timestamp
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
+  // Format timestamp with error handling
+  const formatTime = (timestamp: string) => {
+    try {
+      if (!timestamp) {
+        return "Just now";
+      }
 
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
+      const date = new Date(timestamp);
 
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
+      // Check if date is valid
+      if (isNaN(date.getTime()) || !isFinite(date.getTime())) {
+        console.warn("Invalid timestamp received:", timestamp);
+        return "Invalid date";
+      }
 
-    return date.toLocaleDateString();
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+
+      // Debug: Log timestamp details
+      console.log("Timestamp debug:", {
+        original: timestamp,
+        parsed: date.toISOString(),
+        now: now.toISOString(),
+        diffMs: diffMs,
+        diffMins: Math.floor(diffMs / 60000),
+      });
+
+      const diffMins = Math.floor(diffMs / 60000);
+
+      // Handle negative time differences (future dates or clock skew)
+      if (diffMins < 0) {
+        console.log('Future date detected, showing "Just now"');
+        return "Just now";
+      }
+      if (diffMins < 1) return "Just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error(
+        "Error formatting timestamp:",
+        error,
+        "Timestamp:",
+        timestamp
+      );
+      return "Invalid date";
+    }
+  };
+
+  // Handle navigation based on notification type
+  const handleNotificationClick = (notification) => {
+    // Mark as read first
+    if (!notification.read) {
+      dispatch(markAsRead(notification.id || notification._id));
+    }
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case "booking":
+        // Navigate to profile page for booking-related notifications
+        navigate("/profile");
+        break;
+      case "session":
+        // Navigate to profile page for session-related notifications
+        navigate("/profile");
+        break;
+      case "google_meet_ready":
+        // Navigate to profile page for Google Meet notifications
+        navigate("/profile");
+        break;
+      default:
+        // Default: navigate to profile page
+        navigate("/profile");
+        break;
+    }
   };
 
   const handleMarkAsRead = (id) => {
@@ -239,10 +305,7 @@ export default function NotificationCenter() {
           )}
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-96 max-h-[600px] overflow-y-auto"
-      >
+      <DropdownMenuContent align="end" className="w-96">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-background z-10">
           <div className="flex items-center gap-2">
@@ -279,22 +342,24 @@ export default function NotificationCenter() {
           </div>
         </div>
 
-        {/* Notifications List */}
-        <div className="max-h-[500px] overflow-y-auto">
+        {/* Notifications List - Show all notifications with scroll */}
+        <div className="max-h-[400px] overflow-y-auto">
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground text-sm">
               <p>Loading notifications...</p>
             </div>
           ) : notifications.length > 0 ? (
-            notifications.slice(0, 20).map((notification) => (
+            notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id || notification._id}
                 className={`flex flex-col items-start p-4 cursor-pointer duration-200 focus:bg-primary/5 focus:text-primary ${
                   notification.read ? "" : "bg-primary/5"
                 }`}
-                onClick={() =>
-                  handleMarkAsRead(notification.id || notification._id)
-                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleNotificationClick(notification);
+                }}
               >
                 <div className="flex items-start gap-3 w-full mb-2">
                   {/* Type Icon */}
@@ -369,7 +434,7 @@ export default function NotificationCenter() {
         {/* Footer */}
         {notifications.length > 0 && (
           <div className="border-t p-3 text-center text-xs text-muted-foreground">
-            Showing {Math.min(notifications.length, 20)} of{" "}
+            Showing {notifications.length} of{" "}
             {pagination.total || notifications.length} notifications
           </div>
         )}
