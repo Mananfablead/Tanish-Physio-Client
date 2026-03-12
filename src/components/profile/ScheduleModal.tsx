@@ -447,6 +447,14 @@ export function ScheduleModal({
                                 : "Regular"}
                               )
                             </div>
+                            {slot.sessionType === 'group' && (
+                              <div className="text-xs mt-1">
+                                <span className="font-semibold">
+                                  {slot.bookedParticipants ?? 0}/{slot.maxParticipants ?? 0}
+                                </span>{' '}
+                                booked
+                              </div>
+                            )}
                           </button>
                         );
                       })}

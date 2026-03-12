@@ -163,7 +163,7 @@ const App = () => (
                         path="/profile"
                         element={
                           <ProtectedRoute>
-                            <ProfilePage />
+                          <ProfilePage />
                           </ProtectedRoute>
                         }
                       />
