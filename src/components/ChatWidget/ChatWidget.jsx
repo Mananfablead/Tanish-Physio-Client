@@ -96,7 +96,15 @@ const ChatWidget = () => {
 
     // Listen for new messages from other users (single source of truth)
     const cleanupNewMessage = on("message-received", (data) => {
+      
       console.log("Received message:", data);
+
+  // 👇 USER MESSAGE CONSOLE
+  if (data.senderType === "user") {
+    console.log("User Message:", data.content);
+  }
+
+
       setMessages((prev) => {
         // Primary deduplication by messageId
         if (data.messageId && prev.some(m => m.messageId === data.messageId)) {
@@ -420,14 +428,20 @@ const ChatWidget = () => {
     
     for (const file of files) {
       try {
+        console.log('Uploading single file:', file.name, file.type);
         // Use chatApi uploadFile method for proper authorization handling
         const response = await chatApi.uploadFile(file);
+        console.log('Upload response:', response);
         
-        if (response.data.success) {
-          uploadedAttachments.push(response.data.data.file);
+        if (response.success) {
+          console.log('File uploaded successfully:', response.data.file);
+          uploadedAttachments.push(response.data.file);
+        } else {
+          console.error('Upload failed:', response);
         }
       } catch (error) {
         console.error('Error uploading file:', error);
+        console.error('Upload error details:', error.response?.data);
       }
     }
     
@@ -639,12 +653,13 @@ const ChatWidget = () => {
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="mt-2 space-y-2">
                         {msg.attachments.map((attachment, index) => (
-                          <div key={index} className="relative">
+                          <div key={index} className="relative ">
                             {attachment.type === 'image' ? (
                               <img 
                                 src={attachment.url} 
                                 alt={attachment.originalName}
-                                className="max-w-full h-auto rounded-lg cursor-pointer"
+                                className="w-40  object-cover rounded-lg cursor-pointer hover:opacity-75"
+                                // className="max-w-full h-auto rounded-lg cursor-pointer"
                                 onClick={() => window.open(attachment.url, '_blank')}
                               />
                             ) : (

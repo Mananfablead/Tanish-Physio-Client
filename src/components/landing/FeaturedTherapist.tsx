@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Star, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import Docter from '../../assets/DocterProfile.jpg'
 
 interface FeaturedTherapistProps {
   publicAdmins: any[];
@@ -40,11 +41,12 @@ export const FeaturedTherapist = ({ publicAdmins, adminsLoading, adminsError }: 
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-white">
                 <img
-                  src={publicAdmins[0].profilePicture || "https://images.unsplash.com/photo-1622253692010-333f2da6031d"}
+                src={publicAdmins[0].profilePicture || Docter}
+                  // src={Docter}
                   alt={publicAdmins[0].name}
-                  className="w-full h-[500px] object-cover rounded-3xl"
+                  className="w-full h-[500px]  object-contain rounded-3xl"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <Badge className="absolute top-6 right-6 bg-success text-success-foreground shadow-lg">
