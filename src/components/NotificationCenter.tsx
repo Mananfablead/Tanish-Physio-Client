@@ -17,6 +17,8 @@ import {
   clearAllNotifications,
   fetchNotifications,
   setNotifications,
+  removeNotification,
+  markAsUnread,
 } from "@/store/slices/notificationSlice";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +31,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { io } from "socket.io-client";
 import axios from "axios";
+import { 
+  deleteNotification as deleteNotificationAPI, 
+  markNotificationAsReadAPI,
+  markAllNotificationsAsReadAPI,
+  toggleNotificationReadStatusAPI
+} from "@/lib/notificationApi";
 
 export default function NotificationCenter() {
   const dispatch = useDispatch();
@@ -278,16 +286,78 @@ export default function NotificationCenter() {
     }
   };
 
-  const handleMarkAsRead = (id) => {
-    dispatch(markAsRead(id));
+  const handleMarkAsRead = async (id, readStatus?: boolean) => {
+    try {
+      // If readStatus is provided, use toggle API; otherwise use the old behavior
+      if (readStatus !== undefined) {
+        // Toggle to opposite state
+        await toggleNotificationReadStatusAPI(id);
+      } else {
+        // Mark as read (old behavior for backward compatibility)
+        await markNotificationAsReadAPI(id);
+      }
+      
+      // Update Redux state after successful API call
+      dispatch(markAsRead(id));
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+      // Optionally show error toast here
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    dispatch(markAllAsRead());
+  // Toggle read/unread status
+  const handleToggleReadStatus = async (id, currentReadStatus: boolean) => {
+    try {
+      // Call API to toggle read status
+      const response = await toggleNotificationReadStatusAPI(id);
+      
+      // Update Redux state based on new read status from API response
+      const newReadStatus = response.data?.read ?? !currentReadStatus;
+      
+      // If marking as unread, we need to increment the count
+      if (!newReadStatus) {
+        dispatch(markAsUnread(id));
+      } else {
+        dispatch(markAsRead(id));
+      }
+    } catch (error) {
+      console.error("Failed to toggle notification read status:", error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      // Call API to mark all notifications as read
+      await markAllNotificationsAsReadAPI();
+      
+      // Update Redux state after successful API call
+      dispatch(markAllAsRead());
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+      // Optionally show error toast here
+    }
   };
 
   const handleClearAll = () => {
     dispatch(clearAllNotifications());
+  };
+
+  const handleDeleteNotification = async (id) => {
+    try {
+      // Call API to delete notification from backend
+      await deleteNotificationAPI(id);
+      
+      // Remove from Redux state after successful API call
+      dispatch(removeNotification(id));
+    } catch (error) {
+      console.error("Failed to delete notification:", error);
+      // Optionally show error toast here
+    }
+  };
+
+  // Handle navigation to profile notifications tab
+  const handleSeeAllNotifications = () => {
+    navigate("/profile", { state: { section: "notifications" } });
   };
 
   return (
@@ -342,19 +412,17 @@ export default function NotificationCenter() {
           </div>
         </div>
 
-        {/* Notifications List - Show all notifications with scroll */}
+        {/* Notifications List - Show only unread notifications */}
         <div className="max-h-[400px] overflow-y-auto">
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground text-sm">
               <p>Loading notifications...</p>
             </div>
-          ) : notifications.length > 0 ? (
-            notifications.map((notification) => (
+          ) : notifications.filter(n => !n.read).length > 0 ? (
+            notifications.filter(n => !n.read).map((notification) => (
               <DropdownMenuItem
                 key={notification.id || notification._id}
-                className={`flex flex-col items-start p-4 cursor-pointer duration-200 focus:bg-primary/5 focus:text-primary ${
-                  notification.read ? "" : "bg-primary/5"
-                }`}
+                className={`flex flex-col items-start p-4 cursor-pointer duration-200 focus:bg-primary/5 focus:text-primary bg-primary/5`}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -377,9 +445,40 @@ export default function NotificationCenter() {
                       <p className="font-medium text-sm truncate">
                         {notification.title}
                       </p>
-                      {!notification.read && (
+                      <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1" />
-                      )}
+                        {/* Toggle Read/Unread Button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleToggleReadStatus(
+                              notification.id || notification._id,
+                              notification.read
+                            );
+                          }}
+                          className={`h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600`}
+                          title="Mark as read"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </Button>
+                        {/* Delete Button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteNotification(notification.id || notification._id);
+                          }}
+                          className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                          title="Delete notification"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-xs  text-muted-foreground mt-1 line-clamp-2">
                       {notification.message}
@@ -423,21 +522,28 @@ export default function NotificationCenter() {
               <div className="w-16 h-16 rounded-full bg-gray-100 mx-auto mb-4 flex items-center justify-center">
                 <Bell className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="font-medium mb-1">No notifications yet</p>
+              <p className="font-medium mb-1">No unread notifications</p>
               <p className="text-xs">
-                When you receive notifications, they'll appear here
+                You're all caught up!
               </p>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        {notifications.length > 0 && (
-          <div className="border-t p-3 text-center text-xs text-muted-foreground">
-            Showing {notifications.length} of{" "}
-            {pagination.total || notifications.length} notifications
-          </div>
-        )}
+        {/* Footer - Show unread count with See All button */}
+        <div className="border-t p-3 flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">
+            {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSeeAllNotifications}
+            className="text-xs h-7 px-3"
+          >
+            See All
+          </Button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -25,6 +25,7 @@ import {
   Camera,
   ReceiptText,
   NotebookTabs,
+  Bell,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +65,7 @@ import {
 import { RecordedSessionsSection } from "@/components/profile/RecordedSessionsSection";
 import { CombinedHistorySection } from "@/components/profile/CombinedHistorySection";
 import { CombinedSubscriptionSection } from "@/components/profile/CombinedSubscriptionSection";
+import { NotificationsSection } from "@/components/profile/NotificationsSection";
 
 // --- Component Interfaces ---
 
@@ -89,6 +91,16 @@ export default function ProfilePage() {
     return savedSection || "personal";
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Check if coming from notification center
+  useEffect(() => {
+    const locationState = (window.history.state as any)?.state;
+    if (locationState?.section === "notifications") {
+      setSelectedSection("notifications");
+      // Clear the state after using it
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
 
   // Reschedule states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] =
@@ -423,7 +435,7 @@ export default function ProfilePage() {
   // Define sections for sidebar navigation
   const sections: Section[] = [
    
-     {
+    {
       id: "history",
       label: "Session & Booking History",
       sub: "All your sessions and bookings",
@@ -459,14 +471,22 @@ export default function ProfilePage() {
       icon: Camera,
       color: "text-primary",
     },
-   
-     {
+    {
       id: "personal",
       label: "Personal Info",
       sub: "Manage your personal details",
       icon: UserRound,
       color: "text-primary",
     },
+    {
+      id: "notifications",
+      label: "Notifications",
+      sub: "View all your notifications",
+      icon: Bell,
+      color: "text-primary",
+    },
+    
+
   ];
 
   return (
@@ -500,6 +520,10 @@ export default function ProfilePage() {
             <div className="bg-slate-200/40 backdrop-blur p-3 rounded-2xl space-y-4 border border-slate-200 shadow-sm">
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
+                {selectedSection === "notifications" && (
+                  <NotificationsSection />
+                )}
+
                 {selectedSection === "activePlan" && (
                   <CombinedSubscriptionSection
                     activePlan={activePlan}
