@@ -10,6 +10,7 @@ interface CombinedSubscriptionSectionProps {
   loading?: boolean;
   error?: string | null;
   onPlanSelect?: (plan: any) => void;
+  user?: any;
 }
 
 type TabType = "active" | "history";
@@ -20,6 +21,7 @@ export function CombinedSubscriptionSection({
   loading = false,
   error = null,
   onPlanSelect,
+  user,
 }: CombinedSubscriptionSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>("active");
 
@@ -93,6 +95,7 @@ export function CombinedSubscriptionSection({
             userSubscriptions={userSubscriptions}
             loading={loading}
             error={error}
+            user={user}
           />
         )}
       </div>

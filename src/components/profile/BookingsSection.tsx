@@ -2,9 +2,15 @@ import { useState, useMemo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { Booking } from "@/types/user";
 
@@ -16,9 +22,16 @@ const ITEMS_PER_PAGE = 5; // Adjust this number as needed
 
 export function BookingsSection({ bookingList }: BookingsSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const openBookingDetail = (booking: Booking) => {
+    setDetailBooking(booking);
+    setIsDetailModalOpen(true);
+  };
 
   const totalPages = Math.ceil(bookingList?.length / ITEMS_PER_PAGE || 0);
 
@@ -239,10 +252,15 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                               : booking.status || "Unknown"}
                           </span>
 
-                          {/* Expiration badge always show */}
-                          {/* <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getServiceExpirationStatus(booking).color}`}>
-                            {getServiceExpirationStatus(booking).text}
-                          </span> */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 mt-1 h-7 px-2 text-xs"
+                            onClick={() => openBookingDetail(booking)}
+                          >
+                            <Info className="h-3 w-3 mr-1" />
+                            Read More
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -413,6 +431,16 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                       >
                         {getServiceExpirationStatus(booking).text}
                       </span>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 w-full h-8 text-xs"
+                        onClick={() => openBookingDetail(booking)}
+                      >
+                        <Info className="h-3 w-3 mr-1" />
+                        Read More
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -498,6 +526,165 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
           </Card>
         )}
       </div>
+
+      {/* Booking Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              Booking Details
+            </DialogTitle>
+          </DialogHeader>
+          {detailBooking && (
+            <div className="space-y-4 py-2">
+              {/* Service & Status */}
+              <div className="rounded-lg bg-slate-50 p-4 space-y-3">
+                <h3 className="font-black text-slate-900 text-base">
+                  {detailBooking.serviceName || "N/A"}
+                </h3>
+                {detailBooking.serviceId?.name && detailBooking.serviceId.name !== detailBooking.serviceName && (
+                  <p className="text-xs text-slate-500">{detailBooking.serviceId.name}</p>
+                )}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
+                    <span
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
+                        detailBooking.status === "confirmed"
+                          ? detailBooking.bookingType === "free-consultation"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-green-100 text-green-700"
+                          : detailBooking.status === "cancelled"
+                          ? "bg-red-100 text-red-700"
+                          : detailBooking.status === "pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : detailBooking.status === "completed"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {detailBooking.bookingType === "free-consultation" && detailBooking.status === "confirmed"
+                        ? "Accepted"
+                        : detailBooking.bookingType === "subscription-covered" && detailBooking.status === "pending"
+                        ? "Pending Review"
+                        : detailBooking.status || "Unknown"}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Booking Type</p>
+                    <p className="mt-1 font-semibold text-slate-800 capitalize">
+                      {detailBooking.bookingType?.replace(/-/g, " ") || "Standard"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Date</p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {new Date(detailBooking.date).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Time</p>
+                    <p className="mt-1 font-semibold text-slate-800">{detailBooking.time || "—"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Info */}
+              <div className="rounded-lg border border-slate-200 p-4 space-y-2">
+                <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Payment Info</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount Paid</p>
+                    <p className="mt-1 font-black text-slate-900 text-base">
+                      ₹{(detailBooking.finalAmount ?? detailBooking.amount ?? 0).toLocaleString()}
+                    </p>
+                    {detailBooking.discountAmount > 0 && (
+                      <p className="text-xs text-slate-400 line-through">₹{detailBooking.amount?.toLocaleString()}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Payment Status</p>
+                    <p className="mt-1 font-semibold text-slate-800 capitalize">{detailBooking.paymentStatus || "—"}</p>
+                  </div>
+                  {detailBooking.couponCode && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Coupon Used</p>
+                      <p className="mt-1 font-semibold text-green-600">{detailBooking.couponCode}</p>
+                    </div>
+                  )}
+                  {detailBooking.discountAmount > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Discount</p>
+                      <p className="mt-1 font-semibold text-green-600">–₹{detailBooking.discountAmount?.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Therapist & Service Info */}
+              {(detailBooking.therapistName || detailBooking.serviceId) && (
+                <div className="rounded-lg border border-slate-200 p-4 space-y-2">
+                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Service Details</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {detailBooking.therapistName && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Therapist</p>
+                        <p className="mt-1 font-semibold text-slate-800">{detailBooking.therapistName}</p>
+                      </div>
+                    )}
+                    {detailBooking.serviceId?.duration && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Duration</p>
+                        <p className="mt-1 font-semibold text-slate-800">{detailBooking.serviceId.duration}</p>
+                      </div>
+                    )}
+                    {detailBooking.serviceId?.validity && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Validity</p>
+                        <p className="mt-1 font-semibold text-slate-800">{detailBooking.serviceId.validity} days</p>
+                      </div>
+                    )}
+                    {detailBooking.expiryDate && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Expires</p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {new Date(detailBooking.expiryDate).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {detailBooking.notes && (
+                <div className="rounded-lg border border-slate-200 p-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Notes</p>
+                  <p className="text-sm text-slate-700">{detailBooking.notes}</p>
+                </div>
+              )}
+
+              {/* Booking Date */}
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Booked on {new Date(detailBooking.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                {/* <span>ID: {detailBooking._id}</span> */}
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

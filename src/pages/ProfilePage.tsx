@@ -531,6 +531,7 @@ export default function ProfilePage() {
                     loading={subsLoading}
                     error={subsError}
                     onPlanSelect={handlePayment}
+                    user={user}
                   />
                 )}
 
@@ -567,6 +568,7 @@ export default function ProfilePage() {
                     loading={subsLoading}
                     error={subsError}
                     onPlanSelect={handlePayment}
+                    user={user}
                   />
                 )}
 
