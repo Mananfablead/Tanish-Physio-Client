@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Copy,
   Check,
+  Info,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -103,6 +104,13 @@ export function SessionHistorySection({
     Set<string>
   >(new Set());
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [detailSession, setDetailSession] = useState<any>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const openSessionDetail = (session: any) => {
+    setDetailSession(session);
+    setIsDetailModalOpen(true);
+  };
 
   const copyToClipboard = async (link: string, sessionId: string) => {
     try {
@@ -510,42 +518,53 @@ export function SessionHistorySection({
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {(s.status === "scheduled" ||
-                          s.status === "confirmed") &&
-                          isSessionInFuture(s) &&
-                          isWithinRescheduleWindow(s) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
-                              onClick={() => onReschedule(s)}
-                            >
-                              <CalendarDays className="h-4 w-4 mr-1" />
-                              Reschedule
-                            </Button>
-                          )}
-                        {s.status === "completed" &&
-                          (submittedFeedbackSessions.has(s._id) ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="font-bold border-green-500 text-green-500 cursor-default"
-                              disabled
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Feedback Submitted
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
-                              onClick={() => handleLeaveFeedback(s)}
-                            >
-                              <MessageSquare className="h-4 w-4 mr-1" />
-                              Leave Feedback
-                            </Button>
-                          ))}
+                        <div className="flex flex-col items-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 px-2"
+                            onClick={() => openSessionDetail(s)}
+                          >
+                            <Info className="h-4 w-4 mr-1" />
+                            Read More
+                          </Button>
+                          {(s.status === "scheduled" ||
+                            s.status === "confirmed") &&
+                            isSessionInFuture(s) &&
+                            isWithinRescheduleWindow(s) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
+                                onClick={() => onReschedule(s)}
+                              >
+                                <CalendarDays className="h-4 w-4 mr-1" />
+                                Reschedule
+                              </Button>
+                            )}
+                          {s.status === "completed" &&
+                            (submittedFeedbackSessions.has(s._id) ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="font-bold border-green-500 text-green-500 cursor-default"
+                                disabled
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Feedback Submitted
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="font-bold border-primary text-primary hover:bg-primary hover:text-white"
+                                onClick={() => handleLeaveFeedback(s)}
+                              >
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                Leave Feedback
+                              </Button>
+                            ))}
+                        </div>
                       </td>
                     </tr>
                     {/* Expanded row for Google Meet link - Same design as GoogleMeetDisplay */}
@@ -739,7 +758,16 @@ export function SessionHistorySection({
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100">
+                    <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 w-full"
+                        onClick={() => openSessionDetail(s)}
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        Read More
+                      </Button>
                       {(s.status === "scheduled" || s.status === "confirmed") &&
                         isSessionInFuture(s) &&
                         isWithinRescheduleWindow(s) && (
@@ -944,6 +972,174 @@ export function SessionHistorySection({
           </div>
         </Card>
       )}
+
+      {/* Session Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              Session Details
+            </DialogTitle>
+          </DialogHeader>
+          {detailSession && (
+            <div className="space-y-4 py-2">
+              {/* Service */}
+              <div className="rounded-lg bg-slate-50 p-4 space-y-3">
+                <h3 className="font-black text-slate-900 text-base">
+                  {detailSession.bookingId?.serviceName || "Therapy Session"}
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
+                    <span
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
+                        detailSession.status === "completed"
+                          ? "bg-green-100 text-green-700"
+                          : detailSession.status === "cancelled"
+                          ? "bg-red-100 text-red-700"
+                          : detailSession.status === "missed"
+                          ? "bg-destructive/10 text-destructive"
+                          : detailSession.status === "live"
+                          ? "bg-green-600 text-white"
+                          : detailSession.status === "confirmed"
+                          ? "bg-primary/10 text-primary"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {detailSession.status}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Type</p>
+                    <p className="mt-1 font-semibold text-slate-800">{detailSession.type || "1-on-1"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Date</p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {detailSession.date
+                        ? new Date(detailSession.date).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Time</p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {detailSession.time ||
+                        (detailSession.startTime
+                          ? new Date(detailSession.startTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Duration</p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {detailSession.duration ? `${detailSession.duration} min` : "—"}
+                    </p>
+                  </div>
+                  {detailSession.endTime && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">End Time</p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {new Date(detailSession.endTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Booking Info */}
+              {detailSession.bookingId && (
+                <div className="rounded-lg border border-slate-200 p-4 space-y-2">
+                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Booking Info</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {detailSession.bookingId.therapistName && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Therapist</p>
+                        <p className="mt-1 font-semibold text-slate-800">{detailSession.bookingId.therapistName}</p>
+                      </div>
+                    )}
+                    {detailSession.bookingId.amount != null && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount Paid</p>
+                        <p className="mt-1 font-semibold text-slate-800">₹{detailSession.bookingId.finalAmount ?? detailSession.bookingId.amount}</p>
+                      </div>
+                    )}
+                    {detailSession.bookingId.bookingType && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Booking Type</p>
+                        <p className="mt-1 font-semibold text-slate-800 capitalize">{detailSession.bookingId.bookingType.replace(/-/g, " ")}</p>
+                      </div>
+                    )}
+                    {detailSession.bookingId.paymentStatus && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Payment</p>
+                        <p className="mt-1 font-semibold text-slate-800 capitalize">{detailSession.bookingId.paymentStatus}</p>
+                      </div>
+                    )}
+                  </div>
+                  {detailSession.bookingId.notes && (
+                    <div className="mt-2">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Notes</p>
+                      <p className="mt-1 text-sm text-slate-700 bg-slate-50 rounded p-2">{detailSession.bookingId.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Google Meet */}
+              {detailSession.googleMeetLink && (
+                <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 space-y-2">
+                  <h4 className="font-bold text-blue-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <Video className="h-4 w-4" /> Google Meet
+                  </h4>
+                  <a
+                    href={detailSession.googleMeetLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <Video className="h-4 w-4" />
+                    Join Google Meet
+                  </a>
+                  {detailSession.googleMeetCode && (
+                    <p className="text-sm text-blue-800">
+                      Meeting Code:{" "}
+                      <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">
+                        {detailSession.googleMeetCode}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Notes / Admin notes */}
+              {detailSession.notes && (
+                <div className="rounded-lg border border-slate-200 p-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Session Notes</p>
+                  <p className="text-sm text-slate-700">{detailSession.notes}</p>
+                </div>
+              )}
+
+              {/* Session ID reference */}
+              {/* <p className="text-xs text-slate-400 text-right">Session ID: {detailSession._id}</p> */}
+            </div>
+          )}
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Feedback Modal */}
       <Dialog open={isFeedbackModalOpen} onOpenChange={setIsFeedbackModalOpen}>

@@ -1,9 +1,15 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Play, Calendar, VideoIcon, Activity, Clock } from "lucide-react";
+import { Users, Play, Calendar, VideoIcon, Activity, Clock, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface UpcomingSessionsSectionProps {
   upcomingSessions: any[];
@@ -13,6 +19,13 @@ interface UpcomingSessionsSectionProps {
 
 export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSession }: UpcomingSessionsSectionProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [detailSession, setDetailSession] = useState<any>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const openSessionDetail = (session: any) => {
+    setDetailSession(session);
+    setIsDetailModalOpen(true);
+  };
 
   // Update current time every second for real-time button updates
   useEffect(() => {
@@ -116,7 +129,7 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   {/* Therapist + Session Info */}
                   <div className="flex-1">
                     <h4 className="font-black text-slate-900">
-                      {session?.subscriptionId?.planName || "Session"}
+                      {session?.subscriptionId?.planName || session?.bookingId?.serviceName || "Session"}
                     </h4>
                     <p className="text-sm text-slate-500 font-medium">
                       {formatSessionDateTime(
@@ -136,6 +149,15 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                         Starts in {Math.ceil((new Date(session.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min
                       </span>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs"
+                      onClick={() => openSessionDetail(session)}
+                    >
+                      <Info className="h-3 w-3 mr-1" />
+                      Read More
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -162,7 +184,7 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   {/* Therapist + Session Info */}
                   <div className="flex-1">
                     <h4 className="font-black text-slate-900">
-                      {session?.subscriptionId?.planName || "Session"}
+                      {session?.subscriptionId?.planName || session?.bookingId?.serviceName || "Session"}
                     </h4>
                     <p className="text-sm text-slate-500 font-medium">
                       {formatSessionDateTime(
@@ -187,6 +209,15 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                         Join soon
                       </span>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs"
+                      onClick={() => openSessionDetail(session)}
+                    >
+                      <Info className="h-3 w-3 mr-1" />
+                      Read More
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -327,6 +358,213 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
           </Card>
         )
       )}
+      {/* Session Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              Session Details
+            </DialogTitle>
+          </DialogHeader>
+          {detailSession && (
+            <div className="space-y-4 py-2">
+              {/* Overview */}
+              <div className="rounded-lg bg-slate-50 p-4 space-y-3">
+                <h3 className="font-black text-slate-900 text-base">
+                  {detailSession?.subscriptionId?.planName ||
+                    detailSession?.bookingId?.serviceName ||
+                    "Session"}
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
+                    <span
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
+                        detailSession.status === "live"
+                          ? "bg-green-600 text-white"
+                          : detailSession.status === "confirmed"
+                          ? "bg-primary/10 text-primary"
+                          : detailSession.status === "scheduled"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {detailSession.status}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Type</p>
+                    <p className="mt-1 font-semibold text-slate-800">{detailSession.type || "1-on-1"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Date</p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {detailSession.startTime
+                        ? new Date(detailSession.startTime).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : detailSession.date
+                        ? new Date(detailSession.date).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Time</p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {detailSession.time ||
+                        (detailSession.startTime
+                          ? new Date(detailSession.startTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—")}
+                    </p>
+                  </div>
+                  {detailSession.duration && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Duration</p>
+                      <p className="mt-1 font-semibold text-slate-800">{detailSession.duration} min</p>
+                    </div>
+                  )}
+                  {detailSession.endTime && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">End Time</p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {new Date(detailSession.endTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  )}
+                  {detailSession.location && (
+                    <div className="col-span-2">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Location</p>
+                      <p className="mt-1 font-semibold text-slate-800">{detailSession.location}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Timing status badge */}
+              {detailSession.timingStatus && detailSession.timingStatus !== "normal" && (
+                <div className="flex items-center gap-2">
+                  {detailSession.timingStatus === "join_now" && (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                      {isSessionTimeArrived(detailSession)
+                        ? "Ready to join"
+                        : `Starts in ${Math.ceil((new Date(detailSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`}
+                    </span>
+                  )}
+                  {detailSession.timingStatus === "join_soon" && (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">Join Soon</span>
+                  )}
+                </div>
+              )}
+
+              {/* Booking Info */}
+              {detailSession.bookingId && (
+                <div className="rounded-lg border border-slate-200 p-4 space-y-2">
+                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Booking Info</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {detailSession.bookingId.serviceName && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Service</p>
+                        <p className="mt-1 font-semibold text-slate-800">{detailSession.bookingId.serviceName}</p>
+                      </div>
+                    )}
+                    {detailSession.bookingId.therapistName && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Therapist</p>
+                        <p className="mt-1 font-semibold text-slate-800">{detailSession.bookingId.therapistName}</p>
+                      </div>
+                    )}
+                    {detailSession.bookingId.amount != null && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount</p>
+                        <p className="mt-1 font-semibold text-slate-800">₹{detailSession.bookingId.finalAmount ?? detailSession.bookingId.amount}</p>
+                      </div>
+                    )}
+                    {detailSession.bookingId.paymentStatus && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Payment</p>
+                        <p className="mt-1 font-semibold text-slate-800 capitalize">{detailSession.bookingId.paymentStatus}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Subscription Info */}
+              {detailSession.subscriptionId && (
+                <div className="rounded-lg border border-slate-200 p-4 space-y-2">
+                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Plan Info</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {detailSession.subscriptionId.planName && (
+                      <div className="col-span-2">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Plan</p>
+                        <p className="mt-1 font-semibold text-slate-800">{detailSession.subscriptionId.planName}</p>
+                      </div>
+                    )}
+                    {detailSession.subscriptionId.status && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Plan Status</p>
+                        <p className="mt-1 font-semibold text-slate-800 capitalize">{detailSession.subscriptionId.status}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Google Meet */}
+              {detailSession.googleMeetLink && (
+                <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 space-y-2">
+                  <h4 className="font-bold text-blue-700 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <VideoIcon className="h-4 w-4" /> Google Meet
+                  </h4>
+                  <a
+                    href={detailSession.googleMeetLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <VideoIcon className="h-4 w-4" />
+                    Join Google Meet
+                  </a>
+                  {detailSession.googleMeetCode && (
+                    <p className="text-sm text-blue-800">
+                      Meeting Code:{" "}
+                      <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">
+                        {detailSession.googleMeetCode}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Notes */}
+              {detailSession.notes && (
+                <div className="rounded-lg border border-slate-200 p-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Notes</p>
+                  <p className="text-sm text-slate-700">{detailSession.notes}</p>
+                </div>
+              )}
+
+              {/* <p className="text-xs text-slate-400 text-right">Session ID: {detailSession._id}</p> */}
+            </div>
+          )}
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
