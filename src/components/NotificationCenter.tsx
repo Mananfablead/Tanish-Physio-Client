@@ -488,7 +488,7 @@ export default function NotificationCenter() {
                     {notification.googleMeetLink && (
                       <div className="mt-2 p-2 bg-primary/5 rounded-lg border border-primary/20">
                         <p className="text-xs font-medium text-primary mb-1">
-                          Google Meet Link:
+                          Google Meet/Zoom Link:
                         </p>
                         <a
                           href={notification.googleMeetLink}

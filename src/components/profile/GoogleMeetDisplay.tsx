@@ -68,9 +68,9 @@ export function GoogleMeetDisplay({
 
         // Show toast notification
         toast({
-          title: "Google Meet Link Updated",
+          title: "Google Meet/Zoom Link Updated",
           description:
-            "Your therapist has updated the Google Meet link for your session.",
+            "Your therapist has updated the Google Meet/Zoom link for your session.",
         });
       }
     });
