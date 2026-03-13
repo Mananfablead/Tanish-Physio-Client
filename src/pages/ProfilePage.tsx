@@ -25,6 +25,7 @@ import {
   Camera,
   ReceiptText,
   NotebookTabs,
+  Bell,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +63,9 @@ import {
 
 // Import recorded sessions component
 import { RecordedSessionsSection } from "@/components/profile/RecordedSessionsSection";
+import { CombinedHistorySection } from "@/components/profile/CombinedHistorySection";
+import { CombinedSubscriptionSection } from "@/components/profile/CombinedSubscriptionSection";
+import { NotificationsSection } from "@/components/profile/NotificationsSection";
 
 // --- Component Interfaces ---
 
@@ -87,6 +91,16 @@ export default function ProfilePage() {
     return savedSection || "personal";
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Check if coming from notification center
+  useEffect(() => {
+    const locationState = (window.history.state as any)?.state;
+    if (locationState?.section === "notifications") {
+      setSelectedSection("notifications");
+      // Clear the state after using it
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
 
   // Reschedule states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] =
@@ -420,18 +434,19 @@ export default function ProfilePage() {
 
   // Define sections for sidebar navigation
   const sections: Section[] = [
+   
     {
-      id: "personal",
-      label: "Personal Info",
-      sub: "Manage your personal details",
-      icon: UserRound,
+      id: "history",
+      label: "Session & Booking History",
+      sub: "All your sessions and bookings",
+      icon: NotebookTabs,
       color: "text-primary",
     },
     {
-      id: "activePlan",
-      label: "Active Plan",
-      sub: "Your current subscription",
-      icon: BadgeCheck,
+      id: "subscriptions",
+      label: "Subscriptions & Plans",
+      sub: "Your active plan and history",
+      icon: ReceiptText,
       color: "text-primary",
     },
     {
@@ -450,13 +465,6 @@ export default function ProfilePage() {
       color: "text-primary",
     },
     {
-      id: "sessionHistory",
-      label: "Session History",
-      sub: "Your past sessions",
-      icon: Video,
-      color: "text-primary",
-    },
-    {
       id: "recordedSessions",
       label: "Recorded Sessions",
       sub: "Your recorded therapy sessions",
@@ -464,19 +472,21 @@ export default function ProfilePage() {
       color: "text-primary",
     },
     {
-      id: "subscriptionHistory",
-      label: "Subscription History",
-      sub: "Your plan & payment history",
-      icon: ReceiptText,
+      id: "personal",
+      label: "Personal Info",
+      sub: "Manage your personal details",
+      icon: UserRound,
       color: "text-primary",
     },
     {
-      id: "bookings",
-      label: "Service Bookings",
-      sub: "All your booked services",
-      icon: NotebookTabs,
+      id: "notifications",
+      label: "Notifications",
+      sub: "View all your notifications",
+      icon: Bell,
       color: "text-primary",
     },
+    
+
   ];
 
   return (
@@ -510,9 +520,16 @@ export default function ProfilePage() {
             <div className="bg-slate-200/40 backdrop-blur p-3 rounded-2xl space-y-4 border border-slate-200 shadow-sm">
               {/* Detail panel: shows the selected sidebar item */}
               <div className="space-y-6">
+                {selectedSection === "notifications" && (
+                  <NotificationsSection />
+                )}
+
                 {selectedSection === "activePlan" && (
-                  <ActivePlanSection
+                  <CombinedSubscriptionSection
                     activePlan={activePlan}
+                    userSubscriptions={userSubscriptions}
+                    loading={subsLoading}
+                    error={subsError}
                     onPlanSelect={handlePayment}
                   />
                 )}
@@ -525,45 +542,31 @@ export default function ProfilePage() {
                   />
                 )}
 
-                {selectedSection === "sessionHistory" && (
-                  <div className="space-y-4">
-                    <SessionHistorySection
-                      sessions={sessions}
-                      onReschedule={(session) => {
-                        setSessionToReschedule(session);
-                        setRescheduleDate("");
-                        setRescheduleTime("");
-                        setRescheduleError(null);
-                        setIsRescheduleModalOpen(true);
-                      }}
-                    />
-                    {/* Display Google Meet links for recent sessions */}
-                    {sessions &&
-                      sessions
-                        .slice(0, 3)
-                        .map((session) => (
-                          <GoogleMeetDisplay
-                            key={session._id}
-                            sessionId={session._id}
-                            className="mt-4"
-                          />
-                        ))}
-                  </div>
-                )}
-
                 {selectedSection === "recordedSessions" && (
                   <RecordedSessionsSection />
                 )}
 
-                {selectedSection === "bookings" && (
-                  <BookingsSection bookingList={bookingList} />
+                {selectedSection === "history" && (
+                  <CombinedHistorySection
+                    sessions={sessions}
+                    bookingList={bookingList}
+                    onReschedule={(session) => {
+                      setSessionToReschedule(session);
+                      setRescheduleDate("");
+                      setRescheduleTime("");
+                      setRescheduleError(null);
+                      setIsRescheduleModalOpen(true);
+                    }}
+                  />
                 )}
 
-                {selectedSection === "subscriptionHistory" && (
-                  <SubscriptionHistorySection
+                {selectedSection === "subscriptions" && (
+                  <CombinedSubscriptionSection
+                    activePlan={activePlan}
                     userSubscriptions={userSubscriptions}
                     loading={subsLoading}
                     error={subsError}
+                    onPlanSelect={handlePayment}
                   />
                 )}
 

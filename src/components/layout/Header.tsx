@@ -13,6 +13,7 @@ import {
   User,
   LogOut,
   Bell,
+  ChevronDown,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -40,6 +41,10 @@ const navLinks = [
   { to: "/about", label: "About Us" },
   { to: "/contact", label: "Contact Us" },
   { to: "/testimonials", label: "Testimonials" },
+];
+
+const authenticatedNavLinks = [
+  { to: "/profile", label: "My Account" },
 ];
 
 export function Header() {
@@ -93,7 +98,20 @@ export function Header() {
               <Button
                 variant={location.pathname === link.to ? "secondary" : "ghost"}
                 size="sm"
-                className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium"
+                className="px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium"
+              >
+                {link.label}
+              </Button>
+            </Link>
+          ))}
+          
+          {/* Show My Account link only when authenticated - Only on large screens */}
+          {isAuthenticated && authenticatedNavLinks.map((link) => (
+            <Link key={link.to} to={link.to} className="hidden xl:block">
+              <Button
+                variant={location.pathname === link.to ? "secondary" : "ghost"}
+                size="sm"
+                className="px-2 sm:px-3 py-1.5 text-sm sm:text-base font-medium"
               >
                 {link.label}
               </Button>
@@ -119,8 +137,7 @@ export function Header() {
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div
-                    className="flex items-center gap-3 cursor-pointer
+                  <div className="flex items-center gap-3 cursor-pointer
     hover:ring-2 hover:ring-primary/40 
     transition-all duration-200 px-2 py-1 rounded-lg"
                   >
@@ -137,7 +154,7 @@ export function Header() {
                     )}
 
                     {/* Name & Email */}
-                    <div className="hidden md:block">
+                    <div className="hidden md:block flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">
                         {user?.name || user?.email?.split("@")[0]}
                       </p>
@@ -145,6 +162,9 @@ export function Header() {
                         {user?.email}
                       </p>
                     </div>
+                    
+                    {/* Arrow Icon */}
+                    <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
                   </div>
                 </DropdownMenuTrigger>
 
@@ -187,7 +207,7 @@ export function Header() {
                   >
                     <div className="flex items-center gap-3 w-full">
                       <User className="h-4 w-4" />
-                      <span className="font-medium">Profile Settings</span>
+                      <span className="font-medium">My Account</span>
                     </div>
                   </DropdownMenuItem>
 
@@ -312,6 +332,27 @@ export function Header() {
                         to={link.to}
                         onClick={() => setOpen(false)}
                         className="block"
+                      >
+                        <Button
+                          variant={
+                            location.pathname === link.to
+                              ? "secondary"
+                              : "ghost"
+                          }
+                          className="w-full justify-start h-10 sm:h-12 px-2 text-left"
+                        >
+                          {link.label}
+                        </Button>
+                      </Link>
+                    ))}
+                    
+                    {/* Show My Account link only when authenticated - Only on large screens */}
+                    {isAuthenticated && authenticatedNavLinks.map((link) => (
+                      <Link
+                        key={link.to}
+                        to={link.to}
+                        onClick={() => setOpen(false)}
+                        className="block xl:hidden"
                       >
                         <Button
                           variant={
