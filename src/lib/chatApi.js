@@ -106,17 +106,28 @@ export const chatApi = {
 
     // Upload file
     uploadFile: async (file, token) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await apiClient.post('/upload-file', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-            // Authorization header is added by interceptor
-        });
-        
-        return response.data;
+        try {
+            console.log('📤 Client: Starting file upload:', file.name);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            console.log('📤 Client: Sending upload request...');
+
+            const response = await apiClient.post('/upload-file', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                // Authorization header is added by interceptor
+            });
+
+            console.log('✅ Client: File upload response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Client: File upload error:', error);
+            console.error('❌ Error details:', error.response?.data);
+            throw error;
+        }
     },
 };
 
