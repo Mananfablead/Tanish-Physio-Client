@@ -408,7 +408,8 @@ export default function SchedulePage() {
           errorMessage.includes("used all sessions") ||
           errorMessage.includes("no sessions in plan")
         ) {
-          setBookingError(`❌ Session Limit Reached\n\n${errorMessage}`);
+          setIsBookingModalOpen(false);
+          setIsPlansModalOpen(true);
         } else if (
           errorMessage.includes("Session is not active at this time")
         ) {
@@ -439,7 +440,8 @@ export default function SchedulePage() {
           errorMessage.includes("used all sessions") ||
           errorMessage.includes("no sessions in plan")
         ) {
-          setBookingError(`${errorMessage}`);
+          setIsBookingModalOpen(false);
+          setIsPlansModalOpen(true);
         } else if (
           errorMessage.includes("Session is not active at this time")
         ) {
@@ -1104,6 +1106,15 @@ export default function SchedulePage() {
                               <button
                                 key={index}
                                 onClick={() => {
+                                  // Guest or logged-in user without active plan → show plans modal
+                                  const hasActivePlan =
+                                    user &&
+                                    (user?.subscriptionData?.status === "active" ||
+                                      (user?.purchasedServices && user?.purchasedServices.length > 0));
+                                  if (!hasActivePlan) {
+                                    setIsPlansModalOpen(true);
+                                    return;
+                                  }
                                   setSelectedDate(day);
                                   setIsBookingModalOpen(true);
                                   setBookingError(null); // Clear any previous error when opening modal
@@ -2204,7 +2215,18 @@ export default function SchedulePage() {
                     )}
                   </div>
 
-                  <div className="px-6 py-4 border-t bg-slate-50 flex justify-end">
+                  <div className="px-6 py-4 border-t bg-slate-50 flex items-center justify-between gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 border-primary text-primary hover:bg-primary/5 hover:text-black"
+                      onClick={() => {
+                        setIsPlansModalOpen(false);
+                        navigate("/services");
+                      }}
+                    >
+                      <Star className="h-4 w-4" />
+                      Explore Our Services
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => setIsPlansModalOpen(false)}
