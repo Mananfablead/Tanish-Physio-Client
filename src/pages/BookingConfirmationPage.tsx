@@ -43,6 +43,7 @@ import {
   selectActiveQuestionnaire,
 } from "@/store/slices/questionnaireSlice";
 import InvoiceComponent from "@/components/InvoiceComponent";
+import logoUrl from "@/assets/logo.webp";
 
 export default function BookingConfirmationPage() {
   // Transform questionnaire data to health profile format
@@ -788,6 +789,21 @@ export default function BookingConfirmationPage() {
         throw new Error("Failed to load required libraries");
       }
 
+      // Convert logo to base64 so html2canvas can embed it without CORS issues
+      const logoBase64 = await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext("2d")!.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.onerror = () => resolve("");
+        img.src = logoUrl;
+      });
+
       // Create a temporary invoice element to render the content
       const tempInvoiceDiv = document.createElement("div");
       tempInvoiceDiv.id = "temp-invoice";
@@ -806,11 +822,10 @@ export default function BookingConfirmationPage() {
             <div class="flex justify-between items-start">
               <div class="flex items-center">
                 <img 
-                  src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png" 
+                  src="${logoBase64}" 
                   alt="Tanish Physio Logo"
-                  style="width: 64px; height: 64px; margin-right: 16px;"
+                  style="width: 180px; height: auto;"
                 />
-               
               </div>
               <div class="text-right">
                 <h2 class="text-xl font-semibold">Tanish Physio</h2>

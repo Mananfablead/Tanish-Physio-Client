@@ -1,4 +1,5 @@
 import React from "react";
+import logoUrl from "@/assets/logo.webp";
 
 interface InvoiceProps {
   bookingData: any;
@@ -66,19 +67,12 @@ const InvoiceComponent: React.FC<InvoiceProps> = ({
         <div className="flex justify-between items-start">
           <div className="flex items-center">
             <img
-              src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
+              src={logoUrl}
               alt="Tanish Physio Logo"
-              className="w-16 h-16 mr-4"
-              onError={(e) => {
-                // Fallback if logo fails to load
-                e.currentTarget.style.display = "none";
-              }}
+              className="w-44 h-auto mr-4"
             />
             <div>
               <h1 className="text-3xl font-bold text-gray-800">INVOICE</h1>
-              <p className="text-gray-600 mt-2">
-                Invoice #: {bookingData?.bookingId || "N/A"}
-              </p>
             </div>
           </div>
           <div className="text-right">
