@@ -114,6 +114,14 @@ const notificationSlice = createSlice({
                 state.unreadCount = Math.max(0, state.unreadCount - 1);
             }
         },
+        // Mark notification as unread
+        markAsUnread: (state, action) => {
+            const index = state.list.findIndex(n => n.id === action.payload || n._id === action.payload);
+            if (index !== -1 && state.list[index].read) {
+                state.list[index].read = false;
+                state.unreadCount += 1;
+            }
+        },
         // Mark all notifications as read
         markAllAsRead: (state) => {
             state.list.forEach(notification => {
@@ -176,6 +184,7 @@ export const {
     clearError,
     addNotification,
     markAsRead,
+    markAsUnread,
     markAllAsRead,
     removeNotification,
     clearAllNotifications,

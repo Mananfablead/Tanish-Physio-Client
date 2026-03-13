@@ -8,3 +8,5 @@ export * from './SubscriptionHistorySection';
 export * from './PersonalInfoSection';
 export * from './RescheduleModal';
 export * from "./GoogleMeetDisplay";
+export * from "./CombinedHistorySection";
+export * from "./CombinedSubscriptionSection";
