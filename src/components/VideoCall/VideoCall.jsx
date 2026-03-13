@@ -40,6 +40,54 @@ const VideoCall = ({
   sessionDetails = null,
   user = null, // Add user prop
 }) => {
+  const normalizeAttachment = useCallback((att) => {
+    if (!att || typeof att !== "object") return null;
+
+    const url =
+      att.url ||
+      att.fileUrl ||
+      att.file_url ||
+      att.downloadUrl ||
+      att.location ||
+      att.path ||
+      att.s3Url ||
+      att.publicUrl;
+
+    const originalName =
+      att.originalName ||
+      att.original_name ||
+      att.filename ||
+      att.fileName ||
+      att.name ||
+      "Attachment";
+
+    const sizeValue = att.size ?? att.fileSize ?? att.bytes;
+    const size = Number.isFinite(Number(sizeValue)) ? Number(sizeValue) : 0;
+
+    const mimeType =
+      att.mimeType || att.mimetype || att.mime || att.contentType || "";
+
+    let type = att.type || att.fileType || att.kind;
+    if (!type) {
+      if (typeof mimeType === "string" && mimeType.startsWith("image/"))
+        type = "image";
+      else if (typeof mimeType === "string" && mimeType.startsWith("video/"))
+        type = "video";
+      else type = "document";
+    }
+
+    if (type === "file") type = "document";
+
+    return {
+      ...att,
+      url,
+      originalName,
+      size,
+      type,
+      mimeType,
+    };
+  }, []);
+
   const { socket, connected, error, emit, on } = useSocket(roomId, roomType);
   const {
     localStream,
@@ -1003,10 +1051,10 @@ const VideoCall = ({
       console.log("✅ File uploaded successfully:", response);
 
       if (response.success && response.data) {
-        const fileData = response.data.file;
+        const fileData = normalizeAttachment(response.data.file);
 
         // Add to uploaded files list (to be sent with message)
-        setUploadedFiles((prev) => [...prev, fileData]);
+        if (fileData) setUploadedFiles((prev) => [...prev, fileData]);
 
         // Optionally auto-send the file immediately
         // Or you can wait for user to add a message and click send
@@ -1605,6 +1653,13 @@ const VideoCall = ({
 
       // Add the received message to chat messages with proper deduplication
       setChatMessages((prev) => {
+        const attachments = (Array.isArray(data.attachments)
+          ? data.attachments
+          : []
+        )
+          .map(normalizeAttachment)
+          .filter((a) => a && a.url);
+
         // Primary: Check by messageId if available
         if (
           data.messageId &&
@@ -1614,13 +1669,27 @@ const VideoCall = ({
             "Duplicate message ignored by messageId:",
             data.messageId
           );
-          return prev;
+          // If we already have the message but it was stored without attachments,
+          // merge in attachments so file uploads become visible.
+          if (attachments.length === 0) return prev;
+          return prev.map((m) => {
+            if (m.messageId !== data.messageId) return m;
+            const existing = Array.isArray(m.attachments) ? m.attachments : [];
+            if (existing.length > 0) return m;
+            return { ...m, attachments };
+          });
         }
 
         // Secondary: Check by id/_id
         if (data._id && prev.some((m) => m.id === data._id)) {
           console.log("Duplicate message ignored by id:", data._id);
-          return prev;
+          if (attachments.length === 0) return prev;
+          return prev.map((m) => {
+            if (m.id !== data._id) return m;
+            const existing = Array.isArray(m.attachments) ? m.attachments : [];
+            if (existing.length > 0) return m;
+            return { ...m, attachments };
+          });
         }
 
         // Tertiary: Check by content and timestamp (fallback)
@@ -1649,6 +1718,7 @@ const VideoCall = ({
             senderId: data.senderId,
             senderName: senderName,
             timestamp: messageTimestamp,
+            attachments: attachments,
           },
         ];
       });
@@ -2647,13 +2717,30 @@ const VideoCall = ({
                   const isSender = message.senderId === user?.id;
 
                   // Get attachments from message.attachments array or legacy message.message.attachments
-                  const attachments =
+                  const attachmentsRaw =
                     message.attachments ||
                     (message.message && message.message.attachments) ||
                     [];
+                  const attachments = (Array.isArray(attachmentsRaw)
+                    ? attachmentsRaw
+                    : []
+                  )
+                    .map(normalizeAttachment)
+                    .filter((a) => a && a.url);
+
                   const hasAttachments = attachments.length > 0;
+
+                  const messageContentCandidate =
+                    message.text ??
+                    message.content ??
+                    message.message?.content ??
+                    message.message ??
+                    "";
                   const messageContent =
-                    message.text || message.content || message.message || "";
+                    typeof messageContentCandidate === "string"
+                      ? messageContentCandidate
+                      : "";
+
                   // Check if message has real content (not just the placeholder)
                   const hasRealContent =
                     messageContent.trim() &&
@@ -2744,9 +2831,12 @@ const VideoCall = ({
                                       <p className="text-xs truncate">
                                         {attachment.originalName}
                                       </p>
-                                      <p className="text-[10px] opacity-60">
-                                        {(attachment.size / 1024).toFixed(1)} KB
-                                      </p>
+                                      {attachment.size > 0 && (
+                                        <p className="text-[10px] opacity-60">
+                                          {(attachment.size / 1024).toFixed(1)}{" "}
+                                          KB
+                                        </p>
+                                      )}
                                     </div>
                                   </a>
                                 )}

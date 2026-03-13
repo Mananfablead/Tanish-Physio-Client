@@ -752,6 +752,20 @@ export default function SchedulePage() {
     checkSubscriptionStatus();
   }, [user]);
 
+  // Auto-open plans modal for guest users or new users without any plans
+  useEffect(() => {
+    if (!user) {
+      // Guest user - auto-open plans modal
+      setIsPlansModalOpen(true);
+    } else if (
+      user?.subscriptionData?.status !== "active" &&
+      (!user?.purchasedServices || user?.purchasedServices.length === 0)
+    ) {
+      // New user without any active subscription or purchased services - auto-open plans modal
+      setIsPlansModalOpen(true);
+    }
+  }, [user]);
+
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) =>
       direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1)
@@ -1426,6 +1440,10 @@ export default function SchedulePage() {
                             navigate("/services");
                             return;
                           }
+                          if (value === "explore-services") {
+                            setIsPlansModalOpen(true);
+                            return;
+                          }
                           setSelectedServiceOrSubscription(value);
                         }}
                         className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -1434,10 +1452,19 @@ export default function SchedulePage() {
                           Select a service or subscription
                         </option>
 
-                        {/* Show free service option */}
-                        <option value="free-service">
-                          🎁 Use Free Service
-                        </option>
+                        {/* Show free service option ONLY for users with active subscription */}
+                        {subscriptionEligible && user?.subscriptionData?.status === "active" && (
+                          <option value="free-service">
+                            🎁 Use Free Service
+                          </option>
+                        )}
+
+                        {/* Show Explore Our Services for users without active plan */}
+                        {!subscriptionEligible && (
+                          <option value="explore-services">
+                            ✨ Explore Our Services
+                          </option>
+                        )}
 
                         {/* Show subscription plan option when user has active plan */}
                         {subscriptionEligible && user?.subscriptionData && (
@@ -1838,9 +1865,14 @@ export default function SchedulePage() {
 
                         <TabsContent value="individual" className="mt-0">
                           <div className="flex justify-center">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {plans
-                                .filter((plan: any) => plan.session_type === "individual")
+                            {(() => {
+                              const individualPlans = plans.filter((plan: any) => plan.session_type === "individual");
+                              const gridClasses = individualPlans.length === 2 
+                                ? "grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto"
+                                : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+                              return (
+                                <div className={gridClasses}>
+                              {individualPlans
                                 .map((plan: any) => (
                                   <Card
                                     key={plan._id || plan.id}
@@ -1976,7 +2008,9 @@ export default function SchedulePage() {
                                     </div>
                                   </Card>
                                 ))}
-                            </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                           {plans.filter((plan: any) => plan.session_type === "individual").length === 0 && (
                             <div className="text-center py-12">
@@ -1996,9 +2030,14 @@ export default function SchedulePage() {
 
                         <TabsContent value="group" className="mt-0">
                             <div className="flex justify-center">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {plans
-                              .filter((plan: any) => plan.session_type === "group")
+                          {(() => {
+                            const groupPlans = plans.filter((plan: any) => plan.session_type === "group");
+                            const gridClasses = groupPlans.length === 2 
+                              ? "grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto"
+                              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+                            return (
+                              <div className={gridClasses}>
+                            {groupPlans
                               .map((plan: any) => (
                                 <Card
                                   key={plan._id || plan.id}
@@ -2134,7 +2173,9 @@ export default function SchedulePage() {
                                   </div>
                                 </Card>
                               ))}
-                          </div>
+                              </div>
+                            );
+                          })()}
                           </div>
                           {plans.filter((plan: any) => plan.session_type === "group").length === 0 && (
                             <div className="text-center py-12">
