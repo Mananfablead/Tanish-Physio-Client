@@ -1436,14 +1436,15 @@ export default function SchedulePage() {
                         value={selectedServiceOrSubscription}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === "free-service") {
-                            navigate("/services");
+                          if (value === "__choose_plan__") {
+                            // Open plans popup ONLY when user has no active plan
+                            if (user?.subscriptionData?.status !== "active") {
+                              setIsPlansModalOpen(true);
+                            }
                             return;
                           }
-                          if (value === "explore-services") {
-                            setIsPlansModalOpen(true);
-                            return;
-                          }
+
+                          setIsPlansModalOpen(false);
                           setSelectedServiceOrSubscription(value);
                         }}
                         className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -1452,44 +1453,40 @@ export default function SchedulePage() {
                           Select a service or subscription
                         </option>
 
-                        {/* Show free service option ONLY for users with active subscription */}
-                        {subscriptionEligible && user?.subscriptionData?.status === "active" && (
-                          <option value="free-service">
-                            🎁 Use Free Service
-                          </option>
-                        )}
+                        <optgroup label="Services">
+                          {allServices?.map((service: any) => {
+                            const id =
+                              "id" in service ? service.id : (service as any)._id;
+                            const label =
+                              service?.title ||
+                              service?.details?.title ||
+                              service?.name ||
+                              "Service";
+                            const duration =
+                              service?.details?.sessionDuration ||
+                              service?.duration ||
+                              "";
+                            return (
+                              <option key={id} value={id}>
+                                {label} {duration ? `- ${duration}` : ""}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
 
-                        {/* Show Explore Our Services for users without active plan */}
-                        {!subscriptionEligible && (
-                          <option value="explore-services">
-                            ✨ Explore Our Services
-                          </option>
-                        )}
-
-                        {/* Show subscription plan option when user has active plan */}
-                        {subscriptionEligible && user?.subscriptionData && (
-                          <option value={user.subscriptionData.id}>
-                            📋 Continue booking with{" "}
-                            {user.subscriptionData.planName} (
-                            {user.subscriptionData.status})
-                          </option>
-                        )}
-
-                        {/* Show purchased services normally when not eligible for subscription */}
-                        {!subscriptionEligible &&
-                          user?.purchasedServices?.map((service: any) => (
-                            <option key={service.id} value={service.id}>
-                              Service: {service.name} - {service.duration}
+                        <optgroup label="Subscription">
+                          {user?.subscriptionData?.status === "active" &&
+                          user?.subscriptionData?.id ? (
+                            <option value={user.subscriptionData.id}>
+                              {user.subscriptionData.planName || "Your Plan"} (
+                              {user.subscriptionData.status})
                             </option>
-                          ))}
-
-                        {/* Show subscription plan when user has one but not eligible */}
-                        {!subscriptionEligible && user?.subscriptionData && (
-                          <option value={user.subscriptionData.id}>
-                            {user.subscriptionData.planName} (
-                            {user.subscriptionData.status})
-                          </option>
-                        )}
+                          ) : (
+                            <option value="__choose_plan__">
+                              Choose a plan
+                            </option>
+                          )}
+                        </optgroup>
                       </select>
                     </div>
                     <div className="w-40">
