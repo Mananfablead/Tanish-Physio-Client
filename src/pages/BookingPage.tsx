@@ -165,6 +165,13 @@ export default function BookingPage() {
   const [sessionLimitExceededInfo, setSessionLimitExceededInfo] =
     useState<any>(null);
 
+  // Check if session limit is reached (has active plan but no remaining sessions/services)
+  const isSessionLimitReached =
+    hasActivePlan &&
+    subscriptionInfo != null &&
+    (subscriptionInfo.remainingSessions <= 0 ||
+      subscriptionInfo.remainingServices <= 0);
+
   // Fetch available offers from API
   useEffect(() => {
     dispatch(fetchOffers());
@@ -351,7 +358,7 @@ export default function BookingPage() {
         ? `${bookingData.service.name} Plan`
         : "Default Plan",
 
-    price: hasActivePlan
+    price: hasActivePlan && !isSessionLimitReached
       ? 0
       : bookingData.service
       ? Number(bookingData.service.price)
@@ -2509,7 +2516,7 @@ export default function BookingPage() {
                       </p>
                     )} */}
                   </div>
-                  {hasActivePlan ? (
+                  {hasActivePlan && !isSessionLimitReached ? (
                     <div className="text-right">
                       <p className="font-semibold text-green-600">FREE</p>
                       <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
@@ -2818,7 +2825,7 @@ export default function BookingPage() {
                       </p>
                     )}
                   </div>
-                  {hasActivePlan ? (
+                  {hasActivePlan && !isSessionLimitReached ? (
                     <div className="text-right">
                       <span className="font-bold text-2xl text-green-600">
                         FREE
@@ -2873,7 +2880,7 @@ export default function BookingPage() {
                   ) : (
                     <>
                       <Lock className="h-4 w-4 mr-2" />
-                      {hasActivePlan
+                      {hasActivePlan && !isSessionLimitReached
                         ? "Book Session"
                         : subscriptionBooking
                         ? `Pay ₹${finalPrice} for Subscription${

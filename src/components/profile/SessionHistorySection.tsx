@@ -558,7 +558,7 @@ export function SessionHistorySection({
                                 <div className="flex items-center gap-2">
                                   <Video className="h-5 w-5 text-blue-600" />
                                   <h3 className="font-bold text-lg">
-                                    Google Meet Alternative
+                                    Google Meet/Zoom Alternative
                                   </h3>
                                 </div>
                                 <Badge variant="default">Available</Badge>
@@ -567,7 +567,7 @@ export function SessionHistorySection({
                               <div className="bg-blue-50 rounded-lg p-3">
                                 <p className="text-sm text-blue-800 mb-2">
                                   Your therapist has arranged an alternative
-                                  Google Meet session.
+                                  Google Meet/Zoom session.
                                 </p>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <a
@@ -581,7 +581,7 @@ export function SessionHistorySection({
                                       transition-colors"
                                   >
                                     <Video className="h-4 w-4" />
-                                    Join Google Meet
+                                    Join Google Meet/Zoom
                                   </a>
                                   <Button
                                     variant="outline"
