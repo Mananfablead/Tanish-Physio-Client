@@ -88,17 +88,17 @@ export function NotificationsSection() {
         })
       );
 
-    //   toast({
-    //     title: "Notifications Updated",
-    //     description: `${data.notifications?.length || 0} notifications loaded`,
-    //   });
+      //   toast({
+      //     title: "Notifications Updated",
+      //     description: `${data.notifications?.length || 0} notifications loaded`,
+      //   });
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to load notifications",
-    //     variant: "destructive",
-    //   });
+      //   toast({
+      //     title: "Error",
+      //     description: "Failed to load notifications",
+      //     variant: "destructive",
+      //   });
     } finally {
       setIsLoading(false);
     }
@@ -237,7 +237,7 @@ export function NotificationsSection() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Bell className="w-5 h-5" />
@@ -247,25 +247,30 @@ export function NotificationsSection() {
               View and manage all your notifications
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant={unreadCount > 0 ? "default" : "secondary"}>
               {unreadCount} Unread
             </Badge>
+
             <Button
               variant="outline"
               size="sm"
               onClick={fetchNotificationsData}
               disabled={isLoading}
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+              />
             </Button>
+
             {unreadCount > 0 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleMarkAllAsRead}
               >
-                Mark All Read
+                Mark All
               </Button>
             )}
           </div>
@@ -307,11 +312,10 @@ export function NotificationsSection() {
             {filteredNotifications.map((notification: Notification) => (
               <div
                 key={notification.id || notification._id}
-                className={`p-4 rounded-lg border transition-colors ${
-                  notification.read
+                className={`p-4 rounded-lg border transition-colors ${notification.read
                     ? "bg-background hover:bg-muted/50"
                     : "bg-primary/5 border-primary/20"
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   {/* Type Icon */}

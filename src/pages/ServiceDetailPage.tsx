@@ -318,7 +318,17 @@ const ServiceSidebar = ({
   setSessionLimitExceededInfo?: (info: any) => void;
   subscriptionInfoProp?: any;
 }) => {
-  const { isAuthenticated } = useAuth();
+  // Safely get auth context with fallback for edge cases
+  let isAuthenticated = false;
+  try {
+    const authContext = useAuth();
+    isAuthenticated = authContext?.isAuthenticated ?? false;
+  } catch (error) {
+    // Fallback to Redux if AuthContext is not available (edge case during HMR)
+    console.warn("AuthContext not available, using Redux fallback");
+    const reduxAuth = useSelector((state: any) => state.auth);
+    isAuthenticated = reduxAuth?.isAuthenticated ?? false;
+  }
 
   const handleBooking = () => {
     // Check if user has an active plan but no remaining sessions or invalid plan
@@ -417,10 +427,10 @@ const ServiceSidebar = ({
                 subscriptionInfoProp.remainingSessions > 0) ||
                 activePlan?.availableSessions?.remaining > 0) ? (
                 <>
-                  <span className="text-green-600 font-bold">FREE</span>
-                  <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full ml-2">
+                  <span className="text-green-600 font-bold">Included With Plan</span>
+                  {/* <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full ml-2">
                     with {activePlan?.planName || "your plan"}
-                  </span>
+                  </span> */}
                 </>
               ) : (
                 <>
@@ -622,6 +632,10 @@ export default function ServiceDetailPage() {
             planName,
             totalSessions,
             usedSessions,
+            currentPlan,  // Get current plan info
+            planId,       // Get plan ID
+            status,       // Get plan status
+            expiryStatus  // Get expiry status
           } = response.data.data;
 
           setSubscriptionEligible(eligible);
@@ -632,6 +646,10 @@ export default function ServiceDetailPage() {
             planName,
             totalSessions,
             usedSessions,
+            currentPlan,
+            planId,
+            status,
+            expiryStatus
           });
         } catch (error) {
           console.error("Error checking subscription status:", error);

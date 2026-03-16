@@ -396,6 +396,8 @@ const authSlice = createSlice({
           image: userData.profilePicture || userData.image,
         };
         state.isAuthenticated = true;
+        // IMPORTANT: Update localStorage to stay in sync
+        localStorage.setItem("user", JSON.stringify(state.user));
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.error = action.payload as string;

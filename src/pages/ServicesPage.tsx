@@ -58,6 +58,10 @@ export default function ServicesPage() {
             planName,
             totalSessions,
             usedSessions,
+            currentPlan,  // Get current plan info
+            planId,       // Get plan ID
+            status,       // Get plan status
+            expiryStatus  // Get expiry status
           } = data;
 
           setSubscriptionEligible(eligible);
@@ -68,6 +72,10 @@ export default function ServicesPage() {
             planName,
             totalSessions,
             usedSessions,
+            currentPlan,
+            planId,
+            status,
+            expiryStatus
           });
         } catch (error) {
           console.error("Error checking subscription status:", error);

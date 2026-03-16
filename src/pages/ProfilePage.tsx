@@ -324,9 +324,23 @@ export default function ProfilePage() {
         image: imageUrl,
       };
 
-      dispatch(setCredentials({ user: updatedUser, token: user?.id || "" }));
+      // Get the current token from localStorage (don't replace it with user.id!)
+      const currentToken = localStorage.getItem("token") || "";
+      
+      dispatch(setCredentials({ user: updatedUser, token: currentToken }));
+      
+      toast({
+        title: "Profile picture updated",
+        description: "Your profile picture has been successfully updated.",
+        variant: "default",
+      });
     } catch (error) {
       console.error("Failed to update profile image", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile picture. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
