@@ -88,7 +88,7 @@ export default function ProfilePage() {
   const [selectedSection, setSelectedSection] = useState<string>(() => {
     // Retrieve the selected section from localStorage, default to 'personal'
     const savedSection = localStorage.getItem("profileSelectedSection");
-    return savedSection || "personal";
+    return savedSection || "history";
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 

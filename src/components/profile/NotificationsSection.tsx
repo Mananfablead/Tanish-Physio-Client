@@ -34,6 +34,8 @@ interface Notification {
   bookingId?: string;
   googleMeetLink?: string;
   googleMeetCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function NotificationsSection() {
@@ -403,7 +405,7 @@ export function NotificationsSection() {
                     )}
 
                     <p className="text-xs text-muted-foreground mt-2">
-                      {formatTime(notification.timestamp)}
+                      {formatTime(notification?.updatedAt || notification?.createdAt)}
                     </p>
                   </div>
                 </div>
