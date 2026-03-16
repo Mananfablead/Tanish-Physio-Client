@@ -318,9 +318,22 @@ export function ScheduleModal({
             {/* TIME SLOTS */}
             <div className="border rounded-lg p-3 bg-slate-50">
               <div>
-                <h4 className="font-bold text-slate-800 mb-3 text-sm">
-                  Available Time Slots
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-bold text-slate-800 text-sm">
+                    Available Time Slots
+                  </h4>
+                  
+                  {/* Session Type Filter Dropdown */}
+                  <select
+                    value={selectedSessionType}
+                    onChange={(e) => setSelectedSessionType(e.target.value as 'one-to-one' | 'group' | 'all')}
+                    className="text-xs border border-slate-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="one-to-one">1-on-1</option>
+                    <option value="group">Group</option>
+                  </select>
+                </div>
 
                 {/* Status Legend */}
                 <div className="flex flex-wrap gap-3 text-xs mb-3">
@@ -455,6 +468,12 @@ export function ScheduleModal({
                                 booked
                               </div>
                             )}
+                            {(userPlanType === 'individual' && slot.sessionType !== 'one-to-one') ||
+                             (userPlanType === 'group' && slot.sessionType !== 'group') ? (
+                              <div className="text-xs mt-1 text-orange-600 font-medium">
+                                Requires {userPlanType} plan
+                              </div>
+                            ) : null}
                           </button>
                         );
                       })}

@@ -126,6 +126,7 @@ export default function BookingPage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<any[]>([]);
+  const [selectedSessionType, setSelectedSessionType] = useState<'one-to-one' | 'group' | 'all'>('all');
 
   // Subscription state
   const [subscriptionEligible, setSubscriptionEligible] =
@@ -3014,6 +3015,9 @@ export default function BookingPage() {
         selectedTimeSlot={selectedTimeSlot}
         setSelectedTimeSlot={setSelectedTimeSlot}
         bookingType={bookingType}
+        userPlanType={user?.subscriptionData?.sessionType || null}
+        selectedSessionType={selectedSessionType}
+        setSelectedSessionType={setSelectedSessionType}
       />
 
       {/* Session Limit Exceeded Modal */}
