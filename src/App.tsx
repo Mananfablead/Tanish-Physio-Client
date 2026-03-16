@@ -171,6 +171,8 @@ const App = () => (
                         path="/video-call"
                         element={
                           <ProtectedRoute>
+
+                            
                             <VideoCallPage />
                           </ProtectedRoute>
                         }
