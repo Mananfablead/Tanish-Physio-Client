@@ -105,4 +105,17 @@ export interface Booking {
   couponCode?: string;
   expiryDate?: string;
   isExpired?: boolean;
+  // Additional fields for plan/subscription bookings
+  subscriptionInfo?: {
+    planDuration?: string;
+    planName?: string;
+    [key: string]: any;
+  };
+  planDuration?: string;
+  timeSlot?: {
+    start: string;
+    end: string;
+  };
+  groupSessionId?: string;
+  originalAmount?: number;
 }

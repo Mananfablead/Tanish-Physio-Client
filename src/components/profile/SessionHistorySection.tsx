@@ -435,20 +435,43 @@ export function SessionHistorySection({
                             : "N/A"}
                         </div>
                         <div className="text-sm text-slate-500">
-                          {s.time ||
+                          {/* Show timeSlot if available, otherwise fallback to time or startTime */}
+                          {s.timeSlot?.start && s.timeSlot?.end ? (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {s.timeSlot.start} - {s.timeSlot.end}
+                            </span>
+                          ) : (
+                            s.time ||
                             (s.startTime
                               ? new Date(s.startTime).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })
-                              : "—")}
+                              : "—")
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                         {s.type || "1-on-1"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {s.duration ? `${s.duration} min` : "—"}
+                        {/* Show duration from session, or calculate from timeSlot */}
+                        {(() => {
+                          if (s.duration) {
+                            return `${s.duration} min`;
+                          } else if (s.timeSlot?.start && s.timeSlot?.end) {
+                            // Calculate duration from timeSlot
+                            const [startHours, startMinutes] = s.timeSlot.start.split(':').map(Number);
+                            const [endHours, endMinutes] = s.timeSlot.end.split(':').map(Number);
+                            const duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+                            return `${duration} min`;
+                          } else if (s.scheduledTime) {
+                            // Default 45 minutes for subscription sessions
+                            return '45 min';
+                          }
+                          return "—";
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {s.status === "live" ? (
@@ -666,14 +689,22 @@ export function SessionHistorySection({
                               })
                             : "N/A"}
                         </p>
-                        <p className="text-xs text-slate-500">
-                          {s.time ||
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                          {/* Show timeSlot if available, otherwise fallback to time or startTime */}
+                          {s.timeSlot?.start && s.timeSlot?.end ? (
+                            <>
+                              <Clock className="h-3 w-3" />
+                              {s.timeSlot.start} - {s.timeSlot.end}
+                            </>
+                          ) : (
+                            s.time ||
                             (s.startTime
                               ? new Date(s.startTime).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })
-                              : "—")}
+                              : "—")
+                          )}
                         </p>
                       </div>
                       <div className="flex flex-col gap-2">
@@ -753,7 +784,22 @@ export function SessionHistorySection({
                       <div>
                         <p className="text-xs text-slate-500">Duration</p>
                         <p className="text-sm text-slate-900">
-                          {s.duration ? `${s.duration} min` : "—"}
+                          {/* Show duration from session, or calculate from timeSlot */}
+                          {(() => {
+                            if (s.duration) {
+                              return `${s.duration} min`;
+                            } else if (s.timeSlot?.start && s.timeSlot?.end) {
+                              // Calculate duration from timeSlot
+                              const [startHours, startMinutes] = s.timeSlot.start.split(':').map(Number);
+                              const [endHours, endMinutes] = s.timeSlot.end.split(':').map(Number);
+                              const duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+                              return `${duration} min`;
+                            } else if (s.scheduledTime) {
+                              // Default 45 minutes for subscription sessions
+                              return '45 min';
+                            }
+                            return "—";
+                          })()}
                         </p>
                       </div>
                     </div>
@@ -1029,19 +1075,42 @@ export function SessionHistorySection({
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Time</p>
                     <p className="mt-1 font-semibold text-slate-800">
-                      {detailSession.time ||
+                      {/* Show timeSlot if available, otherwise fallback to time or startTime */}
+                      {detailSession.timeSlot?.start && detailSession.timeSlot?.end ? (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {detailSession.timeSlot.start} - {detailSession.timeSlot.end}
+                        </span>
+                      ) : (
+                        detailSession.time ||
                         (detailSession.startTime
                           ? new Date(detailSession.startTime).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })
-                          : "—")}
+                          : "—")
+                      )}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Duration</p>
                     <p className="mt-1 font-semibold text-slate-800">
-                      {detailSession.duration ? `${detailSession.duration} min` : "—"}
+                      {/* Show duration from session, or calculate from timeSlot */}
+                      {(() => {
+                        if (detailSession.duration) {
+                          return `${detailSession.duration} min`;
+                        } else if (detailSession.timeSlot?.start && detailSession.timeSlot?.end) {
+                          // Calculate duration from timeSlot
+                          const [startHours, startMinutes] = detailSession.timeSlot.start.split(':').map(Number);
+                          const [endHours, endMinutes] = detailSession.timeSlot.end.split(':').map(Number);
+                          const duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+                          return `${duration} min`;
+                        } else if (detailSession.scheduledTime) {
+                          // Default 45 minutes for subscription sessions
+                          return '45 min';
+                        }
+                        return "—";
+                      })()}
                     </p>
                   </div>
                   {detailSession.endTime && (
