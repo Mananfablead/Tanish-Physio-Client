@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthRedux } from "@/hooks/useAuthRedux";
 import VideoCall from "@/components/VideoCall/VideoCall";
 import { videoCallApi } from "@/lib/videoCallApi";
@@ -9,11 +9,12 @@ import { getSEOConfig } from "@/components/SEO/seoConfig";
 export default function GroupVideoCallPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, token } = useAuthRedux();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = (useState < string) | (null > null);
+  const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
-  const [groupSessionDetails, setGroupSessionDetails] = useState < any > null;
+  const [groupSessionDetails, setGroupSessionDetails] = useState(null);
 
   useEffect(() => {
     const initializeCall = async () => {
@@ -28,9 +29,21 @@ export default function GroupVideoCallPage() {
           return;
         }
 
-        if (!user._id) {
-          setError("User ID is missing");
+        // Check for user ID - backend uses _id, but frontend type uses id
+        const userId = user.id || user._id;
+        if (!userId) {
+          console.error("❌ User ID missing. User object:", user);
+          setError("User ID is missing. Please try logging in again.");
           return;
+        }
+
+        // Route patients through waiting room unless already approved
+        if (user.role === "patient" || user.role === "user") {
+          const approved = searchParams.get("approved");
+          if (approved !== "true") {
+            navigate(`/waiting-room?sessionId=${id}&type=group`);
+            return;
+          }
         }
 
         // Check for token in localStorage as fallback
@@ -71,7 +84,7 @@ export default function GroupVideoCallPage() {
         // Generate call token for group session
         const response = await videoCallApi.generateGroupJoinLink(
           id,
-          user._id,
+          userId, // Use the correct user ID (either id or _id)
           user.role
         );
 

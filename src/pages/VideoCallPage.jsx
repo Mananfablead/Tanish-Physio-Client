@@ -63,8 +63,11 @@ const VideoCallPage = () => {
           return;
         }
 
-        if (!user.id) {
-          setError("User ID is missing");
+        // Check for user ID - backend uses _id, but frontend type uses id
+        const userId = user.id || user._id;
+        if (!userId) {
+          console.error("❌ User ID missing. User object:", user);
+          setError("User ID is missing. Please try logging in again.");
           return;
         }
 
@@ -93,6 +96,26 @@ const VideoCallPage = () => {
             // Set a flag to indicate this is an approved patient
             window.__APPROVED_PATIENT__ = true;
           } else {
+            // Fetch session details to check if it's a group session
+            try {
+              const sessionResponse = await videoCallApi.getCallDetails(sessionId);
+              if (sessionResponse.success && sessionResponse.data) {
+                const isGroupSession = sessionResponse.data.type === "Group" || 
+                                      sessionResponse.data.sessionType === "group" ||
+                                      sessionResponse.data.groupSessionId;
+                
+                if (isGroupSession) {
+                  console.log("🎯 Group session detected - redirecting to group waiting room");
+                  // Redirect to group video call page which will route to waiting room
+                  const groupSessionId = sessionResponse.data.groupSessionId || sessionId;
+                  navigate(`/group-video-call/${groupSessionId}`);
+                  return;
+                }
+              }
+            } catch (checkErr) {
+              console.warn("Could not check session type:", checkErr);
+            }
+            
             console.log("Redirecting patient to waiting room");
             navigate(`/waiting-room?sessionId=${sessionId}`);
             return;
@@ -130,7 +153,7 @@ const VideoCallPage = () => {
           "DEBUG: Generating call token for session:",
           sessionId,
           "user:",
-          user.id,
+          userId,
           "role:",
           user.role
         );
@@ -138,7 +161,7 @@ const VideoCallPage = () => {
         // Generate call token
         const response = await videoCallApi.generateJoinLink(
           sessionId,
-          user.id, // Use user.id instead of user.userId
+          userId, // Use the correct user ID (either id or _id)
           user.role
         );
 

@@ -714,12 +714,22 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         });
 
         peer.on('close', () => {
-            setRemoteStreams(prev => {
-                const newState = { ...prev };
-                delete newState[userId];
-                return newState;
-            });
-            delete peerRefs.current[userId];
+            console.log('⚠️ Peer connection closed for user:', userId);
+            // Don't immediately remove the stream - keep it displayed in case of temporary disconnection
+            // Only remove after a delay if the peer doesn't reconnect
+            setTimeout(() => {
+                // Check if peer has reconnected or if there's a new peer for this user
+                if (!peerRefs.current[userId]) {
+                    console.log('🗑️ Removing remote stream for user after timeout:', userId);
+                    setRemoteStreams(prev => {
+                        const newState = { ...prev };
+                        delete newState[userId];
+                        return newState;
+                    });
+                } else {
+                    console.log('✅ Peer reconnected, keeping stream for user:', userId);
+                }
+            }, 3000); // 3 second delay before removing stream
         });
 
         peer.on('error', (err) => {
@@ -1376,15 +1386,33 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                 }, 500); // Reduced timeout
             }
 
-            // If the participant is a client/patient, prepare to handle offers
+            // If the participant is a client/patient, prepare to handle offers AND create peer back
             if (data.role === 'patient' || data.isUser) {
-                console.log('CLIENT: Another patient joined, preparing to handle their offer');
-                // Just make sure our local stream is ready to respond to offers
-                if (!localStream) {
-                    setTimeout(async () => {
+                console.log('CLIENT: Another patient joined, preparing to handle their offer AND creating peer back');
+                // Make sure our local stream is ready
+                setTimeout(async () => {
+                    if (!localStream) {
                         await initLocalMedia();
-                    }, 500);
-                }
+                    }
+                    
+                    // Create peer connection for patient-to-patient video in group calls
+                    if (roomId.startsWith('group') && !isWaitingRoom) {
+                        let currentLocalStream = localStreamRef.current;
+                        
+                        if (currentLocalStream) {
+                            console.log('CLIENT: Creating peer connection for patient:', data.socketId);
+                            // Create peer (initiator=true to send offer)
+                            const peer = createPeer(data.socketId, true, currentLocalStream);
+                            if (peer) {
+                                console.log('CLIENT: Created peer for patient:', data.socketId);
+                            } else {
+                                console.error('CLIENT: Failed to create peer for patient:', data.socketId);
+                            }
+                        } else {
+                            console.warn('CLIENT: Local stream not available for patient peer creation:', data.socketId);
+                        }
+                    }
+                }, 500);
             }
         };
 
@@ -1465,6 +1493,40 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
             
             console.log('CLIENT: Standardized room participants:', standardizedParticipants);
             setParticipants(standardizedParticipants);
+            
+            // For group calls, create peer connections with all participants (except self)
+            if (roomId.startsWith('group') && !isWaitingRoom && standardizedParticipants.length > 0) {
+                console.log('CLIENT: Creating peers for all room participants in group call');
+                setTimeout(async () => {
+                    // Ensure local media is initialized
+                    if (!localStream) {
+                        console.log('CLIENT: Initializing local media before creating peers');
+                        await initLocalMedia();
+                    }
+                    
+                    const currentLocalStream = localStreamRef.current;
+                    if (!currentLocalStream) {
+                        console.error('CLIENT: Local stream not available for peer creation');
+                        return;
+                    }
+                    
+                    // Create peers with all other participants
+                    standardizedParticipants.forEach(participant => {
+                        if (participant.socketId !== socket.id && !peerRefs.current[participant.socketId]) {
+                            console.log('CLIENT: Creating peer for participant:', participant.socketId, participant.name);
+                            // Only patients create peers (admin/therapist already initiate)
+                            if (userRole === 'patient' || userRole === 'user') {
+                                const peer = createPeer(participant.socketId, true, currentLocalStream);
+                                if (peer) {
+                                    console.log('CLIENT: ✅ Created peer for:', participant.socketId);
+                                } else {
+                                    console.error('CLIENT: ❌ Failed to create peer for:', participant.socketId);
+                                }
+                            }
+                        }
+                    });
+                }, 1000); // Wait 1 second for media to be ready
+            }
         };
 
         const handleJoinedCall = (data) => {

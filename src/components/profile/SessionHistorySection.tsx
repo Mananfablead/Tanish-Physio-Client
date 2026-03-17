@@ -477,7 +477,11 @@ export function SessionHistorySection({
                         {s.status === "live" ? (
                           isSessionTimeArrived(s) ? (
                             <Link
-                              to={`/video-call?sessionId=${s._id}`}
+                              to={
+                                (s.groupSessionId || (s.type === "group" || s.sessionType === "group"))
+                                  ? `/group-video-call/${s.groupSessionId || s._id}`
+                                  : `/video-call?sessionId=${s._id}`
+                              }
                               className="inline-flex items-center justify-center
                   bg-green-600 hover:bg-green-700
                   text-white font-bold text-sm
@@ -711,7 +715,11 @@ export function SessionHistorySection({
                         {s.status === "live" ? (
                           isSessionTimeArrived(s) ? (
                             <Link
-                              to={`/video-call?sessionId=${s._id}`}
+                              to={
+                                (s.groupSessionId || (s.type === "group" || s.sessionType === "group"))
+                                  ? `/group-video-call/${s.groupSessionId || s._id}`
+                                  : `/video-call?sessionId=${s._id}`
+                              }
                               className="inline-flex items-center justify-center
                   bg-green-600 hover:bg-green-700
                   text-white font-bold text-xs
