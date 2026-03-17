@@ -62,10 +62,27 @@ export default function SubscriptionPlansPage() {
     error,
   } = useSelector((state: RootState) => state.subscriptions);
   const user = useSelector(selectCurrentUser);
+  console.log("User:", user);
   const activePlan = user?.subscriptionData || null;
   const activePlanId = activePlan?.planId ?? null;
   const isSubscriptionExpired = activePlan?.isExpired ?? false;
   const hasActiveSubscription = activePlanId && !isSubscriptionExpired;
+  
+  // Get remaining sessions and services
+  const remainingSessions = activePlan?.availableSessions?.remaining ?? 0;
+  const remainingServices = activePlan?.availableServices?.remaining ?? 0;
+  
+  // Check if sessions are exhausted (user has used all sessions)
+  const isSessionExhausted = remainingSessions === 0;
+  
+  console.log("Plan Status:", {
+    activePlanId,
+    remainingSessions,
+    remainingServices,
+    isSubscriptionExpired,
+    isSessionExhausted,
+    hasActiveSubscription
+  });
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -200,8 +217,8 @@ export default function SubscriptionPlansPage() {
               subscriptionPlans.map((plan, index) => {
                 const planId = plan.planId || plan.id;
                 const isSelected = selectedPlan === planId;
-                const isActive =
-                  activePlanId === planId && !isSubscriptionExpired;
+                // Check if this is the current active plan (not expired)
+                const isActive = activePlanId === planId && !isSubscriptionExpired;
 
                 // Calculate discount percentage
                 const discountPercentage = plan.originalPrice
@@ -225,12 +242,8 @@ export default function SubscriptionPlansPage() {
                   >
                     <Card
                       onClick={() => {
-                        if (
-                          (!hasActiveSubscription ||
-                            (isSubscriptionExpired &&
-                              activePlanId === planId)) &&
-                          !isActive
-                        ) {
+                        // Enable all plans if sessions are exhausted OR no subscription OR expired
+                        if (isSessionExhausted || !hasActiveSubscription || isSubscriptionExpired) {
                           setSelectedPlan(planId);
                         }
                       }}
@@ -408,35 +421,36 @@ export default function SubscriptionPlansPage() {
                         <Button
                           className="w-full h-12 text-base font-semibold py-6 rounded-xl"
                           variant={
-                            isActive
+                            // If sessions exhausted, show current plan as outline (not disabled)
+                            isActive && !isSessionExhausted
                               ? "secondary"
                               : hasActiveSubscription && activePlanId === planId
                               ? "outline"
                               : "default"
                           }
                           disabled={
-                            isActive ||
+                            // Disable only if active AND sessions NOT exhausted
+                            (isActive && !isSessionExhausted) ||
                             (hasActiveSubscription &&
                               !isSubscriptionExpired &&
-                              activePlanId !== planId)
+                              activePlanId !== planId &&
+                              !isSessionExhausted)
                           }
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (
-                              !isActive &&
-                              (!hasActiveSubscription ||
-                                (isSubscriptionExpired &&
-                                  activePlanId === planId))
-                            ) {
+                            // Allow opening modal if sessions exhausted OR no subscription OR expired
+                            if (isSessionExhausted || !hasActiveSubscription || isSubscriptionExpired) {
                               setSelectedPlan(planId);
                               setIsModalOpen(true);
                             }
                           }}
                         >
-                          {isActive
+                          {isActive && !isSessionExhausted
                             ? "Active Plan"
                             : hasActiveSubscription && activePlanId === planId
-                            ? "Plan Already Active"
+                            ? isSessionExhausted
+                              ? "Select Plan"
+                              : "Plan Already Active"
                             : isSubscriptionExpired && activePlanId === planId
                             ? "Renew Plan"
                             : "Select Plan"}
@@ -561,14 +575,14 @@ export default function SubscriptionPlansPage() {
                   <td className="p-4 font-medium">Action</td>
                   {subscriptionPlans.map((plan) => {
                     const planId = plan.planId || plan.id;
-                    const isActive =
-                      activePlanId === planId && !isSubscriptionExpired;
+                    const isActive = activePlanId === planId && !isSubscriptionExpired;
                     const isSelected = selectedPlan === planId;
                     return (
                       <td key={`action-${planId}`} className="p-4 text-center">
                         <Button
                           variant={
-                            isActive
+                            // If sessions exhausted, show current plan as outline (not disabled)
+                            isActive && !isSessionExhausted
                               ? "secondary"
                               : hasActiveSubscription && activePlanId === planId
                               ? "outline"
@@ -576,27 +590,27 @@ export default function SubscriptionPlansPage() {
                           }
                           size="sm"
                           disabled={
-                            isActive ||
+                            // Disable only if active AND sessions NOT exhausted
+                            (isActive && !isSessionExhausted) ||
                             (hasActiveSubscription &&
                               !isSubscriptionExpired &&
-                              activePlanId !== planId)
+                              activePlanId !== planId &&
+                              !isSessionExhausted)
                           }
                           onClick={() => {
-                            if (
-                              !isActive &&
-                              (!hasActiveSubscription ||
-                                (isSubscriptionExpired &&
-                                  activePlanId === planId))
-                            ) {
+                            // Allow opening modal if sessions exhausted OR no subscription OR expired
+                            if (isSessionExhausted || !hasActiveSubscription || isSubscriptionExpired) {
                               setSelectedPlan(planId);
                               setIsModalOpen(true);
                             }
                           }}
                         >
-                          {isActive
+                          {isActive && !isSessionExhausted
                             ? "Active"
                             : hasActiveSubscription && activePlanId === planId
-                            ? "Active"
+                            ? isSessionExhausted
+                              ? "Add Sessions"
+                              : "Active"
                             : isSubscriptionExpired && activePlanId === planId
                             ? "Renew"
                             : "Select"}

@@ -215,6 +215,10 @@ export default function BookingPage() {
             totalUsed,
             remainingServices,
             usedServices,
+            currentPlan,  // Get current plan info
+            planId,       // Get plan ID
+            status,       // Get plan status
+            expiryStatus  // Get expiry status
           } = data;
 
           // Use API values directly since they now include combined counting
@@ -239,6 +243,10 @@ export default function BookingPage() {
             totalUsed: totalUsed || safeUsedSessions,
             remainingServices: remainingServices || safeRemainingSessions,
             usedServices: usedServices || 0,
+            currentPlan,
+            planId,
+            status,
+            expiryStatus
           });
 
           console.log("Subscription info updated:", {
@@ -248,6 +256,10 @@ export default function BookingPage() {
             usedSessions: safeUsedSessions,
             totalUsed: totalUsed || safeUsedSessions,
             planName: safePlanName,
+            currentPlan,
+            planId,
+            status,
+            expiryStatus
           });
         } catch (error) {
           console.error("Error checking subscription status:", error);
@@ -1545,6 +1557,7 @@ export default function BookingPage() {
           }
         } else {
           bookingResult = await dispatch(createBookingAsync(bookingPayload));
+         
         }
 
         if (
@@ -1553,11 +1566,13 @@ export default function BookingPage() {
           !createSubscriptionBookingAsync.fulfilled.match(bookingResult)
         ) {
           // Handle specific subscription booking errors
-          const errorMessage =
-            (bookingResult.payload as any)?.message ||
-            bookingResult.error?.message ||
-            "Failed to create booking. Please try again.";
+         const errorMessage =
+         bookingResult?.payload||
+  bookingResult?.payload?.message ||
+  bookingResult?.error?.message ||
+  "Failed to create booking. Please try again.";
 
+console.log("errorMessage:", bookingResult);
           // Check for specific session limit errors
           if (
             errorMessage.includes("Session limit reached") ||
@@ -2519,10 +2534,10 @@ export default function BookingPage() {
                   </div>
                   {hasActivePlan && !isSessionLimitReached ? (
                     <div className="text-right">
-                      <p className="font-semibold text-green-600">FREE</p>
-                      <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                      <p className="font-semibold text-green-600">Included With Plan</p>
+                      {/* <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                         with {activePlan?.planName || "your plan"}
-                      </p>
+                      </p> */}
                       {/* {activePlan?.availableSessions && (
                         <div className="mt-1 text-xs">
                           <p className="text-green-700">
@@ -2828,12 +2843,12 @@ export default function BookingPage() {
                   </div>
                   {hasActivePlan && !isSessionLimitReached ? (
                     <div className="text-right">
-                      <span className="font-bold text-2xl text-green-600">
-                        FREE
+                      <span className="font-bold text-1xl text-green-600">
+                       Included With Plan
                       </span>
-                      <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full mt-1">
+                      {/* <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full mt-1">
                         with {activePlan?.planName || "your plan"}
-                      </p>
+                      </p> */}
                     </div>
                   ) : (
                     <div className="text-right">

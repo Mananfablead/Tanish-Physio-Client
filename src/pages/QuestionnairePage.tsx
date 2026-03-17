@@ -64,7 +64,19 @@ export default function QuestionnairePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  
+  // Safely get auth context with fallback for edge cases
+  let isAuthenticated = false;
+  try {
+    const authContext = useAuth();
+    isAuthenticated = authContext?.isAuthenticated ?? false;
+  } catch (error) {
+    // Fallback to Redux if AuthContext is not available (edge case during HMR)
+    console.warn("AuthContext not available, using Redux fallback");
+    const reduxAuth = useSelector((state: any) => state.auth);
+    isAuthenticated = reduxAuth?.isAuthenticated ?? false;
+  }
+  
   const pendingPlan = (location.state as any)?.planToActivate || null;
   const serviceToBook = (location.state as any)?.serviceToBook || null;
   const locationGuestUser = (location.state as any)?.guestUser || null;

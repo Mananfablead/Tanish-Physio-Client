@@ -258,13 +258,11 @@ export default function NotificationCenter() {
     }
   };
 
-  // Handle navigation based on notification type
-  const handleNotificationClick = (notification) => {
+  // Handle navigation and mark as read based on notification type
+  const handleNotificationClick = async (notification) => {
     // Mark as read first
-    if (!notification.read) {
-      dispatch(markAsRead(notification.id || notification._id));
-    }
-
+    await handleMarkAsRead(notification.id, !notification.isRead);
+  
     // Navigate based on notification type
     switch (notification.type) {
       case "booking":
@@ -511,7 +509,7 @@ export default function NotificationCenter() {
                     )}
 
                     <p className="text-xs text-gray-400 mt-2">
-                      {formatTime(notification.timestamp)}
+                      {formatTime(notification.timestamp || notification.updatedAt)}
                     </p>
                   </div>
                 </div>

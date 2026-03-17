@@ -26,6 +26,7 @@ import {
   updateProfile,
   getUserSubscriptions,
   checkUserExists,
+  checkSubscriptionEligibility,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
@@ -153,7 +154,19 @@ export default function BookingConfirmationPage() {
   };
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  
+  // Safely get auth context with fallback for edge cases
+  let isAuthenticated = false;
+  try {
+    const authContext = useAuth();
+    isAuthenticated = authContext?.isAuthenticated ?? false;
+  } catch (error) {
+    // Fallback to Redux if AuthContext is not available (edge case during HMR)
+    console.warn("AuthContext not available, using Redux fallback");
+    const reduxAuth = useSelector((state: any) => state.auth);
+    isAuthenticated = reduxAuth?.isAuthenticated ?? false;
+  }
+  
   const { admins: publicAdmins } = useSelector(
     (state: RootState) => state.admins
   );
@@ -218,7 +231,7 @@ export default function BookingConfirmationPage() {
   const [isAutoLoginCompleted, setIsAutoLoginCompleted] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(false);
-
+  console.log("subscriptionInfo", subscriptionInfo)
   useEffect(() => {
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
@@ -736,26 +749,19 @@ export default function BookingConfirmationPage() {
       if (isAuthenticated && user) {
         try {
           setLoadingSubscription(true);
-          const response = await getUserSubscriptions();
-          if (response.data?.success && response.data.data?.subscriptions) {
-            // Get the most recent active subscription
-            const activeSubscriptions = response.data.data.subscriptions.filter(
-              (sub: any) => sub.status === "active" && !sub.isExpired
-            );
+          // Use eligibility API to get current plan info
+          const response = await checkSubscriptionEligibility();
+          if (response.data?.success && response.data.data) {
+            const data = response.data.data;
+            console.log("Subscription data found:", data);
 
-            if (activeSubscriptions.length > 0) {
-              // Get the most recently purchased subscription
-              const latestSubscription = activeSubscriptions.reduce(
-                (latest: any, current: any) => {
-                  return new Date(current.createdAt) >
-                    new Date(latest.createdAt)
-                    ? current
-                    : latest;
-                }
-              );
-
-              setSubscriptionInfo(latestSubscription);
-            }
+            setSubscriptionInfo({
+              ...data,
+              currentPlan: data.currentPlan || data.planName,
+              planId: data.planId,
+              status: data.status,
+              expiryStatus: data.expiryStatus
+            });
           }
         } catch (error) {
           console.error("Failed to fetch subscription info:", error);
@@ -1458,12 +1464,12 @@ export default function BookingConfirmationPage() {
 
                   {isAuthenticated && (
                     <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-left">
-                      <h3 className="font-semibold text-lg mb-3 text-green-800 flex items-center gap-2">
+                      {/* <h3 className="font-semibold text-lg mb-3 text-green-800 flex items-center gap-2">
                         <Package className="h-5 w-5" />
                         Subscription Information
-                      </h3>
+                      </h3> */}
 
-                      {loadingSubscription ? (
+                      {/* {loadingSubscription ? (
                         <p className="text-green-700 mb-3">
                           Loading subscription details...
                         </p>
@@ -1515,9 +1521,9 @@ export default function BookingConfirmationPage() {
                         <p className="text-green-700 mb-3">
                           No active subscription found.
                         </p>
-                      )}
+                      )} */}
 
-                      <div className="mt-4 pt-4 border-t border-green-200">
+                      <div className="mt-4 pt-4 ">
                         <h4 className="font-semibold text-green-800 mb-2">
                           Next Steps:
                         </h4>

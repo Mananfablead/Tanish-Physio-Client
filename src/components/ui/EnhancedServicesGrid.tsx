@@ -182,7 +182,7 @@ export function EnhancedServicesGrid({
                     </span>
                     <span className="font-bold">
                       {hasActivePlan && ((subscriptionInfo && subscriptionInfo.remainingSessions > 0) || (activePlan?.availableSessions?.remaining > 0)) ? (
-                        <span className="text-green-600">FREE</span>
+                        <span className="text-green-600">Included With Plan</span>
                       ) : (
                         <span className="text-primary">{service.details.price}</span>
                       )}
