@@ -1,4 +1,6 @@
 import axios from "axios";
+import { getUserTimezone } from '@/utils/timezone';
+import { getCachedIPLocation } from '@/services/ipLocationService';
  
 
 // Create an axios instance
@@ -18,6 +20,41 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+// Add timezone header to all requests - enables automatic country-wise conversion
+// Priority order: Manual test > IP-based detection > Browser timezone
+api.interceptors.request.use(async (config) => {
+  // Check if there's a manual test timezone set (from TimezoneTester component)
+  const testTimezone = typeof window !== 'undefined' 
+    ? localStorage.getItem('test-timezone') 
+    : null;
+  
+  let timezone: string | null = null;
+  
+  if (testTimezone && testTimezone !== 'auto') {
+    // Manual override has highest priority
+    timezone = testTimezone;
+    console.log('[Timezone Header] Using manual test timezone:', timezone);
+  } else {
+    // Try IP-based detection
+    const ipLocation = await getCachedIPLocation();
+    
+    if (ipLocation?.timezone) {
+      timezone = ipLocation.timezone;
+      console.log('[Timezone Header] Using IP-detected timezone:', timezone,
+        `(${ipLocation.city}, ${ipLocation.country})`);
+    } else {
+      // Fallback to browser timezone
+      timezone = getUserTimezone();
+      console.log('[Timezone Header] Using browser timezone:', timezone);
+    }
+  }
+  
+  if (timezone) {
+    config.headers['X-Timezone'] = timezone;
+  }
+  return config;
 });
 
 // Request interceptor to add token to headers
@@ -73,6 +110,8 @@ api.interceptors.response.use(
 );
 
 // Availability API functions
+// Note: Timezone is automatically added via axios interceptor as X-Timezone header
+// No need to pass it as query parameter
 export const getAvailability = () => {
   return api.get("/availability");
 };

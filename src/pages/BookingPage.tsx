@@ -632,6 +632,7 @@ export default function BookingPage() {
 
     try {
       // Fetch real availability data from API
+      // Timezone will be automatically added by axios interceptor
       const response: any = await getAvailability();
       const fetchedAvailability = response.data?.data?.availability || [];
       // console.log("fetchedAvailability", fetchedAvailability);
@@ -664,7 +665,7 @@ export default function BookingPage() {
     date: string,
     time: string,
     timeSlot?: { start: string; end: string },
-    selectedService?: any
+    selectedService?: any,
   ) => {
     // Save the scheduled session to sessionStorage with complete time slot info
     const scheduledSession = {
@@ -679,7 +680,7 @@ export default function BookingPage() {
 
     sessionStorage.setItem(
       "qw_scheduled_session",
-      JSON.stringify(scheduledSession)
+      JSON.stringify(scheduledSession),
     );
 
     // Update the schedule state
@@ -772,7 +773,7 @@ export default function BookingPage() {
         };
 
         const response: any = await createBookingWithSubscription(
-          subscriptionBookingData
+          subscriptionBookingData,
         );
 
         if (response.data?.success) {
@@ -908,7 +909,7 @@ export default function BookingPage() {
       // 🔹 2. Backend Email Check Kare
       try {
         const checkResult = await dispatch(
-          checkUserExistsAsync(guestUserData.email)
+          checkUserExistsAsync(guestUserData.email),
         );
         if (checkUserExistsAsync.fulfilled.match(checkResult)) {
           const userData = checkResult.payload;
@@ -995,8 +996,8 @@ export default function BookingPage() {
           // console.log("guestSubscriptionPaymentOrderData", guestSubscriptionPaymentOrderData);
           paymentOrderResult = await dispatch(
             createGuestSubscriptionPaymentOrderAsync(
-              guestSubscriptionPaymentOrderData
-            )
+              guestSubscriptionPaymentOrderData,
+            ),
           );
         } else {
           // console.log("📤 Sending subscription payment order:", {
@@ -1027,20 +1028,20 @@ export default function BookingPage() {
             therapistId: therapist?.id || undefined,
           };
           paymentOrderResult = await dispatch(
-            createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData)
+            createSubscriptionPaymentOrderAsync(subscriptionPaymentOrderData),
           );
         }
 
         if (
           !createSubscriptionPaymentOrderAsync.fulfilled.match(
-            paymentOrderResult
+            paymentOrderResult,
           ) &&
           !createGuestSubscriptionPaymentOrderAsync.fulfilled.match(
-            paymentOrderResult
+            paymentOrderResult,
           )
         ) {
           toast.error(
-            "Failed to create subscription payment order. Please try again."
+            "Failed to create subscription payment order. Please try again.",
           );
           setIsProcessing(false);
           return;
@@ -1050,7 +1051,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-              "Payment order creation failed. Please try again."
+              "Payment order creation failed. Please try again.",
           );
           setIsProcessing(false);
           return;
@@ -1088,11 +1089,11 @@ export default function BookingPage() {
             let verifyResult;
             if (isGuestUser) {
               verifyResult = await dispatch(
-                verifyGuestSubscriptionPaymentAsync(paymentVerificationData)
+                verifyGuestSubscriptionPaymentAsync(paymentVerificationData),
               );
             } else {
               verifyResult = await dispatch(
-                verifySubscriptionPaymentTransaction(paymentVerificationData)
+                verifySubscriptionPaymentTransaction(paymentVerificationData),
               );
             }
 
@@ -1101,11 +1102,11 @@ export default function BookingPage() {
             if (
               (isGuestUser &&
                 verifyGuestSubscriptionPaymentAsync.fulfilled.match(
-                  verifyResult
+                  verifyResult,
                 )) ||
               (!isGuestUser &&
                 verifySubscriptionPaymentTransaction.fulfilled.match(
-                  verifyResult
+                  verifyResult,
                 ))
             ) {
               // 🔹 6. JWT Token Generate Karo & 7. Token Frontend Ko Do
@@ -1114,7 +1115,7 @@ export default function BookingPage() {
                 // Store token for auto-login on confirmation page
                 localStorage.setItem(
                   "qw_auto_login_token",
-                  verifyResult.payload.token
+                  verifyResult.payload.token,
                 );
                 if (verifyResult.payload?.userId) {
                   // Store complete user data for auto-login
@@ -1126,7 +1127,7 @@ export default function BookingPage() {
                       name: guestUserData.name,
                       phone: guestUserData.phone,
                       role: "patient",
-                    })
+                    }),
                   );
                 }
                 // Update Redux store
@@ -1151,7 +1152,7 @@ export default function BookingPage() {
                     subscriptionId, // Store the actual subscription ID
                     purchasedAt: Date.now(),
                     active: true,
-                  })
+                  }),
                 );
 
                 // Check for existing intake
@@ -1179,13 +1180,13 @@ export default function BookingPage() {
                 if (!stored || !isRecent(stored?.updatedAt)) {
                   // Plan purchased, but intake missing or outdated: require intake to unlock sessions
                   toast.success(
-                    "Payment successful! Please complete a short intake to unlock sessions."
+                    "Payment successful! Please complete a short intake to unlock sessions.",
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
                     sessionStorage.setItem(
                       "qw_pending_plan",
-                      JSON.stringify(plan)
+                      JSON.stringify(plan),
                     );
                   } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
@@ -1201,7 +1202,7 @@ export default function BookingPage() {
                   };
                   sessionStorage.setItem(
                     "qw_assigned",
-                    JSON.stringify(therapist)
+                    JSON.stringify(therapist),
                   );
 
                   if (scheduled) {
@@ -1210,7 +1211,7 @@ export default function BookingPage() {
                     scheduled.confirmedAt = Date.now();
                     sessionStorage.setItem(
                       "qw_scheduled_session",
-                      JSON.stringify(scheduled)
+                      JSON.stringify(scheduled),
                     );
                   }
                 } catch (e) {}
@@ -1228,7 +1229,7 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                          sessionStorage.getItem("qw_guest_user") || "{}"
+                          sessionStorage.getItem("qw_guest_user") || "{}",
                         )
                       : undefined,
                     fromSubscription: true,
@@ -1244,16 +1245,16 @@ export default function BookingPage() {
               } catch (error) {
                 console.error(
                   "Error processing subscription payment success:",
-                  error
+                  error,
                 );
                 toast.error(
-                  "Something went wrong after payment. Please contact support."
+                  "Something went wrong after payment. Please contact support.",
                 );
               }
             } else {
               console.error(
                 "Subscription payment verification failed:",
-                verifyResult.payload
+                verifyResult.payload,
               );
 
               // For subscription payments, we don't need to update booking status
@@ -1271,7 +1272,7 @@ export default function BookingPage() {
                     subscriptionId, // Store the actual subscription ID
                     purchasedAt: Date.now(),
                     active: true,
-                  })
+                  }),
                 );
 
                 // Check for existing intake
@@ -1299,13 +1300,13 @@ export default function BookingPage() {
                 if (!stored || !isRecent(stored?.updatedAt)) {
                   // Plan purchased, but intake missing or outdated: require intake to unlock sessions
                   toast.success(
-                    "Payment successful! Please complete a short intake to unlock sessions."
+                    "Payment successful! Please complete a short intake to unlock sessions.",
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
                     sessionStorage.setItem(
                       "qw_pending_plan",
-                      JSON.stringify(plan)
+                      JSON.stringify(plan),
                     );
                   } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
@@ -1322,7 +1323,7 @@ export default function BookingPage() {
                   };
                   sessionStorage.setItem(
                     "qw_assigned",
-                    JSON.stringify(therapist)
+                    JSON.stringify(therapist),
                   );
 
                   if (scheduled) {
@@ -1331,7 +1332,7 @@ export default function BookingPage() {
                     scheduled.confirmedAt = Date.now();
                     sessionStorage.setItem(
                       "qw_scheduled_session",
-                      JSON.stringify(scheduled)
+                      JSON.stringify(scheduled),
                     );
                   }
                 } catch (e) {}
@@ -1350,7 +1351,7 @@ export default function BookingPage() {
                       finalPrice,
                       guestUser: wasGuestUser
                         ? JSON.parse(
-                            sessionStorage.getItem("qw_guest_user") || "{}"
+                            sessionStorage.getItem("qw_guest_user") || "{}",
                           )
                         : undefined,
                       fromSubscription: true,
@@ -1366,10 +1367,10 @@ export default function BookingPage() {
                 } catch (innerError) {
                   console.error(
                     "Error in subscription fallback flow:",
-                    innerError
+                    innerError,
                   );
                   toast.error(
-                    "Payment was successful but there was an issue processing your subscription. Please contact support."
+                    "Payment was successful but there was an issue processing your subscription. Please contact support.",
                   );
                 }
               }
@@ -1404,7 +1405,7 @@ export default function BookingPage() {
             if (error) {
               console.error("Payment failed:", error);
               toast.error(
-                "Payment failed. Please try again or contact support."
+                "Payment failed. Please try again or contact support.",
               );
               setIsProcessing(false);
             }
@@ -1417,7 +1418,7 @@ export default function BookingPage() {
           // console.log("Razorpay key:", options);
           if (!options.key || options.key === "rzp_test_1234567890") {
             toast.error(
-              "Razorpay key is not configured properly. Please contact support."
+              "Razorpay key is not configured properly. Please contact support.",
             );
             setIsProcessing(false);
             return;
@@ -1479,7 +1480,7 @@ export default function BookingPage() {
         if (!isGuestUser && serviceInfo?.id) {
           try {
             subscriptionCheckResult = await checkSubscriptionBookingEligibility(
-              serviceInfo.id
+              serviceInfo.id,
             );
             useSubscriptionBooking =
               subscriptionCheckResult.data?.data?.eligible === true;
@@ -1487,7 +1488,7 @@ export default function BookingPage() {
             console.log("Subscription info:", subscriptionInfo); // Debug log
           } catch (error) {
             console.log(
-              "Subscription check failed, proceeding with regular booking"
+              "Subscription check failed, proceeding with regular booking",
             );
             useSubscriptionBooking = false;
           }
@@ -1505,7 +1506,7 @@ export default function BookingPage() {
           };
 
           bookingResult = await dispatch(
-            createGuestBookingAsync(guestBookingPayload)
+            createGuestBookingAsync(guestBookingPayload),
           );
         } else if (useSubscriptionBooking) {
           // Use subscription booking (no payment required)
@@ -1521,12 +1522,12 @@ export default function BookingPage() {
           };
 
           bookingResult = await dispatch(
-            createSubscriptionBookingAsync(subscriptionBookingPayload)
+            createSubscriptionBookingAsync(subscriptionBookingPayload),
           );
 
           if (createSubscriptionBookingAsync.fulfilled.match(bookingResult)) {
             toast.success(
-              "Session booked successfully with your subscription! Awaiting admin confirmation."
+              "Session booked successfully with your subscription! Awaiting admin confirmation.",
             );
             // Navigate to confirmation page without payment
             navigate("/booking-confirmation", {
@@ -1601,7 +1602,7 @@ export default function BookingPage() {
           };
 
           paymentOrderResult = await dispatch(
-            createGuestPaymentOrderAsync(guestPaymentOrderData)
+            createGuestPaymentOrderAsync(guestPaymentOrderData),
           );
         } else {
           const paymentOrderData = {
@@ -1613,7 +1614,7 @@ export default function BookingPage() {
           };
 
           paymentOrderResult = await dispatch(
-            createPaymentOrderAsync(paymentOrderData)
+            createPaymentOrderAsync(paymentOrderData),
           );
         }
 
@@ -1630,7 +1631,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-              "Payment order creation failed. Please try again."
+              "Payment order creation failed. Please try again.",
           );
           setIsProcessing(false);
           return;
@@ -1665,11 +1666,11 @@ export default function BookingPage() {
             let verifyResult;
             if (isGuestUser) {
               verifyResult = await dispatch(
-                verifyGuestPaymentAsync(paymentVerificationData)
+                verifyGuestPaymentAsync(paymentVerificationData),
               );
             } else {
               verifyResult = await dispatch(
-                verifyPaymentAsync(paymentVerificationData)
+                verifyPaymentAsync(paymentVerificationData),
               );
             }
             if (
@@ -1683,7 +1684,7 @@ export default function BookingPage() {
                 // Store token for auto-login on confirmation page
                 localStorage.setItem(
                   "qw_auto_login_token",
-                  verifyResult.payload.token
+                  verifyResult.payload.token,
                 );
                 if (verifyResult.payload?.userId) {
                   localStorage.setItem(
@@ -1691,7 +1692,7 @@ export default function BookingPage() {
                     JSON.stringify({
                       id: verifyResult.payload.userId,
                       // User data will be fetched in useEffect
-                    })
+                    }),
                   );
                 }
                 // Update Redux store
@@ -1703,7 +1704,7 @@ export default function BookingPage() {
                       name: guestUserData.name || "Guest User",
                     },
                     token: verifyResult.payload.token,
-                  })
+                  }),
                 );
               }
 
@@ -1711,7 +1712,7 @@ export default function BookingPage() {
               if (isGuestUser) {
                 // For guest users, use guest booking update with client email
                 const guestUser = JSON.parse(
-                  sessionStorage.getItem("qw_guest_user") || "{}"
+                  sessionStorage.getItem("qw_guest_user") || "{}",
                 );
                 await dispatch(
                   updateGuestBookingAsync({
@@ -1724,7 +1725,7 @@ export default function BookingPage() {
                       finalAmount: finalPrice,
                     },
                     clientEmail: guestUser.email,
-                  })
+                  }),
                 );
               } else {
                 // For authenticated users, use regular booking update
@@ -1738,7 +1739,7 @@ export default function BookingPage() {
                       discountAmount: isCouponApplied ? couponDiscount : 0,
                       finalAmount: finalPrice,
                     },
-                  })
+                  }),
                 );
               }
 
@@ -1751,7 +1752,7 @@ export default function BookingPage() {
                     plan,
                     purchasedAt: Date.now(),
                     active: true,
-                  })
+                  }),
                 );
 
                 // Check for existing intake
@@ -1779,13 +1780,13 @@ export default function BookingPage() {
                 if (!stored || !isRecent(stored?.updatedAt)) {
                   // Plan purchased, but intake missing or outdated: require intake to unlock sessions
                   toast.success(
-                    "Payment successful! Please complete a short intake to unlock sessions."
+                    "Payment successful! Please complete a short intake to unlock sessions.",
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
                     sessionStorage.setItem(
                       "qw_pending_plan",
-                      JSON.stringify(plan)
+                      JSON.stringify(plan),
                     );
                   } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
@@ -1800,7 +1801,7 @@ export default function BookingPage() {
                     scheduled.confirmedAt = Date.now();
                     sessionStorage.setItem(
                       "qw_scheduled_session",
-                      JSON.stringify(scheduled)
+                      JSON.stringify(scheduled),
                     );
                   }
                 } catch (e) {}
@@ -1817,12 +1818,12 @@ export default function BookingPage() {
                         email: guestUserData.email,
                         password: "123456",
                         phone: guestUserData.phone,
-                      })
+                      }),
                     );
 
                     if (register.fulfilled.match(registerResult)) {
                       toast.success(
-                        "Account created and logged in successfully!"
+                        "Account created and logged in successfully!",
                       );
                     } else {
                       toast.success("Account created successfully!");
@@ -1832,17 +1833,17 @@ export default function BookingPage() {
                   } catch (registrationError: any) {
                     console.error(
                       "Auto-registration failed:",
-                      registrationError
+                      registrationError,
                     );
                     // If user already exists, try to check if they exist and get token
                     if (
                       registrationError.message?.includes(
-                        "User already exists with this email"
+                        "User already exists with this email",
                       )
                     ) {
                       try {
                         const userCheckResult = await dispatch(
-                          checkUserExistsAsync(guestUserData.email)
+                          checkUserExistsAsync(guestUserData.email),
                         );
                         if (
                           checkUserExistsAsync.fulfilled.match(userCheckResult)
@@ -1853,13 +1854,13 @@ export default function BookingPage() {
                             localStorage.setItem("token", userData.token);
                             localStorage.setItem(
                               "user",
-                              JSON.stringify(userData.user)
+                              JSON.stringify(userData.user),
                             );
                             dispatch(
                               setCredentials({
                                 user: userData.user,
                                 token: userData.token,
-                              })
+                              }),
                             );
                             toast.success("Logged in successfully!");
                           }
@@ -1888,7 +1889,7 @@ export default function BookingPage() {
                       bookingId: bookingId,
                       finalPrice,
                       guestUser: JSON.parse(
-                        sessionStorage.getItem("qw_guest_user") || "{}"
+                        sessionStorage.getItem("qw_guest_user") || "{}",
                       ),
                       fromServices: true,
                       scheduleOption: scheduleOption,
@@ -1924,25 +1925,25 @@ export default function BookingPage() {
               } catch (error) {
                 console.error("Error processing payment success:", error);
                 toast.error(
-                  "Something went wrong after payment. Please contact support."
+                  "Something went wrong after payment. Please contact support.",
                 );
               }
             } else {
               console.error(
                 "Payment verification failed:",
-                verifyResult.payload
+                verifyResult.payload,
               );
 
               if (isGuestUser) {
                 const guestUser = JSON.parse(
-                  sessionStorage.getItem("qw_guest_user") || "{}"
+                  sessionStorage.getItem("qw_guest_user") || "{}",
                 );
                 // console.log("Guest User:", guestUser);
                 // console.log("Client Email:", guestUser.email);
 
                 if (!guestUser.email) {
                   console.error(
-                    "Client email is missing from guest user data!"
+                    "Client email is missing from guest user data!",
                   );
                   toast.error("Client email is missing. Please try again.");
                   setIsProcessing(false);
@@ -1954,14 +1955,14 @@ export default function BookingPage() {
                     id: bookingId,
                     bookingData: { status: "pending" },
                     clientEmail: guestUser.email,
-                  })
+                  }),
                 );
               } else {
                 await dispatch(
                   updateBookingAsync({
                     id: bookingId,
                     bookingData: { status: "pending" },
-                  })
+                  }),
                 );
               }
 
@@ -1973,7 +1974,7 @@ export default function BookingPage() {
                     plan,
                     purchasedAt: Date.now(),
                     active: true,
-                  })
+                  }),
                 );
 
                 // Check for existing intake
@@ -2000,13 +2001,13 @@ export default function BookingPage() {
 
                 if (!stored || !isRecent(stored?.updatedAt)) {
                   toast.success(
-                    "Payment successful! Please complete a short intake to unlock sessions."
+                    "Payment successful! Please complete a short intake to unlock sessions.",
                   );
                   // Save a pending marker to ensure plan activation after intake
                   try {
                     sessionStorage.setItem(
                       "qw_pending_plan",
-                      JSON.stringify(plan)
+                      JSON.stringify(plan),
                     );
                   } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
@@ -2023,7 +2024,7 @@ export default function BookingPage() {
                   };
                   sessionStorage.setItem(
                     "qw_assigned",
-                    JSON.stringify(therapist)
+                    JSON.stringify(therapist),
                   );
 
                   if (scheduled) {
@@ -2032,7 +2033,7 @@ export default function BookingPage() {
                     scheduled.confirmedAt = Date.now();
                     sessionStorage.setItem(
                       "qw_scheduled_session",
-                      JSON.stringify(scheduled)
+                      JSON.stringify(scheduled),
                     );
                   }
                 } catch (e) {}
@@ -2051,7 +2052,7 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                          sessionStorage.getItem("qw_guest_user") || "{}"
+                          sessionStorage.getItem("qw_guest_user") || "{}",
                         )
                       : undefined,
                     fromServices: true,
@@ -2060,7 +2061,7 @@ export default function BookingPage() {
               } catch (innerError) {
                 console.error("Error in fallback flow:", innerError);
                 toast.error(
-                  "Payment was successful but there was an issue processing your booking. Please contact support."
+                  "Payment was successful but there was an issue processing your booking. Please contact support.",
                 );
               }
             }
@@ -2094,7 +2095,7 @@ export default function BookingPage() {
             if (error) {
               console.error("Payment failed:", error);
               toast.error(
-                "Payment failed. Please try again or contact support."
+                "Payment failed. Please try again or contact support.",
               );
               setIsProcessing(false);
             }
@@ -2106,7 +2107,7 @@ export default function BookingPage() {
           // Check if key exists before creating Razorpay instance
           if (!options.key || options.key === "rzp_test_1234567890") {
             toast.error(
-              "Razorpay key is not configured properly. Please contact support."
+              "Razorpay key is not configured properly. Please contact support.",
             );
             setIsProcessing(false);
             return;
@@ -2337,7 +2338,7 @@ export default function BookingPage() {
                                       weekday: "short",
                                       month: "short",
                                       day: "numeric",
-                                    }
+                                    },
                                   )}
                                 </span>
                               </div>
@@ -2399,7 +2400,7 @@ export default function BookingPage() {
                     </div>
                   )}
 
-                  {scheduleOption && (  
+                  {scheduleOption && (
                     <div className="pt-2">
                       <Button
                         variant="outline"
@@ -2883,16 +2884,16 @@ export default function BookingPage() {
                       {hasActivePlan && !isSessionLimitReached
                         ? "Book Session"
                         : subscriptionBooking
-                        ? `Pay ₹${finalPrice} for Subscription${
-                            promoApplied || isCouponApplied
-                              ? ` (Save ₹${discountAmount})`
-                              : ""
-                          }`
-                        : `Pay ₹${finalPrice} for Booking${
-                            promoApplied || isCouponApplied
-                              ? ` (Save ₹${discountAmount})`
-                              : ""
-                          }`}
+                          ? `Pay ₹${finalPrice} for Subscription${
+                              promoApplied || isCouponApplied
+                                ? ` (Save ₹${discountAmount})`
+                                : ""
+                            }`
+                          : `Pay ₹${finalPrice} for Booking${
+                              promoApplied || isCouponApplied
+                                ? ` (Save ₹${discountAmount})`
+                                : ""
+                            }`}
                     </>
                   )}
                 </Button>
@@ -2960,6 +2961,7 @@ export default function BookingPage() {
         scheduleError={scheduleError}
         scheduleDate={scheduleDate}
         scheduleTime={scheduleTime}
+        selectedDate={selectedDate}
         setScheduleDate={setScheduleDate}
         setScheduleTime={setScheduleTime}
         setSelectedDate={setSelectedDate}
@@ -3060,7 +3062,7 @@ export default function BookingPage() {
                   try {
                     // Execute the createBookingAsync API call
                     const bookingResult = await dispatch(
-                      createBookingAsync(bookingPayload)
+                      createBookingAsync(bookingPayload),
                     );
 
                     if (createBookingAsync.fulfilled.match(bookingResult)) {
@@ -3080,16 +3082,16 @@ export default function BookingPage() {
                       };
 
                       const paymentOrderResult = await dispatch(
-                        createPaymentOrderAsync(paymentOrderData)
+                        createPaymentOrderAsync(paymentOrderData),
                       );
 
                       if (
                         !createPaymentOrderAsync.fulfilled.match(
-                          paymentOrderResult
+                          paymentOrderResult,
                         )
                       ) {
                         toast.error(
-                          "Failed to create payment order. Please try again."
+                          "Failed to create payment order. Please try again.",
                         );
                         setIsProcessing(false);
                         return;
@@ -3098,11 +3100,11 @@ export default function BookingPage() {
                       if (!paymentOrderResult.payload) {
                         console.error(
                           "Payment order creation failed:",
-                          paymentOrderResult
+                          paymentOrderResult,
                         );
                         toast.error(
                           paymentOrderResult.payload?.message ||
-                            "Payment order creation failed. Please try again."
+                            "Payment order creation failed. Please try again.",
                         );
                         setIsProcessing(false);
                         return;
@@ -3139,7 +3141,7 @@ export default function BookingPage() {
 
                           // Dispatch payment verification action
                           const verifyResult = await dispatch(
-                            verifyPaymentAsync(paymentVerificationData)
+                            verifyPaymentAsync(paymentVerificationData),
                           );
 
                           if (
@@ -3160,7 +3162,7 @@ export default function BookingPage() {
                                     : 0,
                                   finalAmount: finalPrice,
                                 },
-                              })
+                              }),
                             );
 
                             // Process success flow
@@ -3172,7 +3174,7 @@ export default function BookingPage() {
                                   plan,
                                   purchasedAt: Date.now(),
                                   active: true,
-                                })
+                                }),
                               );
 
                               // Check for existing intake
@@ -3187,7 +3189,7 @@ export default function BookingPage() {
                               const RECENT_DAYS = 90;
                               const now = Date.now();
                               const isRecent = (
-                                ts: number | undefined | null
+                                ts: number | undefined | null,
                               ) =>
                                 ts &&
                                 now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
@@ -3196,7 +3198,7 @@ export default function BookingPage() {
                               let scheduled = null;
                               try {
                                 const raw = sessionStorage.getItem(
-                                  "qw_scheduled_session"
+                                  "qw_scheduled_session",
                                 );
                                 if (raw) scheduled = JSON.parse(raw);
                               } catch (e) {
@@ -3206,13 +3208,13 @@ export default function BookingPage() {
                               if (!stored || !isRecent(stored?.updatedAt)) {
                                 // Plan purchased, but intake missing or outdated: require intake to unlock sessions
                                 toast.success(
-                                  "Payment successful! Please complete a short intake to unlock sessions."
+                                  "Payment successful! Please complete a short intake to unlock sessions.",
                                 );
                                 // Save a pending marker to ensure plan activation after intake
                                 try {
                                   sessionStorage.setItem(
                                     "qw_pending_plan",
-                                    JSON.stringify(plan)
+                                    JSON.stringify(plan),
                                   );
                                 } catch (e) {}
                               }
@@ -3225,13 +3227,13 @@ export default function BookingPage() {
                                   scheduled.confirmedAt = Date.now();
                                   sessionStorage.setItem(
                                     "qw_scheduled_session",
-                                    JSON.stringify(scheduled)
+                                    JSON.stringify(scheduled),
                                   );
                                 }
                               } catch (e) {}
 
                               toast.success(
-                                "Payment successful! You can now book sessions by paying the regular price."
+                                "Payment successful! You can now book sessions by paying the regular price.",
                               );
 
                               // Show loading state for 1 second before navigating to confirmation page
@@ -3239,7 +3241,7 @@ export default function BookingPage() {
 
                               // Wait for 1 second to show the loader
                               await new Promise((resolve) =>
-                                setTimeout(resolve, 1000)
+                                setTimeout(resolve, 1000),
                               );
 
                               navigate("/booking-confirmation", {
@@ -3267,23 +3269,23 @@ export default function BookingPage() {
                             } catch (error) {
                               console.error(
                                 "Error processing payment success:",
-                                error
+                                error,
                               );
                               toast.error(
-                                "Something went wrong after payment. Please contact support."
+                                "Something went wrong after payment. Please contact support.",
                               );
                             }
                           } else {
                             console.error(
                               "Payment verification failed:",
-                              verifyResult.payload
+                              verifyResult.payload,
                             );
 
                             await dispatch(
                               updateBookingAsync({
                                 id: bookingId,
                                 bookingData: { status: "pending" },
-                              })
+                              }),
                             );
 
                             try {
@@ -3294,7 +3296,7 @@ export default function BookingPage() {
                                   plan,
                                   purchasedAt: Date.now(),
                                   active: true,
-                                })
+                                }),
                               );
 
                               // Check for existing intake
@@ -3309,7 +3311,7 @@ export default function BookingPage() {
                               const RECENT_DAYS = 90;
                               const now = Date.now();
                               const isRecent = (
-                                ts: number | undefined | null
+                                ts: number | undefined | null,
                               ) =>
                                 ts &&
                                 now - ts < RECENT_DAYS * 24 * 60 * 60 * 1000;
@@ -3318,7 +3320,7 @@ export default function BookingPage() {
                               let scheduled = null;
                               try {
                                 const raw = sessionStorage.getItem(
-                                  "qw_scheduled_session"
+                                  "qw_scheduled_session",
                                 );
                                 if (raw) scheduled = JSON.parse(raw);
                               } catch (e) {
@@ -3327,13 +3329,13 @@ export default function BookingPage() {
 
                               if (!stored || !isRecent(stored?.updatedAt)) {
                                 toast.success(
-                                  "Payment successful! Please complete a short intake to unlock sessions."
+                                  "Payment successful! Please complete a short intake to unlock sessions.",
                                 );
                                 // Save a pending marker to ensure plan activation after intake
                                 try {
                                   sessionStorage.setItem(
                                     "qw_pending_plan",
-                                    JSON.stringify(plan)
+                                    JSON.stringify(plan),
                                   );
                                 } catch (e) {}
                               }
@@ -3348,7 +3350,7 @@ export default function BookingPage() {
                                 };
                                 sessionStorage.setItem(
                                   "qw_assigned",
-                                  JSON.stringify(therapist)
+                                  JSON.stringify(therapist),
                                 );
 
                                 if (scheduled) {
@@ -3357,7 +3359,7 @@ export default function BookingPage() {
                                   scheduled.confirmedAt = Date.now();
                                   sessionStorage.setItem(
                                     "qw_scheduled_session",
-                                    JSON.stringify(scheduled)
+                                    JSON.stringify(scheduled),
                                   );
                                 }
                               } catch (e) {}
@@ -3375,10 +3377,10 @@ export default function BookingPage() {
                             } catch (innerError) {
                               console.error(
                                 "Error in fallback flow:",
-                                innerError
+                                innerError,
                               );
                               toast.error(
-                                "Payment was successful but there was an issue processing your booking. Please contact support."
+                                "Payment was successful but there was an issue processing your booking. Please contact support.",
                               );
                             }
                           }
@@ -3396,7 +3398,7 @@ export default function BookingPage() {
                           ondismiss: function () {
                             // Handle when user closes the payment modal without completing payment
                             toast.info(
-                              "Payment was cancelled. You can try again later."
+                              "Payment was cancelled. You can try again later.",
                             );
                             setIsProcessing(false); // Close the loading state
                           },
@@ -3414,7 +3416,7 @@ export default function BookingPage() {
                           if (error) {
                             console.error("Payment failed:", error);
                             toast.error(
-                              "Payment failed. Please try again or contact support."
+                              "Payment failed. Please try again or contact support.",
                             );
                             setIsProcessing(false);
                           }
@@ -3432,7 +3434,7 @@ export default function BookingPage() {
                           options.key === "rzp_test_1234567890"
                         ) {
                           toast.error(
-                            "Razorpay key is not configured properly. Please contact support."
+                            "Razorpay key is not configured properly. Please contact support.",
                           );
                           setIsProcessing(false);
                           return;
@@ -3443,7 +3445,7 @@ export default function BookingPage() {
                       } else {
                         console.error("Razorpay SDK not loaded");
                         toast.error(
-                          "Payment gateway not loaded. Please try again."
+                          "Payment gateway not loaded. Please try again.",
                         );
                         setIsProcessing(false);
                       }
@@ -3459,7 +3461,7 @@ export default function BookingPage() {
                   } catch (error) {
                     console.error(
                       "Error creating booking after session limit exceeded:",
-                      error
+                      error,
                     );
                     toast.error("Failed to create booking. Please try again.");
                     setIsProcessing(false);
@@ -3497,7 +3499,7 @@ export default function BookingPage() {
         onLoginSuccess={() => {
           setIsLoginModalOpen(false);
           toast.success(
-            "Login successful! You can now continue with your booking."
+            "Login successful! You can now continue with your booking.",
           );
           // You can add any additional logic here after successful login
         }}

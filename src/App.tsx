@@ -14,6 +14,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import ChatWidget from "@/components/ChatWidget";
 import { HelmetProvider } from "react-helmet-async";
 import PerformanceOptimizer from "@/components/PerformanceOptimizer";
+import { TimezoneTester } from "@/components/ui/TimezoneTester";
 
 // Lazy load pages for better performance and loading states
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -21,15 +22,15 @@ const LandingPage = lazy(() => import("./pages/LandingPage"));
 const QuestionnairePage = lazy(() => import("./pages/QuestionnairePage"));
 const InvoicePage = lazy(() => import("./pages/InvoicePage"));
 const TherapistDiscoveryPage = lazy(
-  () => import("./pages/TherapistDiscoveryPage")
+  () => import("./pages/TherapistDiscoveryPage"),
 );
 const TherapistProfilePage = lazy(() => import("./pages/TherapistProfilePage"));
 const SubscriptionPlansPage = lazy(
-  () => import("./pages/SubscriptionPlansPage")
+  () => import("./pages/SubscriptionPlansPage"),
 );
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 const BookingConfirmationPage = lazy(
-  () => import("./pages/BookingConfirmationPage")
+  () => import("./pages/BookingConfirmationPage"),
 );
 const NotFound = lazy(() => import("./pages/NotFoundPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -237,6 +238,8 @@ const App = () => (
                     <ChatWidget />
                     {/* Add Performance Optimizer */}
                     <PerformanceOptimizer />
+                    {/* Add Timezone Tester for development/testing */}
+                    {import.meta.env.DEV && <TimezoneTester />}
                   </Suspense>
                 </BrowserRouter>
               </TooltipProvider>
