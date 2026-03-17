@@ -48,6 +48,8 @@ export function NotificationsSection() {
   const token = localStorage.getItem("token");
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "read" | "unread">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(20); // You can change this to adjust items per page
 
   // Determine API base URL
   const getApiBaseUrl = () => {
@@ -71,7 +73,7 @@ export function NotificationsSection() {
     try {
       setIsLoading(true);
       const res = await axios.get(
-        `${API_BASE_URL}/notifications?page=1&limit=50`,
+        `${API_BASE_URL}/notifications?page=${currentPage}&limit=${limit}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -87,18 +89,8 @@ export function NotificationsSection() {
           pagination: data.pagination,
         })
       );
-
-      //   toast({
-      //     title: "Notifications Updated",
-      //     description: `${data.notifications?.length || 0} notifications loaded`,
-      //   });
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
-      //   toast({
-      //     title: "Error",
-      //     description: "Failed to load notifications",
-      //     variant: "destructive",
-      //   });
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +98,14 @@ export function NotificationsSection() {
 
   useEffect(() => {
     fetchNotificationsData();
-  }, []);
+  }, [currentPage]);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= (pagination?.pages || 1)) {
+      setCurrentPage(newPage);
+    }
+  };
 
   // Get icon based on notification type
   const getTypeIcon = (type: string) => {
@@ -432,15 +431,58 @@ export function NotificationsSection() {
           </div>
         )}
 
-        {/* Footer Stats */}
+        {/* Footer Stats with Pagination */}
         {notifications.length > 0 && (
-          <div className="mt-4 pt-4 border-t flex justify-between items-center text-sm text-muted-foreground">
-            <span>
-              Total: {pagination.total || notifications.length} notifications
-            </span>
-            <span>
-              Page {pagination.page || 1} of {pagination.pages || 1}
-            </span>
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span>
+                  Total: {pagination.total || notifications.length} notifications
+                </span>
+                <span>•</span>
+                <span>
+                  Page {pagination.page || currentPage} of {pagination.pages || 1}
+                </span>
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination.pages || 1) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        className="min-w-[2.5rem]"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === (pagination.pages || 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

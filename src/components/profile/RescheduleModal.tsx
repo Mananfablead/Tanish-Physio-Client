@@ -280,39 +280,69 @@ export function RescheduleModal({
                 Available Time Slots
               </h4>
 
-              {rescheduleDate ? (
-                <div className="space-y-2 max-h-48 md:max-h-80 overflow-y-auto">
-                  {availability
-                    .find((a: any) => a.date === rescheduleDate)
-                    ?.timeSlots?.map((slot: any, i: number) => (
-                      <button
-                        key={i}
-                        disabled={slot.status !== "available"}
-                        onClick={() =>
-                          slot.status === "available" &&
-                          handleTimeSlotClick(rescheduleDate, slot)
-                        }
-                        className={`
-                        w-full p-2 rounded-lg border text-left text-sm
-                        ${slot.status === "available"
-                          ? "border-green-300 hover:bg-green-50"
-                          : slot.status === "booked"
-                          ? "border-red-300 opacity-50"
-                          : "border-gray-300 opacity-50"}
-                        ${rescheduleTime === slot.start
-                          ? "ring-2 ring-primary bg-primary/10"
-                          : ""}
-                      `}
-                      >
-                        {formatTime(slot.start)} – {formatTime(slot.end)}
-                      </button>
-                    ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500">
-                  Select a date to see time slots
-                </p>
-              )}
+             {rescheduleDate ? (
+  <div className="space-y-2 max-h-48 md:max-h-80 overflow-y-auto">
+    {(() => {
+      const selectedDay = availability.find(
+        (a: any) => a.date === rescheduleDate
+      );
+
+      const availableSlots = selectedDay?.timeSlots?.filter(
+        (slot: any) => slot.status === "available"
+      );
+
+      // 👉 No slots case
+      if (!selectedDay || selectedDay.timeSlots.length === 0) {
+        return (
+          <p className="text-sm text-gray-500 text-center py-4">
+            No slots available
+          </p>
+        );
+      }
+
+      if (availableSlots.length === 0) {
+        return (
+          <p className="text-sm text-red-500 text-center py-4">
+            All slots are booked
+          </p>
+        );
+      }
+
+      // 👉 Show slots
+      return selectedDay.timeSlots.map((slot: any, i: number) => (
+        <button
+          key={i}
+          disabled={slot.status !== "available"}
+          onClick={() =>
+            slot.status === "available" &&
+            handleTimeSlotClick(rescheduleDate, slot)
+          }
+          className={`
+            w-full p-2 rounded-lg border text-left text-sm
+            ${
+              slot.status === "available"
+                ? "border-green-300 hover:bg-green-50"
+                : slot.status === "booked"
+                ? "border-red-300 opacity-50"
+                : "border-gray-300 opacity-50"
+            }
+            ${
+              rescheduleTime === slot.start
+                ? "ring-2 ring-primary bg-primary/10"
+                : ""
+            }
+          `}
+        >
+          {formatTime(slot.start)} – {formatTime(slot.end)}
+        </button>
+      ));
+    })()}
+  </div>
+) : (
+  <p className="text-xs text-slate-500">
+    Select a date to see time slots
+  </p>
+)}
             </div>
           </div>
 
