@@ -3,6 +3,7 @@ import { X, ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { getUserTimezone, formatTimeDisplay } from "@/utils/timezone.js";
+import { useToast } from "@/hooks/use-toast";
 
 interface ScheduleModalProps {
   isOpen: boolean;
@@ -27,7 +28,10 @@ interface ScheduleModalProps {
   therapistName: string;
   selectedTimeSlot: { start: string; end: string } | null;
   setSelectedTimeSlot: (slot: { start: string; end: string } | null) => void;
-  bookingType?: "regular" | "free-consultation";
+  bookingType?: 'regular' | 'free-consultation';
+  userPlanType?: 'individual' | 'group' | null; // User's subscription plan type
+  selectedSessionType?: 'one-to-one' | 'group' | 'all';
+  setSelectedSessionType?: (type: 'one-to-one' | 'group' | 'all') => void;
 }
 
 export function ScheduleModal({
@@ -48,11 +52,14 @@ export function ScheduleModal({
   therapistName,
   selectedTimeSlot,
   setSelectedTimeSlot,
-  bookingType = "regular",
+  bookingType = 'regular',
+  userPlanType = null,
+  selectedSessionType = 'all',
+  setSelectedSessionType,
 }: ScheduleModalProps) {
   const [calendarWeeks, setCalendarWeeks] = useState<any[][]>([]);
+  const { toast } = useToast();
 
-  // Calendar utility functions
   const isPastDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -67,19 +74,41 @@ export function ScheduleModal({
 
   const handleTimeSlotClick = (date: string, timeSlot: any) => {
     // Only allow selecting time slots that match the booking type
+    const durationValid =
+      (bookingType === 'free-consultation' && timeSlot.duration === 15) ||
+      (bookingType !== 'free-consultation' && timeSlot.duration === 45);
+
+    const isGroupFull =
+      timeSlot.sessionType === 'group' &&
+      typeof timeSlot.bookedParticipants === 'number' &&
+      timeSlot.bookedParticipants >= timeSlot.maxParticipants;
+
+    // Filter based on user's plan type
+    const planTypeMatches = !userPlanType || 
+      (userPlanType === 'individual' && timeSlot.sessionType === 'one-to-one') ||
+      (userPlanType === 'group' && timeSlot.sessionType === 'group');
+
     const isValidSlot =
-      timeSlot.status === "available" &&
-      ((bookingType === "free-consultation" && timeSlot.duration === 15) ||
-        (bookingType !== "free-consultation" && timeSlot.duration === 45));
+      timeSlot.status === 'available' &&
+      durationValid &&
+      !isGroupFull &&
+      planTypeMatches;
 
     if (isValidSlot) {
-      setSelectedDate(date);
+      // Update both date and time slot to ensure button enables
+      console.log('Selecting time slot:', date, timeSlot);
       setScheduleDate(date);
-      // Use originalStart/originalEnd if available (admin's actual time), otherwise use start/end
-      const slotStart = timeSlot.originalStart || timeSlot.start;
-      const slotEnd = timeSlot.originalEnd || timeSlot.end;
-      setScheduleTime(slotStart);
-      setSelectedTimeSlot({ start: slotStart, end: slotEnd });
+      const newTimeSlot = { start: timeSlot.start, end: timeSlot.end };
+      setSelectedTimeSlot(newTimeSlot);
+      // Also update scheduleTime for consistency
+      if (setScheduleTime) {
+        setScheduleTime(timeSlot.start);
+      }
+      toast({
+        title: "Time slot selected",
+        description: `Selected ${formatTime(timeSlot.start)} - ${formatTime(timeSlot.end)}`,
+        duration: 2000,
+      });
     }
   };
 
@@ -109,9 +138,30 @@ export function ScheduleModal({
     if (!dayAvailability || !Array.isArray(dayAvailability.timeSlots)) {
       return false;
     }
-    return dayAvailability.timeSlots.some(
-      (slot: any) => slot.status === "available",
-    );
+    return dayAvailability.timeSlots.some((slot: any) => {
+      if (slot.status !== "available") return false;
+      if (bookingType === 'free-consultation' && slot.duration !== 15) return false;
+      if (bookingType !== 'free-consultation' && slot.duration !== 45) return false;
+      if (
+        slot.sessionType === 'group' &&
+        typeof slot.bookedParticipants === 'number' &&
+        typeof slot.maxParticipants === 'number' &&
+        slot.bookedParticipants >= slot.maxParticipants
+      ) {
+        return false;
+      }
+      // Filter based on selected session type
+      if (selectedSessionType && selectedSessionType !== 'all') {
+        if (selectedSessionType === 'one-to-one' && slot.sessionType !== 'one-to-one') return false;
+        if (selectedSessionType === 'group' && slot.sessionType !== 'group') return false;
+      }
+      // Filter based on user's plan type
+      if (userPlanType) {
+        if (userPlanType === 'individual' && slot.sessionType !== 'one-to-one') return false;
+        if (userPlanType === 'group' && slot.sessionType !== 'group') return false;
+      }
+      return true;
+    });
   };
 
   // Calendar weeks memoization
@@ -318,9 +368,26 @@ export function ScheduleModal({
             {/* TIME SLOTS */}
             <div className="border rounded-lg p-3 bg-slate-50">
               <div>
-                <h4 className="font-bold text-slate-800 mb-3 text-sm">
-                  Available Time Slots
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-bold text-slate-800 text-sm">
+                    Available Time Slots
+                  </h4>
+
+                  {/* Session Type Filter Dropdown */}
+                  <select
+                    value={selectedSessionType}
+                    onChange={(e) =>
+                      setSelectedSessionType(
+                        e.target.value as "one-to-one" | "group" | "all",
+                      )
+                    }
+                    className="text-xs border border-slate-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="one-to-one">1-on-1</option>
+                    <option value="group">Group</option>
+                  </select>
+                </div>
 
                 {/* Status Legend */}
                 <div className="flex flex-wrap gap-3 text-xs mb-3">
@@ -384,7 +451,7 @@ export function ScheduleModal({
                     return slotDateTime < now;
                   };
 
-                  // Filter slots based on booking type
+                  // Filter slots based on booking type and session type
                   const filteredSlots = dayAvailability.timeSlots.filter(
                     (slot: any) => {
                       // Only show available slots
@@ -393,11 +460,30 @@ export function ScheduleModal({
                       // Filter by duration based on booking type
                       if (bookingType === "free-consultation") {
                         // Free consultation slots should have 15 minute duration
-                        return slot.duration === 15;
+                        if (slot.duration !== 15) return false;
                       } else {
                         // Regular slots should have 45 minute duration
-                        return slot.duration === 45;
+                        if (slot.duration !== 45) return false;
                       }
+
+                      // Filter by selected session type
+                      if (
+                        selectedSessionType &&
+                        selectedSessionType !== "all"
+                      ) {
+                        if (
+                          selectedSessionType === "one-to-one" &&
+                          slot.sessionType !== "one-to-one"
+                        )
+                          return false;
+                        if (
+                          selectedSessionType === "group" &&
+                          slot.sessionType !== "group"
+                        )
+                          return false;
+                      }
+
+                      return true;
                     },
                   );
 
@@ -413,7 +499,16 @@ export function ScheduleModal({
                             key={i}
                             disabled={
                               slot.status !== "available" ||
-                              isTimeSlotPast(scheduleDate, slot.start)
+                              isTimeSlotPast(scheduleDate, slot.start) ||
+                              (slot.sessionType === "group" &&
+                                typeof slot.bookedParticipants === "number" &&
+                                typeof slot.maxParticipants === "number" &&
+                                slot.bookedParticipants >=
+                                  slot.maxParticipants) ||
+                              (userPlanType === "individual" &&
+                                slot.sessionType !== "one-to-one") ||
+                              (userPlanType === "group" &&
+                                slot.sessionType !== "group")
                             }
                             onClick={() => {
                               const isPast = isTimeSlotPast(
@@ -431,11 +526,16 @@ export function ScheduleModal({
                                   ? "bg-green-600 text-white border-green-600"
                                   : isTimeSlotPast(scheduleDate, slot.start)
                                     ? "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
-                                    : slot.status === "available"
-                                      ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
-                                      : slot.status === "booked"
-                                        ? "border border-red-500 text-red-500 cursor-not-allowed"
-                                        : "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
+                                    : (userPlanType === "individual" &&
+                                          slot.sessionType !== "one-to-one") ||
+                                        (userPlanType === "group" &&
+                                          slot.sessionType !== "group")
+                                      ? "border border-orange-300 text-orange-400 cursor-not-allowed bg-orange-50 opacity-60"
+                                      : slot.status === "available"
+                                        ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
+                                        : slot.status === "booked"
+                                          ? "border border-red-500 text-red-500 cursor-not-allowed"
+                                          : "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
                               }
                             `}
                           >
@@ -447,6 +547,23 @@ export function ScheduleModal({
                                 : "Regular"}
                               )
                             </div>
+                            {slot.sessionType === "group" && (
+                              <div className="text-xs mt-1">
+                                <span className="font-semibold">
+                                  {slot.bookedParticipants ?? 0}/
+                                  {slot.maxParticipants ?? 0}
+                                </span>{" "}
+                                booked
+                              </div>
+                            )}
+                            {(userPlanType === "individual" &&
+                              slot.sessionType !== "one-to-one") ||
+                            (userPlanType === "group" &&
+                              slot.sessionType !== "group") ? (
+                              <div className="text-xs mt-1 text-orange-600 font-medium">
+                                Requires {userPlanType} plan
+                              </div>
+                            ) : null}
                           </button>
                         );
                       })}
@@ -537,6 +654,15 @@ export function ScheduleModal({
             className="flex-1 bg-gradient-to-r from-primary to-accent"
             disabled={!scheduleDate || !selectedTimeSlot}
             onClick={() => {
+              console.log('Confirm clicked:', { scheduleDate, selectedTimeSlot });
+              if (!scheduleDate || !selectedTimeSlot) {
+                toast({
+                  title: "Missing selection",
+                  description: "Please select both a date and time slot",
+                  variant: "destructive",
+                });
+                return;
+              }
               onConfirm(
                 scheduleDate,
                 selectedTimeSlot?.start || "",

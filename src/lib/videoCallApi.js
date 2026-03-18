@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
+// Main API client for video-call routes
 const apiClient = axios.create({
     baseURL: `${API_BASE_URL}/video-call`,
     headers: {
@@ -9,14 +10,24 @@ const apiClient = axios.create({
     },
 });
 
-// Add auth token to requests
-apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    return config;
+// Separate API client for group session routes (different base path)
+const groupSessionApiClient = axios.create({
+    baseURL: `${API_BASE_URL}/group-sessions`,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Add auth token to requests for both clients
+[apiClient, groupSessionApiClient].forEach(client => {
+    client.interceptors.request.use((config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        
+        return config;
+    });
 });
 
 // Response interceptor for error handling
@@ -63,12 +74,12 @@ export const videoCallApi = {
 
     // Group session specific APIs
     getGroupSessionDetails: async (groupSessionId) => {
-        const response = await apiClient.get(`/group-sessions/${groupSessionId}`);
+        const response = await groupSessionApiClient.get(`/${groupSessionId}`);
         return response.data;
     },
 
     getGroupSessionParticipants: async (groupSessionId) => {
-        const response = await apiClient.get(`/group-sessions/${groupSessionId}/participants-status`);
+        const response = await groupSessionApiClient.get(`/${groupSessionId}/participants-status`);
         return response.data;
     },
 

@@ -178,21 +178,21 @@ export function TimezoneTester() {
     return null;
   }
 
-  // if (!isPanelOpen) {
-  //   return null;
-  // }
-
   if (!isPanelOpen) {
-    return (
-      <button
-        onClick={() => setIsPanelOpen(true)}
-        className="fixed bottom-4 right-4 z-50 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
-      >
-        <Globe className="h-5 w-5" />
-        Test Timezone
-      </button>
-    );
+    return null;
   }
+
+  // if (!isPanelOpen) {
+  //   return (
+  //     <button
+  //       onClick={() => setIsPanelOpen(true)}
+  //       className="fixed bottom-4 right-4 z-50 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+  //     >
+  //       <Globe className="h-5 w-5" />
+  //       Test Timezone
+  //     </button>
+  //   );
+  // }
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-80 bg-white border border-gray-200 rounded-lg shadow-2xl p-4">

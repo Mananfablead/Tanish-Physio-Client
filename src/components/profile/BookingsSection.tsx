@@ -637,10 +637,21 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                         <p className="mt-1 font-semibold text-slate-800">{detailBooking.therapistName}</p>
                       </div>
                     )}
-                    {detailBooking.serviceId?.duration && (
+                    {(detailBooking.serviceId?.duration || detailBooking.subscriptionInfo?.planDuration || detailBooking.planDuration) && (
                       <div>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Duration</p>
-                        <p className="mt-1 font-semibold text-slate-800">{detailBooking.serviceId.duration}</p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {/* Priority: service duration > subscription/plan duration > timeSlot calculation */}
+                          {detailBooking.serviceId?.duration || 
+                           detailBooking.subscriptionInfo?.planDuration || 
+                           detailBooking.planDuration ||
+                           (detailBooking.timeSlot?.start && detailBooking.timeSlot?.end ? (() => {
+                             const [startHours, startMinutes] = detailBooking.timeSlot.start.split(':').map(Number);
+                             const [endHours, endMinutes] = detailBooking.timeSlot.end.split(':').map(Number);
+                             const duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+                             return `${duration} min`;
+                           })() : '45 min')}
+                        </p>
                       </div>
                     )}
                     {detailBooking.serviceId?.validity && (

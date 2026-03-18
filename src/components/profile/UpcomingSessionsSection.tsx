@@ -295,7 +295,9 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
               <Link
                 to={
                   nextSession._id && isSessionTimeArrived(nextSession)
-                    ? `/video-call?sessionId=${nextSession._id}`
+                    ? (nextSession.groupSessionId || (nextSession.type === "group" || nextSession.sessionType === "group"))
+                      ? `/group-video-call/${nextSession.groupSessionId || nextSession._id}`
+                      : `/video-call?sessionId=${nextSession._id}`
                     : "#"
                 }
                 className="flex-1"

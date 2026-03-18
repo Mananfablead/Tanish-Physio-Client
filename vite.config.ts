@@ -39,6 +39,8 @@ export default defineConfig(({ mode }) => ({
     global: "globalThis",
     "process.env": JSON.stringify({}),
     "process.browser": true,
+    // FIX Bug 3: Polyfill process.nextTick for simple-peer
+    "process.nextTick": "globalThis.queueMicrotask",
   },
   resolve: {
     alias: {

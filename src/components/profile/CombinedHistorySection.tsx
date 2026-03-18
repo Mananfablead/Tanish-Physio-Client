@@ -18,7 +18,7 @@ export function CombinedHistorySection({
   bookingList,
   onReschedule,
 }: CombinedHistorySectionProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("sessions");
+  const [activeTab, setActiveTab] = useState<TabType>("bookings");
 
   return (
     <div className="space-y-6">
@@ -26,30 +26,31 @@ export function CombinedHistorySection({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2 bg-slate-100/50 p-1 rounded-xl w-fit">
           <button
-            onClick={() => setActiveTab("sessions")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all",
-              activeTab === "sessions"
-                ? "bg-white text-primary shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            )}
-          >
-            <CalendarDays className="h-4 w-4" />
-            <span className="hidden sm:inline">Session History</span>
-            <span className="sm:hidden">Sessions</span>
-          </button>
-          <button
             onClick={() => setActiveTab("bookings")}
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all",
               activeTab === "bookings"
                 ? "bg-white text-primary shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                : "text-slate-600 hover:text-slate-900",
             )}
           >
             <NotebookTabs className="h-4 w-4" />
             <span className="hidden sm:inline">Service Bookings</span>
             <span className="sm:hidden">Bookings</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("sessions")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all",
+              activeTab === "sessions"
+                ? "bg-white text-primary shadow-sm"
+                : "text-slate-600 hover:text-slate-900",
+            )}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="hidden sm:inline">Session History</span>
+            <span className="sm:hidden">Sessions</span>
           </button>
         </div>
 
@@ -60,7 +61,7 @@ export function CombinedHistorySection({
               "px-4 py-1.5 rounded-full border font-bold text-xs transition-all",
               activeTab === "sessions"
                 ? "bg-primary/10 text-primary border-primary/20"
-                : "bg-white text-slate-600 border-slate-200"
+                : "bg-white text-slate-600 border-slate-200",
             )}
           >
             {sessions?.length || 0} Sessions
@@ -70,7 +71,7 @@ export function CombinedHistorySection({
               "px-4 py-1.5 rounded-full border font-bold text-xs transition-all",
               activeTab === "bookings"
                 ? "bg-primary/10 text-primary border-primary/20"
-                : "bg-white text-slate-600 border-slate-200"
+                : "bg-white text-slate-600 border-slate-200",
             )}
           >
             {bookingList?.length || 0} Bookings
@@ -82,7 +83,10 @@ export function CombinedHistorySection({
       <div className="transition-all duration-300">
         {activeTab === "sessions" ? (
           <div className="space-y-4">
-            <SessionHistorySection sessions={sessions} onReschedule={onReschedule} />
+            <SessionHistorySection
+              sessions={sessions}
+              onReschedule={onReschedule}
+            />
             {/* Display Google Meet links for recent sessions */}
             {sessions &&
               sessions

@@ -4,12 +4,14 @@ import { useAuthRedux } from "@/hooks/useAuthRedux";
 import useSocket from "@/hooks/useSocket";
 import { Clock, RefreshCw, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { videoCallApi } from "@/lib/videoCallApi";
 
 const WaitingRoomPage = () => {
   const { user } = useAuthRedux();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get("sessionId");
+  const type = searchParams.get("type") || "session"; // 'session' | 'group'
   
   const [status, setStatus] = useState("connecting"); // connecting, waiting, approved, rejected
   const [error, setError] = useState(null);
@@ -22,7 +24,41 @@ const WaitingRoomPage = () => {
 
   // Handle socket connection and request to join
   useEffect(() => {
+    // Check if this is a group session and redirect appropriately
+    const checkSessionType = async () => {
+      if (!sessionId) return;
+      
+      try {
+        const sessionResponse = await videoCallApi.getCallDetails(sessionId);
+        if (sessionResponse.success && sessionResponse.data) {
+          const isGroupSession = sessionResponse.data.type === "Group" || 
+                                sessionResponse.data.sessionType === "group" ||
+                                sessionResponse.data.groupSessionId;
+          
+          if (isGroupSession) {
+            console.log("🎯 Group session detected in waiting room");
+            const groupSessionId = sessionResponse.data.groupSessionId || sessionId;
+            // Redirect to group-video-call page
+            navigate(`/group-video-call/${groupSessionId}`);
+            return;
+          }
+        }
+      } catch (checkErr) {
+        console.warn("Could not check session type:", checkErr);
+      }
+    };
+    
+    checkSessionType();
+    
     if (!socket || !sessionId || !user) return;
+    
+    // Check for user ID - backend uses _id, but frontend type uses id
+    const userId = user.id || user._id;
+    if (!userId) {
+      console.error("❌ User ID missing. User object:", user);
+      setError("User ID is missing. Please try logging in again.");
+      return;
+    }
     
     console.log("🔄 WaitingRoomPage: Setting up socket listeners");
     console.log("🔄 Socket connection status:", socket.connected);
@@ -35,10 +71,10 @@ const WaitingRoomPage = () => {
       socket.emit("request-to-join", {
         sessionId: sessionId,
         user: {
-          userId: user._id,
+          userId: userId,
           name: user.firstName && user.lastName ? 
             `${user.firstName} ${user.lastName}` : 
-            user.name || user.email || `User ${user._id.substring(0, 5)}`,
+            user.name || user.email || `User ${userId.substring(0, 5)}`,
           email: user.email,
           role: user.role
         }
@@ -75,9 +111,21 @@ const WaitingRoomPage = () => {
       
       // Shorter delay to ensure backend processing is complete
       setTimeout(() => {
-        console.log("➡️ Redirecting to video call page");
-        navigate(`/video-call?sessionId=${sessionId}&approved=true&userRole=${user?.role || 'patient'}`);
-      }, 1000); // Reduced from 5000ms to 1000ms
+        console.log("➡️ Redirecting to video/group call page");
+        if (type === "group") {
+          navigate(
+            `/group-video-call/${sessionId}?approved=true&userRole=${
+              user?.role || "patient"
+            }`
+          );
+        } else {
+          navigate(
+            `/video-call?sessionId=${sessionId}&approved=true&userRole=${
+              user?.role || "patient"
+            }`
+          );
+        }
+      }, 1000);
     };
 
     const handleJoinRejected = (data) => {
@@ -121,13 +169,22 @@ const WaitingRoomPage = () => {
     if (socket && sessionId) {
       setStatus("connecting");
       setError(null);
+      
+      // Check for user ID - backend uses _id, but frontend type uses id
+      const userId = user.id || user._id;
+      if (!userId) {
+        console.error("❌ User ID missing for retry");
+        setError("User ID is missing. Please try logging in again.");
+        return;
+      }
+      
       socket.emit("request-to-join", {
         sessionId: sessionId,
         user: {
-          userId: user._id,
+          userId: userId,
           name: user.firstName && user.lastName ? 
             `${user.firstName} ${user.lastName}` : 
-            user.name || user.email || `User ${user._id.substring(0, 5)}`,
+            user.name || user.email || `User ${userId.substring(0, 5)}`,
           email: user.email,
           role: user.role
         }

@@ -100,9 +100,13 @@ export function ProfileHeader({
           {user?.name}
         </h1>
 
-        {/* {liveSession && (
+        {/* liveSession && (
           <Link
-            to={`/video-call?sessionId=${liveSession._id}`}
+            to={
+              (liveSession.groupSessionId || (liveSession.type === "group" || liveSession.sessionType === "group"))
+                ? `/group-video-call/${liveSession.groupSessionId || liveSession._id}`
+                : `/video-call?sessionId=${liveSession._id}`
+            }
             className="bg-white hover:bg-white/90 text-primary font-bold px-3 py-1.5 sm:px-5 sm:py-2 rounded-full flex items-center gap-1 shadow text-xs sm:text-sm"
           >
             <Play className="h-3 w-3 sm:h-4 sm:w-4" />

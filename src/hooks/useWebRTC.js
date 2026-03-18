@@ -356,6 +356,12 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
     };
 
     // Create peer connection
+    // FIX Bug 3: Polyfill process.nextTick for simple-peer compatibility
+    if (typeof window !== 'undefined' && !window.process?.nextTick) {
+        window.process = window.process || {};
+        window.process.nextTick = globalThis.queueMicrotask;
+    }
+
     const createPeer = useCallback((userId, initiator, stream) => {
         // Prevent peer creation in waiting room
         if (isWaitingRoom) {
@@ -386,10 +392,21 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         console.log("Socket ID:", socket?.id);
         console.log("Participants count:", Object.keys(peerRefs.current).length);
 
-        // Clean up existing peer connection if it exists
-        if (peerRefs.current[userId]) {
-            console.log("Cleaning up existing peer connection for:", userId);
-            peerRefs.current[userId].destroy();
+        // FIX Bug 5: Check if peer already exists and is healthy before destroying
+        const existingPeer = peerRefs.current[userId];
+        if (existingPeer) {
+            const connectionState = existingPeer._pc?.connectionState;
+            if (connectionState === 'connected' || connectionState === 'connecting') {
+                console.log('✅ Peer already exists and is', connectionState, '- returning existing peer');
+                return existingPeer; // Don't recreate!
+            }
+            // Only destroy if disconnected or failed
+            console.log('🧹 Existing peer is in state:', connectionState, '- will recreate');
+            try {
+                existingPeer.destroy();
+            } catch (destroyErr) {
+                console.error('Error destroying existing peer:', destroyErr);
+            }
             delete peerRefs.current[userId];
         }
 
@@ -555,27 +572,27 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         });
 
         peer.on('stream', (remoteStream) => {
-            console.log("=== CLIENT REMOTE STREAM RECEIVED ===");
-            console.log("From user:", userId);
+            console.log("=== 📥 CLIENT REMOTE STREAM RECEIVED ===");
+            console.log("From user (socketId):", userId);
             console.log("Stream ID:", remoteStream.id);
-            console.log("Stream tracks:", remoteStream.getTracks());
+            console.log("Stream tracks:", remoteStream.getTracks().map(t => `${t.kind} (${t.enabled})`));
             console.log("Stream active:", remoteStream.active);
-            console.log("Stream track kinds:", remoteStream.getTracks().map(t => t.kind));
-            console.log("Current remote streams count:", Object.keys(remoteStreams).length);
+            console.log("Current remote streams count BEFORE this stream:", Object.keys(remoteStreams).length);
+            console.log("This should INCREASE by 1, not reset to 1!");
 
             // Validate remote stream
             if (!remoteStream || remoteStream.getTracks().length === 0) {
-                console.error("❌ Invalid remote stream received");
+                console.error("❌ Invalid remote stream received - no tracks or null stream");
                 return;
             }
 
             // Ensure stream is active
             if (!remoteStream.active) {
-                console.warn("⚠️ Remote stream is not active, waiting...");
+                console.warn("⏳ Remote stream is not active yet, waiting...");
                 // Wait for stream to become active
                 const checkActive = setInterval(() => {
                     if (remoteStream.active) {
-                        console.log("✅ Remote stream became active");
+                        console.log("✅ Remote stream became active after waiting");
                         clearInterval(checkActive);
                         processRemoteStream(remoteStream, userId);
                     }
@@ -585,7 +602,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                 setTimeout(() => {
                     clearInterval(checkActive);
                     if (!remoteStream.active) {
-                        console.error("❌ Remote stream failed to activate within 5 seconds");
+                        console.error("⚠️ Remote stream failed to activate within 5 seconds, processing anyway");
+                        // Process anyway - sometimes stream works even if .active is false
+                        processRemoteStream(remoteStream, userId);
                     }
                 }, 5000);
                 return;
@@ -596,26 +615,44 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
 
         // Helper function to process remote stream
         const processRemoteStream = (remoteStream, userId) => {
-            console.log("=== PROCESSING REMOTE STREAM ===");
-            console.log("User ID:", userId);
+            console.log("=== 📹 PROCESSING REMOTE STREAM ===");
+            console.log("User ID (socketId):", userId);
             console.log("Stream ID:", remoteStream.id);
-
+            console.log("Stream tracks:", remoteStream.getTracks().map(t => `${t.kind} (${t.enabled})`));
+            console.log("Stream active:", remoteStream.active);
+                    
+            // CRITICAL FIX: Store stream in object keyed by socketId, NOT array or single value
             setRemoteStreams(prev => {
                 const newState = {
                     ...prev,
-                    [userId]: remoteStream
+                    [userId]: remoteStream  // Add to existing streams, don't replace
                 };
-                console.log("✅ Remote streams updated:", Object.keys(newState));
+                console.log('✅ Remote streams BEFORE:', Object.keys(prev).length, 'streams');
+                console.log('✅ Remote streams AFTER:', Object.keys(newState).length, 'streams');
+                console.log('✅ Stream keys:', Object.keys(newState));
+                console.log('✅ This should show MULTIPLE streams if multiple participants joined');
                 return newState;
             });
-
+        
             // Immediate video element update
             updateRemoteVideoElement(userId, remoteStream);
-
-            // Fallback updates
+        
+            // Fallback updates to ensure video renders
             setTimeout(() => updateRemoteVideoElement(userId, remoteStream), 100);
             setTimeout(() => updateRemoteVideoElement(userId, remoteStream), 500);
             setTimeout(() => updateRemoteVideoElement(userId, remoteStream), 1000);
+                        
+            // Log final state after updates (use functional update to avoid stale closure)
+            setTimeout(() => {
+                setRemoteStreams(currentStreams => {
+                    console.log('📊 FINAL REMOTE STREAMS STATE:', {
+                        totalStreams: Object.keys(currentStreams).length,
+                        streamKeys: Object.keys(currentStreams),
+                        allActive: Object.values(currentStreams).every(s => s && s.active)
+                    });
+                    return currentStreams; // Don't change state, just log
+                });
+            }, 1500);
         };
 
         // Helper function to update video element
@@ -750,6 +787,17 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         return peer;
     }, [localStream, socket, roomId, remoteVideoRefs, setRemoteStreams]);
 
+    // Expose createPeer for external use (group calls)
+    const createPeerConnection = useCallback((userId, initiator = false) => {
+        console.log('🔗 External createPeerConnection called for user:', userId);
+        console.log('Initiator:', initiator);
+        if (!localStream) {
+            console.error('❌ No local stream available for peer creation');
+            return null;
+        }
+        return createPeer(userId, initiator, localStream);
+    }, [createPeer, localStream]);
+
     // Handle incoming offer
     const handleOffer = useCallback(async (offer, senderId) => {
         console.log("=== CLIENT HANDLE OFFER CALLED ===");
@@ -764,10 +812,21 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
             return;
         }
 
-        // Clean up any existing connection with this user
-        if (peerRefs.current[senderId]) {
-            console.log("🧹 Cleaning up existing connection before handling offer");
-            peerRefs.current[senderId].destroy();
+        // FIX Bug 1: Check connection state before destroying existing peer
+        const existingPeer = peerRefs.current[senderId];
+        if (existingPeer) {
+            const connectionState = existingPeer._pc?.connectionState;
+            if (connectionState === 'connected' || connectionState === 'connecting') {
+                console.log('⚠️ Peer already', connectionState, '- skipping offer handling to avoid disrupting call');
+                return; // Don't destroy active connections!
+            }
+            // Only destroy if disconnected or failed
+            console.log('🧹 Existing peer is in state:', connectionState, '- will recreate');
+            try {
+                existingPeer.destroy();
+            } catch (destroyErr) {
+                console.error('Error destroying existing peer:', destroyErr);
+            }
             delete peerRefs.current[senderId];
         }
 
@@ -842,69 +901,21 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         console.log("=== HANDLE ANSWER CALLED ===");
         console.log("Answer received from:", senderId);
 
-        if (peerRefs.current[senderId]) {
-            try {
-                await peerRefs.current[senderId].signal(answer);
-                
-                // Ensure audio track state is properly synchronized after connection
-                if (localStream) {
-                    const audioTracks = localStream.getAudioTracks();
-                    if (audioTracks.length > 0) {
-                        const audioTrack = audioTracks[0];
-                        
-                        // Update peer connection with current audio state
-                        const updateAudioTrack = () => {
-                            const peer = peerRefs.current[senderId];
-                            if (peer && peer._pc && peer._pc.getSenders) {
-                                const senders = peer._pc.getSenders();
-                                let audioSenderFound = false;
-                                
-                                senders.forEach(async (sender) => {
-                                    if (sender.track && sender.track.kind === 'audio') {
-                                        audioSenderFound = true;
-                                        try {
-                                            sender.track.enabled = audioTrack.enabled;
-                                            console.log('✅ Audio track state updated for peer after answer:', senderId);
-                                        } catch (error) {
-                                            console.error('Error updating audio track after answer:', error);
-                                        }
-                                    }
-                                });
-                                
-                                // If no audio sender was found, try to add the track
-                                if (!audioSenderFound && audioTrack) {
-                                    try {
-                                        peer._pc.addTrack(audioTrack, localStream);
-                                        console.log('✅ Audio track added to peer connection after answer:', senderId);
-                                    } catch (addError) {
-                                        console.error('Error adding audio track after answer:', addError);
-                                    }
-                                }
-                            }
-                        };
-                        
-                        // Try to update immediately and then again after delays
-                        updateAudioTrack();
-                        setTimeout(updateAudioTrack, 100);
-                        setTimeout(updateAudioTrack, 500);
-                    }
-                }
-                
-                console.log("✅ Answer handled successfully");
-            } catch (error) {
-                console.error("❌ Error handling answer:", error);
-            }
-        } else {
-            console.log("⚠️ No peer connection found for:", senderId);
-            // Create peer connection if not exists and handle the answer
-            if (!localStream) {
-                await initLocalMedia();
-            }
-            const peer = createPeer(senderId, false, localStream);
-            if (!peer) {
-                console.error("❌ Failed to create peer connection for:", senderId);
-                return;
-            }
+        // FIX Bug 2: Check if peer exists and is not destroyed
+        const peer = peerRefs.current[senderId];
+        if (!peer) {
+            console.warn("⚠️ No peer found for sender:", senderId);
+            console.log("Available peers:", Object.keys(peerRefs.current));
+            return;
+        }
+
+        if (peer.destroyed) {
+            console.warn("⚠️ Peer already destroyed for:", senderId, "- ignoring answer");
+            return; // Don't try to signal on destroyed peer!
+        }
+
+        try {
+            await peer.signal(answer);
             
             // Ensure audio track state is properly synchronized after connection
             if (localStream) {
@@ -914,6 +925,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                     
                     // Update peer connection with current audio state
                     const updateAudioTrack = () => {
+                        const peer = peerRefs.current[senderId];
                         if (peer && peer._pc && peer._pc.getSenders) {
                             const senders = peer._pc.getSenders();
                             let audioSenderFound = false;
@@ -923,9 +935,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                                     audioSenderFound = true;
                                     try {
                                         sender.track.enabled = audioTrack.enabled;
-                                        console.log('✅ Audio track state updated for peer after new connection:', senderId);
+                                        console.log('✅ Audio track state updated for peer after answer:', senderId);
                                     } catch (error) {
-                                        console.error('Error updating audio track after new connection:', error);
+                                        console.error('Error updating audio track after answer:', error);
                                     }
                                 }
                             });
@@ -934,9 +946,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                             if (!audioSenderFound && audioTrack) {
                                 try {
                                     peer._pc.addTrack(audioTrack, localStream);
-                                    console.log('✅ Audio track added to peer connection after new connection:', senderId);
+                                    console.log('✅ Audio track added to peer connection after answer:', senderId);
                                 } catch (addError) {
-                                    console.error('Error adding audio track after new connection:', addError);
+                                    console.error('Error adding audio track after answer:', addError);
                                 }
                             }
                         }
@@ -949,12 +961,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                 }
             }
             
-            try {
-                await peer.signal(answer);
-                console.log("✅ Answer handled with new peer connection");
-            } catch (error) {
-                console.error("❌ Error handling answer with new peer:", error);
-            }
+            console.log("✅ Answer handled successfully");
+        } catch (error) {
+            console.error("❌ Error handling answer:", error);
         }
     }, [socket, localStream, initLocalMedia, createPeer]);
 
@@ -1307,7 +1316,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         };
 
         const handleParticipantJoined = (data) => {
-            console.log('CLIENT: Participant joined:', data);
+            console.log('🔔 CLIENT: Participant joined event:', data);
             
             // Create standardized participant data (matching backend structure)
             const newParticipant = {
@@ -1333,7 +1342,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                 // Avoid duplicates by checking socketId (primary identity)
                 const exists = prev.some(p => p.socketId === newParticipant.socketId);
                 if (exists) {
-                    console.log('CLIENT: Participant already exists, skipping');
+                    console.log('⚠️ CLIENT: Participant already exists, skipping duplicate:', newParticipant.socketId);
                     return prev;
                 }
                 
@@ -1343,48 +1352,43 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                 return updatedParticipants;
             });
 
-            // If the participant is an admin/therapist, create offer (only if not in waiting room)
-            if ((data.role === 'admin' || data.role === 'therapist' || data.isTherapist) && !isWaitingRoom) {
-                console.log('CLIENT: Admin/Therapist joined, creating offer');
+            // CRITICAL FIX: Only create peer connections for group calls
+            if (roomId.startsWith('group') && !isWaitingRoom) {
+                console.log('🕸️ CLIENT: Group call detected - will create mesh connections');
+                
                 setTimeout(async () => {
-                    // Use the ref to get the current localStream value
+                    // Ensure local media is initialized
                     let currentLocalStream = localStreamRef.current;
-            
+                    
                     if (!currentLocalStream) {
-                        console.log('CLIENT: Initializing local media for admin connection...');
+                        console.log('📱 CLIENT: Initializing local media for peer creation...');
                         await initLocalMedia();
-                        // Get the updated stream after initialization
                         currentLocalStream = localStreamRef.current;
                     }
-            
-                    // Ensure local stream is available before creating peer
+                    
                     if (!currentLocalStream) {
-                        console.error('❌ Local stream still not available after init for admin/therapist:', data.socketId);
+                        console.error('❌ CLIENT: Local stream not available for peer creation');
                         return;
                     }
-            
-                    console.log('CLIENT: Creating peer connection for admin/therapist:', data.socketId);
-                    console.log('CLIENT: Local stream tracks:', currentLocalStream.getTracks().length);
-            
-                    // Create offer for the admin/therapist (admin always initiates)
-                    const peer = createPeer(data.socketId, true, currentLocalStream);
-                    if (!peer) {
-                        console.error('Failed to create peer connection for admin/therapist:', data.socketId);
-                        return;
+                    
+                    // CRITICAL: Create peer with the NEW participant ONLY if doesn't exist
+                    if (!peerRefs.current[data.socketId]) {
+                        console.log('🤝 CLIENT: Creating peer connection for new participant:', data.socketId, data.name);
+                        
+                        // Deterministic initiator logic: lower socket ID creates offer
+                        const isInitiator = socket.id < data.socketId;
+                        console.log(`🎯 CLIENT: Initiator logic - My socket: ${socket.id}, Their socket: ${data.socketId}, Am I initiator? ${isInitiator}`);
+                        
+                        const peer = createPeer(data.socketId, isInitiator, currentLocalStream);
+                        if (peer) {
+                            console.log('✅ CLIENT: Successfully created peer for:', data.socketId);
+                        } else {
+                            console.error('❌ CLIENT: Failed to create peer for:', data.socketId);
+                        }
+                    } else {
+                        console.log('⏭️ CLIENT: Peer already exists for', data.socketId, '- skipping creation');
                     }
-                    console.log('CLIENT: Created offer for admin/therapist:', data.socketId);
-                }, 500); // Reduced timeout
-            }
-
-            // If the participant is a client/patient, prepare to handle offers
-            if (data.role === 'patient' || data.isUser) {
-                console.log('CLIENT: Another patient joined, preparing to handle their offer');
-                // Just make sure our local stream is ready to respond to offers
-                if (!localStream) {
-                    setTimeout(async () => {
-                        await initLocalMedia();
-                    }, 500);
-                }
+                }, 300); // Short delay to ensure stream is ready
             }
         };
 
@@ -1444,7 +1448,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         };
 
         const handleRoomParticipants = (data) => {
-            console.log('CLIENT: Received room participants:', data);
+            console.log('📋 CLIENT: Received room participants:', data);
+            
             // Set all participants at once to ensure consistency
             const standardizedParticipants = data.participants.map(p => ({
                 socketId: p.socketId,
@@ -1463,8 +1468,50 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                 isSelf: p.socketId === socket.id
             }));
             
-            console.log('CLIENT: Standardized room participants:', standardizedParticipants);
+            console.log('📋 CLIENT: Standardized room participants:', standardizedParticipants);
             setParticipants(standardizedParticipants);
+            
+            // For group calls, create peer connections with all participants (except self)
+            if (roomId.startsWith('group') && !isWaitingRoom && standardizedParticipants.length > 0) {
+                console.log('🕸️ CLIENT: Creating peers for all room participants in group call');
+                setTimeout(async () => {
+                    // Ensure local media is initialized
+                    if (!localStream) {
+                        console.log('📱 CLIENT: Initializing local media before creating peers');
+                        await initLocalMedia();
+                    }
+                    
+                    const currentLocalStream = localStreamRef.current;
+                    if (!currentLocalStream) {
+                        console.error('❌ CLIENT: Local stream not available for peer creation');
+                        return;
+                    }
+                    
+                    // Create peers with all other participants
+                    standardizedParticipants.forEach(participant => {
+                        // CRITICAL: Skip self and check if peer already exists
+                        if (participant.socketId !== socket.id) {
+                            if (peerRefs.current[participant.socketId]) {
+                                console.log('⏭️ CLIENT: Peer already exists for', participant.socketId, '- skipping');
+                                return; // Don't recreate!
+                            }
+                            
+                            console.log('🤝 CLIENT: Creating peer for participant:', participant.socketId, participant.name);
+                            
+                            // Deterministic initiator logic: lower socket ID creates offer
+                            const isInitiator = socket.id < participant.socketId;
+                            console.log(`🎯 CLIENT: Initiator logic - My socket: ${socket.id}, Their socket: ${participant.socketId}, Am I initiator? ${isInitiator}`);
+                            
+                            const peer = createPeer(participant.socketId, isInitiator, currentLocalStream);
+                            if (peer) {
+                                console.log('✅ CLIENT: Created peer for:', participant.socketId);
+                            } else {
+                                console.error('❌ CLIENT: Failed to create peer for:', participant.socketId);
+                            }
+                        }
+                    });
+                }, 500); // Wait 0.5 second for media to be ready
+            }
         };
 
         const handleJoinedCall = (data) => {
@@ -1512,11 +1559,50 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
             });
         };
 
-        // Add WebRTC signaling listeners
+        // Add WEBRTC signaling listeners
         socket.on('webrtc-offer-received', handleWebRTCOffer);
         socket.on('webrtc-answer-received', handleWebRTCAnswer);
         socket.on('webrtc-ice-candidate-received', handleWebRTCIceCandidate);
-
+                
+        // NEW: Handle backend-initiated peer connection requests
+        socket.on('create-peer-connection', (data) => {
+            const { targetUserId, targetSocketId, initiator } = data;
+            console.log('🔗 CLIENT: Received create-peer-connection command:', data);
+                    
+            if (initiator) {
+                // We should create the offer
+                setTimeout(async () => {
+                    let currentLocalStream = localStreamRef.current;
+                            
+                    if (!currentLocalStream) {
+                        console.log('📱 CLIENT: Initializing local media for peer creation...');
+                        await initLocalMedia();
+                        currentLocalStream = localStreamRef.current;
+                    }
+                            
+                    if (!currentLocalStream) {
+                        console.error('❌ CLIENT: Local stream not available');
+                        return;
+                    }
+                            
+                    if (!peerRefs.current[targetSocketId]) {
+                        console.log('🤝 CLIENT: Creating peer as initiator for:', targetSocketId);
+                        const peer = createPeer(targetSocketId, true, currentLocalStream);
+                        if (peer) {
+                            console.log('✅ CLIENT: Successfully created initiator peer for:', targetSocketId);
+                        } else {
+                            console.error('❌ CLIENT: Failed to create initiator peer for:', targetSocketId);
+                        }
+                    } else {
+                        console.log('⏭️ CLIENT: Peer already exists for', targetSocketId, '- skipping');
+                    }
+                }, 200);
+            } else {
+                // We wait for the offer from the other side
+                console.log('⏳ CLIENT: Waiting for WebRTC offer from:', targetSocketId);
+            }
+        });
+        
         // Add participant listeners
         socket.on('participant-joined', handleParticipantJoined);
         socket.on('participant-left', handleParticipantLeft);
@@ -1528,16 +1614,34 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
 
         // Cleanup
         return () => {
-            socket.off('webrtc-offer-received', handleWebRTCOffer);
-            socket.off('webrtc-answer-received', handleWebRTCAnswer);
-            socket.off('webrtc-ice-candidate-received', handleWebRTCIceCandidate);
-            socket.off('participant-joined', handleParticipantJoined);
-            socket.off('participant-left', handleParticipantLeft);
-            socket.off('room-participants', handleRoomParticipants);
-            socket.off('joined-call', handleJoinedCall);
-            socket.off('call-started', handleCallStarted);
+            console.log('🧹 CLIENT: Cleaning up WebRTC socket listeners');
+            
+            // Remove socket listeners (don't use function references, use event names only)
+            socket.off('webrtc-offer-received');
+            socket.off('webrtc-answer-received');
+            socket.off('webrtc-ice-candidate-received');
+            socket.off('create-peer-connection');
+            socket.off('participant-joined');
+            socket.off('participant-left');
+            socket.off('room-participants');
+            socket.off('joined-call');
+            socket.off('call-started');
+            
+            // Destroy all peer connections
+            Object.values(peerRefs.current).forEach(peer => {
+                try {
+                    peer.destroy();
+                } catch (err) {
+                    console.error('Error destroying peer in cleanup:', err);
+                }
+            });
+            peerRefs.current = {};
+            
+            // CRITICAL FIX: DO NOT call setInitialized(false) here - it causes infinite loop!
+            // The effect will re-run when component re-mounts anyway
+            console.log('✅ Cleanup complete - peer connections destroyed, listeners removed');
         };
-    }, [socket, userRole, initialized, handleOffer, handleAnswer, handleIceCandidate, initLocalMedia, createPeer, localStream]);
+    }, [socket, userRole, roomId, initialized]); // Removed function dependencies that change on every render
 
     // Cleanup on unmount - but preserve call on page refresh
     useEffect(() => {
@@ -1725,7 +1829,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         recordingStatus,
         startRecording,
         stopRecording,
-        localStreamRef // Export ref for external access
+        localStreamRef, // Export ref for external access
+        createPeerConnection // Export for group call peer creation
     };
 };
 
