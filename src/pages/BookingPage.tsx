@@ -677,8 +677,13 @@ export default function BookingPage() {
 
   // Scheduling functions
   const openScheduleModal = async () => {
-    // Don't set scheduleOption yet, wait for actual selection
-
+    // Clear any previous selections before opening
+    setSelectedDate(null);
+    setScheduleDate("");
+    setScheduleTime("");
+    setSelectedTimeSlot(null);
+    setScheduleError(null);
+    
     try {
       // Fetch real availability data from API
       // Timezone will be automatically added by axios interceptor
@@ -688,7 +693,6 @@ export default function BookingPage() {
 
       setAvailability(fetchedAvailability);
       setIsScheduleModalOpen(true);
-      setScheduleError(null);
     } catch (error) {
       console.error("Failed to fetch availability:", error);
       setScheduleError("Failed to load availability. Please try again.");
@@ -707,6 +711,10 @@ export default function BookingPage() {
     // If no date/time is selected, clear the schedule option
     if (!scheduleDate || !scheduleTime) {
       setScheduleOption(null);
+      // Clear any partial selections
+      setScheduleDate("");
+      setScheduleTime("");
+      setSelectedTimeSlot(null);
     }
   };
 
@@ -850,9 +858,13 @@ export default function BookingPage() {
         } else {
           toast.error(response.data?.message || "Failed to book session");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error booking with subscription:", error);
-        toast.error("Failed to book session with subscription");
+        const errorMessage = 
+          error?.response?.data?.message || 
+          error?.message || 
+          "Failed to book session with subscription";
+        toast.error(errorMessage);
       } finally {
         setIsProcessing(false);
       }

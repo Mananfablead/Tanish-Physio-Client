@@ -118,6 +118,7 @@ const VideoCall = ({
     recordingStatus,
     startRecording,
     stopRecording,
+    createPeerConnection, // Add this for group call peer creation
   } = useWebRTC(roomId, socket, isTherapist);
 
   const stopMediaStreams = () => {
@@ -830,11 +831,11 @@ const VideoCall = ({
         console.error("❌ Error joining video session:", data);
       });
 
-      // Listen for incoming messages (single source - message-received only)
-      socket.on("message-received", (data) => {
-        console.log("📥 Client received message-received:", data);
-        console.log("📥 Message content:", data.content);
-        console.log("📥 Message ID:", data.messageId);
+      // Listen for incoming messages (video call specific)
+      socket.on("receive-video-message", (data) => {
+        console.log("📥 Client received video message:", data);
+        console.log("📥 Message content:", data.message);
+        console.log("📥 Sender ID:", data.senderId);
         console.log("📥 Attachments:", data.attachments);
         console.log("📥 Timestamp:", data.timestamp);
 
@@ -860,50 +861,45 @@ const VideoCall = ({
             return prev;
           }
 
-          // Secondary: Check by id/_id
+          // Secondary: Check by _id
           if (data._id && prev.some((m) => m.id === data._id)) {
             console.log("💬 Duplicate message ignored by id:", data._id);
             return prev;
           }
 
           // Tertiary: Check by content and timestamp (fallback)
-          const messageContent = data.content;
-          const messageTimestamp = data.timestamp || new Date().toISOString();
-
-          const isDuplicate = prev.some(
-            (m) =>
-              m.text === messageContent &&
-              new Date(m.timestamp).getTime() ===
-                new Date(messageTimestamp).getTime()
-          );
-
-          if (isDuplicate) {
+          const messageContent = data.message || data.content;
+          if (
+            prev.some(
+              (m) =>
+                (m.message || m.content) === messageContent &&
+                Math.abs(new Date(m.timestamp || data.timestamp) - new Date(data.timestamp || Date.now())) < 1000
+            )
+          ) {
             console.log("💬 Duplicate message ignored by content+timestamp");
-            console.log(
-              "💬 Existing messages:",
-              prev.map((m) => ({ text: m.text, timestamp: m.timestamp }))
-            );
             return prev;
           }
 
-          console.log(
-            "💬 Adding new message to chat with attachments:",
-            data.attachments?.length || 0
-          );
+          // Add new message
+          console.log("💬 Adding new message from:", data.senderName || data.userName);
           return [
             ...prev,
             {
-              id: data._id || Date.now(),
-              messageId: data.messageId,
-              text: messageContent,
-              sender: "them",
+              id: data._id || data.messageId || Date.now(),
+              messageId: data.messageId || data._id?.toString() || Date.now().toString(),
+              content: messageContent,
               senderId: data.senderId,
-              timestamp: messageTimestamp,
-              senderName: data.senderName || "Clinician",
-              attachments: data.attachments || [], // Include attachments!
+              senderName: data.senderName || data.userName || 'Participant',
+              timestamp: data.timestamp || new Date().toISOString(),
+              attachments: data.attachments || []
             },
           ];
         });
+      });
+
+      // Listen for message sent confirmation
+      socket.on("message-sent", (data) => {
+        console.log("✅ Message sent confirmation:", data);
       });
 
       // Load existing messages
@@ -912,7 +908,8 @@ const VideoCall = ({
 
     return () => {
       if (socket) {
-        socket.off("message-received");
+        socket.off("receive-video-message");
+        socket.off("message-sent");
         socket.off("joined-video-session");
         socket.off("error");
       }
@@ -978,27 +975,19 @@ const VideoCall = ({
       const filesToSend = [...uploadedFiles];
       setUploadedFiles([]);
 
-      // Send message ONLY via socket (no API call, no optimistic update)
+      // Send message via socket for video call
       if (socket) {
-        console.log(`📤 Emitting send-message event`);
-        console.log(`📤 Room ID: ${sessionId}`);
-        console.log(
-          `📤 Room Type: ${
-            sessionId.includes("group") ? "group" : "individual"
-          }`
-        );
+        console.log(`📤 Emitting send-video-message event`);
+        console.log(`📤 Session ID: ${sessionId}`);
 
-        socket.emit("send-message", {
-          roomId: sessionId,
-          roomType: sessionId.includes("group") ? "group" : "individual",
-          message: {
-            content: originalMessage,
-            messageId: messageId,
-            attachments: filesToSend, // Include uploaded files
-          },
+        socket.emit("send-video-message", {
+          sessionId: sessionId,
+          message: originalMessage,
+          senderId: user?._id || socket.user?.userId,
+          attachments: filesToSend // Include uploaded files
         });
         console.log(
-          "📤 Message sent via socket",
+          "📤 Video call message sent via socket",
           filesToSend.length > 0 ? `with ${filesToSend.length} file(s)` : ""
         );
       }
@@ -1197,18 +1186,59 @@ const VideoCall = ({
       }
     };
 
+    // Handle create peer connection request (for group calls)
+    const createPeerConnectionListener = (data) => {
+      console.log("=== CREATE PEER CONNECTION REQUEST ===");
+      console.log("Target user ID:", data.targetUserId);
+      console.log("Target socket ID:", data.targetSocketId);
+      console.log("Should initiate (be offerer):", data.initiator);
+      console.log("Local stream available:", !!localStream);
+      console.log("Socket connected:", connected);
+      
+      if (!localStream || !connected) {
+        console.warn("⚠️ Cannot create peer connection - local stream or socket not ready");
+        return;
+      }
+      
+      try {
+        // Create peer connection with the target participant
+        // The createPeer function will handle the WebRTC handshake
+        console.log("🔗 Creating peer connection with:", data.targetUserId);
+        console.log("Initiator role:", data.initiator ? "OFFERER" : "ANSWERER");
+        
+        // Use the createPeer function from useWebRTC hook
+        // We need to access it through the hook's returned functions
+        // Since createPeer is internal to the hook, we'll trigger it by emitting an offer
+        if (data.initiator) {
+          // As initiator, we need to create an offer and send it
+          // This will be handled by the useWebRTC hook's createPeer function
+          // We trigger it by calling handleOffer with a dummy offer to create the peer
+          console.log("📡 As initiator - will create peer and emit offer");
+          // The actual peer creation happens in useWebRTC when it receives signaling events
+        } else {
+          console.log("📡 As receiver - waiting for offer from initiator");
+        }
+      } catch (error) {
+        console.error("❌ Error in create peer connection:", error);
+      }
+    };
+
     // Handle participant joined
     const participantJoinedListener = (data) => {
       console.log("=== PARTICIPANT JOINED EVENT ===");
       console.log("Participant data:", data);
-      console.log("Session details available:", !!sessionDetails);
-      console.log(
-        "Current participants count before adding:",
-        participants.length
-      );
-      console.log("Current participants list:", participants);
-      console.log("Participant name:", data.name);
-
+      console.log("Current user role:", user?.role);
+      console.log("Is group call:", roomType === "group");
+      
+      // IMPORTANT: In group calls, ALL participants need to create peers with EACH other
+      // This is a mesh network - everyone connects to everyone
+      if (roomType === "group") {
+        console.log("🔗 Group call detected - establishing mesh peer connections");
+        
+        // Don't skip peer creation - EVERY participant needs to connect to EVERY other participant
+        // The old logic was incorrect - it tried to only connect with admin, but that breaks the mesh
+      }
+      
       // Check if this is a therapist or admin joining
       let isTherapistJoining = false;
       if (
@@ -1265,6 +1295,7 @@ const VideoCall = ({
 
       console.log("✅ Enhanced participant data:", participantData);
 
+      // Add participant to the list FIRST (before creating peer)
       setParticipants((prev) => {
         // Avoid duplicates by checking both userId and socketId
         const exists = prev.some(
@@ -1293,6 +1324,39 @@ const VideoCall = ({
           ...prev,
           [participantData.userId]: true, // Audio enabled by default
         }));
+      }
+
+      // GROUP CALL MESH NETWORK LOGIC
+      // In group calls, EVERY participant must create peer connections with EVERY other participant
+      // This creates a full mesh network where video/audio can flow between all users
+      if (roomType === "group" && localStream && connected) {
+        console.log("🔗 Creating peer connection for new participant in group call");
+        console.log("New participant:", participantData);
+        console.log("Local stream available:", !!localStream);
+        console.log("Socket connected:", connected);
+        
+        // Wait a moment to ensure participant is fully added to state
+        setTimeout(() => {
+          try {
+            // Create peer connection with the new participant
+            console.log("🔗 Initiating peer creation with:", participantData.userId);
+            
+            // Use the exposed createPeerConnection function from useWebRTC
+            // The initiator should be the admin/therapist, or the first user who joined
+            const shouldInitiate = user?.role === "admin" || user?.role === "therapist";
+            console.log("Creating peer as:", shouldInitiate ? "INITIATOR (offerer)" : "RECEIVER (answerer)");
+            
+            const peer = createPeerConnection(participantData.socketId, shouldInitiate);
+            
+            if (peer) {
+              console.log("✅ Peer connection created successfully with:", participantData.userId);
+            } else {
+              console.error("❌ Failed to create peer connection with:", participantData.userId);
+            }
+          } catch (error) {
+            console.error("❌ Error creating peer connection:", error);
+          }
+        }, 500);
       }
 
       // AUTO-JOIN LOGIC - Patient auto-joins when therapist joins
@@ -1744,6 +1808,7 @@ const VideoCall = ({
     on("user-muted", userMutedListener);
     on("typing", typingListener);
     on("stop-typing", stopTypingListener);
+    on("create-peer-connection", createPeerConnectionListener);
 
     // Cleanup listeners
     return () => {
@@ -1772,6 +1837,7 @@ const VideoCall = ({
           socket.off("message-received"); // Remove the single message listener
           socket.off("typing", typingListener);
           socket.off("stop-typing", stopTypingListener);
+          socket.off("create-peer-connection", createPeerConnectionListener);
         } catch (err) {
           console.error("Error removing socket listeners:", err);
         }
@@ -1950,6 +2016,10 @@ const VideoCall = ({
     } else {
       // Group call - grid of videos
       const streamKeys = Object.keys(remoteStreams);
+      console.log("🎥 GROUP CALL RENDER: Total remote streams:", streamKeys.length);
+      console.log("🎥 GROUP CALL RENDER: Stream keys:", streamKeys);
+      console.log("🎥 GROUP CALL RENDER: All participants:", participants);
+      
       if (streamKeys.length === 0) {
         return (
           <div className="flex items-center justify-center w-full h-full bg-slate-900 rounded-xl">
@@ -1961,110 +2031,119 @@ const VideoCall = ({
         );
       }
 
-      if (streamKeys.length === 1) {
-        // Single participant
-        const stream = remoteStreams[streamKeys[0]];
-        return (
-          <div className="relative w-full h-full bg-black rounded-xl overflow-hidden">
-            {/* Hidden audio element for remote audio */}
-            <audio
-              ref={(el) => {
-                if (el && stream) {
-                  remoteAudioRefs.current[streamKeys[0]] = el;
-                  if (el.srcObject !== stream) {
-                    el.srcObject = stream;
-                    el.muted = false;
-                    el.autoplay = true;
-                    const playPromise = el.play();
-                    if (playPromise !== undefined) {
-                      playPromise.catch(() => {
-                        el.muted = false;
-                        el.play().catch(() => {});
-                      });
-                    }
-                  }
-                }
-              }}
-              autoPlay
-              className="hidden"
-            />
-            <video
-              ref={(el) => {
-                if (el) {
-                  remoteVideoRefs.current[streamKeys[0]] = el;
-                  if (stream) {
-                    el.srcObject = stream;
-                  }
-                }
-              }}
-              autoPlay
-              playsInline
-              className="w-full h-full object-cover"
-            />
-          </div>
-        );
-      } else {
-        // Multiple participants - grid layout
-        return (
-          <div className="grid grid-cols-2 grid-rows-2 gap-2 w-full h-full">
-            {streamKeys.map((socketId, index) => {
-              const stream = remoteStreams[socketId];
-              const participant = participants.find(
-                (p) => p.socketId === socketId
-              );
-              return (
-                <div
-                  key={`${socketId}-${index}`}
-                  className="relative bg-black rounded-lg overflow-hidden"
-                >
-                  {/* Hidden audio element for remote audio */}
-                  <audio
-                    ref={(el) => {
-                      if (el && stream) {
-                        remoteAudioRefs.current[socketId] = el;
-                        if (el.srcObject !== stream) {
+      // Always use grid layout for group calls to accommodate all participants
+      const columns = Math.min(3, Math.ceil(Math.sqrt(streamKeys.length)));
+      const rows = Math.ceil(streamKeys.length / columns);
+      
+      console.log(`🎥 GROUP CALL RENDER: Grid layout - ${columns}x${rows}`);
+
+      return (
+        <div className={`grid gap-2 w-full h-full p-2`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+          {streamKeys.map((socketId, index) => {
+            const stream = remoteStreams[socketId];
+            const participant = participants.find(
+              (p) => p.socketId === socketId
+            );
+            
+            console.log(`🎥 Rendering participant ${index + 1}:`, {
+              socketId,
+              hasStream: !!stream,
+              streamActive: stream?.active,
+              participantName: participant?.name,
+              isTherapist: participant?.isTherapist
+            });
+            
+            return (
+              <div
+                key={`${socketId}-${index}`}
+                className="relative bg-black rounded-lg overflow-hidden aspect-video"
+              >
+                {/* Hidden audio element for remote audio */}
+                <audio
+                  ref={(el) => {
+                    if (el && stream) {
+                      remoteAudioRefs.current[socketId] = el;
+                      if (el.srcObject !== stream) {
+                        try {
                           el.srcObject = stream;
                           el.muted = false;
                           el.autoplay = true;
                           const playPromise = el.play();
                           if (playPromise !== undefined) {
-                            playPromise.catch(() => {
+                            playPromise.catch((err) => {
+                              console.warn(`⚠️ Audio play failed for ${socketId}:`, err);
                               el.muted = false;
                               el.play().catch(() => {});
                             });
                           }
+                        } catch (err) {
+                          console.error(`❌ Audio setup error for ${socketId}:`, err);
                         }
                       }
-                    }}
-                    autoPlay
-                    className="hidden"
-                  />
-                  <video
-                    ref={(el) => {
-                      if (el) {
-                        remoteVideoRefs.current[socketId] = el;
-                        if (stream) {
+                    }
+                  }}
+                  autoPlay
+                  className="hidden"
+                />
+                <video
+                  ref={(el) => {
+                    if (el && stream) {
+                      remoteVideoRefs.current[socketId] = el;
+                      if (el.srcObject !== stream) {
+                        try {
                           el.srcObject = stream;
+                          el.muted = true;
+                          el.autoplay = true;
+                          el.playsInline = true;
+                          
+                          const playPromise = el.play();
+                          if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                              console.log(`✅ Video playing for ${socketId}`);
+                            }).catch((err) => {
+                              console.warn(`⚠️ Video play failed for ${socketId}:`, err);
+                              el.muted = true;
+                              el.play().catch(() => {});
+                            });
+                          }
+                        } catch (err) {
+                          console.error(`❌ Video setup error for ${socketId}:`, err);
                         }
                       }
-                    }}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                  <span>
                     {participant?.name &&
                     participant.name !== "Clinician" &&
                     participant.name !== "User Unknown"
                       ? participant.name
                       : `Participant ${index + 1}`}
-                  </div>
+                  </span>
+                  {participant?.isTherapist && (
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[8px] px-1">
+                      Host
+                    </Badge>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        );
-      }
+                {!stream && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+                    <div className="text-center text-slate-500">
+                      <Users className="mx-auto h-8 w-8 mb-2" />
+                      <p className="text-xs">Loading...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
     }
   };
 
