@@ -98,7 +98,7 @@ import {
 } from "@/components/ui/accordion";
 
 // Import images
-import heroImage from "@/assets/hero-physio.jpg";
+import heroImage from "@/assets/hero-physio.png";
 
 import { useSelector } from "react-redux";
 import { RootState, useAppDispatch } from "@/store";

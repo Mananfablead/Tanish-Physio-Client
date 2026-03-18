@@ -270,7 +270,7 @@ const VideoCall = ({
         console.error("❌ Error assigning local stream to video element:", err);
       }
     }
-  }, [localStream]);s
+  }, [localStream]);
 
   const [screenSharing, setScreenSharing] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);

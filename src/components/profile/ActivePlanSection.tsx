@@ -265,7 +265,7 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
                 label="Auto Renew"
                 value={
                   activePlan?.autoRenew !== undefined
-                    ? activePlan.autoRenew
+                    ? !activePlan.autoRenew
                       ? "Enabled"
                       : "Disabled"
                     : "Enabled"
@@ -274,7 +274,7 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
                 iconColor="text-success"
               />
 
-              <InfoBlock
+              {/* <InfoBlock
                 label="Next Billing"
                 value={
                   activePlan?.nextBillingDate
@@ -309,7 +309,7 @@ export function ActivePlanSection({ activePlan, onPlanSelect }: ActivePlanSectio
                 }
                 icon={FileText}
                 iconColor="text-slate-600"
-              />
+              /> */}
             </div>
 
           </div>

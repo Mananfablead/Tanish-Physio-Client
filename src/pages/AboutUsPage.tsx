@@ -15,6 +15,7 @@ export default function AboutUsPage() {
     about,
     whyUs,
     loading: cmsLoading,
+    error: cmsError,
   } = useSelector((state: RootState) => state.cms);
   const {
     admins: publicAdmins,
@@ -33,7 +34,19 @@ export default function AboutUsPage() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
-            <p className="text-muted-foreground">Loading our story...</p>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  if (cmsError) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
+          <div className="text-center">
+        
+            <p className="text-red-500">Error loading content...</p>
           </div>
         </div>
       </Layout>

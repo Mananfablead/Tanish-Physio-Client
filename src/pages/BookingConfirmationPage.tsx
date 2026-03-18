@@ -760,7 +760,18 @@ export default function BookingConfirmationPage() {
               currentPlan: data.currentPlan || data.planName,
               planId: data.planId,
               status: data.status,
-              expiryStatus: data.expiryStatus
+              expiryStatus: data.expiryStatus,
+              // Map flat structure to availableSessions for consistent UI display
+              availableSessions: {
+                remaining: data.remainingSessions ?? data.availableSessions?.remaining ?? 0,
+                total: data.totalSessions ?? data.availableSessions?.total ?? 0,
+                used: data.totalUsed ?? data.usedSessions ?? data.availableSessions?.used ?? 0,
+                percentageUsed: data.availableSessions?.percentageUsed ?? (
+                  data.totalSessions && data.totalUsed 
+                    ? Math.round((data.totalUsed / data.totalSessions) * 100)
+                    : undefined
+                )
+              }
             });
           }
         } catch (error) {
@@ -1257,7 +1268,9 @@ export default function BookingConfirmationPage() {
                         Session Details
                       </h3>
 
-                      <div className="flex items-center gap-3">
+                      <div 
+                         onClick={() => navigate("/about")}
+                      className="flex items-center gap-3">
                         <img
                           src={therapist.avatar}
                           alt={therapist.name}
@@ -1464,12 +1477,12 @@ export default function BookingConfirmationPage() {
 
                   {isAuthenticated && (
                     <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-left">
-                      {/* <h3 className="font-semibold text-lg mb-3 text-green-800 flex items-center gap-2">
+                      <h3 className="font-semibold text-lg mb-3 text-green-800 flex items-center gap-2">
                         <Package className="h-5 w-5" />
                         Subscription Information
-                      </h3> */}
+                      </h3>
 
-                      {/* {loadingSubscription ? (
+                      {loadingSubscription ? (
                         <p className="text-green-700 mb-3">
                           Loading subscription details...
                         </p>
@@ -1508,20 +1521,20 @@ export default function BookingConfirmationPage() {
                               </p>
                             </div>
                           )}
-                          <div className="flex justify-between">
+                          {/* <div className="flex justify-between">
                             <span className="text-green-700">Valid Until:</span>
                             <span className="font-medium">
                               {new Date(
                                 subscriptionInfo.endDate
                               ).toLocaleDateString()}
                             </span>
-                          </div>
+                          </div> */}
                         </div>
                       ) : (
                         <p className="text-green-700 mb-3">
                           No active subscription found.
                         </p>
-                      )} */}
+                      )}
 
                       <div className="mt-4 pt-4 ">
                         <h4 className="font-semibold text-green-800 mb-2">

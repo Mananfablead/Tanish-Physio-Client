@@ -18,7 +18,7 @@ import type { AppDispatch } from "@/store";
 import { useAuth } from "@/context/AuthContext";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { checkSubscriptionEligibility } from "@/lib/api";
-
+import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 // Use the Service type from the shared types
 // Define extended service data structure
 interface ExtendedService {
@@ -56,7 +56,11 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoSliding, setIsAutoSliding] = useState(true); // Auto slide state
   const autoSlideInterval = useRef<NodeJS.Timeout | null>(null);
+  const { admins: publicAdmins } = useSelector(
+    (state: RootState) => state.admins
+  );
 
+  console.log("publicAdmins", publicAdmins);
   // Combine all images (hero, about, and additional images from backend)
   const allImages = [
     service.media?.heroImage,
@@ -231,8 +235,7 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
               <div className="relative rounded-2xl overflow-hidden bg-slate-100 aspect-video flex items-center justify-center mb-6">
                 <img
                   src={
-                    service.media.heroImage ||
-                    "https://placehold.co/600x400/e2e8f0/64748b?text=Video+Preview"
+                    service.media.heroImage
                   }
                   alt="Video preview"
                   className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
@@ -251,12 +254,15 @@ const ServiceMedia = ({ service }: { service: ExtendedService }) => {
         )}
         <div className="lg:w-1/2">
           {/* About Info */}
-          <div className="mb-6">
-            {/* <h3 className="text-xl font-bold text-slate-900 mb-3">About This Service</h3> */}
-            <p className="text-slate-600">
-              {service.details.detailedDescription}
-            </p>
-          </div>
+<div className="mb-6 space-y-3">
+  {service.details.detailedDescription
+    ?.split(". ")
+    .map((line, index) => (
+      <p key={index} className="text-slate-600 leading-relaxed">
+        {line}.
+      </p>
+    ))}
+</div>
         </div>
       </div>
 
@@ -305,6 +311,7 @@ const ServiceSidebar = ({
   setIsSessionLimitExceededModalOpen,
   sessionLimitExceededInfo = null,
   setSessionLimitExceededInfo,
+  publicAdmins = [], // Add publicAdmins prop
 }: {
   service: ExtendedService;
   navigate: any;
@@ -317,6 +324,7 @@ const ServiceSidebar = ({
   sessionLimitExceededInfo?: any;
   setSessionLimitExceededInfo?: (info: any) => void;
   subscriptionInfoProp?: any;
+  publicAdmins?: any[];
 }) => {
   // Safely get auth context with fallback for edge cases
   let isAuthenticated = false;
@@ -329,6 +337,9 @@ const ServiceSidebar = ({
     const reduxAuth = useSelector((state: any) => state.auth);
     isAuthenticated = reduxAuth?.isAuthenticated ?? false;
   }
+
+  // Find the first admin/therapist from publicAdmins or use default
+  const therapist = publicAdmins && publicAdmins.length > 0 ? publicAdmins[0] : null;
 
   const handleBooking = () => {
     // Check if user has an active plan but no remaining sessions or invalid plan
@@ -407,6 +418,53 @@ const ServiceSidebar = ({
 
   return (
     <div className="space-y-6 sticky top-24">
+      {/* Therapist Details Card */}
+      <div
+    onClick={() => navigate("/about")}
+      className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+        <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <Star className="h-5 w-5 fill-primary text-primary" />
+          Therapist Information
+        </h3>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <img 
+              src={therapist?.profilePicture || "/placeholder.svg"} 
+              alt={therapist?.name}
+              className="h-16 w-16 rounded-full object-cover border-2 border-slate-300 shadow-md"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/placeholder.svg";
+              }}
+            />
+            <div>
+              <p className="font-semibold text-slate-900 text-lg">{therapist?.name}</p>
+              <p className="text-sm text-slate-600">{therapist?.doctorProfile?.specialization }</p>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-3 border-t border-slate-200">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <span className="text-sm text-slate-700">{therapist?.doctorProfile?.education }</span>
+            </div>
+          
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <span className="text-sm font-bold text-slate-700">{therapist?.doctorProfile?.experience ? `${therapist.doctorProfile.experience}+` : "5+"} Years Experience</span>
+            </div>
+           
+          </div>
+
+          <div className="bg-white rounded-lg p-3 border border-slate-200">
+            <p className="text-xs text-slate-600 leading-relaxed">
+              <strong className="font-semibold text-slate-800">About {therapist?.name?.split(' ')[0] || "Dr. Khushboo"}:</strong> {therapist?.doctorProfile?.bio || `She specializes in ${service.details.title.toLowerCase()} and has helped hundreds of patients recover successfully. Her evidence-based approach ensures effective treatment tailored to your needs.`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Service Details Card */}
       <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
         <h3 className="text-xl font-bold text-slate-900 mb-4">
           Service Details
@@ -615,6 +673,11 @@ export default function ServiceDetailPage() {
     (state: RootState) => state.services
   );
 
+  // Get public admins from Redux store
+  const { admins: publicAdmins } = useSelector(
+    (state: RootState) => state.admins
+  );
+
   // Use slug if available, otherwise fall back to serviceId
   const identifier = slug || serviceId;
 
@@ -688,6 +751,9 @@ export default function ServiceDetailPage() {
       }
     }
   }, [dispatch, identifier, slug, serviceId]);
+useEffect(() => {
+    dispatch(fetchPublicAdmins());
+  }, [dispatch]);
 
   // Use the service from Redux store
   const service = selectedService;
@@ -733,7 +799,7 @@ export default function ServiceDetailPage() {
             150
           )}... Expert ${service.details.title.toLowerCase()} treatment in Surat. Book your session today.`}
           keywords={`${service.details.title.toLowerCase()}, physiotherapy ${service.details.title.toLowerCase()}, ${service.details.title.toLowerCase()} treatment Surat, rehabilitation ${service.details.title.toLowerCase()}, therapy ${service.details.title.toLowerCase()}`}
-          ogImage={service.media?.heroImage || "/api/og/services"}
+          image={service.media?.heroImage || "/api/og/services"}
           canonicalUrl={`https://tanishphysiofitness.in/services/${
             slug || serviceId
           }`}
@@ -811,6 +877,7 @@ export default function ServiceDetailPage() {
                       hasActivePlan={hasActivePlan}
                       activePlan={activePlan}
                       subscriptionInfoProp={subscriptionInfo}
+                      publicAdmins={publicAdmins}
                       isSessionLimitExceededModalOpen={
                         isSessionLimitExceededModalOpen
                       }

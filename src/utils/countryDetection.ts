@@ -78,7 +78,7 @@ const getCountryFromLanguage = (): string => {
     // Add more as needed
   };
   
-  return countryMap[countryCode] || 'United States'; // Default to US
+  return countryMap[countryCode] || 'India'; // Default to IN
 };
 
 // Main function to detect country

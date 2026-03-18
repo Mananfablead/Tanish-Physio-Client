@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import heroImage from "@/assets/hero-physio.jpg";
+import heroImage from "@/assets/hero-physio.png";
 
 interface HeroSectionProps {
   cmsHero: any;
@@ -57,7 +57,7 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
               </h2>
               <p className="text-lg text-muted-foreground max-w-lg">
                 {cmsHero?.description ||
-                  "Connect with certified physiotherapists from home. Get personalized treatment plans and video consultations tailored to your needs."}
+                  "Connect with certified physiotherapist from home. Get personalized treatment plans and video consultations tailored to your needs."}
               </p>
             </div>
 

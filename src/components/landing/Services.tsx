@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Service } from "@/types/service";
 import { ArrowRight, Clock, IndianRupee, ShoppingCart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface ServicesProps {
   services: Service[];
@@ -19,6 +19,8 @@ export function Services({
   servicesError,
   fadeInUp,
 }: ServicesProps) {
+  const navigate = useNavigate();
+  
   if (servicesLoading) {
     return (
       <section className="py-12 bg-muted/30">
@@ -129,20 +131,55 @@ export function Services({
                         <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
-                    {/* <Button
+                    <Button
                       size="sm"
                       className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                      onClick={() => {
-                       
-                        console.log(
-                          "Book session clicked for service:",
-                          service.slug || service.id
-                        );
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const bookingData = {
+                          service: {
+                            id: service.id,
+                            name: service.title,
+                            price: service.details.price
+                              .replace("₹", "")
+                              .split("-")[0],
+                            duration: service.details.sessionDuration,
+                          },
+                          fromServices: true,
+                          therapist: {
+                            id: `th-${Math.floor(Math.random() * 10000)}`,
+                            name: "Assigned Clinician",
+                            title: "Matched Specialist",
+                          },
+                          session: {
+                            type: "1-on-1",
+                            duration: service.details.sessionDuration,
+                            price: parseInt(
+                              service.details.price
+                                .replace("₹", "")
+                                .split("-")[0]
+                            ),
+                          },
+                          plan: {
+                            name: `${service.title} Plan`,
+                            price: parseInt(
+                              service.details.price
+                                .replace("₹", "")
+                                .split("-")[0]
+                            ),
+                            duration: service.details.sessionDuration,
+                          },
+                        };
+
+                        console.log("Booking Data:", bookingData);
+                        navigate("/questionnaire", { state: bookingData });
                       }}
                     >
                       
                       Book session
-                    </Button> */}
+                    </Button>
                   </div>
                 </div>
               </Card>
