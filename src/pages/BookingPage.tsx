@@ -73,6 +73,7 @@ import {
 } from "@/store/slices/authSlice";
 import BookingLoginModal from "@/components/BookingLoginModal";
 import { fetchAllServices } from "@/store/slices/serviceSlice";
+import { getCurrencyByLocation, detectUserCountry } from "@/utils/currencyDetector";
 export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -165,6 +166,18 @@ export default function BookingPage() {
   const [sessionLimitExceededInfo, setSessionLimitExceededInfo] =
     useState<any>(null);
 
+  // Currency detection state
+  const [detectedCurrency, setDetectedCurrency] = useState<string>("INR");
+
+  // Helper function to get currency symbol
+  const getCurrencySymbol = (currencyCode: string): string => {
+    const symbols: Record<string, string> = {
+      INR: '₹',
+      USD: '$',
+    };
+    return symbols[currencyCode] || currencyCode;
+  };
+
   // Check if session limit is reached (has active plan but no remaining sessions/services)
   const isSessionLimitReached =
     hasActivePlan &&
@@ -178,6 +191,25 @@ export default function BookingPage() {
     dispatch(fetchPublicAdmins());
     dispatch(fetchAllServices());
   }, [dispatch]);
+
+  // Detect user's location and set appropriate currency
+  useEffect(() => {
+    const detectCurrency = async () => {
+      try {
+        const currency = await getCurrencyByLocation();
+        console.log('🌍 Detected currency based on location:', currency);
+        setDetectedCurrency(currency);
+        
+        // Store in sessionStorage for future use
+        sessionStorage.setItem('detectedCurrency', currency);
+      } catch (error) {
+        console.warn('Currency detection failed, using INR as default');
+        setDetectedCurrency('INR');
+      }
+    };
+
+    detectCurrency();
+  }, []);
 
   // Update local state when store offers change
   useEffect(() => {
@@ -377,8 +409,8 @@ export default function BookingPage() {
           ? Number(bookingData.service.price)
           : 0,
 
-    // Add currency field from bookingData or default to INR
-    currency: bookingData?.currency || "INR",
+    // Add currency field - use detected currency (auto-detected based on location)
+    currency: detectedCurrency,
 
     duration:
       subscriptionBooking && bookingData.service
@@ -986,7 +1018,7 @@ export default function BookingPage() {
           const guestSubscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
-            currency: "INR",
+            currency: detectedCurrency,
             clientName: guestUserData.name,
             clientEmail: guestUserData.email,
             clientPhone: guestUserData.phone,
@@ -1023,7 +1055,7 @@ export default function BookingPage() {
           const subscriptionPaymentOrderData = {
             planId: bookingData.service.id || bookingData.service.planId,
             amount: finalPrice,
-            currency: "INR",
+            currency: detectedCurrency,
             couponCode: isCouponApplied ? couponCode : undefined,
             discountAmount: isCouponApplied ? couponDiscount : 0,
             // Add scheduling information
@@ -1078,7 +1110,7 @@ export default function BookingPage() {
           key: razorpayKey || "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
-          currency: "INR",
+          currency: detectedCurrency,
           name: "Tanish physio & fitness",
           description: `Subscription Payment - Plan: ${bookingData.service.name
             }${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""}`,
@@ -1611,7 +1643,7 @@ export default function BookingPage() {
           const guestPaymentOrderData = {
             bookingId: bookingId,
             amount: finalPrice,
-            currency: "INR",
+            currency: detectedCurrency,
             clientName: guestUserData.name,
             clientEmail: guestUserData.email,
             clientPhone: guestUserData.phone,
@@ -1626,7 +1658,7 @@ export default function BookingPage() {
           const paymentOrderData = {
             bookingId: bookingId,
             amount: finalPrice,
-            currency: "INR",
+            currency: detectedCurrency,
             couponCode: isCouponApplied ? couponCode : undefined,
             discountAmount: isCouponApplied ? couponDiscount : 0,
           };
@@ -1664,7 +1696,7 @@ export default function BookingPage() {
           key: razorpayKey || "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
           amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
-          currency: "INR",
+          currency: detectedCurrency,
           name: "Tanish physio & fitness",
           description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""
             }`,
@@ -2554,7 +2586,7 @@ export default function BookingPage() {
                       )} */}
                     </div>
                   ) : (
-                    <p className="font-semibold">₹{plan.price}</p>
+                    <p className="font-semibold">{getCurrencySymbol(detectedCurrency)}{plan.price}</p>
                   )}
                 </div>
               </CardContent>
@@ -2815,13 +2847,13 @@ export default function BookingPage() {
                     {promoApplied && !isCouponApplied && (
                       <div className="flex justify-between items-center text-success">
                         <span className="text-sm">Promo Discount (20%)</span>
-                        <span>-₹{Math.round(plan.price * 0.2)}</span>
+                        <span>-{getCurrencySymbol(detectedCurrency)}{Math.round(plan.price * 0.2)}</span>
                       </div>
                     )}
                     {isCouponApplied && (
                       <div className="flex justify-between items-center text-success">
                         <span className="text-sm">Coupon Discount</span>
-                        <span>-₹{couponDiscount}</span>
+                        <span>-{getCurrencySymbol(detectedCurrency)}{couponDiscount}</span>
                       </div>
                     )}
                   </div>
@@ -2837,7 +2869,7 @@ export default function BookingPage() {
                     </p>
                     {(promoApplied || isCouponApplied) && (
                       <p className="text-xs text-muted-foreground line-through">
-                        Original: ₹{basePrice}
+                        Original: {getCurrencySymbol(detectedCurrency)}{basePrice}
                       </p>
                     )}
                   </div>
@@ -2853,11 +2885,11 @@ export default function BookingPage() {
                   ) : (
                     <div className="text-right">
                       <span className="font-bold text-2xl text-primary">
-                        ₹{finalPrice}
+                        {getCurrencySymbol(detectedCurrency)}{finalPrice}
                       </span>
                       {(promoApplied || isCouponApplied) && (
                         <p className="text-xs text-success">
-                          You save ₹{discountAmount}
+                          You save {getCurrencySymbol(detectedCurrency)}{discountAmount}
                         </p>
                       )}
                     </div>
@@ -2899,12 +2931,12 @@ export default function BookingPage() {
                       {hasActivePlan && !isSessionLimitReached
                         ? "Book Session"
                         : subscriptionBooking
-                          ? `Pay ₹${finalPrice} for Subscription${promoApplied || isCouponApplied
-                            ? ` (Save ₹${discountAmount})`
+                          ? `Pay ${getCurrencySymbol(detectedCurrency)}${finalPrice} for Subscription${promoApplied || isCouponApplied
+                            ? ` (Save ${getCurrencySymbol(detectedCurrency)}${discountAmount})`
                             : ""
                           }`
-                          : `Pay ₹${finalPrice} for Booking${promoApplied || isCouponApplied
-                            ? ` (Save ₹${discountAmount})`
+                          : `Pay ${getCurrencySymbol(detectedCurrency)}${finalPrice} for Booking${promoApplied || isCouponApplied
+                            ? ` (Save ${getCurrencySymbol(detectedCurrency)}${discountAmount})`
                             : ""
                           }`}
                     </>
@@ -3089,7 +3121,7 @@ export default function BookingPage() {
                       const paymentOrderData = {
                         bookingId: bookingId,
                         amount: finalPrice,
-                        currency: "INR",
+                        currency: detectedCurrency,
                         couponCode: isCouponApplied ? couponCode : undefined,
                         discountAmount: isCouponApplied ? couponDiscount : 0,
                       };
@@ -3134,7 +3166,7 @@ export default function BookingPage() {
                         key: razorpayKey || "rzp_test_SHYwF83mxS594F",
                         order_id: orderId, // Use the order ID from the backend
                         amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
-                        currency: "INR",
+                        currency: detectedCurrency,
                         name: "Tanish physio & fitness",
                         description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name
                             ? ` for ${publicAdmins[0].name}`
