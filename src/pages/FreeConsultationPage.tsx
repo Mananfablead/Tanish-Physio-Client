@@ -541,7 +541,7 @@ export default function FreeConsultationPage() {
                             className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 hover:shadow-md transition-all duration-300 group whitespace-nowrap overflow-hidden"
                           >
                             <div className="flex-1 overflow-hidden ">
-                              <h4 className="font-bold text-gray-900 text-sm mb-2  transition-colors truncate">
+                              <h4 className="font-semibold text-gray-900 text-sm mb-2  transition-colors truncate">
                                 {item.title}
                               </h4>
                               <p className="text-xs text-gray-600 leading-tight group-hover:text-gray-700 transition-colors truncate">
