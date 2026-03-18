@@ -14,7 +14,9 @@ export interface Service {
     conditionsTreated: string[];
     features: string[];
     sessionDuration: string;
-    price: string;
+    price: string; // For backward compatibility
+    priceINR?: number; // Price in Indian Rupees
+    priceUSD?: number; // Price in US Dollars
     priceRange: string; // Added for compatibility with component
     prerequisites: string;
     whatToExpect: string[];

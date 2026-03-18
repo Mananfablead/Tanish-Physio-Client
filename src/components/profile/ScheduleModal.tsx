@@ -75,8 +75,11 @@ export function ScheduleModal({
     if (isValidSlot) {
       setSelectedDate(date);
       setScheduleDate(date);
-      setScheduleTime(timeSlot.start);
-      setSelectedTimeSlot({ start: timeSlot.start, end: timeSlot.end });
+      // Use originalStart/originalEnd if available (admin's actual time), otherwise use start/end
+      const slotStart = timeSlot.originalStart || timeSlot.start;
+      const slotEnd = timeSlot.originalEnd || timeSlot.end;
+      setScheduleTime(slotStart);
+      setSelectedTimeSlot({ start: slotStart, end: slotEnd });
     }
   };
 

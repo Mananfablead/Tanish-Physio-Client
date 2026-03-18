@@ -47,6 +47,7 @@ export default function FreeConsultationPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState<any>(null); // Store the full slot object
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [guestUserData, setGuestUserData] = useState({
@@ -63,7 +64,8 @@ export default function FreeConsultationPage() {
     useState<boolean>(false);
 
   // Free consultation eligibility state
-  const [freeConsultationEligible, setFreeConsultationEligible] = useState<boolean>(true);
+  const [freeConsultationEligible, setFreeConsultationEligible] =
+    useState<boolean>(true);
   const [freeConsultationInfo, setFreeConsultationInfo] = useState<any>(null);
 
   // Check if user is a guest (not logged in)
@@ -149,7 +151,9 @@ export default function FreeConsultationPage() {
     const checkFreeConsultationStatus = async () => {
       if (user) {
         try {
-          const response = await api.get("/subscriptions/free-consultation-eligibility");
+          const response = await api.get(
+            "/subscriptions/free-consultation-eligibility",
+          );
           const data = response.data.data;
 
           setFreeConsultationEligible(data.eligible);
@@ -164,7 +168,10 @@ export default function FreeConsultationPage() {
           console.error("Error checking free consultation eligibility:", error);
 
           // If token is required but not present, treat as guest
-          if (error.response?.status === 400 && error.response?.data?.message === "Access token required") {
+          if (
+            error.response?.status === 400 &&
+            error.response?.data?.message === "Access token required"
+          ) {
             setFreeConsultationEligible(true);
             setFreeConsultationInfo({
               eligible: true,
@@ -212,14 +219,17 @@ export default function FreeConsultationPage() {
             .filter(
               (slot: any) =>
                 slot.status === "available" &&
-                slot.bookingType === "free-consultation"
+                slot.bookingType === "free-consultation",
             )
             .map((slot: any) => ({
               ...slot,
               date: avail.date,
               therapistId: avail.therapistId._id,
               therapistName: avail.therapistId.name,
-            }))
+              // Use originalStart/originalEnd if available (admin's actual time), otherwise use start/end
+              displayStart: slot.originalStart || slot.start,
+              displayEnd: slot.originalEnd || slot.end,
+            })),
         )
         .filter((slot: any) => slot.date === date);
 
@@ -244,7 +254,10 @@ export default function FreeConsultationPage() {
   };
 
   const handleTimeSelect = (slot: any) => {
-    setSelectedTime(`${slot.start}-${slot.end}`);
+    // Use the original admin time (not converted client time)
+    setSelectedTime(`${slot.displayStart}-${slot.displayEnd}`);
+    // Store the actual slot data for booking
+    setSelectedSlot(slot);
   };
 
   const handleSubmit = async () => {
@@ -276,10 +289,15 @@ export default function FreeConsultationPage() {
         amount: 0,
         scheduledDate: selectedDate,
         scheduledTime: selectedTime,
-        timeSlot: {
-          start: selectedTime.split("-")[0],
-          end: selectedTime.split("-")[1],
-        },
+        timeSlot: selectedSlot
+          ? {
+              start: selectedSlot.displayStart || selectedSlot.start,
+              end: selectedSlot.displayEnd || selectedSlot.end,
+            }
+          : {
+              start: selectedTime.split("-")[0],
+              end: selectedTime.split("-")[1],
+            },
         bookingType: "free-consultation", // Add this field
       };
 
@@ -290,11 +308,11 @@ export default function FreeConsultationPage() {
             ...bookingData,
             clientEmail: guestUserData.email,
             clientPhone: guestUserData.phone,
-          })
+          }),
         ).unwrap();
 
         toast.success(
-          "Free consultation booked successfully! You are now logged in."
+          "Free consultation booked successfully! You are now logged in.",
         );
         navigate("/booking-confirmation", {
           state: {
@@ -336,7 +354,10 @@ export default function FreeConsultationPage() {
             transition={{ duration: 0.5 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <Badge variant="secondary" className="mb-3 px-4 py-1.5 text-xs font-semibold bg-[hsl(174_62%_45%)] text-white border-0 shadow-md">
+            <Badge
+              variant="secondary"
+              className="mb-3 px-4 py-1.5 text-xs font-semibold bg-[hsl(174_62%_45%)] text-white border-0 shadow-md"
+            >
               Free Consultation
             </Badge>
 
@@ -367,7 +388,6 @@ export default function FreeConsultationPage() {
               className="max-w-5xl mx-auto"
             >
               <Card variant="elevated" className="overflow-hidden ">
-
                 <CardContent className="pt-8 px-8 pb-8">
                   <div className="grid lg:grid-cols-2 gap-8">
                     {/* Left Column - Booking Form */}
@@ -376,12 +396,17 @@ export default function FreeConsultationPage() {
                         <div className="bg-gradient-to-br from-[hsl(174_62%_45%)] to-teal-600 p-2 rounded-lg">
                           <User className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">Your Information</h3>
+                        <h3 className="text-xl font-bold text-gray-900">
+                          Your Information
+                        </h3>
                       </div>
 
                       <div className="grid gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="name" className="font-semibold text-gray-700 flex items-center gap-2">
+                          <Label
+                            htmlFor="name"
+                            className="font-semibold text-gray-700 flex items-center gap-2"
+                          >
                             Full Name <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -399,8 +424,12 @@ export default function FreeConsultationPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="email" className="font-semibold text-gray-700 flex items-center gap-2">
-                            Email Address <span className="text-red-500">*</span>
+                          <Label
+                            htmlFor="email"
+                            className="font-semibold text-gray-700 flex items-center gap-2"
+                          >
+                            Email Address{" "}
+                            <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id="email"
@@ -418,7 +447,10 @@ export default function FreeConsultationPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="phone" className="font-semibold text-gray-700 flex items-center gap-2">
+                          <Label
+                            htmlFor="phone"
+                            className="font-semibold text-gray-700 flex items-center gap-2"
+                          >
                             Phone Number <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -436,8 +468,10 @@ export default function FreeConsultationPage() {
                         </div>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-
-                            <Label className="font-semibold text-gray-700 flex items-center gap-2">Select Date & Time <span className="text-red-500">*</span></Label>
+                            <Label className="font-semibold text-gray-700 flex items-center gap-2">
+                              Select Date & Time{" "}
+                              <span className="text-red-500">*</span>
+                            </Label>
                           </div>
                           <Input
                             type="date"
@@ -451,13 +485,15 @@ export default function FreeConsultationPage() {
                           {selectedDate && (
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
+                              animate={{ opacity: 1, height: "auto" }}
                               className="space-y-3"
                             >
                               {loadingSlots ? (
                                 <div className="text-center py-8 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border-2 border-dashed border-teal-200">
                                   <div className="animate-spin rounded-full h-10 w-10 border-4 border-teal-500 border-t-transparent mx-auto mb-3"></div>
-                                  <p className="text-sm text-gray-600 font-semibold">Loading available slots...</p>
+                                  <p className="text-sm text-gray-600 font-semibold">
+                                    Loading available slots...
+                                  </p>
                                 </div>
                               ) : availableSlots.length > 0 ? (
                                 <div className="grid grid-cols-3 gap-2">
@@ -472,18 +508,21 @@ export default function FreeConsultationPage() {
                                     >
                                       <Button
                                         variant={
-                                          selectedTime === `${slot.start}-${slot.end}`
+                                          selectedTime ===
+                                          `${slot.displayStart}-${slot.displayEnd}`
                                             ? "hero"
                                             : "outline"
                                         }
                                         onClick={() => handleTimeSelect(slot)}
-                                        className={`w-full h-12 text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ${selectedTime === `${slot.start}-${slot.end}`
-                                          ? 'bg-gradient-to-r from-[hsl(174_62%_45%)] to-teal-600 text-white'
-                                          : 'bg-white hover:bg-gradient-to-r  border-2'
-                                          }`}
+                                        className={`w-full h-12 text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ${
+                                          selectedTime ===
+                                          `${slot.displayStart}-${slot.displayEnd}`
+                                            ? "bg-gradient-to-r from-[hsl(174_62%_45%)] to-teal-600 text-white"
+                                            : "bg-white hover:bg-gradient-to-r  border-2"
+                                        }`}
                                       >
                                         <Clock className="h-4 w-4 mr-1" />
-                                        {slot.start} - {slot.end}
+                                        {slot.displayStart} - {slot.displayEnd}
                                       </Button>
                                     </motion.div>
                                   ))}
@@ -491,8 +530,12 @@ export default function FreeConsultationPage() {
                               ) : (
                                 <div className="text-center py-8 bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl border-2 border-dashed border-red-200">
                                   <Calendar className="h-12 w-12 text-red-400 mx-auto mb-3" />
-                                  <p className="text-gray-700 font-bold">No slots available for this date</p>
-                                  <p className="text-sm text-gray-500 mt-1 font-medium">Please select another date</p>
+                                  <p className="text-gray-700 font-bold">
+                                    No slots available for this date
+                                  </p>
+                                  <p className="text-sm text-gray-500 mt-1 font-medium">
+                                    Please select another date
+                                  </p>
                                 </div>
                               )}
                             </motion.div>
@@ -507,7 +550,9 @@ export default function FreeConsultationPage() {
                         <div className="bg-gradient-to-br from-[hsl(174_62%_45%)] to-teal-600 p-2 rounded-lg">
                           <Star className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">What to Expect</h3>
+                        <h3 className="text-xl font-bold text-gray-900">
+                          What to Expect
+                        </h3>
                       </div>
 
                       <div className="space-y-3">
@@ -516,20 +561,20 @@ export default function FreeConsultationPage() {
                             icon: <Clock className="h-5 w-5" />,
                             gradient: "from-[hsl(174_62%_45%)] to-teal-600",
                             title: "15-Minute Session",
-                            desc: "Focused consultation for your condition"
+                            desc: "Focused consultation for your condition",
                           },
                           {
                             icon: <Video className="h-5 w-5" />,
                             gradient: "from-teal-500 to-cyan-600",
                             title: "Secure Video Call",
-                            desc: "HD consultation from home"
+                            desc: "HD consultation from home",
                           },
 
                           {
                             icon: <Zap className="h-5 w-5" />,
                             gradient: "from-yellow-500 to-orange-600",
                             title: "100% Free",
-                            desc: "No charges or commitments"
+                            desc: "No charges or commitments",
                           },
                         ].map((item, index) => (
                           <motion.div
@@ -552,7 +597,6 @@ export default function FreeConsultationPage() {
                         ))}
                       </div>
 
-
                       {/* Next Steps */}
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -561,11 +605,14 @@ export default function FreeConsultationPage() {
                         className="bg-white ps-2 rounded-2xl "
                       >
                         <div className="flex items-start">
-
                           <div>
-                            <h4 className="font-bold  text-base mb-1">Next Steps</h4>
+                            <h4 className="font-bold  text-base mb-1">
+                              Next Steps
+                            </h4>
                             <p className="text-xs  leading-relaxed font-medium">
-                              After booking, our admin will confirm within 24 hours. You'll receive a confirmation email with the video link.
+                              After booking, our admin will confirm within 24
+                              hours. You'll receive a confirmation email with
+                              the video link.
                             </p>
                           </div>
                         </div>
@@ -614,7 +661,6 @@ export default function FreeConsultationPage() {
                 </CardContent>
               </Card>
             </motion.div>
-
           </motion.div>
         </div>
       </div>

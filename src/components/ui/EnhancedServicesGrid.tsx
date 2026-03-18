@@ -1,13 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  getPriceByLocationSync,
+  getCurrencySymbolSync,
+} from "@/utils/priceUtils";
 
 interface Service {
   id: number | string;
@@ -19,6 +19,8 @@ interface Service {
   details: {
     sessionDuration: string;
     price: string;
+    priceINR?: number;
+    priceUSD?: number;
   };
   media?: {
     heroImage?: string;
@@ -36,7 +38,7 @@ export function EnhancedServicesGrid({
   services = [],
   hasActivePlan = false,
   activePlan = null,
-  subscriptionInfo = null
+  subscriptionInfo = null,
 }: EnhancedServicesGridProps) {
   const servicesToDisplay = services;
   const navigate = useNavigate();
@@ -44,6 +46,13 @@ export function EnhancedServicesGrid({
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
+
+  // Get currency symbol based on user location
+  useEffect(() => {
+    const symbol = getCurrencySymbolSync();
+    setCurrencySymbol(symbol);
+  }, []);
 
   const servicesPerPage = 9;
 
@@ -56,8 +65,8 @@ export function EnhancedServicesGrid({
         servicesToDisplay
           .map((s) => s.category || s.title?.split(" ")[0] || "Other")
           .map((c) => c.trim())
-          .filter(Boolean)
-      )
+          .filter(Boolean),
+      ),
     );
 
     return ["all", ...uniqueCategories];
@@ -161,7 +170,7 @@ export function EnhancedServicesGrid({
                     src={
                       service.media?.heroImage ||
                       `https://placehold.co/400x300?text=${encodeURIComponent(
-                        service.title
+                        service.title,
                       )}`
                     }
                     alt={service.title}
@@ -171,20 +180,39 @@ export function EnhancedServicesGrid({
 
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-grow">
-
                   <h3 className="text-xl font-bold mb-2 line-clamp-1">
                     {service.title}
                   </h3>
 
                   <div className="flex justify-between text-sm text-slate-500 mb-3">
-                    <span>
-                      Duration: {service.details.sessionDuration}
-                    </span>
+                    <span>Duration: {service.details.sessionDuration}</span>
                     <span className="font-bold">
-                      {hasActivePlan && ((subscriptionInfo && subscriptionInfo.remainingSessions > 0) || (activePlan?.availableSessions?.remaining > 0)) ? (
-                        <span className="text-green-600">Included With Plan</span>
+                      {hasActivePlan &&
+                      ((subscriptionInfo &&
+                        subscriptionInfo.remainingSessions > 0) ||
+                        activePlan?.availableSessions?.remaining > 0) ? (
+                        <span className="text-green-600">
+                          Included With Plan
+                        </span>
                       ) : (
-                        <span className="text-primary">{service.details.price}</span>
+                        <span className="text-primary">
+                          {(() => {
+                            const priceINR = service.details.priceINR;
+                            const priceUSD = service.details.priceUSD;
+                            if (
+                              priceINR !== undefined &&
+                              priceUSD !== undefined
+                            ) {
+                              const priceInfo = getPriceByLocationSync(
+                                priceINR,
+                                priceUSD,
+                              );
+                              return priceInfo.formatted;
+                            }
+                            // Fallback to old format
+                            return service.details.price;
+                          })()}
+                        </span>
                       )}
                     </span>
                   </div>
@@ -206,12 +234,44 @@ export function EnhancedServicesGrid({
                           service: {
                             id: service.id,
                             name: service.title,
-                            price: service.details.price
-                              .replace("₹", "")
-                              .split("-")[0],
+                            price: (() => {
+                              const priceINR = service.details.priceINR;
+                              const priceUSD = service.details.priceUSD;
+                              if (
+                                priceINR !== undefined &&
+                                priceUSD !== undefined
+                              ) {
+                                const priceInfo = getPriceByLocationSync(
+                                  priceINR,
+                                  priceUSD,
+                                );
+                                return priceInfo.amount.toString();
+                              }
+                              // Fallback to old format
+                              const oldPrice = service.details.price || "0";
+                              return oldPrice
+                                .replace(/[₹$,]/g, "")
+                                .split("-")[0];
+                            })(),
                             duration: service.details.sessionDuration,
                           },
                           fromServices: true,
+                          // Add currency information based on location
+                          currency: (() => {
+                            const priceINR = service.details.priceINR;
+                            const priceUSD = service.details.priceUSD;
+                            if (
+                              priceINR !== undefined &&
+                              priceUSD !== undefined
+                            ) {
+                              const priceInfo = getPriceByLocationSync(
+                                priceINR,
+                                priceUSD,
+                              );
+                              return priceInfo.currencyCode; // 'INR' or 'USD'
+                            }
+                            return "INR"; // Default
+                          })(),
                           therapist: {
                             id: `th-${Math.floor(Math.random() * 10000)}`,
                             name: "Assigned Clinician",
@@ -220,19 +280,51 @@ export function EnhancedServicesGrid({
                           session: {
                             type: "1-on-1",
                             duration: service.details.sessionDuration,
-                            price: parseInt(
-                              service.details.price
-                                .replace("₹", "")
-                                .split("-")[0]
-                            ),
+                            price: (() => {
+                              const priceINR = service.details.priceINR;
+                              const priceUSD = service.details.priceUSD;
+                              if (
+                                priceINR !== undefined &&
+                                priceUSD !== undefined
+                              ) {
+                                const priceInfo = getPriceByLocationSync(
+                                  priceINR,
+                                  priceUSD,
+                                );
+                                return priceInfo.amount;
+                              }
+                              // Fallback to old format
+                              const oldPrice = service.details.price || "0";
+                              return (
+                                parseInt(
+                                  oldPrice.replace(/[₹$,]/g, "").split("-")[0],
+                                ) || 0
+                              );
+                            })(),
                           },
                           plan: {
                             name: `${service.title} Plan`,
-                            price: parseInt(
-                              service.details.price
-                                .replace("₹", "")
-                                .split("-")[0]
-                            ),
+                            price: (() => {
+                              const priceINR = service.details.priceINR;
+                              const priceUSD = service.details.priceUSD;
+                              if (
+                                priceINR !== undefined &&
+                                priceUSD !== undefined
+                              ) {
+                                const priceInfo = getPriceByLocationSync(
+                                  priceINR,
+                                  priceUSD,
+                                );
+                                return priceInfo.amount;
+                              }
+                              // Fallback to old format
+                              const oldPrice = service.details.price || "0";
+                              return (
+                                parseInt(
+                                  oldPrice.replace(/[₹$,]/g, "").split("-")[0],
+                                ) || 0
+                              );
+                            })(),
                             duration: service.details.sessionDuration,
                           },
                         };

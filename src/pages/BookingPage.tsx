@@ -370,11 +370,15 @@ export default function BookingPage() {
           ? `${bookingData.service.name} Plan`
           : "Default Plan",
 
-    price: hasActivePlan && !isSessionLimitReached
-      ? 0
-      : bookingData.service
-        ? Number(bookingData.service.price)
-        : 0,
+    price:
+      hasActivePlan && !isSessionLimitReached
+        ? 0
+        : bookingData.service
+          ? Number(bookingData.service.price)
+          : 0,
+
+    // Add currency field from bookingData or default to INR
+    currency: bookingData?.currency || "INR",
 
     duration:
       subscriptionBooking && bookingData.service

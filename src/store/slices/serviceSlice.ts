@@ -50,8 +50,10 @@ const transformServiceFromAPI = (apiService: any): Service => {
       features: combinedFeatures, // Include additional images in features
       sessionDuration:
         apiService.duration || apiService.sessionDuration || "30 min",
-      price: `₹${apiService.price || 0}`,
-      priceRange: `₹${apiService.price || 0}`,
+      price: `₹${apiService.priceINR || apiService.price || 0}`, // For backward compatibility
+      priceINR: apiService.priceINR || apiService.price || 0,
+      priceUSD: apiService.priceUSD || 0,
+      priceRange: `₹${apiService.priceINR || apiService.price || 0}`,
       prerequisites: Array.isArray(apiService.prerequisites)
         ? apiService.prerequisites.join(", ")
         : apiService.prerequisites || "",
