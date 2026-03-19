@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, ArrowRight, Users } from "lucide-react";
+import { CheckCircle, ArrowRight, Users, IndianRupee, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getPriceByLocationSync } from "@/utils/priceUtils";
 
 interface SubscriptionPlansProps {
   subscriptionPlans: any[];
@@ -21,6 +22,53 @@ export const SubscriptionPlans = ({
 
   const [activeTab, setActiveTab] =
     useState<"individual" | "group">("individual");
+  
+  // Currency state
+  const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
+  const [currencyCode, setCurrencyCode] = useState<"INR" | "USD">("INR");
+  
+  // Detect currency on mount
+  useEffect(() => {
+    const checkCurrency = async () => {
+      try {
+        // Use the price utility which handles location detection
+        const response = await fetch("http://ip-api.com/json/");
+        if (response.ok) {
+          const data = await response.json();
+          console.log('💳 Subscription Currency Detection:', {
+            country: data.country,
+            countryCode: data.country_code,
+            timezone: data.timezone
+          });
+          
+          if (data.country_code === "IN") {
+            setCurrencySymbol("₹");
+            setCurrencyCode("INR");
+          } else {
+            setCurrencySymbol("$");
+            setCurrencyCode("USD");
+          }
+        }
+      } catch (error) {
+        console.warn('Currency detection failed, using INR');
+        setCurrencySymbol("₹");
+        setCurrencyCode("INR");
+      }
+    };
+
+    checkCurrency();
+  }, []);
+  
+  // Debug: Log plan prices
+  useEffect(() => {
+    console.log('💳 Subscription Plans:', subscriptionPlans.map(plan => ({
+      name: plan.name,
+      priceINR: plan.priceINR,
+      priceUSD: plan.priceUSD,
+      oldPrice: plan.price,
+      currency: plan.currency
+    })));
+  }, [subscriptionPlans]);
 
   // Handle tab change
   const handleTabChange = (tab: "individual" | "group") => {
@@ -143,13 +191,42 @@ export const SubscriptionPlans = ({
                       </h3>
 
                       <div className="flex items-baseline justify-center gap-1">
+                        {/* Currency Icon */}
+                        {currencySymbol === "₹" ? (
+                          <IndianRupee className="h-8 w-8 text-primary" />
+                        ) : (
+                          <DollarSign className="h-8 w-8 text-primary" />
+                        )}
+                        
+                        {/* Price Display with Location-Based Currency */}
                         <span className="text-4xl font-bold">
-                          ₹{plan.price}
+                          {(() => {
+                            const priceINR = plan.priceINR;
+                            const priceUSD = plan.priceUSD;
+                            
+                            console.log(`💰 ${plan.name} prices:`, { priceINR, priceUSD });
+                            
+                            if (priceINR !== undefined && priceUSD !== undefined && priceINR > 0 && priceUSD > 0) {
+                              const priceInfo = getPriceByLocationSync(priceINR, priceUSD);
+                              console.log(`✅ Showing: ${priceInfo.formatted}`);
+                              return priceInfo.amount.toLocaleString();
+                            }
+                            
+                            // Fallback to old format
+                            const fallbackPrice = plan.price || 0;
+                            console.log('⚠️ Fallback to old price:', fallbackPrice);
+                            return fallbackPrice.toLocaleString();
+                          })()}
                         </span>
                         <span className="text-muted-foreground text-sm">
                           /{plan.duration}
                         </span>
                       </div>
+                      
+                      {/* Currency Code Display */}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {currencyCode}
+                      </p>
                     </div>
 
                     {/* FEATURES */}

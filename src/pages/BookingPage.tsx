@@ -173,11 +173,27 @@ export default function BookingPage() {
   // Helper function to get currency symbol
   const getCurrencySymbol = (currencyCode: string): string => {
     const symbols: Record<string, string> = {
-      INR: '₹',
-      USD: '$',
+      INR: "₹",
+      USD: "$",
     };
-    return symbols[currencyCode] || currencyCode;
+    const symbol = symbols[currencyCode] || currencyCode;
+    console.log("💱 Currency symbol for", currencyCode, ":", symbol);
+    return symbol;
   };
+
+  // Debug: Log booking data with prices
+  useEffect(() => {
+    if (bookingData?.service) {
+      console.log("💰 Booking Service Data:", {
+        serviceName: bookingData.service.name,
+        priceINR: bookingData.service.priceINR,
+        priceUSD: bookingData.service.priceUSD,
+        oldPrice: bookingData.service.price,
+        detectedCurrency: detectedCurrency,
+        currencySymbol: getCurrencySymbol(detectedCurrency),
+      });
+    }
+  }, [bookingData, detectedCurrency]);
 
   // Check if session limit is reached (has active plan but no remaining sessions/services)
   const isSessionLimitReached =
@@ -198,14 +214,14 @@ export default function BookingPage() {
     const detectCurrency = async () => {
       try {
         const currency = await getCurrencyByLocation();
-        console.log('🌍 Detected currency based on location:', currency);
+        console.log("🌍 Detected currency based on location:", currency);
         setDetectedCurrency(currency);
-        
+
         // Store in sessionStorage for future use
-        sessionStorage.setItem('detectedCurrency', currency);
+        sessionStorage.setItem("detectedCurrency", currency);
       } catch (error) {
-        console.warn('Currency detection failed, using INR as default');
-        setDetectedCurrency('INR');
+        console.warn("Currency detection failed, using INR as default");
+        setDetectedCurrency("INR");
       }
     };
 
@@ -248,10 +264,10 @@ export default function BookingPage() {
             totalUsed,
             remainingServices,
             usedServices,
-            currentPlan,  // Get current plan info
-            planId,       // Get plan ID
-            status,       // Get plan status
-            expiryStatus  // Get expiry status
+            currentPlan, // Get current plan info
+            planId, // Get plan ID
+            status, // Get plan status
+            expiryStatus, // Get expiry status
           } = data;
 
           // Use API values directly since they now include combined counting
@@ -279,7 +295,7 @@ export default function BookingPage() {
             currentPlan,
             planId,
             status,
-            expiryStatus
+            expiryStatus,
           });
 
           console.log("Subscription info updated:", {
@@ -292,7 +308,7 @@ export default function BookingPage() {
             currentPlan,
             planId,
             status,
-            expiryStatus
+            expiryStatus,
           });
         } catch (error) {
           console.error("Error checking subscription status:", error);
@@ -387,9 +403,9 @@ export default function BookingPage() {
     bookingData?.therapist ||
     (publicAdmins && publicAdmins.length > 0
       ? {
-        id: publicAdmins[0]?.id,
-        name: publicAdmins[0]?.name,
-      }
+          id: publicAdmins[0]?.id,
+          name: publicAdmins[0]?.name,
+        }
       : undefined);
   // console.log("therapist", therapist)
   const serviceBooking = bookingData?.fromServices === true;
@@ -621,7 +637,7 @@ export default function BookingPage() {
           amount: plan.price,
           bookingType,
           userId,
-        })
+        }),
       );
 
       if (validateCoupon.fulfilled.match(actionResult)) {
@@ -724,6 +740,32 @@ export default function BookingPage() {
     timeSlot?: { start: string; end: string },
     selectedService?: any,
   ) => {
+    console.log("📅 Schedule Confirm:", {
+      date,
+      time,
+      timeSlot,
+      availableSlots: availability?.find((a) => a.date === date)?.timeSlots,
+    });
+
+    // Validate time slot exists in availability
+    if (timeSlot) {
+      const selectedDateAvailability = availability.find(
+        (a) => a.date === date,
+      );
+      const slotExists = selectedDateAvailability?.timeSlots?.some(
+        (slot) => slot.start === timeSlot.start && slot.end === timeSlot.end,
+      );
+
+      if (!slotExists) {
+        console.error("❌ Selected time slot does not exist in availability!");
+        console.error("Available slots:", selectedDateAvailability?.timeSlots);
+        toast.error(
+          "Selected time slot is not available. Please choose a different time.",
+        );
+        return;
+      }
+    }
+
     // Save the scheduled session to sessionStorage with complete time slot info
     const scheduledSession = {
       date,
@@ -749,7 +791,9 @@ export default function BookingPage() {
     }
 
     const timeDisplay = timeSlot ? `${timeSlot.start} - ${timeSlot.end}` : time;
-    // toast.success(`Session scheduled for ${new Date(date).toLocaleDateString()} at ${timeDisplay}`);
+    toast.success(
+      `Session scheduled for ${new Date(date).toLocaleDateString()} at ${timeDisplay}`,
+    );
     closeScheduleModal();
   };
 
@@ -856,13 +900,33 @@ export default function BookingPage() {
             },
           });
         } else {
-          toast.error(response.data?.message || "Failed to book session");
+          console.error("❌ Booking failed:", response);
+          const errorMessage =
+            response.data?.message ||
+            response.message ||
+            "Failed to book session";
+
+          // Show more helpful error message
+          if (errorMessage.includes("No time slot found")) {
+            toast.error(
+              <div>
+                <p className="font-bold">Time slot not available</p>
+                <p className="text-sm">{errorMessage}</p>
+                <p className="text-xs mt-2">
+                  Please go back and select a different time slot from the
+                  available options.
+                </p>
+              </div>,
+            );
+          } else {
+            toast.error(errorMessage);
+          }
         }
       } catch (error: any) {
         console.error("Error booking with subscription:", error);
-        const errorMessage = 
-          error?.response?.data?.message || 
-          error?.message || 
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
           "Failed to book session with subscription";
         toast.error(errorMessage);
       } finally {
@@ -879,11 +943,15 @@ export default function BookingPage() {
       (subscriptionInfo.remainingSessions <= 0 ||
         subscriptionInfo.remainingServices <= 0)
     ) {
-      const message = `You have reached your ${subscriptionInfo.remainingSessions <= 0 ? "session" : "service"
-        } limit. Your ${subscriptionInfo.planName} includes ${subscriptionInfo.totalSessions
-        } sessions and ${subscriptionInfo.totalService || subscriptionInfo.totalServices
-        } services. You have used ${subscriptionInfo.usedSessions} sessions and ${subscriptionInfo.usedServices
-        } services.`;
+      const message = `You have reached your ${
+        subscriptionInfo.remainingSessions <= 0 ? "session" : "service"
+      } limit. Your ${subscriptionInfo.planName} includes ${
+        subscriptionInfo.totalSessions
+      } sessions and ${
+        subscriptionInfo.totalService || subscriptionInfo.totalServices
+      } services. You have used ${subscriptionInfo.usedSessions} sessions and ${
+        subscriptionInfo.usedServices
+      } services.`;
       console.log(hasActivePlan, subscriptionBooking, subscriptionInfo);
       // Set the session limit exceeded info and open the modal
       setSessionLimitExceededInfo({
@@ -1108,7 +1176,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-            "Payment order creation failed. Please try again.",
+              "Payment order creation failed. Please try again.",
           );
           setIsProcessing(false);
           return;
@@ -1118,15 +1186,25 @@ export default function BookingPage() {
           paymentOrderResult.payload.order || paymentOrderResult.payload;
         const { orderId, key: razorpayKey } = orderData;
 
+        console.log("💳 Payment Order Data:", {
+          orderId,
+          razorpayKey,
+          backendAmount: orderData.amount,
+          calculatedAmount: finalPrice * 100,
+          finalPrice,
+          detectedCurrency,
+        });
+
         // Razorpay options for subscription
         const options = {
           key: razorpayKey || "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
-          amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
+          amount: finalPrice * 100, // ALWAYS use our calculated amount (prevents ₹10 bug)
           currency: detectedCurrency,
           name: "Tanish physio & fitness",
-          description: `Subscription Payment - Plan: ${bookingData.service.name
-            }${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""}`,
+          description: `Subscription Payment - Plan: ${
+            bookingData.service.name
+          }${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""}`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
             // Payment successful - send response to backend for verification
@@ -1244,7 +1322,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan),
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
                   // Remove direct navigation to questionnaire from here
                 }
@@ -1270,7 +1348,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled),
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -1285,8 +1363,8 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                        sessionStorage.getItem("qw_guest_user") || "{}",
-                      )
+                          sessionStorage.getItem("qw_guest_user") || "{}",
+                        )
                       : undefined,
                     fromSubscription: true,
                     scheduleOption: scheduleOption,
@@ -1364,7 +1442,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan),
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
                   // Remove direct navigation to questionnaire from here
                 }
@@ -1391,7 +1469,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled),
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -1407,8 +1485,8 @@ export default function BookingPage() {
                       finalPrice,
                       guestUser: wasGuestUser
                         ? JSON.parse(
-                          sessionStorage.getItem("qw_guest_user") || "{}",
-                        )
+                            sessionStorage.getItem("qw_guest_user") || "{}",
+                          )
                         : undefined,
                       fromSubscription: true,
                       scheduleOption: scheduleOption,
@@ -1601,7 +1679,6 @@ export default function BookingPage() {
           }
         } else {
           bookingResult = await dispatch(createBookingAsync(bookingPayload));
-
         }
 
         if (
@@ -1611,7 +1688,7 @@ export default function BookingPage() {
         ) {
           // Handle specific subscription booking errors
 
-          console.log("bookingResult", bookingResult)
+          console.log("bookingResult", bookingResult);
 
           const errorMessage =
             bookingResult?.payload ||
@@ -1694,7 +1771,7 @@ export default function BookingPage() {
           console.error("Payment order creation failed:", paymentOrderResult);
           toast.error(
             paymentOrderResult.payload?.message ||
-            "Payment order creation failed. Please try again.",
+              "Payment order creation failed. Please try again.",
           );
           setIsProcessing(false);
           return;
@@ -1704,15 +1781,25 @@ export default function BookingPage() {
           paymentOrderResult.payload.order || paymentOrderResult.payload;
         const { orderId, key: razorpayKey } = orderData;
 
+        console.log("💳 Payment Order Data:", {
+          orderId,
+          razorpayKey,
+          backendAmount: orderData.amount,
+          calculatedAmount: finalPrice * 100,
+          finalPrice,
+          detectedCurrency,
+        });
+
         // Razorpay options
         const options = {
           key: razorpayKey || "rzp_test_SHYwF83mxS594F",
           order_id: orderId, // Use the order ID from the backend
-          amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
+          amount: finalPrice * 100, // ALWAYS use our calculated amount (prevents ₹10 bug)
           currency: detectedCurrency,
           name: "Tanish physio & fitness",
-          description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""
-            }`,
+          description: `Session Booking Payment - Booking ID: ${bookingId}${
+            publicAdmins?.[0]?.name ? ` for ${publicAdmins[0].name}` : ""
+          }`,
           image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
           handler: async function (response: any) {
             // Payment successful - send response to backend for verification
@@ -1850,7 +1937,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan),
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
                   // Remove direct navigation to questionnaire from here
                 }
@@ -1866,7 +1953,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled),
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
                 const wasGuestUser =
                   !sessionStorage.getItem("qw_user") &&
                   !localStorage.getItem("token");
@@ -2071,7 +2158,7 @@ export default function BookingPage() {
                       "qw_pending_plan",
                       JSON.stringify(plan),
                     );
-                  } catch (e) { }
+                  } catch (e) {}
                   // Navigate to booking confirmation page - questionnaire will be handled there after auto-login
                   // Remove direct navigation to questionnaire from here
                 }
@@ -2098,7 +2185,7 @@ export default function BookingPage() {
                       JSON.stringify(scheduled),
                     );
                   }
-                } catch (e) { }
+                } catch (e) {}
 
                 // Check if user is a guest (not logged in)
                 const wasGuestUser =
@@ -2114,8 +2201,8 @@ export default function BookingPage() {
                     finalPrice,
                     guestUser: wasGuestUser
                       ? JSON.parse(
-                        sessionStorage.getItem("qw_guest_user") || "{}",
-                      )
+                          sessionStorage.getItem("qw_guest_user") || "{}",
+                        )
                       : undefined,
                     fromServices: true,
                   },
@@ -2260,8 +2347,9 @@ export default function BookingPage() {
                         // Clear error when user starts typing
                         if (nameError) setNameError("");
                       }}
-                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${nameError ? "border-destructive" : ""
-                        }`}
+                      className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${
+                        nameError ? "border-destructive" : ""
+                      }`}
                     />
                     {nameError && (
                       <p className="text-destructive text-sm mt-1">
@@ -2291,8 +2379,9 @@ export default function BookingPage() {
                           // Clear error when user starts typing
                           if (emailError) setEmailError("");
                         }}
-                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${emailError ? "border-destructive" : ""
-                          }`}
+                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${
+                          emailError ? "border-destructive" : ""
+                        }`}
                       />
                       {emailError && (
                         <p className="text-destructive text-sm mt-1">
@@ -2321,8 +2410,9 @@ export default function BookingPage() {
                           }
                         }}
                         maxLength={15}
-                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${phoneError ? "border-destructive" : ""
-                          }`}
+                        className={`mt-2 disabled:text-black disabled:bg-white disabled:opacity-100 ${
+                          phoneError ? "border-destructive" : ""
+                        }`}
                       />
                       {phoneError && (
                         <p className="text-destructive text-sm mt-1">
@@ -2496,9 +2586,7 @@ export default function BookingPage() {
           {/* Order Summary */}
           <div className="space-y-6">
             {/* Therapist Information Card */}
-            <Card
-             onClick={() => navigate("/about")}
-            variant="elevated">
+            <Card onClick={() => navigate("/about")} variant="elevated">
               <CardHeader className="border-b bg-primary/5">
                 <CardTitle>Therapist Information</CardTitle>
               </CardHeader>
@@ -2510,7 +2598,7 @@ export default function BookingPage() {
                       subscriptionBooking
                         ? "https://placehold.co/100x100?text=SUB"
                         : publicAdmins?.[0]?.profilePicture ||
-                        "https://placehold.co/100x100?text=DOC"
+                          "https://placehold.co/100x100?text=DOC"
                     }
                     alt={
                       subscriptionBooking
@@ -2580,7 +2668,9 @@ export default function BookingPage() {
                   </div>
                   {hasActivePlan && !isSessionLimitReached ? (
                     <div className="text-right">
-                      <p className="font-semibold text-green-600">Included With Plan</p>
+                      <p className="font-semibold text-green-600">
+                        Included With Plan
+                      </p>
                       {/* <p className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                         with {activePlan?.planName || "your plan"}
                       </p> */}
@@ -2599,7 +2689,22 @@ export default function BookingPage() {
                       )} */}
                     </div>
                   ) : (
-                    <p className="font-semibold">{getCurrencySymbol(detectedCurrency)}{plan.price}</p>
+                    <div className="text-right">
+                      {/* Debug Log */}
+                      {(() => {
+                        console.log("💰 Displaying plan price:", {
+                          price: plan.price,
+                          currency: detectedCurrency,
+                          symbol: getCurrencySymbol(detectedCurrency),
+                          formatted: `${getCurrencySymbol(detectedCurrency)}${plan.price}`,
+                        });
+                        return null;
+                      })()}
+                      <p className="font-semibold">
+                        {getCurrencySymbol(detectedCurrency)}
+                        {plan.price}
+                      </p>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -2642,11 +2747,12 @@ export default function BookingPage() {
                               availableOffers.map((offer) => (
                                 <div
                                   key={offer._id || offer.id}
-                                  className={`p-3 rounded-md border cursor-pointer transition-all ${isCouponApplied &&
-                                      couponCode.toUpperCase() === offer.code
+                                  className={`p-3 rounded-md border cursor-pointer transition-all ${
+                                    isCouponApplied &&
+                                    couponCode.toUpperCase() === offer.code
                                       ? "border-success bg-success/10"
                                       : "border-muted hover:border-primary/50 hover:bg-muted/50"
-                                    }`}
+                                  }`}
                                   onClick={() => {
                                     if (!isCouponApplied) {
                                       setCouponCode(offer.code);
@@ -2668,7 +2774,7 @@ export default function BookingPage() {
                                         </span>
                                         {isCouponApplied &&
                                           couponCode.toUpperCase() ===
-                                          offer.code && (
+                                            offer.code && (
                                             <span className="text-success text-xs">
                                               ✓ Applied
                                             </span>
@@ -2860,13 +2966,19 @@ export default function BookingPage() {
                     {promoApplied && !isCouponApplied && (
                       <div className="flex justify-between items-center text-success">
                         <span className="text-sm">Promo Discount (20%)</span>
-                        <span>-{getCurrencySymbol(detectedCurrency)}{Math.round(plan.price * 0.2)}</span>
+                        <span>
+                          -{getCurrencySymbol(detectedCurrency)}
+                          {Math.round(plan.price * 0.2)}
+                        </span>
                       </div>
                     )}
                     {isCouponApplied && (
                       <div className="flex justify-between items-center text-success">
                         <span className="text-sm">Coupon Discount</span>
-                        <span>-{getCurrencySymbol(detectedCurrency)}{couponDiscount}</span>
+                        <span>
+                          -{getCurrencySymbol(detectedCurrency)}
+                          {couponDiscount}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -2882,7 +2994,8 @@ export default function BookingPage() {
                     </p>
                     {(promoApplied || isCouponApplied) && (
                       <p className="text-xs text-muted-foreground line-through">
-                        Original: {getCurrencySymbol(detectedCurrency)}{basePrice}
+                        Original: {getCurrencySymbol(detectedCurrency)}
+                        {basePrice}
                       </p>
                     )}
                   </div>
@@ -2898,11 +3011,13 @@ export default function BookingPage() {
                   ) : (
                     <div className="text-right">
                       <span className="font-bold text-2xl text-primary">
-                        {getCurrencySymbol(detectedCurrency)}{finalPrice}
+                        {getCurrencySymbol(detectedCurrency)}
+                        {finalPrice}
                       </span>
                       {(promoApplied || isCouponApplied) && (
                         <p className="text-xs text-success">
-                          You save {getCurrencySymbol(detectedCurrency)}{discountAmount}
+                          You save {getCurrencySymbol(detectedCurrency)}
+                          {discountAmount}
                         </p>
                       )}
                     </div>
@@ -2944,14 +3059,16 @@ export default function BookingPage() {
                       {hasActivePlan && !isSessionLimitReached
                         ? "Book Session"
                         : subscriptionBooking
-                          ? `Pay ${getCurrencySymbol(detectedCurrency)}${finalPrice} for Subscription${promoApplied || isCouponApplied
-                            ? ` (Save ${getCurrencySymbol(detectedCurrency)}${discountAmount})`
-                            : ""
-                          }`
-                          : `Pay ${getCurrencySymbol(detectedCurrency)}${finalPrice} for Booking${promoApplied || isCouponApplied
-                            ? ` (Save ${getCurrencySymbol(detectedCurrency)}${discountAmount})`
-                            : ""
-                          }`}
+                          ? `Pay ${getCurrencySymbol(detectedCurrency)}${finalPrice} for Subscription${
+                              promoApplied || isCouponApplied
+                                ? ` (Save ${getCurrencySymbol(detectedCurrency)}${discountAmount})`
+                                : ""
+                            }`
+                          : `Pay ${getCurrencySymbol(detectedCurrency)}${finalPrice} for Booking${
+                              promoApplied || isCouponApplied
+                                ? ` (Save ${getCurrencySymbol(detectedCurrency)}${discountAmount})`
+                                : ""
+                            }`}
                     </>
                   )}
                 </Button>
@@ -3165,7 +3282,7 @@ export default function BookingPage() {
                         );
                         toast.error(
                           paymentOrderResult.payload?.message ||
-                          "Payment order creation failed. Please try again.",
+                            "Payment order creation failed. Please try again.",
                         );
                         setIsProcessing(false);
                         return;
@@ -3184,10 +3301,11 @@ export default function BookingPage() {
                         amount: orderData.amount || finalPrice * 100, // Use backend amount or fallback to local calculation
                         currency: detectedCurrency,
                         name: "Tanish physio & fitness",
-                        description: `Session Booking Payment - Booking ID: ${bookingId}${publicAdmins?.[0]?.name
+                        description: `Session Booking Payment - Booking ID: ${bookingId}${
+                          publicAdmins?.[0]?.name
                             ? ` for ${publicAdmins[0].name}`
                             : ""
-                          }`,
+                        }`,
                         image: "https://your-wellness-path.com/logo.png", // Replace with your logo URL
                         handler: async function (response: any) {
                           // Payment successful - send response to backend for verification
@@ -3276,7 +3394,7 @@ export default function BookingPage() {
                                     "qw_pending_plan",
                                     JSON.stringify(plan),
                                   );
-                                } catch (e) { }
+                                } catch (e) {}
                               }
 
                               // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
@@ -3290,7 +3408,7 @@ export default function BookingPage() {
                                     JSON.stringify(scheduled),
                                   );
                                 }
-                              } catch (e) { }
+                              } catch (e) {}
 
                               toast.success(
                                 "Payment successful! You can now book sessions by paying the regular price.",
@@ -3397,7 +3515,7 @@ export default function BookingPage() {
                                     "qw_pending_plan",
                                     JSON.stringify(plan),
                                   );
-                                } catch (e) { }
+                                } catch (e) {}
                               }
 
                               // Intake exists and is recent: assign therapist, unlock scheduled session if present & proceed
@@ -3422,7 +3540,7 @@ export default function BookingPage() {
                                     JSON.stringify(scheduled),
                                   );
                                 }
-                              } catch (e) { }
+                              } catch (e) {}
 
                               toast.success("Payment successful!.");
                               // Navigate to booking confirmation page for all users
@@ -3512,11 +3630,10 @@ export default function BookingPage() {
                     } else {
                       // Handle booking creation failure
                       const errorMessage =
-
                         bookingResult.payload ||
                         (bookingResult.payload as any)?.message ||
-                        bookingResult.error?.message
-                      "Failed to create booking. Please try again.";
+                        bookingResult.error?.message;
+                      ("Failed to create booking. Please try again.");
                       toast.error(errorMessage);
                       setIsProcessing(false);
                     }

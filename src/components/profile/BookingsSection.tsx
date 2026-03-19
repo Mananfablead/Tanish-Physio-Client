@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
     if (booking.expiryDate) {
       const expiryDate = new Date(booking.expiryDate);
       const daysUntilExpiry = Math.ceil(
-        (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
       );
       if (daysUntilExpiry <= 7) {
         return {
@@ -99,7 +99,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
   const handleCreateSession = () => {
     const confirmedBooking = bookingList.find(
-      (b) => b.status === "confirmed" && !b.sessionCreated
+      (b) => b.status === "confirmed" && !b.sessionCreated,
     );
 
     if (!confirmedBooking) {
@@ -232,24 +232,24 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                       ? "bg-blue-100 text-blue-700"
                       : "bg-green-100 text-green-700"
                     : booking.status === "cancelled"
-                    ? "bg-red-100 text-red-700"
-                    : booking.status === "pending"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : booking.status === "scheduled"
-                    ? "bg-purple-100 text-purple-700"
-                    : booking.status === "completed"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-blue-100 text-blue-700"
+                      ? "bg-red-100 text-red-700"
+                      : booking.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : booking.status === "scheduled"
+                          ? "bg-purple-100 text-purple-700"
+                          : booking.status === "completed"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-blue-100 text-blue-700"
                 }`}
                           >
                             {booking.bookingType === "free-consultation" &&
                             booking.status === "confirmed"
                               ? "Accepted"
                               : booking.bookingType ===
-                                  "subscription-covered" &&
-                                booking.status === "pending"
-                              ? "Pending Review"
-                              : booking.status || "Unknown"}
+                                    "subscription-covered" &&
+                                  booking.status === "pending"
+                                ? "Pending Review"
+                                : booking.status || "Unknown"}
                           </span>
 
                           <Button
@@ -305,7 +305,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                         >
                           {pageNum}
                         </Button>
-                      )
+                      ),
                     )}
                   </div>
 
@@ -404,23 +404,23 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                               ? "bg-blue-100 text-blue-700"
                               : "bg-green-100 text-green-700"
                             : booking.status === "cancelled"
-                            ? "bg-red-100 text-red-700"
-                            : booking.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : booking.status === "scheduled"
-                            ? "bg-purple-100 text-purple-700"
-                            : booking.status === "completed"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-blue-100 text-blue-700"
+                              ? "bg-red-100 text-red-700"
+                              : booking.status === "pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : booking.status === "scheduled"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : booking.status === "completed"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-blue-100 text-blue-700"
                         }`}
                       >
                         {booking.bookingType === "free-consultation" &&
                         booking.status === "confirmed"
                           ? "Accepted"
                           : booking.bookingType === "subscription-covered" &&
-                            booking.status === "pending"
-                          ? "Pending Review"
-                          : booking.status || "Unknown"}
+                              booking.status === "pending"
+                            ? "Pending Review"
+                            : booking.status || "Unknown"}
                       </span>
 
                       {/* Expiration badge always show */}
@@ -482,7 +482,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                         >
                           {pageNum}
                         </Button>
-                      )
+                      ),
                     )}
                   </div>
 
@@ -543,12 +543,18 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                 <h3 className="font-black text-slate-900 text-base">
                   {detailBooking.serviceName || "N/A"}
                 </h3>
-                {detailBooking.serviceId?.name && detailBooking.serviceId.name !== detailBooking.serviceName && (
-                  <p className="text-xs text-slate-500">{detailBooking.serviceId.name}</p>
-                )}
+                {detailBooking.serviceId?.name &&
+                  detailBooking.serviceId.name !==
+                    detailBooking.serviceName && (
+                    <p className="text-xs text-slate-500">
+                      {detailBooking.serviceId.name}
+                    </p>
+                  )}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Status
+                    </p>
                     <span
                       className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
                         detailBooking.status === "confirmed"
@@ -556,71 +562,109 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                             ? "bg-blue-100 text-blue-700"
                             : "bg-green-100 text-green-700"
                           : detailBooking.status === "cancelled"
-                          ? "bg-red-100 text-red-700"
-                          : detailBooking.status === "pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : detailBooking.status === "completed"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-blue-100 text-blue-700"
+                            ? "bg-red-100 text-red-700"
+                            : detailBooking.status === "pending"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : detailBooking.status === "completed"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-blue-100 text-blue-700"
                       }`}
                     >
-                      {detailBooking.bookingType === "free-consultation" && detailBooking.status === "confirmed"
+                      {detailBooking.bookingType === "free-consultation" &&
+                      detailBooking.status === "confirmed"
                         ? "Accepted"
-                        : detailBooking.bookingType === "subscription-covered" && detailBooking.status === "pending"
-                        ? "Pending Review"
-                        : detailBooking.status || "Unknown"}
+                        : detailBooking.bookingType ===
+                              "subscription-covered" &&
+                            detailBooking.status === "pending"
+                          ? "Pending Review"
+                          : detailBooking.status || "Unknown"}
                     </span>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Booking Type</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Booking Type
+                    </p>
                     <p className="mt-1 font-semibold text-slate-800 capitalize">
-                      {detailBooking.bookingType?.replace(/-/g, " ") || "Standard"}
+                      {detailBooking.bookingType?.replace(/-/g, " ") ||
+                        "Standard"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Date</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Date
+                    </p>
                     <p className="mt-1 font-semibold text-slate-800">
-                      {new Date(detailBooking.date).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      {new Date(detailBooking.date).toLocaleDateString(
+                        "en-IN",
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        },
+                      )}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Time</p>
-                    <p className="mt-1 font-semibold text-slate-800">{detailBooking.time || "—"}</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Time
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {detailBooking.time || "—"}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Payment Info */}
               <div className="rounded-lg border border-slate-200 p-4 space-y-2">
-                <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Payment Info</h4>
+                <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                  Payment Info
+                </h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount Paid</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Amount Paid
+                    </p>
                     <p className="mt-1 font-black text-slate-900 text-base">
-                      ₹{(detailBooking.finalAmount ?? detailBooking.amount ?? 0).toLocaleString()}
+                      ₹
+                      {(
+                        detailBooking.finalAmount ??
+                        detailBooking.amount ??
+                        0
+                      ).toLocaleString()}
                     </p>
                     {detailBooking.discountAmount > 0 && (
-                      <p className="text-xs text-slate-400 line-through">₹{detailBooking.amount?.toLocaleString()}</p>
+                      <p className="text-xs text-slate-400 line-through">
+                        ₹{detailBooking.amount?.toLocaleString()}
+                      </p>
                     )}
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Payment Status</p>
-                    <p className="mt-1 font-semibold text-slate-800 capitalize">{detailBooking.paymentStatus || "—"}</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Payment Status
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-800 capitalize">
+                      {detailBooking.paymentStatus || "—"}
+                    </p>
                   </div>
                   {detailBooking.couponCode && (
                     <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Coupon Used</p>
-                      <p className="mt-1 font-semibold text-green-600">{detailBooking.couponCode}</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Coupon Used
+                      </p>
+                      <p className="mt-1 font-semibold text-green-600">
+                        {detailBooking.couponCode}
+                      </p>
                     </div>
                   )}
                   {detailBooking.discountAmount > 0 && (
                     <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Discount</p>
-                      <p className="mt-1 font-semibold text-green-600">–₹{detailBooking.discountAmount?.toLocaleString()}</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Discount
+                      </p>
+                      <p className="mt-1 font-semibold text-green-600">
+                        –₹{detailBooking.discountAmount?.toLocaleString()}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -629,42 +673,72 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
               {/* Therapist & Service Info */}
               {(detailBooking.therapistName || detailBooking.serviceId) && (
                 <div className="rounded-lg border border-slate-200 p-4 space-y-2">
-                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Service Details</h4>
+                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                    Service Details
+                  </h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {detailBooking.therapistName && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Therapist</p>
-                        <p className="mt-1 font-semibold text-slate-800">{detailBooking.therapistName}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Therapist
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {detailBooking.therapistName}
+                        </p>
                       </div>
                     )}
-                    {(detailBooking.serviceId?.duration || detailBooking.subscriptionInfo?.planDuration || detailBooking.planDuration) && (
+                    {(detailBooking.serviceId?.duration ||
+                      detailBooking.subscriptionInfo?.planDuration ||
+                      detailBooking.planDuration) && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Duration</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Duration
+                        </p>
                         <p className="mt-1 font-semibold text-slate-800">
                           {/* Priority: service duration > subscription/plan duration > timeSlot calculation */}
-                          {detailBooking.serviceId?.duration || 
-                           detailBooking.subscriptionInfo?.planDuration || 
-                           detailBooking.planDuration ||
-                           (detailBooking.timeSlot?.start && detailBooking.timeSlot?.end ? (() => {
-                             const [startHours, startMinutes] = detailBooking.timeSlot.start.split(':').map(Number);
-                             const [endHours, endMinutes] = detailBooking.timeSlot.end.split(':').map(Number);
-                             const duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-                             return `${duration} min`;
-                           })() : '45 min')}
+                          {detailBooking.serviceId?.duration ||
+                            detailBooking.subscriptionInfo?.planDuration ||
+                            detailBooking.planDuration ||
+                            (detailBooking.timeSlot?.start &&
+                            detailBooking.timeSlot?.end
+                              ? (() => {
+                                  const [startHours, startMinutes] =
+                                    detailBooking.timeSlot.start
+                                      .split(":")
+                                      .map(Number);
+                                  const [endHours, endMinutes] =
+                                    detailBooking.timeSlot.end
+                                      .split(":")
+                                      .map(Number);
+                                  const duration =
+                                    endHours * 60 +
+                                    endMinutes -
+                                    (startHours * 60 + startMinutes);
+                                  return `${duration} min`;
+                                })()
+                              : "45 min")}
                         </p>
                       </div>
                     )}
                     {detailBooking.serviceId?.validity && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Validity</p>
-                        <p className="mt-1 font-semibold text-slate-800">{detailBooking.serviceId.validity} days</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Validity
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {detailBooking.serviceId.validity} days
+                        </p>
                       </div>
                     )}
                     {detailBooking.expiryDate && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Expires</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Expires
+                        </p>
                         <p className="mt-1 font-semibold text-slate-800">
-                          {new Date(detailBooking.expiryDate).toLocaleDateString("en-IN", {
+                          {new Date(
+                            detailBooking.expiryDate,
+                          ).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
@@ -679,20 +753,35 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
               {/* Notes */}
               {detailBooking.notes && (
                 <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Notes</p>
-                  <p className="text-sm text-slate-700">{detailBooking.notes}</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+                    Notes
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    {detailBooking.notes}
+                  </p>
                 </div>
               )}
 
               {/* Booking Date */}
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Booked on {new Date(detailBooking.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                <span>
+                  Booked on{" "}
+                  {new Date(detailBooking.createdAt).toLocaleDateString(
+                    "en-IN",
+                    { day: "numeric", month: "short", year: "numeric" },
+                  )}
+                </span>
                 {/* <span>ID: {detailBooking._id}</span> */}
               </div>
             </div>
           )}
           <div className="flex justify-end pt-2">
-            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsDetailModalOpen(false)}
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

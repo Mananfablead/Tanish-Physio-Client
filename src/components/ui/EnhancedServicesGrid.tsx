@@ -46,9 +46,10 @@ export function EnhancedServicesGrid({
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  // Default to INR - will be updated by useEffect if needed
   const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
 
-  // Get currency symbol based on user location
+  // Get currency symbol based on user location (defaults to INR)
   useEffect(() => {
     const symbol = getCurrencySymbolSync();
     setCurrencySymbol(symbol);

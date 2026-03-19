@@ -26,7 +26,7 @@ export interface IPLocationData {
  */
 export const getIPLocation = async (): Promise<IPLocationData | null> => {
   try {
-    const response = await fetch("https://ipapi.co/json/");
+    const response = await fetch("https://ipwho.is/");
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

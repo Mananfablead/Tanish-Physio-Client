@@ -3,8 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Service } from "@/types/service";
-import { ArrowRight, Clock, IndianRupee, ShoppingCart } from "lucide-react";
+import { ArrowRight, Clock, ShoppingCart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { getPriceByLocationSync } from "@/utils/priceUtils";
 
 interface ServicesProps {
   services: Service[];
@@ -20,7 +22,20 @@ export function Services({
   fadeInUp,
 }: ServicesProps) {
   const navigate = useNavigate();
-  
+
+  // Debug: Log service prices
+  useEffect(() => {
+    console.log(
+      "🔍 Services loaded:",
+      services.map((s) => ({
+        name: s.title,
+        priceINR: s.details.priceINR,
+        priceUSD: s.details.priceUSD,
+        oldPrice: s.details.price,
+      })),
+    );
+  }, [services]);
+
   if (servicesLoading) {
     return (
       <section className="py-12 bg-muted/30">
@@ -50,25 +65,25 @@ export function Services({
   return (
     <section className="py-12 bg-muted/30">
       <div className="container">
-       <motion.div
-  className="text-center max-w-2xl mx-auto mb-12"
-  initial={{ opacity: 0, y: 20 }}
-  whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true }}
->
-  <Badge variant="secondary" className="mb-3">
-    Our Services
-  </Badge>
+        <motion.div
+          className="text-center max-w-2xl mx-auto mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Badge variant="secondary" className="mb-3">
+            Our Services
+          </Badge>
 
-  <h2 className="text-2xl lg:text-3xl font-bold mb-3">
-    Personalized Physiotherapy Services
-  </h2>
+          <h2 className="text-2xl lg:text-3xl font-bold mb-3">
+            Personalized Physiotherapy Services
+          </h2>
 
-  <p className="text-muted-foreground text-sm">
-    Receive expert care and treatment guided by our experienced physiotherapist.
-  </p>
-</motion.div>
-
+          <p className="text-muted-foreground text-sm">
+            Receive expert care and treatment guided by our experienced
+            physiotherapist.
+          </p>
+        </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayedServices.map((service, index) => (
@@ -109,9 +124,36 @@ export function Services({
 
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-1 text-muted-foreground">
-                        <IndianRupee className="h-4 w-4" />
                         <span className="font-semibold text-primary">
-                          {service.details.price.replace("₹", "")}
+                          {(() => {
+                            const priceINR = service.details.priceINR;
+                            const priceUSD = service.details.priceUSD;
+
+                            // Debug log
+                            console.log(`💰 ${service.title} prices:`, {
+                              priceINR,
+                              priceUSD,
+                            });
+
+                            if (
+                              priceINR !== undefined &&
+                              priceUSD !== undefined &&
+                              priceINR > 0 &&
+                              priceUSD > 0
+                            ) {
+                              const priceInfo = getPriceByLocationSync(
+                                priceINR,
+                                priceUSD,
+                              );
+                              console.log(`✅ Showing: ${priceInfo.formatted}`);
+                              return priceInfo.formatted;
+                            }
+
+                            // Fallback to old format
+                            console.log("⚠️ Fallback to old price format");
+                            const fallbackPrice = service.details.price || "0";
+                            return `₹${fallbackPrice.replace("₹", "").split("-")[0]}`;
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -142,9 +184,42 @@ export function Services({
                           service: {
                             id: service.id,
                             name: service.title,
-                            price: service.details.price
-                              .replace("₹", "")
-                              .split("-")[0],
+                            price: (() => {
+                              const priceINR = service.details.priceINR;
+                              const priceUSD = service.details.priceUSD;
+                              if (
+                                priceINR !== undefined &&
+                                priceUSD !== undefined &&
+                                priceINR > 0 &&
+                                priceUSD > 0
+                              ) {
+                                const priceInfo = getPriceByLocationSync(
+                                  priceINR,
+                                  priceUSD,
+                                );
+                                return priceInfo.amount.toString();
+                              }
+                              return service.details.price
+                                .replace("₹", "")
+                                .split("-")[0];
+                            })(),
+                            currency: (() => {
+                              const priceINR = service.details.priceINR;
+                              const priceUSD = service.details.priceUSD;
+                              if (
+                                priceINR !== undefined &&
+                                priceUSD !== undefined &&
+                                priceINR > 0 &&
+                                priceUSD > 0
+                              ) {
+                                const priceInfo = getPriceByLocationSync(
+                                  priceINR,
+                                  priceUSD,
+                                );
+                                return priceInfo.currencyCode;
+                              }
+                              return "INR";
+                            })(),
                             duration: service.details.sessionDuration,
                           },
                           fromServices: true,
@@ -156,19 +231,51 @@ export function Services({
                           session: {
                             type: "1-on-1",
                             duration: service.details.sessionDuration,
-                            price: parseInt(
-                              service.details.price
-                                .replace("₹", "")
-                                .split("-")[0]
-                            ),
+                            price: (() => {
+                              const priceINR = service.details.priceINR;
+                              const priceUSD = service.details.priceUSD;
+                              if (
+                                priceINR !== undefined &&
+                                priceUSD !== undefined &&
+                                priceINR > 0 &&
+                                priceUSD > 0
+                              ) {
+                                const priceInfo = getPriceByLocationSync(
+                                  priceINR,
+                                  priceUSD,
+                                );
+                                return priceInfo.amount;
+                              }
+                              return parseInt(
+                                service.details.price
+                                  .replace("₹", "")
+                                  .split("-")[0],
+                              );
+                            })(),
                           },
                           plan: {
                             name: `${service.title} Plan`,
-                            price: parseInt(
-                              service.details.price
-                                .replace("₹", "")
-                                .split("-")[0]
-                            ),
+                            price: (() => {
+                              const priceINR = service.details.priceINR;
+                              const priceUSD = service.details.priceUSD;
+                              if (
+                                priceINR !== undefined &&
+                                priceUSD !== undefined &&
+                                priceINR > 0 &&
+                                priceUSD > 0
+                              ) {
+                                const priceInfo = getPriceByLocationSync(
+                                  priceINR,
+                                  priceUSD,
+                                );
+                                return priceInfo.amount;
+                              }
+                              return parseInt(
+                                service.details.price
+                                  .replace("₹", "")
+                                  .split("-")[0],
+                              );
+                            })(),
                             duration: service.details.sessionDuration,
                           },
                         };
@@ -177,7 +284,6 @@ export function Services({
                         navigate("/questionnaire", { state: bookingData });
                       }}
                     >
-                      
                       Book session
                     </Button>
                   </div>

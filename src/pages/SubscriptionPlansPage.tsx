@@ -49,11 +49,38 @@ export default function SubscriptionPlansPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
+  const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
+  const [currencyCode, setCurrencyCode] = useState<"INR" | "USD">("INR");
+
+  // Detect currency on mount
+  useEffect(() => {
+    const checkCurrency = async () => {
+      try {
+        const response = await fetch("https://ipwho.is/");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.country_code === "IN") {
+            setCurrencySymbol("₹");
+            setCurrencyCode("INR");
+          } else {
+            setCurrencySymbol("$");
+            setCurrencyCode("USD");
+          }
+        }
+      } catch (error) {
+        console.warn("Currency detection failed, using INR");
+        setCurrencySymbol("₹");
+        setCurrencyCode("INR");
+      }
+    };
+
+    checkCurrency();
+  }, []);
 
   // Get tab from URL parameter or default to 'individual'
   const urlTab = searchParams.get("tab") as "individual" | "group" | null;
   const [activeTab, setActiveTab] = useState<"individual" | "group">(
-    urlTab || "individual"
+    urlTab || "individual",
   );
 
   const {
@@ -67,21 +94,21 @@ export default function SubscriptionPlansPage() {
   const activePlanId = activePlan?.planId ?? null;
   const isSubscriptionExpired = activePlan?.isExpired ?? false;
   const hasActiveSubscription = activePlanId && !isSubscriptionExpired;
-  
+
   // Get remaining sessions and services
   const remainingSessions = activePlan?.availableSessions?.remaining ?? 0;
   const remainingServices = activePlan?.availableServices?.remaining ?? 0;
-  
+
   // Check if sessions are exhausted (user has used all sessions)
   const isSessionExhausted = remainingSessions === 0;
-  
+
   console.log("Plan Status:", {
     activePlanId,
     remainingSessions,
     remainingServices,
     isSubscriptionExpired,
     isSessionExhausted,
-    hasActiveSubscription
+    hasActiveSubscription,
   });
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -218,13 +245,14 @@ export default function SubscriptionPlansPage() {
                 const planId = plan.planId || plan.id;
                 const isSelected = selectedPlan === planId;
                 // Check if this is the current active plan (not expired)
-                const isActive = activePlanId === planId && !isSubscriptionExpired;
+                const isActive =
+                  activePlanId === planId && !isSubscriptionExpired;
 
                 // Calculate discount percentage
                 const discountPercentage = plan.originalPrice
                   ? Math.round(
                       ((plan.originalPrice - plan.price) / plan.originalPrice) *
-                        100
+                        100,
                     )
                   : 0;
 
@@ -243,7 +271,11 @@ export default function SubscriptionPlansPage() {
                     <Card
                       onClick={() => {
                         // Enable all plans if sessions are exhausted OR no subscription OR expired
-                        if (isSessionExhausted || !hasActiveSubscription || isSubscriptionExpired) {
+                        if (
+                          isSessionExhausted ||
+                          !hasActiveSubscription ||
+                          isSubscriptionExpired
+                        ) {
                           setSelectedPlan(planId);
                         }
                       }}
@@ -292,7 +324,7 @@ export default function SubscriptionPlansPage() {
                           {plan.originalPrice && (
                             <div className="flex items-center justify-center gap-2">
                               <span className="line-through text-muted-foreground text-lg">
-                                {plan.currency || "₹"}
+                                {plan.currency || currencySymbol}
                                 {plan.originalPrice}
                               </span>
                               {discountPercentage > 0 && (
@@ -307,7 +339,7 @@ export default function SubscriptionPlansPage() {
                           )}
                           <div className="flex items-baseline justify-center gap-1">
                             <span className="text-4xl font-bold">
-                              {plan.currency || "₹"}
+                              {plan.currency || currencySymbol}
                               {plan.price}
                             </span>
                             <span className="text-muted-foreground">
@@ -377,7 +409,7 @@ export default function SubscriptionPlansPage() {
                             {plan.features
                               .slice(
                                 0,
-                                expandedFeatures[planId] ? undefined : 6
+                                expandedFeatures[planId] ? undefined : 6,
                               )
                               .map((f, i) => (
                                 <div
@@ -425,8 +457,8 @@ export default function SubscriptionPlansPage() {
                             isActive && !isSessionExhausted
                               ? "secondary"
                               : hasActiveSubscription && activePlanId === planId
-                              ? "outline"
-                              : "default"
+                                ? "outline"
+                                : "default"
                           }
                           disabled={
                             // Disable only if active AND sessions NOT exhausted
@@ -439,7 +471,11 @@ export default function SubscriptionPlansPage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             // Allow opening modal if sessions exhausted OR no subscription OR expired
-                            if (isSessionExhausted || !hasActiveSubscription || isSubscriptionExpired) {
+                            if (
+                              isSessionExhausted ||
+                              !hasActiveSubscription ||
+                              isSubscriptionExpired
+                            ) {
                               setSelectedPlan(planId);
                               setIsModalOpen(true);
                             }
@@ -448,12 +484,12 @@ export default function SubscriptionPlansPage() {
                           {isActive && !isSessionExhausted
                             ? "Active Plan"
                             : hasActiveSubscription && activePlanId === planId
-                            ? isSessionExhausted
-                              ? "Select Plan"
-                              : "Plan Already Active"
-                            : isSubscriptionExpired && activePlanId === planId
-                            ? "Renew Plan"
-                            : "Select Plan"}
+                              ? isSessionExhausted
+                                ? "Select Plan"
+                                : "Plan Already Active"
+                              : isSubscriptionExpired && activePlanId === planId
+                                ? "Renew Plan"
+                                : "Select Plan"}
                         </Button>
                       </CardContent>
                     </Card>
@@ -490,7 +526,8 @@ export default function SubscriptionPlansPage() {
                       <div className="flex flex-col items-center">
                         <span className="font-bold">{plan.name}</span>
                         <span className="text-sm text-muted-foreground">
-                          ₹{plan.price}/{plan.duration}
+                          {currencySymbol}
+                          {plan.price}/{plan.duration}
                         </span>
                       </div>
                     </th>
@@ -535,7 +572,10 @@ export default function SubscriptionPlansPage() {
                             ₹{plan.originalPrice}
                           </span>
                         )}
-                        <span className="text-lg font-bold">₹{plan.price}</span>
+                        <span className="text-lg font-bold">
+                          {currencySymbol}
+                          {plan.price}
+                        </span>
                         <span className="text-sm text-muted-foreground">
                           /{plan.duration}
                         </span>
@@ -575,7 +615,8 @@ export default function SubscriptionPlansPage() {
                   <td className="p-4 font-medium">Action</td>
                   {subscriptionPlans.map((plan) => {
                     const planId = plan.planId || plan.id;
-                    const isActive = activePlanId === planId && !isSubscriptionExpired;
+                    const isActive =
+                      activePlanId === planId && !isSubscriptionExpired;
                     const isSelected = selectedPlan === planId;
                     return (
                       <td key={`action-${planId}`} className="p-4 text-center">
@@ -585,8 +626,8 @@ export default function SubscriptionPlansPage() {
                             isActive && !isSessionExhausted
                               ? "secondary"
                               : hasActiveSubscription && activePlanId === planId
-                              ? "outline"
-                              : "default"
+                                ? "outline"
+                                : "default"
                           }
                           size="sm"
                           disabled={
@@ -599,7 +640,11 @@ export default function SubscriptionPlansPage() {
                           }
                           onClick={() => {
                             // Allow opening modal if sessions exhausted OR no subscription OR expired
-                            if (isSessionExhausted || !hasActiveSubscription || isSubscriptionExpired) {
+                            if (
+                              isSessionExhausted ||
+                              !hasActiveSubscription ||
+                              isSubscriptionExpired
+                            ) {
                               setSelectedPlan(planId);
                               setIsModalOpen(true);
                             }
@@ -608,12 +653,12 @@ export default function SubscriptionPlansPage() {
                           {isActive && !isSessionExhausted
                             ? "Active"
                             : hasActiveSubscription && activePlanId === planId
-                            ? isSessionExhausted
-                              ? "Add Sessions"
-                              : "Active"
-                            : isSubscriptionExpired && activePlanId === planId
-                            ? "Renew"
-                            : "Select"}
+                              ? isSessionExhausted
+                                ? "Add Sessions"
+                                : "Active"
+                              : isSubscriptionExpired && activePlanId === planId
+                                ? "Renew"
+                                : "Select"}
                         </Button>
                       </td>
                     );
@@ -686,7 +731,7 @@ export default function SubscriptionPlansPage() {
                     <h3 className="text-xl font-bold">
                       {
                         subscriptionPlans.find(
-                          (p) => (p.planId || p.id) === selectedPlan
+                          (p) => (p.planId || p.id) === selectedPlan,
                         )?.name
                       }
                     </h3>
@@ -695,12 +740,12 @@ export default function SubscriptionPlansPage() {
                     <span className="text-3xl font-bold text-primary">
                       {(
                         subscriptionPlans.find(
-                          (p) => (p.planId || p.id) === selectedPlan
+                          (p) => (p.planId || p.id) === selectedPlan,
                         ) as any
-                      )?.currency || "₹"}
+                      )?.currency || currencySymbol}
                       {
                         subscriptionPlans.find(
-                          (p) => (p.planId || p.id) === selectedPlan
+                          (p) => (p.planId || p.id) === selectedPlan,
                         )?.price
                       }
                     </span>
@@ -708,22 +753,22 @@ export default function SubscriptionPlansPage() {
                       /
                       {
                         subscriptionPlans.find(
-                          (p) => (p.planId || p.id) === selectedPlan
+                          (p) => (p.planId || p.id) === selectedPlan,
                         )?.duration
                       }
                     </span>
                   </div>
                   <p className="text-base text-muted-foreground">
                     {typeof subscriptionPlans.find(
-                      (p) => (p.planId || p.id) === selectedPlan
+                      (p) => (p.planId || p.id) === selectedPlan,
                     )?.sessions === "number"
                       ? `Up to ${
                           subscriptionPlans.find(
-                            (p) => (p.planId || p.id) === selectedPlan
+                            (p) => (p.planId || p.id) === selectedPlan,
                           )?.sessions
                         } sessions`
                       : subscriptionPlans.find(
-                          (p) => (p.planId || p.id) === selectedPlan
+                          (p) => (p.planId || p.id) === selectedPlan,
                         )?.sessions}{" "}
                     sessions
                   </p>
@@ -770,7 +815,7 @@ export default function SubscriptionPlansPage() {
                     Auto-renews every{" "}
                     {
                       subscriptionPlans.find(
-                        (p) => (p.planId || p.id) === selectedPlan
+                        (p) => (p.planId || p.id) === selectedPlan,
                       )?.duration
                     }
                     . Cancel anytime.
@@ -791,7 +836,7 @@ export default function SubscriptionPlansPage() {
                 className="h-12 px-6"
                 onClick={() => {
                   const plan = subscriptionPlans.find(
-                    (p) => (p.planId || p.id) === selectedPlan
+                    (p) => (p.planId || p.id) === selectedPlan,
                   );
                   if (!plan) return;
 
@@ -802,6 +847,7 @@ export default function SubscriptionPlansPage() {
                       id: plan.planId || plan.id,
                       name: plan.name,
                       price: String(plan.price),
+                      currency: currencyCode,
                       duration: plan.duration,
                     },
                     fromSubscription: true,

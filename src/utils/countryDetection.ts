@@ -31,7 +31,7 @@ const getCountryFromIP = async (): Promise<string | null> => {
   try {
     // Using ipapi.co - free tier allows 1000 requests per day
     // Also try alternative API to reduce rate limiting
-    const response = await fetch("https://ipapi.co/json/");
+    const response = await fetch("https://ipwho.is/");
     if (!response.ok) {
       // Try alternative service if primary fails
       const altResponse = await fetch("https://extreme-ip-lookup.com/json/");

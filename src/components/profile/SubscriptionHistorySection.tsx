@@ -1,5 +1,5 @@
 import logoUrl from "@/assets/logo.webp";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { FileText, Info, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,34 @@ export function SubscriptionHistorySection({
   const [detailSub, setDetailSub] = useState<Subscription | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  // Default to INR - will be updated by useEffect if needed
+  const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
+  const [currencyCode, setCurrencyCode] = useState<"INR" | "USD">("INR");
+
+  // Detect currency on mount (defaults to INR, updates based on IP location)
+  useEffect(() => {
+    const checkCurrency = async () => {
+      try {
+        const response = await fetch("https://ipwho.is/");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.country_code === "IN") {
+            setCurrencySymbol("₹");
+            setCurrencyCode("INR");
+          } else {
+            setCurrencySymbol("$");
+            setCurrencyCode("USD");
+          }
+        }
+      } catch (error) {
+        console.warn("Currency detection failed, using INR");
+        setCurrencySymbol("₹");
+        setCurrencyCode("INR");
+      }
+    };
+
+    checkCurrency();
+  }, []);
 
   const openSubDetail = (sub: Subscription) => {
     setDetailSub(sub);
@@ -68,10 +96,29 @@ export function SubscriptionHistorySection({
       });
 
       const amount = (sub.finalAmount ?? sub.amount ?? 0).toLocaleString();
-      const discount = sub.discountAmount ? sub.discountAmount.toLocaleString() : "0";
-      const invoiceDate = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-      const startDate = sub.startDate ? new Date(sub.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "N/A";
-      const endDate = sub.endDate ? new Date(sub.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "N/A";
+      const discount = sub.discountAmount
+        ? sub.discountAmount.toLocaleString()
+        : "0";
+      const invoiceDate = new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const startDate = sub.startDate
+        ? new Date(sub.startDate).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        : "N/A";
+      const endDate = sub.endDate
+        ? new Date(sub.endDate).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        : "N/A";
 
       const invoiceHTML = `
         <div style="font-family: Arial, sans-serif; background: white; padding: 40px; width: 760px; color: #1a1a1a;">
@@ -189,7 +236,12 @@ export function SubscriptionHistorySection({
       document.body.removeChild(tempDiv);
 
       const imgData = canvas.toDataURL("image/jpeg", 0.9);
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+      });
       const imgWidth = 210;
       const pageHeight = 295;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -205,7 +257,9 @@ export function SubscriptionHistorySection({
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`invoice-${sub.planName?.replace(/\s+/g, "-").toLowerCase() || "subscription"}-${sub._id?.slice(-6)}.pdf`);
+      pdf.save(
+        `invoice-${sub.planName?.replace(/\s+/g, "-").toLowerCase() || "subscription"}-${sub._id?.slice(-6)}.pdf`,
+      );
     } catch (err) {
       console.error("Invoice download failed:", err);
     } finally {
@@ -257,19 +311,17 @@ export function SubscriptionHistorySection({
     );
   }
 
-const isSubscriptionExpired = (endDate?: string) => {
-  if (!endDate) return false;
-  return new Date(endDate).getTime() < Date.now();
-};
+  const isSubscriptionExpired = (endDate?: string) => {
+    if (!endDate) return false;
+    return new Date(endDate).getTime() < Date.now();
+  };
 
-const getDaysUntilExpiry = (endDate?: string) => {
-  if (!endDate) return null;
-  return Math.ceil(
-    (new Date(endDate).getTime() - Date.now()) /
-      (1000 * 60 * 60 * 24)
-  );
-};
-
+  const getDaysUntilExpiry = (endDate?: string) => {
+    if (!endDate) return null;
+    return Math.ceil(
+      (new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -314,7 +366,10 @@ const getDaysUntilExpiry = (endDate?: string) => {
 
                 <tbody className="divide-y divide-slate-100">
                   {userSubscriptions.map((p: Subscription) => (
-                    <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr
+                      key={p._id}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
                       {/* Plan */}
                       <td className="px-6 py-4">
                         <div className="font-bold text-slate-900">
@@ -328,39 +383,44 @@ const getDaysUntilExpiry = (endDate?: string) => {
                       {/* Dates */}
                       <td className="px-6 py-4 text-sm text-slate-600 font-medium">
                         <div>
-                          Start: {" "}
+                          Start:{" "}
                           {p.startDate
-                            ? new Date(p.startDate).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
+                            ? new Date(p.startDate).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )
                             : "N/A"}
                         </div>
                         <div>
-                          End: {" "}
+                          End:{" "}
                           {p.endDate
                             ? new Date(p.endDate).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })
                             : "N/A"}
                         </div>
-                        
                       </td>
 
                       {/* Amount */}
                       <td className="px-6 py-4 text-right">
                         <div className="text-right">
                           <span className="font-black text-slate-900">
-                            ₹{(p.finalAmount?.toLocaleString() ?? p.amount?.toLocaleString()) || 0}
+                            {currencySymbol}
+                            {(p.finalAmount?.toLocaleString() ??
+                              p.amount?.toLocaleString()) ||
+                              0}
                           </span>
-                          {p.discountAmount > 0 && (
+                          {/* {p.discountAmount > 0 && (
                             <div className="text-slate-500 text-sm line-through">
-                              ₹{p.amount?.toLocaleString()}
+                              {currencySymbol}{p.amount?.toLocaleString()}
                             </div>
-                          )}
+                          )} */}
                           {p.couponCode && (
                             <div className="text-success text-xs font-medium mt-1">
                               Coupon: {p.couponCode}
@@ -374,7 +434,8 @@ const getDaysUntilExpiry = (endDate?: string) => {
                         {p.availableSessions ? (
                           <div className="text-sm font-bold space-y-1">
                             <div>
-                              {p.availableSessions.used}/{p.availableSessions.total}
+                              {p.availableSessions.used}/
+                              {p.availableSessions.total}
                             </div>
 
                             <div className="font-bold text-primary">
@@ -385,7 +446,6 @@ const getDaysUntilExpiry = (endDate?: string) => {
                           <div className="text-slate-400 text-xs">N/A</div>
                         )}
                       </td>
-
 
                       {/* Payment */}
                       {/* <td className="px-6 py-4 text-sm">
@@ -401,83 +461,90 @@ const getDaysUntilExpiry = (endDate?: string) => {
                       </td> */}
 
                       {/* Status */}
-                     <td className="px-6 py-4 text-center">
-  {(() => {
-    const expired = isSubscriptionExpired(p.endDate);
-    const daysLeft = getDaysUntilExpiry(p.endDate);
+                      <td className="px-6 py-4 text-center">
+                        {(() => {
+                          const expired = isSubscriptionExpired(p.endDate);
+                          const daysLeft = getDaysUntilExpiry(p.endDate);
 
-    return (
-      <div className="space-y-1 flex flex-col items-center">
-        {/* MAIN STATUS */}
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-black uppercase
+                          return (
+                            <div className="space-y-1 flex flex-col items-center">
+                              {/* MAIN STATUS */}
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-black uppercase
             ${
               expired
                 ? "bg-red-100 text-red-700"
                 : p.status === "active"
-                ? "bg-green-100 text-green-700"
-                : "bg-yellow-100 text-yellow-700"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-yellow-100 text-yellow-700"
             }
           `}
-        >
-          {expired ? "EXPIRED" : p.status || "UNKNOWN"}
-        </span>
+                              >
+                                {expired ? "EXPIRED" : p.status || "UNKNOWN"}
+                              </span>
 
-        {/* EXPIRY INFO */}
-        {p.endDate && (
-          expired ? (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">
-              Expired on {" "}
-              {new Date(p.endDate).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
-          ) : daysLeft !== null && daysLeft <= 7 ? (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-              Expires in {daysLeft} day{daysLeft > 1 ? "s" : ""}
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">
-              Valid till {" "}
-              {new Date(p.endDate).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
-          )
-        )}
+                              {/* EXPIRY INFO */}
+                              {p.endDate &&
+                                (expired ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">
+                                    Expired on{" "}
+                                    {new Date(p.endDate).toLocaleDateString(
+                                      "en-IN",
+                                      {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      },
+                                    )}
+                                  </span>
+                                ) : daysLeft !== null && daysLeft <= 7 ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                    Expires in {daysLeft} day
+                                    {daysLeft > 1 ? "s" : ""}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">
+                                    Valid till{" "}
+                                    {new Date(p.endDate).toLocaleDateString(
+                                      "en-IN",
+                                      {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      },
+                                    )}
+                                  </span>
+                                ))}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 mt-1 h-7 px-2 text-xs"
-          onClick={() => openSubDetail(p)}
-        >
-          <Info className="h-3 w-3 mr-1" />
-          Read More
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="font-bold text-slate-500 hover:text-green-700 hover:bg-green-50 mt-1 h-7 px-2 text-xs"
-          onClick={() => handleDownloadInvoice(p)}
-          disabled={downloadingId === p._id}
-        >
-          {downloadingId === p._id ? (
-            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-          ) : (
-            <Download className="h-3 w-3 mr-1" />
-          )}
-          {downloadingId === p._id ? "Generating..." : "Invoice"}
-        </Button>
-      </div>
-    );
-  })()}
-</td>
-
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 mt-1 h-7 px-2 text-xs"
+                                onClick={() => openSubDetail(p)}
+                              >
+                                <Info className="h-3 w-3 mr-1" />
+                                Read More
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="font-bold text-slate-500 hover:text-green-700 hover:bg-green-50 mt-1 h-7 px-2 text-xs"
+                                onClick={() => handleDownloadInvoice(p)}
+                                disabled={downloadingId === p._id}
+                              >
+                                {downloadingId === p._id ? (
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                ) : (
+                                  <Download className="h-3 w-3 mr-1" />
+                                )}
+                                {downloadingId === p._id
+                                  ? "Generating..."
+                                  : "Invoice"}
+                              </Button>
+                            </div>
+                          );
+                        })()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -496,13 +563,16 @@ const getDaysUntilExpiry = (endDate?: string) => {
           </Card>
         )}
       </div>
-      
+
       {/* MOBILE CARD VIEW */}
       <div className="md:hidden">
         {userSubscriptions?.length > 0 ? (
           <div className="space-y-4">
             {userSubscriptions.map((p: Subscription) => (
-              <Card key={p._id} className="p-4 border border-slate-200 rounded-lg">
+              <Card
+                key={p._id}
+                className="p-4 border border-slate-200 rounded-lg"
+              >
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -514,20 +584,23 @@ const getDaysUntilExpiry = (endDate?: string) => {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-slate-900">₹{p.amount?.toLocaleString() || 0}</p>
+                      <p className="font-black text-slate-900">
+                        {currencySymbol}
+                        {p.amount?.toLocaleString() || 0}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                     <div>
                       <p className="text-xs text-slate-500">Start Date</p>
                       <p className="text-sm text-slate-900">
                         {p.startDate
                           ? new Date(p.startDate).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
                           : "N/A"}
                       </p>
                     </div>
@@ -536,15 +609,15 @@ const getDaysUntilExpiry = (endDate?: string) => {
                       <p className="text-sm text-slate-900">
                         {p.endDate
                           ? new Date(p.endDate).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
                           : "N/A"}
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="pt-2 border-t border-slate-100">
                     <div className="space-y-1 flex flex-col">
                       {(() => {
@@ -558,8 +631,8 @@ const getDaysUntilExpiry = (endDate?: string) => {
                               className={`px-2 py-1 rounded-full text-xs font-black uppercase
                                 ${
                                   expired
-                                      ? "bg-red-100 text-red-700"
-                                      : p.status === "active"
+                                    ? "bg-red-100 text-red-700"
+                                    : p.status === "active"
                                       ? "bg-green-100 text-green-700"
                                       : "bg-yellow-100 text-yellow-700"
                                 }
@@ -569,51 +642,63 @@ const getDaysUntilExpiry = (endDate?: string) => {
                             </span>
 
                             {/* EXPIRY INFO */}
-                            {p.endDate && (
-                              expired ? (
+                            {p.endDate &&
+                              (expired ? (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">
-                                  Expired on {" "}
-                                  {new Date(p.endDate).toLocaleDateString("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
+                                  Expired on{" "}
+                                  {new Date(p.endDate).toLocaleDateString(
+                                    "en-IN",
+                                    {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    },
+                                  )}
                                 </span>
                               ) : daysLeft !== null && daysLeft <= 7 ? (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                                  Expires in {daysLeft} day{daysLeft > 1 ? "s" : ""}
+                                  Expires in {daysLeft} day
+                                  {daysLeft > 1 ? "s" : ""}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">
-                                  Valid till {" "}
-                                  {new Date(p.endDate).toLocaleDateString("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
+                                  Valid till{" "}
+                                  {new Date(p.endDate).toLocaleDateString(
+                                    "en-IN",
+                                    {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    },
+                                  )}
                                 </span>
-                              )
-                            )}
+                              ))}
                           </>
                         );
                       })()}
                     </div>
                   </div>
-                  
+
                   {p.availableSessions && (
                     <div className="pt-2 border-t border-slate-100">
                       <div className="grid grid-cols-3 gap-4">
                         <div className="text-center">
                           <p className="text-xs text-slate-500">Used</p>
-                          <p className="text-sm font-bold text-slate-900">{p.availableSessions.used}</p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {p.availableSessions.used}
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-slate-500">Total</p>
-                          <p className="text-sm font-bold text-slate-900">{p.availableSessions.total}</p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {p.availableSessions.total}
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-slate-500">Left</p>
-                          <p className="text-sm font-bold text-primary">{p.availableSessions.remaining}</p>
+                          <p className="text-sm font-bold text-primary">
+                            {p.availableSessions.remaining}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -670,147 +755,230 @@ const getDaysUntilExpiry = (endDate?: string) => {
               Subscription Details
             </DialogTitle>
           </DialogHeader>
-          {detailSub && (() => {
-            const expired = isSubscriptionExpired(detailSub.endDate);
-            const daysLeft = getDaysUntilExpiry(detailSub.endDate);
-            return (
-              <div className="space-y-4 py-2">
-                {/* Plan Overview */}
-                <div className="rounded-lg bg-slate-50 p-4 space-y-3">
-                  <h3 className="font-black text-slate-900 text-base">{detailSub.planName}</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
-                      <span
-                        className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
-                          expired
-                            ? "bg-red-100 text-red-700"
-                            : detailSub.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {expired ? "EXPIRED" : detailSub.status || "UNKNOWN"}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Expiry</p>
-                      <p className="mt-1 font-semibold text-slate-800 text-sm">
-                        {detailSub.endDate
-                          ? expired
-                            ? `Expired on ${new Date(detailSub.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
-                            : daysLeft !== null && daysLeft <= 7
-                            ? `Expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}`
-                            : `Valid till ${new Date(detailSub.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Start Date</p>
-                      <p className="mt-1 font-semibold text-slate-800">
-                        {detailSub.startDate
-                          ? new Date(detailSub.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">End Date</p>
-                      <p className="mt-1 font-semibold text-slate-800">
-                        {detailSub.endDate
-                          ? new Date(detailSub.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
-                          : "N/A"}
-                      </p>
+          {detailSub &&
+            (() => {
+              const expired = isSubscriptionExpired(detailSub.endDate);
+              const daysLeft = getDaysUntilExpiry(detailSub.endDate);
+              return (
+                <div className="space-y-4 py-2">
+                  {/* Plan Overview */}
+                  <div className="rounded-lg bg-slate-50 p-4 space-y-3">
+                    <h3 className="font-black text-slate-900 text-base">
+                      {detailSub.planName}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Status
+                        </p>
+                        <span
+                          className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
+                            expired
+                              ? "bg-red-100 text-red-700"
+                              : detailSub.status === "active"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {expired ? "EXPIRED" : detailSub.status || "UNKNOWN"}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Expiry
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800 text-sm">
+                          {detailSub.endDate
+                            ? expired
+                              ? `Expired on ${new Date(detailSub.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+                              : daysLeft !== null && daysLeft <= 7
+                                ? `Expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}`
+                                : `Valid till ${new Date(detailSub.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+                            : "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Start Date
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {detailSub.startDate
+                            ? new Date(detailSub.startDate).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                },
+                              )
+                            : "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          End Date
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {detailSub.endDate
+                            ? new Date(detailSub.endDate).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                },
+                              )
+                            : "N/A"}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Session Usage */}
-                {detailSub.availableSessions && (
-                  <div className="rounded-lg border border-slate-200 p-4 space-y-2">
-                    <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Session Usage</h4>
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="bg-slate-50 rounded-lg p-3">
-                        <p className="text-xs font-bold text-slate-500 uppercase">Total</p>
-                        <p className="mt-1 text-xl font-black text-slate-900">{detailSub.availableSessions.total}</p>
-                      </div>
-                      <div className="bg-slate-50 rounded-lg p-3">
-                        <p className="text-xs font-bold text-slate-500 uppercase">Used</p>
-                        <p className="mt-1 text-xl font-black text-slate-900">{detailSub.availableSessions.used}</p>
-                      </div>
-                      <div className="bg-primary/5 rounded-lg p-3">
-                        <p className="text-xs font-bold text-primary uppercase">Left</p>
-                        <p className="mt-1 text-xl font-black text-primary">{detailSub.availableSessions.remaining}</p>
-                      </div>
-                    </div>
-                    {typeof detailSub.availableSessions.percentageUsed === "number" && (
-                      <div className="mt-2">
-                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                          <span>Usage</span>
-                          <span>{Math.round(detailSub.availableSessions.percentageUsed)}%</span>
+                  {/* Session Usage */}
+                  {detailSub.availableSessions && (
+                    <div className="rounded-lg border border-slate-200 p-4 space-y-2">
+                      <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                        Session Usage
+                      </h4>
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="bg-slate-50 rounded-lg p-3">
+                          <p className="text-xs font-bold text-slate-500 uppercase">
+                            Total
+                          </p>
+                          <p className="mt-1 text-xl font-black text-slate-900">
+                            {detailSub.availableSessions.total}
+                          </p>
                         </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full transition-all"
-                            style={{ width: `${Math.min(detailSub.availableSessions.percentageUsed, 100)}%` }}
-                          />
+                        <div className="bg-slate-50 rounded-lg p-3">
+                          <p className="text-xs font-bold text-slate-500 uppercase">
+                            Used
+                          </p>
+                          <p className="mt-1 text-xl font-black text-slate-900">
+                            {detailSub.availableSessions.used}
+                          </p>
+                        </div>
+                        <div className="bg-primary/5 rounded-lg p-3">
+                          <p className="text-xs font-bold text-primary uppercase">
+                            Left
+                          </p>
+                          <p className="mt-1 text-xl font-black text-primary">
+                            {detailSub.availableSessions.remaining}
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Payment Info */}
-                <div className="rounded-lg border border-slate-200 p-4 space-y-2">
-                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Payment Info</h4>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount Paid</p>
-                      <p className="mt-1 font-black text-slate-900 text-base">
-                        ₹{(detailSub.finalAmount ?? detailSub.amount ?? 0).toLocaleString()}
-                      </p>
-                      {detailSub.discountAmount > 0 && (
-                        <p className="text-xs text-slate-400 line-through">₹{detailSub.amount?.toLocaleString()}</p>
+                      {typeof detailSub.availableSessions.percentageUsed ===
+                        "number" && (
+                        <div className="mt-2">
+                          <div className="flex justify-between text-xs text-slate-500 mb-1">
+                            <span>Usage</span>
+                            <span>
+                              {Math.round(
+                                detailSub.availableSessions.percentageUsed,
+                              )}
+                              %
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-2">
+                            <div
+                              className="bg-primary h-2 rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(detailSub.availableSessions.percentageUsed, 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {detailSub.discountAmount > 0 && (
-                      <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Discount</p>
-                        <p className="mt-1 font-semibold text-green-600">–₹{detailSub.discountAmount?.toLocaleString()}</p>
-                      </div>
-                    )}
-                    {detailSub.couponCode && (
-                      <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Coupon Used</p>
-                        <p className="mt-1 font-semibold text-green-600">{detailSub.couponCode}</p>
-                      </div>
-                    )}
-                    {detailSub.paymentGateway && (
-                      <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Gateway</p>
-                        <p className="mt-1 font-semibold text-slate-800">{detailSub.paymentGateway}</p>
-                      </div>
-                    )}
-                    {detailSub.orderId && (
-                      <div className="col-span-2">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Order ID</p>
-                        <p className="mt-1 font-mono text-xs text-slate-700 break-all">{detailSub.orderId}</p>
-                      </div>
-                    )}
-                    {detailSub.paymentId && (
-                      <div className="col-span-2">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Payment ID</p>
-                        <p className="mt-1 font-mono text-xs text-slate-700 break-all">{detailSub.paymentId}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  )}
 
-                {/* Auto Renew / Next Billing */}
-                {(detailSub.autoRenew !== undefined || detailSub.nextBillingDate) && (
+                  {/* Payment Info */}
                   <div className="rounded-lg border border-slate-200 p-4 space-y-2">
-                    <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Renewal Info</h4>
+                    <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                      Payment Info
+                    </h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      {/* {detailSub.autoRenew !== undefined && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Amount Paid
+                        </p>
+                        <p className="mt-1 font-black text-slate-900 text-base">
+                          {currencySymbol}
+                          {(
+                            detailSub.finalAmount ??
+                            detailSub.amount ??
+                            0
+                          ).toLocaleString()}
+                        </p>
+                        {detailSub.discountAmount > 0 && (
+                          <p className="text-xs text-slate-400 line-through">
+                            {currencySymbol}
+                            {detailSub.amount?.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      {detailSub.discountAmount > 0 && (
+                        <div>
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                            Discount
+                          </p>
+                          <p className="mt-1 font-semibold text-green-600">
+                            –{currencySymbol}
+                            {detailSub.discountAmount?.toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                      {detailSub.couponCode && (
+                        <div>
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                            Coupon Used
+                          </p>
+                          <p className="mt-1 font-semibold text-green-600">
+                            {detailSub.couponCode}
+                          </p>
+                        </div>
+                      )}
+                      {detailSub.paymentGateway && (
+                        <div>
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                            Gateway
+                          </p>
+                          <p className="mt-1 font-semibold text-slate-800">
+                            {detailSub.paymentGateway}
+                          </p>
+                        </div>
+                      )}
+                      {detailSub.orderId && (
+                        <div className="col-span-2">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                            Order ID
+                          </p>
+                          <p className="mt-1 font-mono text-xs text-slate-700 break-all">
+                            {detailSub.orderId}
+                          </p>
+                        </div>
+                      )}
+                      {detailSub.paymentId && (
+                        <div className="col-span-2">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                            Payment ID
+                          </p>
+                          <p className="mt-1 font-mono text-xs text-slate-700 break-all">
+                            {detailSub.paymentId}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Auto Renew / Next Billing */}
+                  {(detailSub.autoRenew !== undefined ||
+                    detailSub.nextBillingDate) && (
+                    <div className="rounded-lg border border-slate-200 p-4 space-y-2">
+                      <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                        Renewal Info
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {/* {detailSub.autoRenew !== undefined && (
                         <div>
                           <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Auto Renew</p>
                           <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black ${detailSub.autoRenew ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"}`}>
@@ -818,20 +986,28 @@ const getDaysUntilExpiry = (endDate?: string) => {
                           </span>
                         </div>
                       )} */}
-                      {detailSub.nextBillingDate && (
-                        <div>
-                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Next Billing</p>
-                          <p className="mt-1 font-semibold text-slate-800">
-                            {new Date(detailSub.nextBillingDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                          </p>
-                        </div>
-                      )}
+                        {detailSub.nextBillingDate && (
+                          <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                              Next Billing
+                            </p>
+                            <p className="mt-1 font-semibold text-slate-800">
+                              {new Date(
+                                detailSub.nextBillingDate,
+                              ).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Purchased Services */}
-                {/* {detailSub.purchasedServices && detailSub.purchasedServices.length > 0 && (
+                  {/* Purchased Services */}
+                  {/* {detailSub.purchasedServices && detailSub.purchasedServices.length > 0 && (
                   <div className="rounded-lg border border-slate-200 p-4 space-y-2">
                     <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Included Services</h4>
                     <div className="space-y-2">
@@ -849,16 +1025,22 @@ const getDaysUntilExpiry = (endDate?: string) => {
                   </div>
                 )} */}
 
-                {/* Footer */}
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  {detailSub.createdAt && (
-                    <span>Purchased on {new Date(detailSub.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
-                  )}
-                  {/* <span>ID: {detailSub._id}</span> */}
+                  {/* Footer */}
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    {detailSub.createdAt && (
+                      <span>
+                        Purchased on{" "}
+                        {new Date(detailSub.createdAt).toLocaleDateString(
+                          "en-IN",
+                          { day: "numeric", month: "short", year: "numeric" },
+                        )}
+                      </span>
+                    )}
+                    {/* <span>ID: {detailSub._id}</span> */}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
           <div className="flex justify-between items-center pt-2">
             <Button
               className="font-bold bg-green-600 hover:bg-green-700 text-white gap-2"
@@ -870,9 +1052,16 @@ const getDaysUntilExpiry = (endDate?: string) => {
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              {detailSub && downloadingId === detailSub._id ? "Generating PDF..." : "Download Invoice"}
+              {detailSub && downloadingId === detailSub._id
+                ? "Generating PDF..."
+                : "Download Invoice"}
             </Button>
-            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsDetailModalOpen(false)}
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -47,6 +47,33 @@ import InvoiceComponent from "@/components/InvoiceComponent";
 import logoUrl from "@/assets/logo.webp";
 
 export default function BookingConfirmationPage() {
+  const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
+  const [currencyCode, setCurrencyCode] = useState<"INR" | "USD">("INR");
+
+  // Detect currency on mount
+  useEffect(() => {
+    const checkCurrency = async () => {
+      try {
+        const response = await fetch("https://ipwho.is/");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.country_code === "IN") {
+            setCurrencySymbol("₹");
+            setCurrencyCode("INR");
+          } else {
+            setCurrencySymbol("$");
+            setCurrencyCode("USD");
+          }
+        }
+      } catch (error) {
+        console.warn("Currency detection failed, using INR");
+        setCurrencySymbol("₹");
+        setCurrencyCode("INR");
+      }
+    };
+
+    checkCurrency();
+  }, []);
   // Transform questionnaire data to health profile format
   const transformQuestionnaireToHealthProfile = (
     questionnaireData: any,
@@ -941,7 +968,7 @@ export default function BookingConfirmationPage() {
                       }</div>
                     </td>
                     <td class="p-3 border-t text-right">
-                      ₹${sanitizedServicePrice
+                      {currencySymbol}${sanitizedServicePrice
                         ?.toString()
                         .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                     </td>
@@ -966,18 +993,18 @@ export default function BookingConfirmationPage() {
             <div class="bg-gray-50 rounded-lg p-4">
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Subtotal:</span>
-                <span>₹${sanitizedServicePrice
+                <span>{currencySymbol}${sanitizedServicePrice
                   ?.toString()
                   .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
               </div>
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Tax:</span>
-                <span>₹0.00</span>
+                <span>{currencySymbol}0.00</span>
               </div>
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Discount:</span>
                 <span>
-                  ₹${(bookingDetails?.discountAmount || 0)
+                  {currencySymbol}${(bookingDetails?.discountAmount || 0)
                     ?.toString()
                     .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </span>
@@ -985,7 +1012,7 @@ export default function BookingConfirmationPage() {
               <div class="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Total:</span>
                 <span>
-                  ₹${sanitizedServicePrice
+                  {currencySymbol}${sanitizedServicePrice
                     ?.toString()
                     .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </span>
@@ -1336,7 +1363,8 @@ export default function BookingConfirmationPage() {
                         <p>
                           <span className="text-muted-foreground">Price:</span>{" "}
                           <span className="font-medium">
-                            ₹{sanitizedServicePrice}
+                            {currencySymbol}
+                            {sanitizedServicePrice}
                           </span>
                         </p>
 
@@ -1393,7 +1421,8 @@ export default function BookingConfirmationPage() {
                             Amount Paid
                           </p>
                           <p className="font-medium">
-                            ₹{sanitizedServicePrice}
+                            {currencySymbol}
+                            {sanitizedServicePrice}
                           </p>
                         </div>
 
