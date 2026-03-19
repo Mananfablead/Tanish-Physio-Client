@@ -191,7 +191,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                           year: "numeric",
                         })}
                         <br />
-                        <span className="text-xs">{booking.time}</span>
+                        <span className="text-xs">{booking.timeSlot.start} - {booking.timeSlot.end}</span>
                       </td>
 
                       {/* THERAPIST */}

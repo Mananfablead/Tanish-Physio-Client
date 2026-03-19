@@ -209,7 +209,7 @@ export function SessionHistorySection({
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return sessions.slice(startIndex, endIndex);
   }, [sessions, currentPage]);
-
+  console.log("paginatedSessions", paginatedSessions)
   const getStatusBadgeClass = (status: string) => {
     switch (status?.toLowerCase()) {
       case "scheduled":
@@ -436,10 +436,25 @@ export function SessionHistorySection({
                         </div>
                         <div className="text-sm text-slate-500">
                           {/* Show timeSlot if available, otherwise fallback to time or startTime */}
-                          {s.timeSlot?.start && s.timeSlot?.end ? (
+                          {s.startTime && s.endTime ? (
                             <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {s.timeSlot.start} - {s.timeSlot.end}
+                              {/* <Clock className="h-3 w-3" /> */}
+                              {/* Format startTime and endTime - handle both string times and ISO dates */}
+                              {typeof s.startTime === 'string' && s.startTime.includes('T') 
+                                ? new Date(s.startTime).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : s.startTime
+                              }
+                              {' - '}
+                              {typeof s.endTime === 'string' && s.endTime.includes('T')
+                                ? new Date(s.endTime).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : s.endTime
+                              }
                             </span>
                           ) : (
                             s.time ||

@@ -55,10 +55,10 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
     const endTimeStr = endDate
       ? endDate.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        })
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
       : "-";
 
     return `${dateStr} - ${startTimeStr} `;
@@ -66,9 +66,9 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
   const isSessionTimeArrived = (session: any) => {
     if (!session?.startTime) return false;
-    
+
     const sessionStartTime = new Date(session.startTime);
-    
+
     // Use currentTime state instead of new Date() for real-time updates
     return currentTime >= sessionStartTime;
   };
@@ -113,58 +113,58 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
       {/* Live Sessions Section - Show only sessions with "live" status */}
       {upcomingSessions.filter((session) => session.status === "live").length >
         0 && (
-        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                Live Sessions
-              </h3>
-            </div>
-            <div className="space-y-4">
-              {liveSessions.map((session) => (
-                <div
-                  key={session._id || session.id}
-                  className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
-                >
-                  {/* Therapist + Session Info */}
-                  <div className="flex-1">
-                    <h4 className="font-black text-slate-900">
-                      {session?.subscriptionId?.planName || session?.bookingId?.serviceName || "Session"}
-                    </h4>
-                    <p className="text-sm text-slate-500 font-medium">
-                      {formatSessionDateTime(
-                        session?.startTime,
-                        session?.endTime
-                      )}
-                    </p>
-                  </div>
+          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  Live Sessions
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {liveSessions.map((session) => (
+                  <div
+                    key={session._id || session.id}
+                    className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
+                  >
+                    {/* Therapist + Session Info */}
+                    <div className="flex-1">
+                      <h4 className="font-black text-slate-900">
+                        {session?.subscriptionId?.planName || session?.bookingId?.serviceName || "Session"}
+                      </h4>
+                      <p className="text-sm text-slate-500 font-medium">
+                        {formatSessionDateTime(
+                          session?.startTime,
+                          session?.endTime
+                        )}
+                      </p>
+                    </div>
 
-                  {/* Status */}
-                  <div className="flex flex-col items-end gap-2">
-                    <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
-                      {session.status}
-                    </span>
-                    {session.status === "live" && !isSessionTimeArrived(session) && (
-                      <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                        Starts in {Math.ceil((new Date(session.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min
+                    {/* Status */}
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
+                        {session.status}
                       </span>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs"
-                      onClick={() => openSessionDetail(session)}
-                    >
-                      <Info className="h-3 w-3 mr-1" />
-                      Read More
-                    </Button>
+                      {session.status === "live" && !isSessionTimeArrived(session) && (
+                        <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                          Starts in {Math.ceil((new Date(session.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min
+                        </span>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs"
+                        onClick={() => openSessionDetail(session)}
+                      >
+                        <Info className="h-3 w-3 mr-1" />
+                        Read More
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
       {/* Upcoming Sessions Section - Show pending and scheduled sessions */}
       {upcomingSessions.length > 0 && (
@@ -228,9 +228,9 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
       {/* Next Session Detail View - Only show if there's a next session and no other upcoming sessions */}
       {nextSession &&
-      upcomingSessions.filter(
-        (session) => session.status !== "live" && session.status !== "completed"
-      ).length === 0 ? (
+        upcomingSessions.filter(
+          (session) => session.status !== "live" && session.status !== "completed"
+        ).length === 0 ? (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -305,14 +305,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 <Button
                   className={`w-full h-11 rounded-xl ${
                     // Enabled states
-                    (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") && 
-                    isSessionTimeArrived(nextSession)
+                    (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") &&
+                      isSessionTimeArrived(nextSession)
                       ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
-                      : (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") && 
+                      : (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") &&
                         !isSessionTimeArrived(nextSession)
-                      ? "bg-secondary hover:bg-secondary/90 font-bold"
-                      : "bg-gray-300 font-bold"
-                  }`}
+                        ? "bg-secondary hover:bg-secondary/90 font-bold"
+                        : "font-bold"
+                    }`}
                   disabled={
                     !nextSession._id ||
                     nextSession.timingStatus === "normal" ||
@@ -323,12 +323,12 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   {nextSession.status === "live" && !isSessionTimeArrived(nextSession)
                     ? `Starts in ${Math.ceil((new Date(nextSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`
                     : nextSession.timingStatus === "join_now"
-                    ? isSessionTimeArrived(nextSession)
-                      ? "Join Session"
-                      : `Join in ${Math.ceil((new Date(nextSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`
-                    : nextSession.timingStatus === "join_soon"
-                    ? "Join Soon"
-                    : "Join Session"}
+                      ? isSessionTimeArrived(nextSession)
+                        ? "Join Session"
+                        : `Join in ${Math.ceil((new Date(nextSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`
+                      : nextSession.timingStatus === "join_soon"
+                        ? "Join Soon"
+                        : "Join Session"}
                 </Button>
               </Link>
             </div>
@@ -382,15 +382,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
                     <span
-                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
-                        detailSession.status === "live"
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${detailSession.status === "live"
                           ? "bg-green-600 text-white"
                           : detailSession.status === "confirmed"
-                          ? "bg-primary/10 text-primary"
-                          : detailSession.status === "scheduled"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
+                            ? "bg-primary/10 text-primary"
+                            : detailSession.status === "scheduled"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-amber-100 text-amber-700"
+                        }`}
                     >
                       {detailSession.status}
                     </span>
@@ -404,17 +403,17 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     <p className="mt-1 font-semibold text-slate-800">
                       {detailSession.startTime
                         ? new Date(detailSession.startTime).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
                         : detailSession.date
-                        ? new Date(detailSession.date).toLocaleDateString("en-IN", {
+                          ? new Date(detailSession.date).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "long",
                             year: "numeric",
                           })
-                        : "N/A"}
+                          : "N/A"}
                     </p>
                   </div>
                   <div>
@@ -423,9 +422,9 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                       {detailSession.time ||
                         (detailSession.startTime
                           ? new Date(detailSession.startTime).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "—")}
                     </p>
                   </div>
