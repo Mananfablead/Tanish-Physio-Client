@@ -59,13 +59,14 @@ export const SubscriptionPlans = ({
   // Debug: Log plan prices
   useEffect(() => {
     console.log(
-      "💳 Subscription Plans:",
+      "💳 Subscription Plans - Dual Currency Display:",
       subscriptionPlans.map((plan) => ({
         name: plan.name,
+        price_inr: plan.price_inr,
+        price_usd: plan.price_usd,
         priceINR: plan.priceINR,
         priceUSD: plan.priceUSD,
         oldPrice: plan.price,
-        currency: plan.currency,
       })),
     );
   }, [subscriptionPlans]);
@@ -188,46 +189,39 @@ export const SubscriptionPlans = ({
                     <div className="mb-6 text-center">
                       <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
 
-                      <div className="flex items-baseline justify-center gap-1">
+                      {/* Dynamic Price Display - Country Based */}
+                      <div className="flex items-center justify-center gap-1 mb-2">
                         {/* Currency Icon */}
                         {currencySymbol === "₹" ? (
-                          <IndianRupee className="h-8 w-8 text-primary" />
+                          <IndianRupee className="h-8 w-8 text-emerald-600" />
                         ) : (
-                          <DollarSign className="h-8 w-8 text-primary" />
+                          <DollarSign className="h-8 w-8 text-emerald-600" />
                         )}
 
-                        {/* Price Display with Location-Based Currency */}
-                        <span className="text-4xl font-bold">
+                        {/* Price */}
+                        <span
+                          className={`text-4xl font-bold ${
+                            currencySymbol === "₹"
+                              ? "text-emerald-700"
+                              : "text-emerald-700"
+                          }`}
+                        >
                           {(() => {
-                            const priceINR = plan.priceINR;
-                            const priceUSD = plan.priceUSD;
-
-                            console.log(`💰 ${plan.name} prices:`, {
-                              priceINR,
-                              priceUSD,
-                            });
-
-                            if (
-                              priceINR !== undefined &&
-                              priceUSD !== undefined &&
-                              priceINR > 0 &&
-                              priceUSD > 0
-                            ) {
-                              const priceInfo = getPriceByLocationSync(
-                                priceINR,
-                                priceUSD,
-                              );
-                              console.log(`✅ Showing: ${priceInfo.formatted}`);
-                              return priceInfo.amount.toLocaleString();
+                            if (currencyCode === "INR") {
+                              // Try both field names (underscore and camelCase)
+                              const priceINR = plan.price_inr ?? plan.priceINR;
+                              if (priceINR !== undefined && priceINR > 0) {
+                                return priceINR.toLocaleString();
+                              }
+                              return (plan.price || 0).toLocaleString();
+                            } else {
+                              // Try both field names (underscore and camelCase)
+                              const priceUSD = plan.price_usd ?? plan.priceUSD;
+                              if (priceUSD !== undefined && priceUSD > 0) {
+                                return priceUSD.toLocaleString();
+                              }
+                              return "0";
                             }
-
-                            // Fallback to old format
-                            const fallbackPrice = plan.price || 0;
-                            console.log(
-                              "⚠️ Fallback to old price:",
-                              fallbackPrice,
-                            );
-                            return fallbackPrice.toLocaleString();
                           })()}
                         </span>
                         <span className="text-muted-foreground text-sm">
@@ -235,10 +229,26 @@ export const SubscriptionPlans = ({
                         </span>
                       </div>
 
-                      {/* Currency Code Display */}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {currencyCode}
-                      </p>
+                      {/* Currency Code Badge */}
+                      {/* <Badge variant={currencyCode === "INR" ? "secondary" : "outline"} className="mt-2">
+                        {currencyCode === "INR" ? `INR: ₹` : `USD: $`}{(() => {
+                          if (currencyCode === "INR") {
+                            // Try both field names (underscore and camelCase)
+                            const priceINR = plan.price_inr ?? plan.priceINR;
+                            if (priceINR !== undefined && priceINR > 0) {
+                              return priceINR.toLocaleString();
+                            }
+                            return (plan.price || 0).toLocaleString();
+                          } else {
+                            // Try both field names (underscore and camelCase)
+                            const priceUSD = plan.price_usd ?? plan.priceUSD;
+                            if (priceUSD !== undefined && priceUSD > 0) {
+                              return priceUSD.toLocaleString();
+                            }
+                            return '0';
+                          }
+                        })()}
+                      </Badge> */}
                     </div>
 
                     {/* FEATURES */}

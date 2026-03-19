@@ -68,9 +68,13 @@ export function ScheduleModal({
   };
 
   const formatTime = (time: string) => {
-    // Time is already in local timezone from backend
-    return formatTimeDisplay(time);
-  };
+    // Time from backend should already be in local timezone
+    // Just format it to 12-hour format with AM/PM
+    console.log("[ScheduleModal] Formatting time:", time);
+    const formatted = formatTimeDisplay(time);
+    console.log("[ScheduleModal] Formatted result:", formatted);
+    return formatted;
+  };;
 
   const handleTimeSlotClick = (date: string, timeSlot: any) => {
     // Only allow selecting time slots that match the booking type

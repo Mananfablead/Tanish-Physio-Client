@@ -44,6 +44,7 @@ import {
 } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
+import { getUserTimezone, formatTimeDisplay } from "@/utils/timezone";
 import {
   getAvailability,
   getAllSessions,
@@ -109,7 +110,7 @@ export default function SchedulePage() {
   } = useSelector((state: RootState) => state.subscriptions);
   const { plans } = useSelector((state: any) => state.subscriptions);
   const { services: allServices, loading: servicesLoading } = useSelector(
-    (state: RootState) => state.services
+    (state: RootState) => state.services,
   );
 
   // Helper function to get service duration from booking data
@@ -123,7 +124,7 @@ export default function SchedulePage() {
 
     if (bookingData?.bookingId && user?.purchasedServices) {
       const service = user.purchasedServices.find(
-        (s: any) => s.bookingId === bookingData.bookingId
+        (s: any) => s.bookingId === bookingData.bookingId,
       );
       if (service && service.duration) {
         const durationMatch = service.duration.match(/(\d+)/);
@@ -177,15 +178,30 @@ export default function SchedulePage() {
     try {
       setIsBookingLoading(true); // Set loading state to true when booking starts
 
-      // Extract start and end time from the selected time format (e.g., "10:00 - 11:00" -> startTime: "10:00", endTime: "11:00")
+      // Extract start and end time from the selected time slot
+      // Use the stored original 24-hour times from selectedTimeSlot
       let startTime, endTime;
-      if (selectedTime.includes(" - ")) {
+      if (selectedTimeSlot) {
+        startTime = selectedTimeSlot.start;
+        endTime = selectedTimeSlot.end;
+        console.log("[Booking] Using stored time slot:", {
+          startTime,
+          endTime,
+          formattedDisplay: selectedTime,
+        });
+      } else if (selectedTime.includes(" - ")) {
+        // Fallback to parsing formatted time (should not happen normally)
         const timeParts = selectedTime.split(" - ");
         startTime = timeParts[0];
         endTime = timeParts[1];
+        console.log("[Booking] Fallback parsing - this should not happen:", {
+          startTime,
+          endTime,
+        });
       } else {
         startTime = selectedTime;
         endTime = null; // Backend will calculate endTime based on duration if not provided
+        console.log("[Booking] Single time value:", { startTime });
       }
 
       // Check if user can book with subscription first
@@ -194,8 +210,8 @@ export default function SchedulePage() {
         // Determine scheduleType based on whether we have specific scheduled date/time
         const scheduleType =
           selectedDate > new Date() ||
-            (selectedDate.toDateString() === new Date().toDateString() &&
-              startTime > new Date().toTimeString().substring(0, 5))
+          (selectedDate.toDateString() === new Date().toDateString() &&
+            startTime > new Date().toTimeString().substring(0, 5))
             ? "later"
             : "now";
 
@@ -216,7 +232,7 @@ export default function SchedulePage() {
         };
 
         const response: any = await createBookingWithSubscription(
-          subscriptionBookingData
+          subscriptionBookingData,
         );
 
         if (response.data?.success) {
@@ -283,14 +299,15 @@ export default function SchedulePage() {
           toast.success(
             user?.subscriptionData?.status === "active"
               ? `Session booked for ${format(
-                selectedDate,
-                "MMM d, yyyy"
-              )} at ${selectedTime} with your ${user.subscriptionData.planName
-              } subscription!`
+                  selectedDate,
+                  "MMM d, yyyy",
+                )} at ${selectedTime} with your ${
+                  user.subscriptionData.planName
+                } subscription!`
               : `Session booked for ${format(
-                selectedDate,
-                "MMM d, yyyy"
-              )} at ${selectedTime}`
+                  selectedDate,
+                  "MMM d, yyyy",
+                )} at ${selectedTime}`,
           );
 
           // Note: Not refreshing subscription info from API to avoid stale data override
@@ -333,7 +350,7 @@ export default function SchedulePage() {
       if (selectedServiceOrSubscription) {
         // Check if it's a service or subscription
         const isService = user?.purchasedServices?.some(
-          (service: any) => service.id === selectedServiceOrSubscription
+          (service: any) => service.id === selectedServiceOrSubscription,
         );
         const isSubscription =
           user?.subscriptionData?.id === selectedServiceOrSubscription;
@@ -341,7 +358,7 @@ export default function SchedulePage() {
         if (isService) {
           // Find the selected service and use its bookingId
           const selectedServiceData = user?.purchasedServices?.find(
-            (service: any) => service.id === selectedServiceOrSubscription
+            (service: any) => service.id === selectedServiceOrSubscription,
           );
           finalBookingId = selectedServiceData?.bookingId || null;
           finalSubscriptionId = null; // Clear subscriptionId when service is selected
@@ -391,8 +408,8 @@ export default function SchedulePage() {
         toast.success(
           `Session booked for ${format(
             selectedDate,
-            "MMM d, yyyy"
-          )} at ${selectedTime}`
+            "MMM d, yyyy",
+          )} at ${selectedTime}`,
         );
         // Navigate to profile page after 5 seconds
         setTimeout(() => {
@@ -414,7 +431,7 @@ export default function SchedulePage() {
           errorMessage.includes("Session is not active at this time")
         ) {
           setBookingError(
-            "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later."
+            "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.",
           );
         } else {
           setBookingError(errorMessage);
@@ -446,7 +463,7 @@ export default function SchedulePage() {
           errorMessage.includes("Session is not active at this time")
         ) {
           setBookingError(
-            "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later."
+            "⏰ Session Not Active\n\nThis session is not currently active. Please check your scheduled appointment time and try again later.",
           );
         } else {
           setBookingError(errorMessage);
@@ -482,10 +499,16 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] =
     useState<boolean>(false);
   const [isPlansModalOpen, setIsPlansModalOpen] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'individual' | 'group'>('individual');
+  const [activeTab, setActiveTab] = useState<"individual" | "group">(
+    "individual",
+  );
 
   // UI Control States for Session Creation
   const [sessionTypeValue, setSessionTypeValue] = useState<string>("1-on-1");
@@ -534,7 +557,7 @@ export default function SchedulePage() {
     const formattedDate = format(date, "yyyy-MM-dd");
 
     const dayAvailability = availability.find(
-      (item: any) => item.date === formattedDate
+      (item: any) => item.date === formattedDate,
     );
 
     if (!dayAvailability || !Array.isArray(dayAvailability.timeSlots)) {
@@ -554,7 +577,7 @@ export default function SchedulePage() {
         startHour,
         startMinute,
         0,
-        0
+        0,
       );
       const slotEnd = new Date(
         today.getFullYear(),
@@ -563,10 +586,10 @@ export default function SchedulePage() {
         endHour,
         endMinute,
         0,
-        0
+        0,
       );
       const slotDurationMinutes = Math.round(
-        (slotEnd.getTime() - slotStart.getTime()) / (1000 * 60)
+        (slotEnd.getTime() - slotStart.getTime()) / (1000 * 60),
       );
 
       // Only return 45-minute regular slots
@@ -624,11 +647,27 @@ export default function SchedulePage() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        // Log current timezone detection
+        const currentTimezone = getUserTimezone();
+        console.log('[SchedulePage] User browser timezone:', currentTimezone);
 
         // Fetch availability (public data)
         const availabilityResponse = await getAvailability();
         const availabilityData: any = availabilityResponse;
-        setAvailability(availabilityData.data?.data?.availability || []);
+        const availabilityList = availabilityData.data?.data?.availability || [];
+        console.log('[SchedulePage] Raw availability from API:', availabilityData);
+        console.log('[SchedulePage] Availability list:', availabilityList);
+        if (availabilityList.length > 0) {
+          console.log('[SchedulePage] First availability date:', availabilityList[0].date);
+          console.log('[SchedulePage] First availability timeSlots:', availabilityList[0].timeSlots);
+          if (availabilityList[0].timeSlots && availabilityList[0].timeSlots.length > 0) {
+            console.log('[SchedulePage] First time slot start:', availabilityList[0].timeSlots[0].start);
+            console.log('[SchedulePage] First time slot end:', availabilityList[0].timeSlots[0].end);
+            console.log('[SchedulePage] Formatted first slot:', formatTimeDisplay(availabilityList[0].timeSlots[0].start));
+          }
+        }
+        setAvailability(availabilityList);
 
         // Only fetch sessions if user is authenticated
         if (user) {
@@ -770,7 +809,7 @@ export default function SchedulePage() {
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) =>
-      direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1)
+      direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1),
     );
   };
   console.log("user?.purchasedServices", user?.purchasedServices);
@@ -1002,141 +1041,144 @@ export default function SchedulePage() {
                             >
                               {day}
                             </div>
-                          )
+                          ),
                         )}
                       </div>
 
                       <div className="grid grid-cols-7 gap-1 max-h-[400px] overflow-y-auto">
                         {loading
                           ? // Show loading placeholders while availability data is loading
-                          Array.from({ length: 42 }).map((_, index) => (
-                            <div
-                              key={index}
-                              className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
-                            >
-                              <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
-                            </div>
-                          ))
-                          : getCalendarDays().map((day, index) => {
-                            if (!day) {
-                              return <div key={index} className="h-10" />;
-                            }
-
-                            const hasAvailableSlots = (day: Date) => {
-                              if (
-                                !availability ||
-                                !Array.isArray(availability)
-                              )
-                                return false;
-
-                              const formattedDate = format(day, "yyyy-MM-dd");
-
-                              const dayAvailability = availability.find(
-                                (item: any) => item.date === formattedDate
-                              );
-
-                              if (
-                                !dayAvailability ||
-                                !Array.isArray(dayAvailability.timeSlots)
-                              ) {
-                                return false;
-                              }
-
-                              return dayAvailability.timeSlots.some(
-                                (slot: any) => {
-                                  // Calculate slot duration in minutes
-                                  const [startHour, startMinute] = slot.start
-                                    .split(":")
-                                    .map(Number);
-                                  const [endHour, endMinute] = slot.end
-                                    .split(":")
-                                    .map(Number);
-                                  const now = new Date();
-                                  const slotStart = new Date(
-                                    now.getFullYear(),
-                                    now.getMonth(),
-                                    now.getDate(),
-                                    startHour,
-                                    startMinute,
-                                    0,
-                                    0
-                                  );
-                                  const slotEnd = new Date(
-                                    now.getFullYear(),
-                                    now.getMonth(),
-                                    now.getDate(),
-                                    endHour,
-                                    endMinute,
-                                    0,
-                                    0
-                                  );
-                                  const slotDurationMinutes = Math.round(
-                                    (slotEnd.getTime() -
-                                      slotStart.getTime()) /
-                                    (1000 * 60)
-                                  );
-
-                                  // Only consider 45-minute regular slots as available
-                                  return (
-                                    slot.status === "available" &&
-                                    slotDurationMinutes === 45
-                                  );
-                                }
-                              );
-                            };
-                            const isToday = isSameDay(day, today);
-                            const isSelected = isSameDay(day, selectedDate);
-                            const isPast = day < today && !isToday;
-
-                            // ✅ NEW
-                            const isAvailableDate = hasAvailableSlots(day);
-
-                            const availabilityForDate =
-                              getAvailabilityForDate(day);
-                            return isPast ? (
-                              /* -------- Past Date (Disabled) -------- */
+                            Array.from({ length: 42 }).map((_, index) => (
                               <div
                                 key={index}
-                                className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center cursor-not-allowed"
+                                className="h-10 rounded-xl text-sm font-medium flex items-center justify-center"
                               >
-                                {format(day, "d")}
+                                <div className="animate-pulse bg-gray-200 rounded w-6 h-6" />
                               </div>
-                            ) : (
-                              /* -------- Today & Future -------- */
-                              <button
-                                key={index}
-                                onClick={() => {
-                                  // Guest or logged-in user without active plan → show plans modal
-                                  const hasActivePlan =
-                                    user &&
-                                    (user?.subscriptionData?.status === "active" ||
-                                      (user?.purchasedServices && user?.purchasedServices.length > 0));
-                                  if (!hasActivePlan) {
-                                    setIsPlansModalOpen(true);
-                                    return;
-                                  }
-                                  setSelectedDate(day);
-                                  setIsBookingModalOpen(true);
-                                  setBookingError(null); // Clear any previous error when opening modal
-                                }}
-                                className={`
+                            ))
+                          : getCalendarDays().map((day, index) => {
+                              if (!day) {
+                                return <div key={index} className="h-10" />;
+                              }
+
+                              const hasAvailableSlots = (day: Date) => {
+                                if (
+                                  !availability ||
+                                  !Array.isArray(availability)
+                                )
+                                  return false;
+
+                                const formattedDate = format(day, "yyyy-MM-dd");
+
+                                const dayAvailability = availability.find(
+                                  (item: any) => item.date === formattedDate,
+                                );
+
+                                if (
+                                  !dayAvailability ||
+                                  !Array.isArray(dayAvailability.timeSlots)
+                                ) {
+                                  return false;
+                                }
+
+                                return dayAvailability.timeSlots.some(
+                                  (slot: any) => {
+                                    // Calculate slot duration in minutes
+                                    const [startHour, startMinute] = slot.start
+                                      .split(":")
+                                      .map(Number);
+                                    const [endHour, endMinute] = slot.end
+                                      .split(":")
+                                      .map(Number);
+                                    const now = new Date();
+                                    const slotStart = new Date(
+                                      now.getFullYear(),
+                                      now.getMonth(),
+                                      now.getDate(),
+                                      startHour,
+                                      startMinute,
+                                      0,
+                                      0,
+                                    );
+                                    const slotEnd = new Date(
+                                      now.getFullYear(),
+                                      now.getMonth(),
+                                      now.getDate(),
+                                      endHour,
+                                      endMinute,
+                                      0,
+                                      0,
+                                    );
+                                    const slotDurationMinutes = Math.round(
+                                      (slotEnd.getTime() -
+                                        slotStart.getTime()) /
+                                        (1000 * 60),
+                                    );
+
+                                    // Only consider 45-minute regular slots as available
+                                    return (
+                                      slot.status === "available" &&
+                                      slotDurationMinutes === 45
+                                    );
+                                  },
+                                );
+                              };
+                              const isToday = isSameDay(day, today);
+                              const isSelected = isSameDay(day, selectedDate);
+                              const isPast = day < today && !isToday;
+
+                              // ✅ NEW
+                              const isAvailableDate = hasAvailableSlots(day);
+
+                              const availabilityForDate =
+                                getAvailabilityForDate(day);
+                              return isPast ? (
+                                /* -------- Past Date (Disabled) -------- */
+                                <div
+                                  key={index}
+                                  className="h-10 rounded-xl text-sm font-medium text-slate-300 flex items-center justify-center cursor-not-allowed"
+                                >
+                                  {format(day, "d")}
+                                </div>
+                              ) : (
+                                /* -------- Today & Future -------- */
+                                <button
+                                  key={index}
+                                  onClick={() => {
+                                    // Guest or logged-in user without active plan → show plans modal
+                                    const hasActivePlan =
+                                      user &&
+                                      (user?.subscriptionData?.status ===
+                                        "active" ||
+                                        (user?.purchasedServices &&
+                                          user?.purchasedServices.length > 0));
+                                    if (!hasActivePlan) {
+                                      setIsPlansModalOpen(true);
+                                      return;
+                                    }
+                                    setSelectedDate(day);
+                                    setIsBookingModalOpen(true);
+                                    setBookingError(null); // Clear any previous error when opening modal
+                                  }}
+                                  className={`
       h-10 rounded-xl text-sm font-medium flex items-center justify-center transition-all
-      ${isSelected
-                                    ? "bg-primary text-white font-black shadow-md"
-                                    : availabilityForDate && !isAvailableDate
-                                      ? "bg-blue-100 text-blue-700 font-semibold" /* Booked */
-                                      : !availabilityForDate
-                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed" /* Not Booked */
-                                        : isToday
-                                          ? "border border-primary/30 text-primary font-bold"
-                                          : "bg-green-100 text-green-700 hover:bg-green-200" /* Available */
-                                  }
+      ${
+        isSelected
+          ? "bg-primary text-white font-black shadow-md"
+          : availabilityForDate && !isAvailableDate
+            ? "bg-blue-100 text-blue-700 font-semibold" /* Booked */
+            : !availabilityForDate
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed" /* Not Booked */
+              : isToday
+                ? "border border-primary/30 text-primary font-bold"
+                : "bg-green-100 text-green-700 hover:bg-green-200" /* Available */
+      }
     `}
-                              >
-                                {format(day, "d")}
-                              </button>
-                            );
-                          })}
+                                >
+                                  {format(day, "d")}
+                                </button>
+                              );
+                            })}
                       </div>
                     </CardContent>
                   </Card>
@@ -1164,12 +1206,12 @@ export default function SchedulePage() {
                             Showing{" "}
                             {Math.min(
                               (currentPage - 1) * sessionsPerPage + 1,
-                              sessions.length
+                              sessions.length,
                             )}{" "}
                             -{" "}
                             {Math.min(
                               currentPage * sessionsPerPage,
-                              sessions.length
+                              sessions.length,
                             )}{" "}
                             of {sessions.length} sessions
                           </p>
@@ -1195,8 +1237,10 @@ export default function SchedulePage() {
                                 setCurrentPage((prev) =>
                                   Math.min(
                                     prev + 1,
-                                    Math.ceil(sessions.length / sessionsPerPage)
-                                  )
+                                    Math.ceil(
+                                      sessions.length / sessionsPerPage,
+                                    ),
+                                  ),
                                 )
                               }
                               disabled={
@@ -1230,17 +1274,17 @@ export default function SchedulePage() {
                                         <Clock className="h-4 w-4" />
                                         {session.startTime
                                           ? new Date(
-                                            session.startTime
-                                          ).toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })
+                                              session.startTime,
+                                            ).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })
                                           : session.time
                                             ? session.time.split(" - ")[0]
                                             : "N/A"}
                                         {session.endTime &&
                                           ` - ${new Date(
-                                            session.endTime
+                                            session.endTime,
                                           ).toLocaleTimeString([], {
                                             hour: "2-digit",
                                             minute: "2-digit",
@@ -1265,7 +1309,7 @@ export default function SchedulePage() {
                                   </div>
                                   <Badge
                                     className={`text-xs font-bold ${getStatusBadgeClass(
-                                      session.status
+                                      session.status,
                                     )}`}
                                   >
                                     {session.status}
@@ -1330,8 +1374,10 @@ export default function SchedulePage() {
                                 setCurrentPage((prev) =>
                                   Math.min(
                                     prev + 1,
-                                    Math.ceil(sessions.length / sessionsPerPage)
-                                  )
+                                    Math.ceil(
+                                      sessions.length / sessionsPerPage,
+                                    ),
+                                  ),
                                 )
                               }
                               disabled={
@@ -1416,6 +1462,7 @@ export default function SchedulePage() {
                       setBookingError(null);
                       setSessionTypeValue("");
                       setSelectedTime("");
+                      setSelectedTimeSlot(null);
                       setSelectedServiceOrSubscription("");
                     }}
                     className="h-8 w-8"
@@ -1467,7 +1514,9 @@ export default function SchedulePage() {
                         <optgroup label="Services">
                           {allServices?.map((service: any) => {
                             const id =
-                              "id" in service ? service.id : (service as any)._id;
+                              "id" in service
+                                ? service.id
+                                : (service as any)._id;
                             const label =
                               service?.title ||
                               service?.details?.title ||
@@ -1561,7 +1610,7 @@ export default function SchedulePage() {
                                 startHour,
                                 startMinute,
                                 0,
-                                0
+                                0,
                               );
                               const slotEnd = new Date(
                                 now.getFullYear(),
@@ -1570,18 +1619,18 @@ export default function SchedulePage() {
                                 endHour,
                                 endMinute,
                                 0,
-                                0
+                                0,
                               );
                               const slotDurationMinutes = Math.round(
                                 (slotEnd.getTime() - slotStart.getTime()) /
-                                (1000 * 60)
+                                  (1000 * 60),
                               );
 
                               // Only show 45-minute regular slots (not 15-minute free consultation slots)
                               return slotDurationMinutes === 45;
                             })
                             .map((slot: any) => {
-                              const timeValue = `${slot.start} - ${slot.end}`;
+                              const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
 
                               const isAvailable = slot.status === "available";
                               const isBooked = slot.status === "booked";
@@ -1592,12 +1641,12 @@ export default function SchedulePage() {
                               const isPastTime = () => {
                                 const now = new Date();
                                 const selectedDateWithoutTime = new Date(
-                                  selectedDate
+                                  selectedDate,
                                 );
 
                                 // Create a date object with the selected date and the slot's start time
                                 const slotDateTime = new Date(
-                                  selectedDateWithoutTime
+                                  selectedDateWithoutTime,
                                 );
                                 const [startHour, startMinute] = slot.start
                                   .split(":")
@@ -1606,7 +1655,7 @@ export default function SchedulePage() {
                                   startHour,
                                   startMinute,
                                   0,
-                                  0
+                                  0,
                                 );
 
                                 // Check if the slot time is in the past compared to now
@@ -1630,7 +1679,7 @@ export default function SchedulePage() {
                                 startHour,
                                 startMinute,
                                 0,
-                                0
+                                0,
                               );
                               const slotEnd = new Date(
                                 now.getFullYear(),
@@ -1639,11 +1688,11 @@ export default function SchedulePage() {
                                 endHour,
                                 endMinute,
                                 0,
-                                0
+                                0,
                               );
                               const slotDurationMinutes = Math.round(
                                 (slotEnd.getTime() - slotStart.getTime()) /
-                                (1000 * 60)
+                                  (1000 * 60),
                               );
 
                               // Check if this slot can accommodate the service duration
@@ -1667,28 +1716,36 @@ export default function SchedulePage() {
                                   disabled={!isActuallyAvailable}
                                   onClick={() => {
                                     if (isActuallyAvailable) {
+                                      const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
                                       setSelectedTime(timeValue);
+                                      // Store the original 24-hour time slot for backend submission
+                                      setSelectedTimeSlot({
+                                        start: slot.start,
+                                        end: slot.end,
+                                      });
                                       setBookingError(null); // Clear any previous error when selecting a new time
                                     }
                                   }}
                                   className={`
           py-2 text-sm font-medium transition-all 
-          ${isSelected
-                                      ? "bg-green-600 text-white hover:bg-green-600"
-                                      : isActuallyAvailable
-                                        ? isSuitableForService
-                                          ? "border border-green-500 text-green-600 bg-green-50"
-                                          : "border border-yellow-500 text-yellow-600 bg-yellow-50"
-                                        : isBooked
-                                          ? " text-red-500 cursor-not-allowed border border-red-500"
-                                          : isPast
-                                            ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
-                                            : " text-gray-400 cursor-not-allowed border border-gray-400"
-                                    }
+          ${
+            isSelected
+              ? "bg-green-600 text-white hover:bg-green-600"
+              : isActuallyAvailable
+                ? isSuitableForService
+                  ? "border border-green-500 text-green-600 bg-green-50"
+                  : "border border-yellow-500 text-yellow-600 bg-yellow-50"
+                : isBooked
+                  ? " text-red-500 cursor-not-allowed border border-red-500"
+                  : isPast
+                    ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
+                    : " text-gray-400 cursor-not-allowed border border-gray-400"
+          }
         `}
                                   variant="outline"
                                 >
-                                  {timeValue}
+                                  {formatTimeDisplay(slot.start)} –{" "}
+                                  {formatTimeDisplay(slot.end)}
                                 </Button>
                               );
                             })}
@@ -1706,9 +1763,9 @@ export default function SchedulePage() {
                           {loading
                             ? "Loading availability..."
                             : `No available times for ${format(
-                              selectedDate,
-                              "MMM d, yyyy"
-                            )}`}
+                                selectedDate,
+                                "MMM d, yyyy",
+                              )}`}
                         </p>
                       </div>
                     )}
@@ -1746,6 +1803,7 @@ export default function SchedulePage() {
                       setIsBookingModalOpen(false);
                       setBookingError(null); // Clear error when closing modal
                       setSelectedTime("");
+                      setSelectedTimeSlot(null);
                       setSelectedServiceOrSubscription("");
                     }}
                   >
@@ -1840,9 +1898,14 @@ export default function SchedulePage() {
                         </Button>
                       </div>
                     ) : plans && plans.length > 0 ? (
-                      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'individual' | 'group')} className="w-full">
+                      <Tabs
+                        value={activeTab}
+                        onValueChange={(value) =>
+                          setActiveTab(value as "individual" | "group")
+                        }
+                        className="w-full"
+                      >
                         <TabsList className="flex w-full bg-gray-100 p-1 rounded-full mb-8">
-
                           <TabsTrigger
                             value="individual"
                             className="flex-1 flex items-center justify-center gap-2 
@@ -1868,159 +1931,175 @@ export default function SchedulePage() {
                             <Users className="w-4 h-4" />
                             Group Sessions
                           </TabsTrigger>
-
                         </TabsList>
 
                         <TabsContent value="individual" className="mt-0">
                           <div className="flex justify-center">
                             {(() => {
-                              const individualPlans = plans.filter((plan: any) => plan.session_type === "individual");
-                              const gridClasses = individualPlans.length === 2 
-                                ? "grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto"
-                                : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+                              const individualPlans = plans.filter(
+                                (plan: any) =>
+                                  plan.session_type === "individual",
+                              );
+                              const gridClasses =
+                                individualPlans.length === 2
+                                  ? "grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto"
+                                  : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
                               return (
                                 <div className={gridClasses}>
-                              {individualPlans
-                                .map((plan: any) => (
-                                  <Card
-                                    key={plan._id || plan.id}
-                                    className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300"
-                                  >
-                                    <div className="p-6 flex-1">
-                                      <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-xl font-bold text-slate-900">
-                                          {plan.name}
-                                        </h3>
-                                        <Badge variant="secondary" className="text-xs">
-                                          Individual
-                                        </Badge>
+                                  {individualPlans.map((plan: any) => (
+                                    <Card
+                                      key={plan._id || plan.id}
+                                      className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300"
+                                    >
+                                      <div className="p-6 flex-1">
+                                        <div className="flex items-center justify-between mb-4">
+                                          <h3 className="text-xl font-bold text-slate-900">
+                                            {plan.name}
+                                          </h3>
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                          >
+                                            Individual
+                                          </Badge>
+                                        </div>
+
+                                        <div className="mb-6">
+                                          <div className="text-3xl font-black text-primary mb-1">
+                                            ₹{plan.price?.toLocaleString()}
+                                          </div>
+                                          <div className="text-slate-500 text-sm">
+                                            {plan.duration}
+                                          </div>
+                                        </div>
+
+                                        <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                                          {plan.description}
+                                        </p>
+
+                                        <ul className="space-y-3 mb-6 flex-1">
+                                          {plan.features
+                                            ?.slice(0, 5)
+                                            .map(
+                                              (
+                                                feature: string,
+                                                index: number,
+                                              ) => (
+                                                <li
+                                                  key={index}
+                                                  className="flex items-start gap-3"
+                                                >
+                                                  <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                                  <span className="text-sm text-slate-700">
+                                                    {feature}
+                                                  </span>
+                                                </li>
+                                              ),
+                                            )}
+                                        </ul>
                                       </div>
 
-                                      <div className="mb-6">
-                                        <div className="text-3xl font-black text-primary mb-1">
-                                          ₹{plan.price?.toLocaleString()}
-                                        </div>
-                                        <div className="text-slate-500 text-sm">
-                                          {plan.duration}
-                                        </div>
-                                      </div>
+                                      <div className="p-6 pt-0">
+                                        <Button
+                                          className="w-full h-12 text-base font-semibold rounded-xl"
+                                          onClick={() => {
+                                            setIsPlansModalOpen(false);
 
-                                      <p className="text-slate-600 text-sm mb-6 line-clamp-2">
-                                        {plan.description}
-                                      </p>
+                                            if (plan.planId || plan.id) {
+                                              const handlePayment = async (
+                                                selectedPlan: any,
+                                              ) => {
+                                                try {
+                                                  // For guest users, we'll use a different approach
+                                                  // Instead of calling guest API, we'll navigate directly to booking
+                                                  const isGuestUser =
+                                                    !user ||
+                                                    !localStorage.getItem(
+                                                      "token",
+                                                    );
 
-                                      <ul className="space-y-3 mb-6 flex-1">
-                                        {plan.features
-                                          ?.slice(0, 5)
-                                          .map((feature: string, index: number) => (
-                                            <li
-                                              key={index}
-                                              className="flex items-start gap-3"
-                                            >
-                                              <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                                              <span className="text-sm text-slate-700">
-                                                {feature}
-                                              </span>
-                                            </li>
-                                          ))}
-                                      </ul>
-                                    </div>
+                                                  if (isGuestUser) {
+                                                    // For guest users, store plan info and navigate to booking
+                                                    sessionStorage.setItem(
+                                                      "qw_selected_plan",
+                                                      JSON.stringify({
+                                                        plan: selectedPlan,
+                                                        selectedAt: Date.now(),
+                                                      }),
+                                                    );
 
-                                    <div className="p-6 pt-0">
-                                      <Button
-                                        className="w-full h-12 text-base font-semibold rounded-xl"
-                                        onClick={() => {
-                                          setIsPlansModalOpen(false);
+                                                    // Navigate to booking page with plan parameter
+                                                    navigate("/booking", {
+                                                      state: {
+                                                        service: {
+                                                          id:
+                                                            selectedPlan.planId ||
+                                                            selectedPlan.id,
+                                                          name: selectedPlan.name,
+                                                          price: String(
+                                                            selectedPlan.price,
+                                                          ),
+                                                          duration:
+                                                            selectedPlan.duration,
+                                                        },
+                                                        fromSubscription: true,
+                                                        isGuestFlow: true,
+                                                      },
+                                                    });
+                                                  } else {
+                                                    // For logged-in users, proceed with normal subscription flow
+                                                    // Navigate to booking page with subscription flow
+                                                    navigate("/booking", {
+                                                      state: {
+                                                        service: {
+                                                          id:
+                                                            selectedPlan.planId ||
+                                                            selectedPlan.id,
+                                                          name: selectedPlan.name,
+                                                          price: String(
+                                                            selectedPlan.price,
+                                                          ),
+                                                          duration:
+                                                            selectedPlan.duration,
+                                                        },
+                                                        fromSubscription: true,
+                                                        isGuestFlow: false,
+                                                      },
+                                                    });
+                                                  }
 
-                                          if (plan.planId || plan.id) {
-                                            const handlePayment = async (
-                                              selectedPlan: any
-                                            ) => {
-                                              try {
-                                                // For guest users, we'll use a different approach
-                                                // Instead of calling guest API, we'll navigate directly to booking
-                                                const isGuestUser =
-                                                  !user ||
-                                                  !localStorage.getItem("token");
-
-                                                if (isGuestUser) {
-                                                  // For guest users, store plan info and navigate to booking
-                                                  sessionStorage.setItem(
-                                                    "qw_selected_plan",
-                                                    JSON.stringify({
-                                                      plan: selectedPlan,
-                                                      selectedAt: Date.now(),
-                                                    })
+                                                  toast.success(
+                                                    `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`,
                                                   );
-
-                                                  // Navigate to booking page with plan parameter
-                                                  navigate("/booking", {
-                                                    state: {
-                                                      service: {
-                                                        id:
-                                                          selectedPlan.planId ||
-                                                          selectedPlan.id,
-                                                        name: selectedPlan.name,
-                                                        price: String(
-                                                          selectedPlan.price
-                                                        ),
-                                                        duration: selectedPlan.duration,
-                                                      },
-                                                      fromSubscription: true,
-                                                      isGuestFlow: true,
-                                                    },
-                                                  });
-                                                } else {
-                                                  // For logged-in users, proceed with normal subscription flow
-                                                  // Navigate to booking page with subscription flow
-                                                  navigate("/booking", {
-                                                    state: {
-                                                      service: {
-                                                        id:
-                                                          selectedPlan.planId ||
-                                                          selectedPlan.id,
-                                                        name: selectedPlan.name,
-                                                        price: String(
-                                                          selectedPlan.price
-                                                        ),
-                                                        duration: selectedPlan.duration,
-                                                      },
-                                                      fromSubscription: true,
-                                                      isGuestFlow: false,
-                                                    },
-                                                  });
+                                                } catch (error) {
+                                                  console.error(
+                                                    "Error handling plan selection:",
+                                                    error,
+                                                  );
+                                                  toast.error(
+                                                    "Failed to process plan selection. Please try again.",
+                                                  );
                                                 }
+                                              };
 
-                                                toast.success(
-                                                  `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
-                                                );
-                                              } catch (error) {
-                                                console.error(
-                                                  "Error handling plan selection:",
-                                                  error
-                                                );
-                                                toast.error(
-                                                  "Failed to process plan selection. Please try again."
-                                                );
-                                              }
-                                            };
-
-                                            // Actually call the handlePayment function
-                                            handlePayment(plan);
-                                          }
-                                        }}
-                                      >
-                                        Select Plan
-                                        <ArrowRight className="ml-2 h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </Card>
-                                ))}
+                                              // Actually call the handlePayment function
+                                              handlePayment(plan);
+                                            }
+                                          }}
+                                        >
+                                          Select Plan
+                                          <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </Card>
+                                  ))}
                                 </div>
                               );
                             })()}
                           </div>
-                          {plans.filter((plan: any) => plan.session_type === "individual").length === 0 && (
+                          {plans.filter(
+                            (plan: any) => plan.session_type === "individual",
+                          ).length === 0 && (
                             <div className="text-center py-12">
                               <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
                                 <User className="h-8 w-8 text-slate-300" />
@@ -2033,159 +2112,174 @@ export default function SchedulePage() {
                               </p>
                             </div>
                           )}
-
                         </TabsContent>
 
                         <TabsContent value="group" className="mt-0">
-                            <div className="flex justify-center">
-                          {(() => {
-                            const groupPlans = plans.filter((plan: any) => plan.session_type === "group");
-                            const gridClasses = groupPlans.length === 2 
-                              ? "grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto"
-                              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
-                            return (
-                              <div className={gridClasses}>
-                            {groupPlans
-                              .map((plan: any) => (
-                                <Card
-                                  key={plan._id || plan.id}
-                                  className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300"
-                                >
-                                  <div className="p-6 flex-1">
-                                    <div className="flex items-center justify-between mb-4">
-                                      <h3 className="text-xl font-bold text-slate-900">
-                                        {plan.name}
-                                      </h3>
-                                      <Badge variant="secondary" className="text-xs">
-                                        Group
-                                      </Badge>
-                                    </div>
-
-                                    <div className="mb-6">
-                                      <div className="text-3xl font-black text-primary mb-1">
-                                        ₹{plan.price?.toLocaleString()}
-                                      </div>
-                                      <div className="text-slate-500 text-sm">
-                                        {plan.duration}
-                                      </div>
-                                    </div>
-
-                                    <p className="text-slate-600 text-sm mb-6 line-clamp-2">
-                                      {plan.description}
-                                    </p>
-
-                                    <ul className="space-y-3 mb-6 flex-1">
-                                      {plan.features
-                                        ?.slice(0, 5)
-                                        .map((feature: string, index: number) => (
-                                          <li
-                                            key={index}
-                                            className="flex items-start gap-3"
-                                          >
-                                            <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                                            <span className="text-sm text-slate-700">
-                                              {feature}
-                                            </span>
-                                          </li>
-                                        ))}
-                                    </ul>
-                                  </div>
-
-                                  <div className="p-6 pt-0">
-                                    <Button
-                                      className="w-full h-12 text-base font-semibold rounded-xl"
-                                      onClick={() => {
-                                        setIsPlansModalOpen(false);
-
-                                        if (plan.planId || plan.id) {
-                                          const handlePayment = async (
-                                            selectedPlan: any
-                                          ) => {
-                                            try {
-                                              // For guest users, we'll use a different approach
-                                              // Instead of calling guest API, we'll navigate directly to booking
-                                              const isGuestUser =
-                                                !user ||
-                                                !localStorage.getItem("token");
-
-                                              if (isGuestUser) {
-                                                // For guest users, store plan info and navigate to booking
-                                                sessionStorage.setItem(
-                                                  "qw_selected_plan",
-                                                  JSON.stringify({
-                                                    plan: selectedPlan,
-                                                    selectedAt: Date.now(),
-                                                  })
-                                                );
-
-                                                // Navigate to booking page with plan parameter
-                                                navigate("/booking", {
-                                                  state: {
-                                                    service: {
-                                                      id:
-                                                        selectedPlan.planId ||
-                                                        selectedPlan.id,
-                                                      name: selectedPlan.name,
-                                                      price: String(
-                                                        selectedPlan.price
-                                                      ),
-                                                      duration: selectedPlan.duration,
-                                                    },
-                                                    fromSubscription: true,
-                                                    isGuestFlow: true,
-                                                  },
-                                                });
-                                              } else {
-                                                // For logged-in users, proceed with normal subscription flow
-                                                // Navigate to booking page with subscription flow
-                                                navigate("/booking", {
-                                                  state: {
-                                                    service: {
-                                                      id:
-                                                        selectedPlan.planId ||
-                                                        selectedPlan.id,
-                                                      name: selectedPlan.name,
-                                                      price: String(
-                                                        selectedPlan.price
-                                                      ),
-                                                      duration: selectedPlan.duration,
-                                                    },
-                                                    fromSubscription: true,
-                                                    isGuestFlow: false,
-                                                  },
-                                                });
-                                              }
-
-                                              toast.success(
-                                                `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`
-                                              );
-                                            } catch (error) {
-                                              console.error(
-                                                "Error handling plan selection:",
-                                                error
-                                              );
-                                              toast.error(
-                                                "Failed to process plan selection. Please try again."
-                                              );
-                                            }
-                                          };
-
-                                          // Actually call the handlePayment function
-                                          handlePayment(plan);
-                                        }
-                                      }}
+                          <div className="flex justify-center">
+                            {(() => {
+                              const groupPlans = plans.filter(
+                                (plan: any) => plan.session_type === "group",
+                              );
+                              const gridClasses =
+                                groupPlans.length === 2
+                                  ? "grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto"
+                                  : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+                              return (
+                                <div className={gridClasses}>
+                                  {groupPlans.map((plan: any) => (
+                                    <Card
+                                      key={plan._id || plan.id}
+                                      className="flex flex-col h-full border-2 hover:shadow-lg transition-all duration-300"
                                     >
-                                      Select Plan
-                                      <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </Card>
-                              ))}
-                              </div>
-                            );
-                          })()}
+                                      <div className="p-6 flex-1">
+                                        <div className="flex items-center justify-between mb-4">
+                                          <h3 className="text-xl font-bold text-slate-900">
+                                            {plan.name}
+                                          </h3>
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                          >
+                                            Group
+                                          </Badge>
+                                        </div>
+
+                                        <div className="mb-6">
+                                          <div className="text-3xl font-black text-primary mb-1">
+                                            ₹{plan.price?.toLocaleString()}
+                                          </div>
+                                          <div className="text-slate-500 text-sm">
+                                            {plan.duration}
+                                          </div>
+                                        </div>
+
+                                        <p className="text-slate-600 text-sm mb-6 line-clamp-2">
+                                          {plan.description}
+                                        </p>
+
+                                        <ul className="space-y-3 mb-6 flex-1">
+                                          {plan.features
+                                            ?.slice(0, 5)
+                                            .map(
+                                              (
+                                                feature: string,
+                                                index: number,
+                                              ) => (
+                                                <li
+                                                  key={index}
+                                                  className="flex items-start gap-3"
+                                                >
+                                                  <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                                  <span className="text-sm text-slate-700">
+                                                    {feature}
+                                                  </span>
+                                                </li>
+                                              ),
+                                            )}
+                                        </ul>
+                                      </div>
+
+                                      <div className="p-6 pt-0">
+                                        <Button
+                                          className="w-full h-12 text-base font-semibold rounded-xl"
+                                          onClick={() => {
+                                            setIsPlansModalOpen(false);
+
+                                            if (plan.planId || plan.id) {
+                                              const handlePayment = async (
+                                                selectedPlan: any,
+                                              ) => {
+                                                try {
+                                                  // For guest users, we'll use a different approach
+                                                  // Instead of calling guest API, we'll navigate directly to booking
+                                                  const isGuestUser =
+                                                    !user ||
+                                                    !localStorage.getItem(
+                                                      "token",
+                                                    );
+
+                                                  if (isGuestUser) {
+                                                    // For guest users, store plan info and navigate to booking
+                                                    sessionStorage.setItem(
+                                                      "qw_selected_plan",
+                                                      JSON.stringify({
+                                                        plan: selectedPlan,
+                                                        selectedAt: Date.now(),
+                                                      }),
+                                                    );
+
+                                                    // Navigate to booking page with plan parameter
+                                                    navigate("/booking", {
+                                                      state: {
+                                                        service: {
+                                                          id:
+                                                            selectedPlan.planId ||
+                                                            selectedPlan.id,
+                                                          name: selectedPlan.name,
+                                                          price: String(
+                                                            selectedPlan.price,
+                                                          ),
+                                                          duration:
+                                                            selectedPlan.duration,
+                                                        },
+                                                        fromSubscription: true,
+                                                        isGuestFlow: true,
+                                                      },
+                                                    });
+                                                  } else {
+                                                    // For logged-in users, proceed with normal subscription flow
+                                                    // Navigate to booking page with subscription flow
+                                                    navigate("/booking", {
+                                                      state: {
+                                                        service: {
+                                                          id:
+                                                            selectedPlan.planId ||
+                                                            selectedPlan.id,
+                                                          name: selectedPlan.name,
+                                                          price: String(
+                                                            selectedPlan.price,
+                                                          ),
+                                                          duration:
+                                                            selectedPlan.duration,
+                                                        },
+                                                        fromSubscription: true,
+                                                        isGuestFlow: false,
+                                                      },
+                                                    });
+                                                  }
+
+                                                  toast.success(
+                                                    `You've selected the ${selectedPlan.name} plan. Proceeding to booking...`,
+                                                  );
+                                                } catch (error) {
+                                                  console.error(
+                                                    "Error handling plan selection:",
+                                                    error,
+                                                  );
+                                                  toast.error(
+                                                    "Failed to process plan selection. Please try again.",
+                                                  );
+                                                }
+                                              };
+
+                                              // Actually call the handlePayment function
+                                              handlePayment(plan);
+                                            }
+                                          }}
+                                        >
+                                          Select Plan
+                                          <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </Card>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                           </div>
-                          {plans.filter((plan: any) => plan.session_type === "group").length === 0 && (
+                          {plans.filter(
+                            (plan: any) => plan.session_type === "group",
+                          ).length === 0 && (
                             <div className="text-center py-12">
                               <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
                                 <Users className="h-8 w-8 text-slate-300" />
@@ -2267,14 +2361,15 @@ export default function SchedulePage() {
                   <p className="text-slate-600 mb-6">
                     {user?.subscriptionData?.status === "active"
                       ? `Your session for ${format(
-                        selectedDate,
-                        "MMMM d, yyyy"
-                      )} at ${selectedTime} has been successfully booked with your ${user.subscriptionData.planName
-                      } subscription.`
+                          selectedDate,
+                          "MMMM d, yyyy",
+                        )} at ${selectedTime} has been successfully booked with your ${
+                          user.subscriptionData.planName
+                        } subscription.`
                       : `Your session for ${format(
-                        selectedDate,
-                        "MMMM d, yyyy"
-                      )} at ${selectedTime} has been successfully booked.`}
+                          selectedDate,
+                          "MMMM d, yyyy",
+                        )} at ${selectedTime} has been successfully booked.`}
                   </p>
                   <p className="text-sm text-slate-500">
                     You will be redirected to your profile page in a moment...

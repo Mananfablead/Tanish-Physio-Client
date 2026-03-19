@@ -52,7 +52,10 @@ api.interceptors.request.use(async (config) => {
   }
   
   if (timezone) {
-    config.headers['X-Timezone'] = timezone;
+    config.headers["X-Timezone"] = timezone;
+    console.log("[Timezone Header] Setting X-Timezone header:", timezone);
+  } else {
+    console.warn("[Timezone Header] No timezone detected, not setting header");
   }
   return config;
 });
