@@ -19,38 +19,35 @@ export const SubscriptionPlans = ({
   subscriptionError,
   onTabChange,
 }: SubscriptionPlansProps) => {
+  const [activeTab, setActiveTab] = useState<"individual" | "group">(
+    "individual",
+  );
 
-  const [activeTab, setActiveTab] =
-    useState<"individual" | "group">("individual");
-  
   // Currency state
   const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
   const [currencyCode, setCurrencyCode] = useState<"INR" | "USD">("INR");
-  
-  // Detect currency on mount
+
+  // Detect currency on mount using your backend API
   useEffect(() => {
     const checkCurrency = async () => {
       try {
-        // Use the price utility which handles location detection
-        const response = await fetch("http://ip-api.com/json/");
-        if (response.ok) {
-          const data = await response.json();
-          console.log('💳 Subscription Currency Detection:', {
-            country: data.country,
-            countryCode: data.country_code,
-            timezone: data.timezone
-          });
-          
-          if (data.country_code === "IN") {
-            setCurrencySymbol("₹");
-            setCurrencyCode("INR");
-          } else {
-            setCurrencySymbol("$");
-            setCurrencyCode("USD");
-          }
+        const { getCountryFromIP } =
+          await import("@/services/ipLocationService");
+        const countryCode = await getCountryFromIP();
+
+        console.log("💳 Subscription Currency Detection:", {
+          countryCode: countryCode || "Not detected",
+        });
+
+        if (countryCode === "IN") {
+          setCurrencySymbol("₹");
+          setCurrencyCode("INR");
+        } else {
+          setCurrencySymbol("$");
+          setCurrencyCode("USD");
         }
       } catch (error) {
-        console.warn('Currency detection failed, using INR');
+        console.warn("Currency detection failed, using INR");
         setCurrencySymbol("₹");
         setCurrencyCode("INR");
       }
@@ -58,16 +55,19 @@ export const SubscriptionPlans = ({
 
     checkCurrency();
   }, []);
-  
+
   // Debug: Log plan prices
   useEffect(() => {
-    console.log('💳 Subscription Plans:', subscriptionPlans.map(plan => ({
-      name: plan.name,
-      priceINR: plan.priceINR,
-      priceUSD: plan.priceUSD,
-      oldPrice: plan.price,
-      currency: plan.currency
-    })));
+    console.log(
+      "💳 Subscription Plans:",
+      subscriptionPlans.map((plan) => ({
+        name: plan.name,
+        priceINR: plan.priceINR,
+        priceUSD: plan.priceUSD,
+        oldPrice: plan.price,
+        currency: plan.currency,
+      })),
+    );
   }, [subscriptionPlans]);
 
   // Handle tab change
@@ -81,7 +81,6 @@ export const SubscriptionPlans = ({
   return (
     <section className="py-12 bg-muted/30">
       <div className="container">
-
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <Badge variant="secondary" className="mb-4">
@@ -93,7 +92,8 @@ export const SubscriptionPlans = ({
           </h2>
 
           <p className="text-muted-foreground">
-            Flexible and transparent options designed to support your personalized recovery journey.
+            Flexible and transparent options designed to support your
+            personalized recovery journey.
           </p>
         </div>
 
@@ -125,15 +125,15 @@ export const SubscriptionPlans = ({
         </div>
 
         {/* PLANS GRID */}
-     <div
-  className={`${
-    subscriptionPlans.length === 1
-      ? "flex justify-center"
-      : subscriptionPlans.length === 2
-      ? "flex flex-col md:flex-row justify-center gap-8"
-      : "grid md:grid-cols-3 gap-8"
-  } max-w-6xl mx-auto`}
->
+        <div
+          className={`${
+            subscriptionPlans.length === 1
+              ? "flex justify-center"
+              : subscriptionPlans.length === 2
+                ? "flex flex-col md:flex-row justify-center gap-8"
+                : "grid md:grid-cols-3 gap-8"
+          } max-w-6xl mx-auto`}
+        >
           {subscriptionLoading ? (
             <div className="col-span-full text-center py-12">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
@@ -154,12 +154,12 @@ export const SubscriptionPlans = ({
                 No {activeTab} Plans Available
               </h3>
               <p className="text-muted-foreground">
-                We don't have any {activeTab} subscription plans available at the moment.
+                We don't have any {activeTab} subscription plans available at
+                the moment.
               </p>
             </div>
           ) : (
             subscriptionPlans.slice(0, 3).map((plan: any) => {
-
               const planId = plan.planId || plan.id;
               const highlight = plan.popular;
 
@@ -186,9 +186,7 @@ export const SubscriptionPlans = ({
 
                     {/* PLAN TITLE */}
                     <div className="mb-6 text-center">
-                      <h3 className="text-xl font-bold mb-2">
-                        {plan.name}
-                      </h3>
+                      <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
 
                       <div className="flex items-baseline justify-center gap-1">
                         {/* Currency Icon */}
@@ -197,24 +195,38 @@ export const SubscriptionPlans = ({
                         ) : (
                           <DollarSign className="h-8 w-8 text-primary" />
                         )}
-                        
+
                         {/* Price Display with Location-Based Currency */}
                         <span className="text-4xl font-bold">
                           {(() => {
                             const priceINR = plan.priceINR;
                             const priceUSD = plan.priceUSD;
-                            
-                            console.log(`💰 ${plan.name} prices:`, { priceINR, priceUSD });
-                            
-                            if (priceINR !== undefined && priceUSD !== undefined && priceINR > 0 && priceUSD > 0) {
-                              const priceInfo = getPriceByLocationSync(priceINR, priceUSD);
+
+                            console.log(`💰 ${plan.name} prices:`, {
+                              priceINR,
+                              priceUSD,
+                            });
+
+                            if (
+                              priceINR !== undefined &&
+                              priceUSD !== undefined &&
+                              priceINR > 0 &&
+                              priceUSD > 0
+                            ) {
+                              const priceInfo = getPriceByLocationSync(
+                                priceINR,
+                                priceUSD,
+                              );
                               console.log(`✅ Showing: ${priceInfo.formatted}`);
                               return priceInfo.amount.toLocaleString();
                             }
-                            
+
                             // Fallback to old format
                             const fallbackPrice = plan.price || 0;
-                            console.log('⚠️ Fallback to old price:', fallbackPrice);
+                            console.log(
+                              "⚠️ Fallback to old price:",
+                              fallbackPrice,
+                            );
                             return fallbackPrice.toLocaleString();
                           })()}
                         </span>
@@ -222,7 +234,7 @@ export const SubscriptionPlans = ({
                           /{plan.duration}
                         </span>
                       </div>
-                      
+
                       {/* Currency Code Display */}
                       <p className="text-xs text-muted-foreground mt-1">
                         {currencyCode}
@@ -231,8 +243,9 @@ export const SubscriptionPlans = ({
 
                     {/* FEATURES */}
                     <ul className="space-y-3 mb-8 flex-grow">
-                      {plan.features?.slice(0, 4).map(
-                        (feature: string, i: number) => (
+                      {plan.features
+                        ?.slice(0, 4)
+                        .map((feature: string, i: number) => (
                           <li
                             key={i}
                             className="flex items-center gap-2 text-sm"
@@ -240,8 +253,7 @@ export const SubscriptionPlans = ({
                             <CheckCircle className="h-4 w-4 text-primary" />
                             <span>{feature}</span>
                           </li>
-                        )
-                      )}
+                        ))}
                     </ul>
 
                     {/* CTA */}
@@ -274,8 +286,7 @@ export const SubscriptionPlans = ({
             </button>
           </Link>
         </div>
-
       </div>
     </section>
   );
-};
+};;

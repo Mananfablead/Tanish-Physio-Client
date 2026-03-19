@@ -1,56 +1,23 @@
+import { getCountryFromIP } from "../services/ipLocationService";
+
 /**
  * Detects user's country based on IP address
  * Returns country code (e.g., 'US', 'IN', etc.)
+ * Uses your own backend API with multiple fallback services
  */
 export const detectUserCountry = async (): Promise<string | null> => {
   try {
-    console.log("🌐 Fetching IP location from ipapi.co...");
+    console.log("🌐 Fetching IP location from your backend API...");
 
-    // Try multiple APIs for better reliability
-    const apis = [
-      "https://ipapi.co/json/",
-      "https://ipwho.is/",
-      "https://ip-api.com/json/",
-      //"https://ipapi.co/json/",
-      "https://extreme-ip-lookup.com/json/",
-    ];
+    // Use your backend API which handles multiple IP geolocation services
+    const countryCode = await getCountryFromIP();
 
-    for (const apiUrl of apis) {
-      try {
-        console.log(`🔄 Trying API: ${apiUrl}`);
-        const response = await fetch(apiUrl, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-
-        if (!response.ok) {
-          console.warn(`❌ API failed: ${apiUrl}`, response.status);
-          continue;
-        }
-
-        const data = await response.json();
-        console.log("📍 IP Location Data:", {
-          api: apiUrl,
-          country: data.country || data.country_name,
-          countryCode: data.country_code || data.countryCode,
-          regionName: data.regionName || data.region,
-          city: data.city,
-          timezone: data.timezone,
-        });
-
-        // Return country code from any successful API
-        const countryCode = data.country_code || data.countryCode || null;
-        if (countryCode) {
-          console.log("✅ Successfully detected country:", countryCode);
-          return countryCode;
-        }
-      } catch (apiError) {
-        console.warn(`⚠️ API error for ${apiUrl}:`, apiError);
-        continue; // Try next API
-      }
+    if (countryCode) {
+      console.log("✅ Successfully detected country:", countryCode);
+      return countryCode;
     }
 
-    console.warn("❌ All APIs failed");
+    console.warn("⚠️ Country detection failed");
     return null;
   } catch (error) {
     console.error("❌ Could not detect user location:", error);

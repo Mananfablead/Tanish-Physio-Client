@@ -42,20 +42,20 @@ export function SubscriptionHistorySection({
   const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
   const [currencyCode, setCurrencyCode] = useState<"INR" | "USD">("INR");
 
-  // Detect currency on mount (defaults to INR, updates based on IP location)
+  // Detect currency on mount using your backend API
   useEffect(() => {
     const checkCurrency = async () => {
       try {
-        const response = await fetch("https://ipwho.is/");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.country_code === "IN") {
-            setCurrencySymbol("₹");
-            setCurrencyCode("INR");
-          } else {
-            setCurrencySymbol("$");
-            setCurrencyCode("USD");
-          }
+        const { getCountryFromIP } =
+          await import("../../services/ipLocationService");
+        const countryCode = await getCountryFromIP();
+
+        if (countryCode === "IN") {
+          setCurrencySymbol("₹");
+          setCurrencyCode("INR");
+        } else {
+          setCurrencySymbol("$");
+          setCurrencyCode("USD");
         }
       } catch (error) {
         console.warn("Currency detection failed, using INR");

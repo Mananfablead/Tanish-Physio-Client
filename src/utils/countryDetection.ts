@@ -26,36 +26,31 @@ const getCountryFromProfile = (): string | null => {
   return null;
 };
 
-// Get country from IP-based geolocation using a free service
+// Get country from IP-based geolocation using your backend API
 const getCountryFromIP = async (): Promise<string | null> => {
   try {
-    // Using ipapi.co - free tier allows 1000 requests per day
-    // Also try alternative API to reduce rate limiting
-    const response = await fetch("https://ipwho.is/");
-    if (!response.ok) {
-      // Try alternative service if primary fails
-      const altResponse = await fetch("https://extreme-ip-lookup.com/json/");
-      if (altResponse.ok) {
-        const altData = await altResponse.json();
-        return altData.country || null;
-      }
-      throw new Error("Failed to fetch IP geolocation");
+    // Import the service that calls your backend API
+    const { getCountryFromIP: fetchCountryFromBackend } = await import('../services/ipLocationService');
+    
+    const countryCode = await fetchCountryFromBackend();
+    
+    if (countryCode) {
+      // Convert country code to country name if needed
+      const countryNames: Record<string, string> = {
+        IN: 'India',
+        US: 'United States',
+        GB: 'United Kingdom',
+        AU: 'Australia',
+        CA: 'Canada',
+        // Add more as needed
+      };
+      
+      return countryNames[countryCode] || countryCode;
     }
-
-    const data = await response.json();
-    return data.country_name || data.country || null;
+    
+    return null;
   } catch (error) {
     console.warn("Failed to detect country from IP:", error);
-    try {
-      // Try alternative service as backup
-      const altResponse = await fetch("https://extreme-ip-lookup.com/json/");
-      if (altResponse.ok) {
-        const altData = await altResponse.json();
-        return altData.country || null;
-      }
-    } catch (altError) {
-      console.warn("Alternative IP geolocation service also failed:", altError);
-    }
     return null;
   }
 };
