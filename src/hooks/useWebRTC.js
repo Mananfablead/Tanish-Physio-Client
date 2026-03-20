@@ -8,10 +8,10 @@ if (typeof window !== 'undefined') {
     // Ensure process is available with all required methods
     if (typeof window.process === 'undefined') {
         window.process = {
-            env: {},
+            env: { NODE_ENV: 'production' },
             nextTick: (fn) => setTimeout(fn, 0),
             browser: true,
-            env: {}
+            versions: { node: '0.0.0' }
         };
     } else {
         if (typeof window.process.nextTick === 'undefined') {
@@ -20,6 +20,9 @@ if (typeof window !== 'undefined') {
         if (typeof window.process.browser === 'undefined') {
             window.process.browser = true;
         }
+        if (!window.process.env) {
+            window.process.env = { NODE_ENV: 'production' };
+        }
     }
 
     // Ensure Buffer is available
@@ -27,9 +30,14 @@ if (typeof window !== 'undefined') {
         window.Buffer = window.buffer.Buffer;
     }
 
-    // Make sure global process is also available
-    if (typeof process === 'undefined' && typeof window.process !== 'undefined') {
-        window.process = window.process;
+    // Make sure global process is also available at top level
+    if (typeof process === 'undefined') {
+        window.process = window.process || {
+            env: { NODE_ENV: 'production' },
+            nextTick: (fn) => setTimeout(fn, 0),
+            browser: true,
+            versions: { node: '0.0.0' }
+        };
     }
 }
 
