@@ -838,16 +838,18 @@ const VideoCall = ({
         console.log("📥 Sender ID:", data.senderId);
         console.log("📥 Attachments:", data.attachments);
         console.log("📥 Timestamp:", data.timestamp);
-
-        // Prevent duplicate processing of own messages
-        if (data.senderId === socket.user?.userId) {
-          console.log("💬 Skipping own message to prevent duplication");
-          return;
-        }
+        
+        // Get current user ID from multiple possible sources
+        const currentUserId = user?._id || user?.userId || user?.id || socket.user?.userId;
+        console.log("📥 Current user ID:", currentUserId);
+        console.log("📥 Message sender ID:", data.senderId);
 
         // Comprehensive deduplication
         setChatMessages((prev) => {
           console.log("💬 Current messages count:", prev.length);
+          
+          // Log all existing message IDs for debugging
+          console.log("💬 Existing message IDs:", prev.map(m => ({ id: m.id, messageId: m.messageId, content: m.content?.substring(0, 20) })));
 
           // Primary: Check by messageId if available
           if (
@@ -867,32 +869,40 @@ const VideoCall = ({
             return prev;
           }
 
-          // Tertiary: Check by content and timestamp (fallback)
+          // Tertiary: Check by senderId + content + timestamp (most reliable)
           const messageContent = data.message || data.content;
-          if (
-            prev.some(
-              (m) =>
-                (m.message || m.content) === messageContent &&
-                Math.abs(new Date(m.timestamp || data.timestamp) - new Date(data.timestamp || Date.now())) < 1000
-            )
-          ) {
-            console.log("💬 Duplicate message ignored by content+timestamp");
+          const isDuplicate = prev.some((m) => {
+            const sameSender = m.senderId === data.senderId;
+            const sameContent = (m.message || m.content) === messageContent;
+            const sameTime = Math.abs(new Date(m.timestamp || data.timestamp).getTime() - new Date(data.timestamp || Date.now()).getTime()) < 1000;
+            
+            if (sameSender && sameContent && sameTime) {
+              console.log("💬 Duplicate found:", { sameSender, sameContent, sameTime });
+              return true;
+            }
+            return false;
+          });
+          
+          if (isDuplicate) {
+            console.log("💬 Duplicate message ignored by sender+content+timestamp");
             return prev;
           }
 
           // Add new message
           console.log("💬 Adding new message from:", data.senderName || data.userName);
+          const newMessage = {
+            id: data._id || data.messageId || Date.now(),
+            messageId: data.messageId || data._id?.toString() || Date.now().toString(),
+            content: messageContent,
+            senderId: data.senderId,
+            senderName: data.senderName || data.userName || 'Participant',
+            timestamp: data.timestamp || new Date().toISOString(),
+            attachments: data.attachments || []
+          };
+          console.log("💬 New message object:", newMessage);
           return [
             ...prev,
-            {
-              id: data._id || data.messageId || Date.now(),
-              messageId: data.messageId || data._id?.toString() || Date.now().toString(),
-              content: messageContent,
-              senderId: data.senderId,
-              senderName: data.senderName || data.userName || 'Participant',
-              timestamp: data.timestamp || new Date().toISOString(),
-              attachments: data.attachments || []
-            },
+            newMessage,
           ];
         });
       });
@@ -933,7 +943,19 @@ const VideoCall = ({
         console.log(
           `📥 Loaded ${response.data.messages?.length || 0} messages`
         );
-        setChatMessages(response.data.messages || []);
+        
+        // Normalize message format to match real-time messages
+        const normalizedMessages = (response.data.messages || []).map(msg => ({
+          id: msg._id || msg.messageId || Date.now(),
+          messageId: msg.messageId || msg._id?.toString() || Date.now().toString(),
+          content: msg.message || msg.content || '',
+          senderId: msg.senderId?._id || msg.senderId || msg.senderId?.userId,
+          senderName: msg.senderId?.name || msg.senderName || 'Participant',
+          timestamp: msg.createdAt || msg.timestamp || new Date().toISOString(),
+          attachments: msg.attachments || []
+        }));
+        
+        setChatMessages(normalizedMessages);
       }
     } catch (error) {
       console.error("Error loading chat messages:", error);
@@ -945,6 +967,12 @@ const VideoCall = ({
     console.log(`📤 Session ID: ${sessionId}`);
     console.log(`📤 Socket connected: ${socket?.connected}`);
     console.log(`📤 Uploaded files count: ${uploadedFiles.length}`);
+    console.log(`📤 User object:`, user);
+    console.log(`📤 Socket user:`, socket.user);
+
+    // Get current user ID
+    const currentUserId = user?._id || user?.userId || user?.id || socket.user?.userId;
+    console.log(`📤 Current User ID:`, currentUserId);
 
     // Allow sending if there's a message OR files
     if (
@@ -952,8 +980,16 @@ const VideoCall = ({
       !sessionId ||
       !externalConnected ||
       !connected
-    )
+    ) {
+      console.warn('📤 Message not sent - conditions not met:', {
+        hasMessage: !!newMessage.trim(),
+        hasFiles: uploadedFiles.length > 0,
+        sessionId: !!sessionId,
+        externalConnected,
+        connected
+      });
       return;
+    }
 
     try {
       // Generate UUID for message deduplication
@@ -979,17 +1015,25 @@ const VideoCall = ({
       if (socket) {
         console.log(`📤 Emitting send-video-message event`);
         console.log(`📤 Session ID: ${sessionId}`);
+        console.log(`📤 Message payload:`, {
+          sessionId,
+          message: originalMessage,
+          senderId: currentUserId,
+          attachments: filesToSend
+        });
 
         socket.emit("send-video-message", {
           sessionId: sessionId,
           message: originalMessage,
-          senderId: user?._id || socket.user?.userId,
+          senderId: currentUserId,
           attachments: filesToSend // Include uploaded files
         });
         console.log(
           "📤 Video call message sent via socket",
           filesToSend.length > 0 ? `with ${filesToSend.length} file(s)` : ""
         );
+      } else {
+        console.error('📤 Socket not available for sending message');
       }
     } catch (error) {
       console.error("Error sending message:", error);

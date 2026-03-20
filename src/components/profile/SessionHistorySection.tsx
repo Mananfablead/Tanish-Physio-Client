@@ -16,6 +16,7 @@ import {
   Copy,
   Check,
   Info,
+  Loader2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -106,6 +107,8 @@ export function SessionHistorySection({
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [detailSession, setDetailSession] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [requestingMeet, setRequestingMeet] = useState<string | null>(null);
+  const [meetRequestSuccess, setMeetRequestSuccess] = useState<Set<string>>(new Set());
 
   const openSessionDetail = (session: any) => {
     setDetailSession(session);
@@ -128,6 +131,71 @@ export function SessionHistorySection({
         description: "Failed to copy link to clipboard",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRequestGoogleMeet = async (sessionId: string) => {
+    if (!sessionId) {
+      toast({
+        title: "Error",
+        description: "Session ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRequestingMeet(sessionId);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/video-call/generate-google-meet`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ sessionId }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Request Sent!",
+          description: "Your therapist has been notified to generate a Google Meet link for this session.",
+          variant: "default",
+        });
+        
+        // Mark this session as having a successful meet request
+        setMeetRequestSuccess(prev => new Set(prev).add(sessionId));
+        
+        // Refresh sessions after a short delay to show the new link
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      } else {
+        throw new Error(data.message || "Failed to request Google Meet link");
+      }
+    } catch (error: any) {
+      console.error("Error requesting Google Meet link:", error);
+      toast({
+        title: "Request Failed",
+        description: error.message || "Could not send request. Please try again or contact support.",
+        variant: "destructive",
+      });
+    } finally {
+      setRequestingMeet(null);
     }
   };
 
@@ -542,6 +610,45 @@ export function SessionHistorySection({
                             <Info className="h-4 w-4 mr-1" />
                             Read More
                           </Button>
+                          
+                          {/* Request Google Meet Link - Show if no meet link exists and session is upcoming */}
+                          {/* {!s.googleMeetLink && 
+                           (s.status === "scheduled" || s.status === "confirmed" || s.status === "live") && (
+                            <>
+                              {meetRequestSuccess.has(s._id) ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="font-bold border-green-500 text-green-500 cursor-default"
+                                  disabled
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Meet Link Requested
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="font-bold border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                                  onClick={() => handleRequestGoogleMeet(s._id)}
+                                  disabled={requestingMeet === s._id}
+                                >
+                                  {requestingMeet === s._id ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                      Sending...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Video className="h-4 w-4 mr-1" />
+                                      Request Google Meet
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </>
+                          )} */}
+                          
                           {(s.status === "scheduled" ||
                             s.status === "confirmed") &&
                             isSessionInFuture(s) &&
@@ -809,6 +916,45 @@ export function SessionHistorySection({
                         <Info className="h-4 w-4 mr-1" />
                         Read More
                       </Button>
+                      
+                      {/* Request Google Meet Link - Mobile */}
+                      {!s.googleMeetLink && 
+                       (s.status === "scheduled" || s.status === "confirmed" || s.status === "live") && (
+                        <>
+                          {meetRequestSuccess.has(s._id) ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="font-bold border-green-500 text-green-500 cursor-default w-full"
+                              disabled
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Meet Link Requested
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="font-bold border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white w-full"
+                              onClick={() => handleRequestGoogleMeet(s._id)}
+                              disabled={requestingMeet === s._id}
+                            >
+                              {requestingMeet === s._id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                  Sending...
+                                </>
+                              ) : (
+                                <>
+                                  <Video className="h-4 w-4 mr-1" />
+                                  Request Google Meet
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </>
+                      )}
+                      
                       {(s.status === "scheduled" || s.status === "confirmed") &&
                         isSessionInFuture(s) &&
                         isWithinRescheduleWindow(s) && (
