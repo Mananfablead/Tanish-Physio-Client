@@ -564,25 +564,30 @@ export default function SchedulePage() {
       return [];
     }
 
-    // 🔥 RETURN ONLY 45 MINUTE REGULAR SLOTS
+    // Get minimum notice period from availability (default 15 minutes)
+    const minNoticePeriod = dayAvailability.minimumNoticePeriod || 15;
+    const now = new Date();
+    const isToday = format(date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
+
+    // 🔥 RETURN ONLY 45 MINUTE REGULAR SLOTS WITH MINIMUM NOTICE VALIDATION
     return dayAvailability.timeSlots.filter((slot: any) => {
       // Calculate slot duration in minutes
       const [startHour, startMinute] = slot.start.split(":").map(Number);
       const [endHour, endMinute] = slot.end.split(":").map(Number);
-      const today = new Date();
+
       const slotStart = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
         startHour,
         startMinute,
         0,
         0,
       );
       const slotEnd = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
         endHour,
         endMinute,
         0,
@@ -592,8 +597,43 @@ export default function SchedulePage() {
         (slotEnd.getTime() - slotStart.getTime()) / (1000 * 60),
       );
 
-      // Only return 45-minute regular slots
-      return slotDurationMinutes === 45;
+      // Only consider 45-minute regular slots
+      if (slotDurationMinutes !== 45) return false;
+
+      // Check if slot status is available
+      if (slot.status !== "available") return false;
+
+      // If it's today, check minimum notice period
+      if (isToday) {
+        const slotDateTime = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          startHour,
+          startMinute,
+          0,
+          0,
+        );
+        const minutesUntilSlot = Math.floor((slotDateTime - now) / (1000 * 60));
+
+        // Block slots that don't meet minimum notice requirement
+        if (minutesUntilSlot < minNoticePeriod) {
+          console.log(
+            `[SchedulePage] Blocking slot ${slot.start} - only ${minutesUntilSlot} minutes until slot (minimum: ${minNoticePeriod})`,
+          );
+          return false;
+        }
+
+        // Also block slots that have already started
+        if (minutesUntilSlot < 0) {
+          console.log(
+            `[SchedulePage] Blocking slot ${slot.start} - slot has already started`,
+          );
+          return false;
+        }
+      }
+
+      return true;
     });
   };
 
@@ -647,24 +687,46 @@ export default function SchedulePage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Log current timezone detection
         const currentTimezone = getUserTimezone();
-        console.log('[SchedulePage] User browser timezone:', currentTimezone);
+        console.log("[SchedulePage] User browser timezone:", currentTimezone);
 
         // Fetch availability (public data)
         const availabilityResponse = await getAvailability();
         const availabilityData: any = availabilityResponse;
-        const availabilityList = availabilityData.data?.data?.availability || [];
-        console.log('[SchedulePage] Raw availability from API:', availabilityData);
-        console.log('[SchedulePage] Availability list:', availabilityList);
+        const availabilityList =
+          availabilityData.data?.data?.availability || [];
+        console.log(
+          "[SchedulePage] Raw availability from API:",
+          availabilityData,
+        );
+        console.log("[SchedulePage] Availability list:", availabilityList);
         if (availabilityList.length > 0) {
-          console.log('[SchedulePage] First availability date:', availabilityList[0].date);
-          console.log('[SchedulePage] First availability timeSlots:', availabilityList[0].timeSlots);
-          if (availabilityList[0].timeSlots && availabilityList[0].timeSlots.length > 0) {
-            console.log('[SchedulePage] First time slot start:', availabilityList[0].timeSlots[0].start);
-            console.log('[SchedulePage] First time slot end:', availabilityList[0].timeSlots[0].end);
-            console.log('[SchedulePage] Formatted first slot:', formatTimeDisplay(availabilityList[0].timeSlots[0].start));
+          console.log(
+            "[SchedulePage] First availability date:",
+            availabilityList[0].date,
+          );
+          console.log(
+            "[SchedulePage] First availability timeSlots:",
+            availabilityList[0].timeSlots,
+          );
+          if (
+            availabilityList[0].timeSlots &&
+            availabilityList[0].timeSlots.length > 0
+          ) {
+            console.log(
+              "[SchedulePage] First time slot start:",
+              availabilityList[0].timeSlots[0].start,
+            );
+            console.log(
+              "[SchedulePage] First time slot end:",
+              availabilityList[0].timeSlots[0].end,
+            );
+            console.log(
+              "[SchedulePage] Formatted first slot:",
+              formatTimeDisplay(availabilityList[0].timeSlots[0].start),
+            );
           }
         }
         setAvailability(availabilityList);

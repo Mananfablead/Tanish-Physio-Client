@@ -142,28 +142,69 @@ export function ScheduleModal({
     if (!dayAvailability || !Array.isArray(dayAvailability.timeSlots)) {
       return false;
     }
+
+    // Get minimum notice period from availability (default 15 minutes)
+    const minNoticePeriod = dayAvailability.minimumNoticePeriod || 15;
+    const now = new Date();
+    const isToday = dateStr === format(now, "yyyy-MM-dd");
+
     return dayAvailability.timeSlots.some((slot: any) => {
       if (slot.status !== "available") return false;
-      if (bookingType === 'free-consultation' && slot.duration !== 15) return false;
-      if (bookingType !== 'free-consultation' && slot.duration !== 45) return false;
+      if (bookingType === "free-consultation" && slot.duration !== 15)
+        return false;
+      if (bookingType !== "free-consultation" && slot.duration !== 45)
+        return false;
       if (
-        slot.sessionType === 'group' &&
-        typeof slot.bookedParticipants === 'number' &&
-        typeof slot.maxParticipants === 'number' &&
+        slot.sessionType === "group" &&
+        typeof slot.bookedParticipants === "number" &&
+        typeof slot.maxParticipants === "number" &&
         slot.bookedParticipants >= slot.maxParticipants
       ) {
         return false;
       }
       // Filter based on selected session type
-      if (selectedSessionType && selectedSessionType !== 'all') {
-        if (selectedSessionType === 'one-to-one' && slot.sessionType !== 'one-to-one') return false;
-        if (selectedSessionType === 'group' && slot.sessionType !== 'group') return false;
+      if (selectedSessionType && selectedSessionType !== "all") {
+        if (
+          selectedSessionType === "one-to-one" &&
+          slot.sessionType !== "one-to-one"
+        )
+          return false;
+        if (selectedSessionType === "group" && slot.sessionType !== "group")
+          return false;
       }
       // Filter based on user's plan type
       if (userPlanType) {
-        if (userPlanType === 'individual' && slot.sessionType !== 'one-to-one') return false;
-        if (userPlanType === 'group' && slot.sessionType !== 'group') return false;
+        if (userPlanType === "individual" && slot.sessionType !== "one-to-one")
+          return false;
+        if (userPlanType === "group" && slot.sessionType !== "group")
+          return false;
       }
+
+      // If it's today, check minimum notice period
+      if (isToday) {
+        const [startHour, startMinute] = slot.start.split(":").map(Number);
+        const slotDateTime = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          startHour,
+          startMinute,
+          0,
+          0,
+        );
+        const minutesUntilSlot = Math.floor((slotDateTime - now) / (1000 * 60));
+
+        // Block slots that don't meet minimum notice requirement
+        if (minutesUntilSlot < minNoticePeriod) {
+          return false;
+        }
+
+        // Also block slots that have already started
+        if (minutesUntilSlot < 0) {
+          return false;
+        }
+      }
+
       return true;
     });
   };
@@ -408,8 +449,8 @@ export function ScheduleModal({
                     <span className="text-slate-600">Booked</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-                    <span className="text-slate-600">Past</span>
+                    <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+                    <span className="text-slate-600">Too Late to Book</span>
                   </div>
                 </div>
               </div>
@@ -453,6 +494,28 @@ export function ScheduleModal({
 
                     const now = new Date();
                     return slotDateTime < now;
+                  };
+
+                  // Helper function to check minimum notice period
+                  const isWithinNoticePeriod = (
+                    date: string,
+                    time: string,
+                  ): boolean => {
+                    const dayAvail = availability.find(
+                      (a: any) => a.date === date,
+                    );
+                    const minNotice = dayAvail?.minimumNoticePeriod || 15;
+
+                    const [hours, minutes] = time.split(":").map(Number);
+                    const slotDateTime = new Date(date);
+                    slotDateTime.setHours(hours, minutes, 0, 0);
+
+                    const now = new Date();
+                    const minutesUntilSlot = Math.floor(
+                      (slotDateTime - now) / (1000 * 60),
+                    );
+
+                    return minutesUntilSlot >= minNotice;
                   };
 
                   // Filter slots based on booking type and session type
@@ -504,6 +567,7 @@ export function ScheduleModal({
                             disabled={
                               slot.status !== "available" ||
                               isTimeSlotPast(scheduleDate, slot.start) ||
+                              !isWithinNoticePeriod(scheduleDate, slot.start) ||
                               (slot.sessionType === "group" &&
                                 typeof slot.bookedParticipants === "number" &&
                                 typeof slot.maxParticipants === "number" &&
@@ -519,8 +583,22 @@ export function ScheduleModal({
                                 scheduleDate,
                                 slot.start,
                               );
-                              if (slot.status === "available" && !isPast) {
+                              const withinNotice = isWithinNoticePeriod(
+                                scheduleDate,
+                                slot.start,
+                              );
+                              if (
+                                slot.status === "available" &&
+                                !isPast &&
+                                withinNotice
+                              ) {
                                 handleTimeSlotClick(scheduleDate, slot);
+                              } else if (!withinNotice) {
+                                toast({
+                                  title: "Insufficient notice",
+                                  description: `This slot must be booked at least ${dayAvailability.minimumNoticePeriod || 15} minutes in advance`,
+                                  variant: "destructive",
+                                });
                               }
                             }}
                             className={`
@@ -530,16 +608,22 @@ export function ScheduleModal({
                                   ? "bg-green-600 text-white border-green-600"
                                   : isTimeSlotPast(scheduleDate, slot.start)
                                     ? "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
-                                    : (userPlanType === "individual" &&
-                                          slot.sessionType !== "one-to-one") ||
-                                        (userPlanType === "group" &&
-                                          slot.sessionType !== "group")
+                                    : !isWithinNoticePeriod(
+                                          scheduleDate,
+                                          slot.start,
+                                        )
                                       ? "border border-orange-300 text-orange-400 cursor-not-allowed bg-orange-50 opacity-60"
-                                      : slot.status === "available"
-                                        ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
-                                        : slot.status === "booked"
-                                          ? "border border-red-500 text-red-500 cursor-not-allowed"
-                                          : "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
+                                      : (userPlanType === "individual" &&
+                                            slot.sessionType !==
+                                              "one-to-one") ||
+                                          (userPlanType === "group" &&
+                                            slot.sessionType !== "group")
+                                        ? "border border-orange-300 text-orange-400 cursor-not-allowed bg-orange-50 opacity-60"
+                                        : slot.status === "available"
+                                          ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
+                                          : slot.status === "booked"
+                                            ? "border border-red-500 text-red-500 cursor-not-allowed"
+                                            : "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
                               }
                             `}
                           >
@@ -658,7 +742,10 @@ export function ScheduleModal({
             className="flex-1 bg-gradient-to-r from-primary to-accent"
             disabled={!scheduleDate || !selectedTimeSlot}
             onClick={() => {
-              console.log('Confirm clicked:', { scheduleDate, selectedTimeSlot });
+              console.log("Confirm clicked:", {
+                scheduleDate,
+                selectedTimeSlot,
+              });
               if (!scheduleDate || !selectedTimeSlot) {
                 toast({
                   title: "Missing selection",
