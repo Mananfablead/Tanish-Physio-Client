@@ -436,20 +436,7 @@ export function SessionHistorySection({
                         </div>
                         <div className="text-sm text-slate-500">
                           {/* Show timeSlot if available, otherwise fallback to time or startTime */}
-                          {s.startTime && s.endTime ? (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {s.startTime} - {s.endTime}
-                            </span>
-                          ) : (
-                            s.time ||
-                            (s.startTime
-                              ? new Date(s.startTime).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "—")
-                          )}
+                          {s.time}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
