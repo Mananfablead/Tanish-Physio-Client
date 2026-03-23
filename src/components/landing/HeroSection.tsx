@@ -57,7 +57,8 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                 {cmsHero?.heading || "Start Your Recovery Journey Today"}
               </h1>
               <h2 className="text-xl font-semibold tracking-wide text-balance">
-                {cmsHero?.subHeading || "Recovery"}
+                {cmsHero?.subHeading ||
+                  "Online physiotherapy, rehab, and pain relief"}
               </h2>
               <p className="text-lg text-muted-foreground max-w-lg">
                 {cmsHero?.description ||
