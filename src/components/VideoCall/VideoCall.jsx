@@ -1696,6 +1696,25 @@ const VideoCall = ({
       }
     };
 
+    // Handle group call ended (when admin ends group session)
+    const groupCallEndedListener = (data) => {
+      console.log("🛑 Group call ended event received:", data);
+      console.log("Group call ended by:", data.endedBy);
+      
+      // Always end the call when admin terminates a group session
+      setCallStatus("ended");
+      setCallActive(false);
+      setCallStartTime(null);
+      setIncomingCall(false);
+      setCanReconnect(false); // Disable reconnection for admin-terminated calls
+      stopMediaStreams();
+      
+      // Navigate away from the call page
+      if (onEndCall) {
+        onEndCall();
+      }
+    };
+
     // Handle audio toggle
     const audioToggleListener = (data) => {
       // Update UI to reflect other participant's audio status
@@ -1846,6 +1865,12 @@ const VideoCall = ({
     on("call-accepted", callAcceptedListener);
     on("call-rejected", callRejectedListener);
     on("call-ended", callEndedListener);
+    
+    // Add group call specific listeners
+    if (roomType === "group") {
+      on("group-call-ended", groupCallEndedListener);
+    }
+    
     on("audio-toggle", audioToggleListener);
     on("video-toggle", videoToggleListener);
     on("screen-share-toggle", screenShareToggleListener);
@@ -1874,6 +1899,12 @@ const VideoCall = ({
           socket.off("call-accepted", callAcceptedListener);
           socket.off("call-rejected", callRejectedListener);
           socket.off("call-ended", callEndedListener);
+          
+          // Remove group call specific listeners
+          if (roomType === "group") {
+            socket.off("group-call-ended", groupCallEndedListener);
+          }
+          
           socket.off("audio-toggle", audioToggleListener);
           socket.off("video-toggle", videoToggleListener);
           socket.off("screen-share-toggle", screenShareToggleListener);
@@ -3186,7 +3217,7 @@ const VideoCall = ({
               )}
             </Button>
 
-            <Button
+            {/* <Button
               variant={screenSharing ? "default" : "secondary"}
               size="icon"
               className={`rounded-2xl md:w-14 md:h-14 w-12 h-12 border-slate-700 min-w-[48px] ${
@@ -3198,7 +3229,7 @@ const VideoCall = ({
               disabled={!externalConnected || !connected}
             >
               <Share className="h-5 w-5" />
-            </Button>
+            </Button> */}
 
             {/* Recording Button - Only for therapists */}
             {isTherapist && (

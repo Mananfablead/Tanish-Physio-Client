@@ -217,6 +217,12 @@ const WaitingRoomPage = () => {
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-blue-800 text-sm">Please keep this page open while waiting</p>
             </div>
+            <button 
+              onClick={() => navigate("/profile")}
+              className="mt-4 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 mx-auto"
+            >
+              Back to Profile
+            </button>
           </div>
         );
 
