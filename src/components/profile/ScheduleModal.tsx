@@ -102,7 +102,13 @@ export function ScheduleModal({
       // Update both date and time slot to ensure button enables
       console.log('Selecting time slot:', date, timeSlot);
       setScheduleDate(date);
-      const newTimeSlot = { start: timeSlot.start, end: timeSlot.end };
+      const newTimeSlot = {
+        start: timeSlot.start,
+        end: timeSlot.end,
+        sessionType: timeSlot.sessionType,
+        maxParticipants: timeSlot.maxParticipants,
+        bookedParticipants: timeSlot.bookedParticipants,
+      };
       setSelectedTimeSlot(newTimeSlot);
       // Also update scheduleTime for consistency
       if (setScheduleTime) {

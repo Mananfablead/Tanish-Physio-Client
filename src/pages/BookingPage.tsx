@@ -871,6 +871,11 @@ export default function BookingPage() {
           scheduledDate: scheduleOption === "now" ? scheduleDate : null,
           scheduledTime: scheduleOption === "now" ? scheduleTime : null,
           timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+          sessionType:
+            selectedTimeSlot?.sessionType ||
+            (user?.subscriptionData?.sessionType === "group"
+              ? "group"
+              : "one-to-one"),
         };
 
         const response: any = await createBookingWithSubscription(
@@ -1149,6 +1154,11 @@ export default function BookingPage() {
                   : scheduleTime
                 : null,
             timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+            sessionType:
+              selectedTimeSlot?.sessionType ||
+              (user?.subscriptionData?.sessionType === "group"
+                ? "group"
+                : "one-to-one"),
             // Add therapistId if available
             therapistId: therapist?.id || undefined,
           };
@@ -1603,6 +1613,11 @@ export default function BookingPage() {
                 : scheduleTime
               : null,
           timeSlot: scheduleOption === "now" ? selectedTimeSlot : null,
+          sessionType:
+            selectedTimeSlot?.sessionType ||
+            (user?.subscriptionData?.sessionType === "group"
+              ? "group"
+              : "one-to-one"),
           bookingType: bookingType,
         };
         // console.log("Booking payload:", bookingPayload);
@@ -3228,6 +3243,11 @@ export default function BookingPage() {
                         : null,
                     timeSlot:
                       scheduleOption === "now" ? selectedTimeSlot : null,
+                    sessionType:
+                      selectedTimeSlot?.sessionType ||
+                      (user?.subscriptionData?.sessionType === "group"
+                        ? "group"
+                        : "one-to-one"),
                     bookingType: serviceInfo?.name
                       ?.toLowerCase()
                       .includes("free")
