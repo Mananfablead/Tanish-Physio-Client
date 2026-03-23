@@ -76,24 +76,45 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## Technologies Used
+## SEO and Performance
 
-This wellness platform is built with:
+This application is optimized for search engines with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **React Helmet Async**: Dynamic meta tags for all pages
+- **Structured Data**: JSON-LD schema markup for better search visibility
+- **Prerendering**: Server-side rendering for crawlers using prerender-node
+- **Sitemap Generation**: Automatic sitemap creation from API data
+- **Image Optimization**: Lazy loading and proper alt tags
+- **Performance Optimization**: Code splitting and asset optimization
 
-## How can I deploy this project?
+### SEO Features
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- Dynamic meta titles and descriptions
+- Open Graph and Twitter Card support
+- Canonical URLs
+- Service-specific SEO for dynamic routes
+- 404 page with proper status codes
 
-## Can I connect a custom domain to my Lovable project?
+### Deployment with Prerendering
 
-Yes, you can!
+For production deployment with SEO support:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```sh
+# Build the application
+npm run build
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# Start the production server with prerendering
+npm run start
+```
+
+The server uses prerender-node to serve prerendered HTML to search engine crawlers while maintaining SPA functionality for users.
+
+### Environment Variables
+
+Create a `.env` file with:
+
+```
+VITE_API_BASE_URL=your_api_url
+VITE_GA_ID=your_google_analytics_id
+PRERENDER_TOKEN=your_prerender_token
+```

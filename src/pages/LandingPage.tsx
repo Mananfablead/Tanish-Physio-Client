@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { SEOHead } from "@/components/SEO/SEOHead";
@@ -62,15 +62,46 @@ import { motion, useInView, animate } from "framer-motion";
 // Import components
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { Testimonials } from "@/components/landing/Testimonials";
-import { ConditionsWeTreat } from "@/components/landing/ConditionsWeTreat";
-import { Features } from "@/components/landing/Features";
-import { SubscriptionPlans } from "@/components/landing/SubscriptionPlans";
-import { FeaturedTherapist } from "@/components/landing/FeaturedTherapist";
-import { FAQ } from "@/components/landing/FAQ";
-import { TrustDisclaimer } from "@/components/landing/TrustDisclaimer";
-import { CTA } from "@/components/landing/CTA";
 import { Services } from "@/components/landing/Services";
+import { SectionLoader } from "@/components/landing/SectionLoader";
+
+// Lazy load below-the-fold components for performance
+const Testimonials = lazy(() =>
+  import("@/components/landing/Testimonials").then((m) => ({
+    default: m.Testimonials,
+  })),
+) as any;
+const ConditionsWeTreat = lazy(() =>
+  import("@/components/landing/ConditionsWeTreat").then((m) => ({
+    default: m.ConditionsWeTreat,
+  })),
+) as any;
+const Features = lazy(() =>
+  import("@/components/landing/Features").then((m) => ({
+    default: m.Features,
+  })),
+) as any;
+const SubscriptionPlans = lazy(() =>
+  import("@/components/landing/SubscriptionPlans").then((m) => ({
+    default: m.SubscriptionPlans,
+  })),
+) as any;
+const FeaturedTherapist = lazy(() =>
+  import("@/components/landing/FeaturedTherapist").then((m) => ({
+    default: m.FeaturedTherapist,
+  })),
+) as any;
+const FAQ = lazy(() =>
+  import("@/components/landing/FAQ").then((m) => ({ default: m.FAQ })),
+) as any;
+const TrustDisclaimer = lazy(() =>
+  import("@/components/landing/TrustDisclaimer").then((m) => ({
+    default: m.TrustDisclaimer,
+  })),
+) as any;
+const CTA = lazy(() =>
+  import("@/components/landing/CTA").then((m) => ({ default: m.CTA })),
+) as any;
 
 // Import UI components
 import { Button } from "@/components/ui/button";
@@ -160,7 +191,7 @@ const CountUp = ({
           onUpdate: (latest) => {
             setDisplayValue(
               (target % 1 === 0 ? Math.floor(latest) : latest.toFixed(1)) +
-                suffix
+                suffix,
             );
           },
         });
@@ -308,91 +339,120 @@ export default function LandingPage() {
     <Layout>
       <SEOHead {...getSEOConfig("/")} />
 
-      {/* Sticky Floating CTA */}
-      {/* <motion.div
-        className="fixed bottom-6 right-6 z-50 pointer-events-none"
-        initial={{ opacity: 0, y: 100 }}
-        animate={{
-          opacity: showStickyCTA ? 1 : 0,
-          y: showStickyCTA ? 0 : 100,
-        }}
-        transition={{ duration: 0.3 }}
-      >
-        <Link to="/questionnaire" className="pointer-events-auto">
-          <Button
-            size="lg"
-            className="rounded-full shadow-2xl h-14 px-8 text-lg group"
-          >
-            Start Assessment
-            <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </Link>
-      </motion.div> */}
-      {/* Hero Section */}
-      <HeroSection cmsHero={cmsHero} heroImage={heroImage} />
+      {/* Main content with proper semantic structure */}
+      <main>
+        {/* Hero Section */}
+        <HeroSection cmsHero={cmsHero} heroImage={heroImage} />
 
-      {/* Services Section - Only show if we have featured services */}
-      {featuredServices && featuredServices.length > 0 && (
-        <Services
-          services={featuredServices}
-          servicesLoading={servicesLoading}
-          servicesError={servicesError}
-          fadeInUp={fadeInUp}
-        />
-      )}
+        {/* Services Section - Only show if we have featured services */}
+        {featuredServices && featuredServices.length > 0 && (
+          <Services
+            services={featuredServices}
+            servicesLoading={servicesLoading}
+            servicesError={servicesError}
+            fadeInUp={fadeInUp}
+          />
+        )}
 
-      {/* How It Works */}
-      <HowItWorks cmsSteps={cmsSteps} stagger={stagger} fadeInUp={fadeInUp} />
+        {/* How It Works */}
+        <HowItWorks cmsSteps={cmsSteps} stagger={stagger} fadeInUp={fadeInUp} />
 
-      {/* Patient Testimonials */}
-      <Testimonials
-        featuredTestimonials={featuredTestimonials}
-        testimonialsLoading={testimonialsLoading}
-        testimonialsError={testimonialsError}
-        fadeInUp={fadeInUp}
-      />
+        {/* Patient Testimonials */}
+        <Suspense fallback={<SectionLoader height="h-96" />}>
+          <Testimonials
+            featuredTestimonials={featuredTestimonials}
+            testimonialsLoading={testimonialsLoading}
+            testimonialsError={testimonialsError}
+            fadeInUp={fadeInUp}
+          />
+        </Suspense>
 
-      {/* Conditions We Treat */}
-      <ConditionsWeTreat
-        cmsConditions={cmsConditions}
-        fadeInUp={fadeInUp}
-        getIconComponent={getIconComponent}
-      />
+        {/* Conditions We Treat */}
+        <Suspense fallback={<SectionLoader height="h-80" />}>
+          <ConditionsWeTreat
+            cmsConditions={cmsConditions}
+            fadeInUp={fadeInUp}
+            getIconComponent={getIconComponent}
+          />
+        </Suspense>
 
-      {/* Features */}
-      <Features
-        cmsWhyUs={cmsWhyUs}
-        fadeInUp={fadeInUp}
-        CountUp={CountUp}
-        setHoveredStat={setHoveredStat}
-        hoveredStat={hoveredStat}
-      />
+        {/* Features */}
+        <Suspense fallback={<SectionLoader height="h-96" />}>
+          <Features
+            cmsWhyUs={cmsWhyUs}
+            fadeInUp={fadeInUp}
+            CountUp={CountUp}
+            setHoveredStat={setHoveredStat}
+            hoveredStat={hoveredStat}
+          />
+        </Suspense>
 
-      {/* Subscription Plans Preview */}
-      <SubscriptionPlans
-        subscriptionPlans={subscriptionPlans}
-        subscriptionLoading={subscriptionLoading}
-        subscriptionError={subscriptionError}
-        onTabChange={setSessionTypeFilter}
-        stagger={stagger}
-        fadeInUp={fadeInUp}
-      />
+        {/* Subscription Plans Preview */}
+        <Suspense fallback={<SectionLoader height="h-96" />}>
+          <SubscriptionPlans
+            subscriptionPlans={subscriptionPlans}
+            subscriptionLoading={subscriptionLoading}
+            subscriptionError={subscriptionError}
+            onTabChange={setSessionTypeFilter}
+            stagger={stagger}
+            fadeInUp={fadeInUp}
+          />
+        </Suspense>
 
-      {/* Featured Therapist – Single */}
-      <FeaturedTherapist
-        publicAdmins={publicAdmins}
-        adminsLoading={adminsLoading}
-        adminsError={adminsError}
-      />
+        {/* Featured Therapist – Single */}
+        <Suspense fallback={<SectionLoader height="h-80" />}>
+          <FeaturedTherapist
+            publicAdmins={publicAdmins}
+            adminsLoading={adminsLoading}
+            adminsError={adminsError}
+          />
+        </Suspense>
 
-      {/* FAQ Section */}
-      <FAQ cmsFaqs={cmsFaqs} />
+        {/* FAQ Section */}
+        <Suspense fallback={<SectionLoader height="h-80" />}>
+          <FAQ cmsFaqs={cmsFaqs} />
+        </Suspense>
 
-      {/* Trust & Disclaimer */}
-      <TrustDisclaimer />
+        {/* Trust & Disclaimer */}
+        <Suspense fallback={<SectionLoader height="h-40" />}>
+          <TrustDisclaimer />
+        </Suspense>
 
-      {/* CTA Section */}
-      <CTA />
+        {/* CTA Section */}
+        <Suspense fallback={<SectionLoader height="h-60" />}>
+          <CTA />
+        </Suspense>
+
+        {/* Internal Navigation Links (Hidden but helps crawlers and accessibility) */}
+        <nav className="sr-only" aria-label="Internal navigation links">
+          <ul>
+            <li>
+              <Link to="/services">Explore all physiotherapy services</Link>
+            </li>
+            <li>
+              <Link to="/therapists">Find our certified therapists</Link>
+            </li>
+            <li>
+              <Link to="/plans">View subscription plans</Link>
+            </li>
+            <li>
+              <Link to="/about">Learn about our mission</Link>
+            </li>
+            <li>
+              <Link to="/faq">Read frequently asked questions</Link>
+            </li>
+            <li>
+              <Link to="/contact">Contact us for support</Link>
+            </li>
+            <li>
+              <Link to="/free-consultation">Book a free consultation</Link>
+            </li>
+            <li>
+              <Link to="/questionnaire">Start your recovery assessment</Link>
+            </li>
+          </ul>
+        </nav>
+      </main>
     </Layout>
   );
 }

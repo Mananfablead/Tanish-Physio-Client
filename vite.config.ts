@@ -21,11 +21,25 @@ export default defineConfig(({ mode }) => ({
   build: {
     emptyOutDir: false, // Prevent Vite from trying to empty the directory
     outDir: "dist",
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        drop_console: mode === "production",
+        drop_debugger: mode === "production",
       },
     },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu"],
+          router: ["react-router-dom"],
+          redux: ["@reduxjs/toolkit", "react-redux"],
+        },
+      },
+    },
+    sourcemap: mode === "development",
+    chunkSizeWarningLimit: 1000,
   },
   plugins: [
     react(),

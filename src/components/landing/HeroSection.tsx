@@ -3,7 +3,11 @@ import { ArrowRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import heroImage from "@/assets/hero-physio.png";
 
 interface HeroSectionProps {
@@ -14,7 +18,7 @@ interface HeroSectionProps {
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
+  transition: { duration: 0.5 },
 };
 
 export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
@@ -147,6 +151,8 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                 src={cmsHero?.image || heroImage}
                 alt="Physiotherapist helping patient with recovery exercises"
                 className="w-full h-[25rem] object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
             </div>

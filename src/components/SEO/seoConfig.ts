@@ -25,9 +25,9 @@ export const PAGE_SEO: Record<string, SEOConfig> = {
     title:
       "Tanish Physio & Fitness | Professional Online Physiotherapy Services India",
     description:
-      "India's leading online physiotherapy platform. Connect with certified physiotherapists for personalized video consultations, treatment plans, and rehabilitation. Book your session today for expert care from home.",
+      "Start Your Recovery Journey with Tanish Physio - India's trusted online physiotherapy platform. Get personalized video consultations with certified physiotherapists, customized treatment plans for all conditions, and recovery support from home. 4.9/5 rated service. Book your session now.",
     keywords:
-      "online physiotherapy India, video consultation, home physiotherapy, certified physiotherapists, rehabilitation, physical therapy, telehealth physiotherapy",
+      "online physiotherapy India, video consultation, home physiotherapy, certified physiotherapists, rehabilitation, physical therapy, telehealth physiotherapy, sports injury treatment, pain management",
     type: "website",
   },
   "/services": {
@@ -278,7 +278,9 @@ export const getSEOConfig = (pathname: string): SEOConfig => {
   }
 
   // If not found, try with trailing slash removed or added
-  const normalizedPath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname + '/';
+  const normalizedPath = pathname.endsWith("/")
+    ? pathname.slice(0, -1)
+    : pathname + "/";
   if (PAGE_SEO[normalizedPath]) {
     return PAGE_SEO[normalizedPath];
   }

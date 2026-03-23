@@ -3,7 +3,13 @@ import { Star, Quote } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 
 interface TestimonialsProps {
@@ -16,44 +22,55 @@ interface TestimonialsProps {
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
+  transition: { duration: 0.5 },
 };
 
-export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testimonialsError, fadeInUp }: TestimonialsProps) => {
+export const Testimonials = ({
+  featuredTestimonials,
+  testimonialsLoading,
+  testimonialsError,
+  fadeInUp,
+}: TestimonialsProps) => {
   // Use passed prop or fallback to local definition
-  
+
   const fadeInUpAnimation = fadeInUp || {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 }
+    transition: { duration: 0.5 },
   };
   return (
-    <section className="py-16 relative overflow-hidden border-y border-primary/10" style={{ backgroundColor: '#2d8e8d' }}>
+    <section
+      className="py-16 relative overflow-hidden border-y border-primary/10"
+      style={{ backgroundColor: "#2d8e8d" }}
+    >
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <div className="absolute top-1/4 left-0 w-72 h-72 bg-white/5 rounded-full blur-[100px]" />
         <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-black/5 rounded-full blur-[100px]" />
       </div>
 
       <div className="container relative z-10">
-       <motion.div
-  className="text-center max-w-2xl mx-auto mb-16"
-  initial={{ opacity: 0, y: 20 }}
-  whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true }}
->
-  <Badge variant="outline" className="mb-4 border-white/30 text-white bg-white/10">
-    Success Stories
-  </Badge>
+        <motion.div
+          className="text-center max-w-2xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Badge
+            variant="outline"
+            className="mb-4 border-white/30 text-white bg-white/10"
+          >
+            Success Stories
+          </Badge>
 
-  <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">
-    What Patients Say
-  </h2>
+          <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">
+            What Patients Say
+          </h2>
 
-  <p className="text-white/80">
-    Real recovery stories from individuals who regained mobility and strength with expert physiotherapy guidance.
-  </p>
-</motion.div>
-
+          <p className="text-white/80">
+            Real recovery stories from individuals who regained mobility and
+            strength with expert physiotherapy guidance.
+          </p>
+        </motion.div>
 
         <div className=" md:px-12">
           <Carousel
@@ -77,20 +94,35 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
                 </CarouselItem>
               ) : featuredTestimonials.length > 0 ? (
                 featuredTestimonials?.map((testimonial: any, index: number) => (
-                  <CarouselItem key={testimonial?._id || index} className="pl-4 md:basis-1/3">
+                  <CarouselItem
+                    key={testimonial?._id || index}
+                    className="pl-4 md:basis-1/3"
+                  >
                     <motion.div variants={fadeInUpAnimation}>
-                      <Card className={`h-full p-8 hover:shadow-xl transition-all duration-500 border-l-4 bg-gradient-to-br from-white to-muted/20 dark:from-background dark:to-muted/5 relative group overflow-hidden`}>
+                      <Card
+                        className={`h-full p-8 hover:shadow-xl transition-all duration-500 border-l-4 bg-gradient-to-br from-white to-muted/20 dark:from-background dark:to-muted/5 relative group overflow-hidden`}
+                      >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
 
                         <div className="flex items-center gap-4 mb-6 relative z-10">
-                          <Avatar className="h-14 w-14 border-2 shadow-md transition-transform duration-500 group-hover:scale-110"
-                            style={{ borderColor: 'hsl(var(--primary/30))' }}>
-                            <AvatarImage src={testimonial?.userId?.profilePicture} />
-                            <AvatarFallback className="capitalize">{testimonial?.userId?.name[0]}</AvatarFallback>
+                          <Avatar
+                            className="h-14 w-14 border-2 shadow-md transition-transform duration-500 group-hover:scale-110"
+                            style={{ borderColor: "hsl(var(--primary/30))" }}
+                          >
+                            <AvatarImage
+                              src={testimonial?.userId?.profilePicture}
+                            />
+                            <AvatarFallback className="capitalize">
+                              {testimonial?.userId?.name[0]}
+                            </AvatarFallback>
                           </Avatar>
                           <div>
-                            <h4 className="font-bold text-lg">{testimonial.userId?.name}</h4>
-                            <p className="text-xs font-bold uppercase tracking-widest text-primary">{testimonial?.problem}</p>
+                            <h3 className="font-bold text-lg">
+                              {testimonial.userId?.name}
+                            </h3>
+                            <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                              {testimonial?.problem}
+                            </p>
                           </div>
                         </div>
 
@@ -118,7 +150,9 @@ export const Testimonials = ({ featuredTestimonials, testimonialsLoading, testim
               ) : (
                 <CarouselItem className="pl-4">
                   <div className="h-full p-8 flex items-center justify-center">
-                    <p className="text-white">No featured testimonials available.</p>
+                    <p className="text-white">
+                      No featured testimonials available.
+                    </p>
                   </div>
                 </CarouselItem>
               )}

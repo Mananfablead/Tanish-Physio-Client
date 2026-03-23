@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, ArrowRight, Users, IndianRupee, DollarSign } from "lucide-react";
+import {
+  CheckCircle,
+  ArrowRight,
+  Users,
+  IndianRupee,
+  DollarSign,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { getPriceByLocationSync } from "@/utils/priceUtils";
 
@@ -289,14 +295,15 @@ export const SubscriptionPlans = ({
 
         {/* VIEW ALL */}
         <div className="mt-16 text-center">
-          <Link to={`/plans?tab=${activeTab}`}>
-            <button className="inline-flex items-center text-sm font-medium text-primary hover:underline">
-              View All Detailed Plans & Benefits
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </button>
+          <Link
+            to={`/plans?tab=${activeTab}`}
+            className="inline-flex items-center justify-center text-sm font-medium text-primary hover:underline px-3 py-2 min-h-[44px] min-w-[44px] rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            View All Detailed Plans & Benefits
+            <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
         </div>
       </div>
     </section>
   );
-};;
+};

@@ -1,6 +1,14 @@
 import { Link } from "react-router-dom";
-import { Activity, Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
-import logo from '../../assets/logo.webp';
+import {
+  Activity,
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Instagram,
+  Linkedin,
+} from "lucide-react";
+import logo from "../../assets/logo.webp";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchContactPublic } from "../../store/slices/cmsSlice";
@@ -16,24 +24,34 @@ export function Footer() {
 
   // Fallback data if API data is not available
   const contactData = contact || {
-    email: 'drkhushboo26@gmail.com',
-    phone: '+91 9427555696',
-    address: '5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan',
+    email: "drkhushboo26@gmail.com",
+    phone: "+91 9427555696",
+    address:
+      "5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan",
     socialLinks: [
-      { platform: 'facebook', url: 'https://www.facebook.com/TanishPhysioFitnessandLaserClinic' },
-      { platform: 'instagram', url: 'https://www.instagram.com/tanish_physio_fitness_clinic/' },
-      { platform: 'linkedin', url: 'https://www.linkedin.com/in/dr-khhushbu-joshi-9b087b179/' }
-    ]
+      {
+        platform: "facebook",
+        url: "https://www.facebook.com/TanishPhysioFitnessandLaserClinic",
+      },
+      {
+        platform: "instagram",
+        url: "https://www.instagram.com/tanish_physio_fitness_clinic/",
+      },
+      {
+        platform: "linkedin",
+        url: "https://www.linkedin.com/in/dr-khhushbu-joshi-9b087b179/",
+      },
+    ],
   };
 
   // Function to get social icon based on platform
   const getSocialIcon = (platform: string) => {
     switch (platform?.toLowerCase()) {
-      case 'facebook':
+      case "facebook":
         return <Facebook className="h-5 w-5" />;
-      case 'instagram':
+      case "instagram":
         return <Instagram className="h-5 w-5" />;
-      case 'linkedin':
+      case "linkedin":
         return <Linkedin className="h-5 w-5" />;
       default:
         return null;
@@ -46,10 +64,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <Link
-              to="/"
-              className="flex flex-col items-start gap-2"
-            >
+            <Link to="/" className="flex flex-col items-start gap-2">
               <img
                 src={logo}
                 alt="Tanish Physio & Fitness Logo"
@@ -59,7 +74,6 @@ export function Footer() {
               <span className="text-xs md:text-[12px] font-semibold tracking-wider text-primary">
                 Practising Since 2004
               </span>
-
             </Link>
 
             <p className="text-sm text-muted-foreground">
@@ -70,7 +84,7 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-semibold mb-4">Quick Links</h4>
+            <h3 className="font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link
@@ -103,18 +117,46 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h4 className="font-semibold mb-4">Support</h4>
+            <h3 className="font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/faq" className="hover:text-primary transition-colors">FAQ</Link></li>
-              <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-              <li><Link to="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
+              <li>
+                <Link
+                  to="/faq"
+                  className="hover:text-primary transition-colors"
+                >
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  className="hover:text-primary transition-colors"
+                >
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/terms"
+                  className="hover:text-primary transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="hover:text-primary transition-colors"
+                >
+                  Contact Us
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h4 className="font-semibold mb-4">Contact</h4>
+            <h3 className="font-semibold mb-4">Contact</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
@@ -142,17 +184,20 @@ export function Footer() {
               </li>
               {/* Social Links */}
               <li className="flex gap-4 pt-2">
-                {contactData.socialLinks && contactData.socialLinks.map((link: any) => (
-                  <a
-                    key={link.platform}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary hover:scale-110 transition-colors"
-                  >
-                    {getSocialIcon(link.platform)}
-                  </a>
-                ))}
+                {contactData.socialLinks &&
+                  contactData.socialLinks.map((link: any) => (
+                    <a
+                      key={link.platform}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary hover:scale-110 transition-colors"
+                      aria-label={`Follow us on ${link.platform}`}
+                      title={`Follow us on ${link.platform}`}
+                    >
+                      {getSocialIcon(link.platform)}
+                    </a>
+                  ))}
               </li>
             </ul>
           </div>

@@ -3,7 +3,12 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   CheckCircle,
   ChevronRight,
@@ -743,12 +748,12 @@ export default function ServiceDetailPage() {
 
   // Get service from Redux store
   const { selectedService, loading, error } = useSelector(
-    (state: RootState) => state.services
+    (state: RootState) => state.services,
   );
 
   // Get public admins from Redux store
   const { admins: publicAdmins } = useSelector(
-    (state: RootState) => state.admins
+    (state: RootState) => state.admins,
   );
 
   // Use slug if available, otherwise fall back to serviceId
@@ -768,10 +773,10 @@ export default function ServiceDetailPage() {
             planName,
             totalSessions,
             usedSessions,
-            currentPlan,  // Get current plan info
-            planId,       // Get plan ID
-            status,       // Get plan status
-            expiryStatus  // Get expiry status
+            currentPlan, // Get current plan info
+            planId, // Get plan ID
+            status, // Get plan status
+            expiryStatus, // Get expiry status
           } = response.data.data;
 
           setSubscriptionEligible(eligible);
@@ -785,7 +790,7 @@ export default function ServiceDetailPage() {
             currentPlan,
             planId,
             status,
-            expiryStatus
+            expiryStatus,
           });
         } catch (error) {
           console.error("Error checking subscription status:", error);
@@ -824,7 +829,7 @@ export default function ServiceDetailPage() {
       }
     }
   }, [dispatch, identifier, slug, serviceId]);
-useEffect(() => {
+  useEffect(() => {
     dispatch(fetchPublicAdmins());
   }, [dispatch]);
 
@@ -869,11 +874,11 @@ useEffect(() => {
           title={`${service.details.title} | Tanish Physio Fitness`}
           description={`${service.details.detailedDescription.substring(
             0,
-            150
+            150,
           )}... Expert ${service.details.title.toLowerCase()} treatment in Surat. Book your session today.`}
           keywords={`${service.details.title.toLowerCase()}, physiotherapy ${service.details.title.toLowerCase()}, ${service.details.title.toLowerCase()} treatment Surat, rehabilitation ${service.details.title.toLowerCase()}, therapy ${service.details.title.toLowerCase()}`}
           image={service.media?.heroImage || "/api/og/services"}
-          canonicalUrl={`https://tanishphysiofitness.in/services/${
+          canonicalUrl={`https://tanishphysiofitness.in/service/${
             slug || serviceId
           }`}
         />

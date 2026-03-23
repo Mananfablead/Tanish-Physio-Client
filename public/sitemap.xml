@@ -79,4 +79,37 @@
     <loc>https://tanishphysiofitness.in/reset-password</loc>
   </url>
   
+  <!-- Service Pages (Dynamic - Auto-generated) -->
+  <url>
+    <loc>https://tanishphysiofitness.in/service/geriatric-physio</loc>
+  </url>
+
+  <url>
+    <loc>https://tanishphysiofitness.in/service/chest-physio</loc>
+  </url>
+
+  <url>
+    <loc>https://tanishphysiofitness.in/service/onco-physio</loc>
+  </url>
+
+  <url>
+    <loc>https://tanishphysiofitness.in/service/fitness-therapy</loc>
+  </url>
+
+  <url>
+    <loc>https://tanishphysiofitness.in/service/maternity-physio</loc>
+  </url>
+
+  <url>
+    <loc>https://tanishphysiofitness.in/service/sports-physiotherapy</loc>
+  </url>
+
+  <url>
+    <loc>https://tanishphysiofitness.in/service/neuro-physiotherapy</loc>
+  </url>
+
+  <url>
+    <loc>https://tanishphysiofitness.in/service/orthopedic-physiotherapy</loc>
+  </url>
+  
 </urlset>

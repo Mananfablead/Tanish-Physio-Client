@@ -1,0 +1,18 @@
+# Redirect www to non-www (301 permanent redirect)
+https://www.tanishphysiofitness.in/* https://tanishphysiofitness.in/:splat 301!
+
+# Ensure HTTPS
+http://tanishphysiofitness.in/* https://tanishphysiofitness.in/:splat 301!
+http://www.tanishphysiofitness.in/* https://tanishphysiofitness.in/:splat 301!
+
+# SPA routing - rewrite all requests to index.html for client-side routing
+/*  /index.html  200
+
+# Sitemap
+/sitemap.xml  /sitemap.xml  200
+
+# Robots
+/robots.txt  /robots.txt  200
+
+# Google verification
+/googled11b95f7a82b5d50.html  /googled11b95f7a82b5d50.html  200
