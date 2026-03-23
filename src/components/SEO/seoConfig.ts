@@ -10,9 +10,9 @@ export interface SEOConfig {
 
 export const DEFAULT_SEO: SEOConfig = {
   title:
-    "Tanish Physio & Fitness - Professional Online Physiotherapy & Video Consultation Services",
+    "Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness",
   description:
-    "Experience premium online physiotherapy with certified experts. Get personalized treatment plans, video consultations, and professional rehabilitation from the comfort of your home. Book your session today for expert care.",
+    "Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home.",
   keywords:
     "physiotherapy, online physiotherapy, video consultation, home physiotherapy, physical therapy, rehabilitation, fitness, health, wellness, exercise, therapy sessions, certified physiotherapists",
   image: "/favicon.png",
@@ -23,9 +23,9 @@ export const DEFAULT_SEO: SEOConfig = {
 export const PAGE_SEO: Record<string, SEOConfig> = {
   "/": {
     title:
-      "Tanish Physio & Fitness | Professional Online Physiotherapy Services India",
+      "Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness",
     description:
-      "Start Your Recovery Journey with Tanish Physio - India's trusted online physiotherapy platform. Get personalized video consultations with certified physiotherapists, customized treatment plans for all conditions, and recovery support from home. 4.9/5 rated service. Book your session now.",
+      "Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home.",
     keywords:
       "online physiotherapy India, video consultation, home physiotherapy, certified physiotherapists, rehabilitation, physical therapy, telehealth physiotherapy, sports injury treatment, pain management",
     type: "website",
