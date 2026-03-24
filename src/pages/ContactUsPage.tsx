@@ -83,7 +83,14 @@ export default function ContactUsPage() {
 
   return (
     <Layout>
-      <SEOHead {...getSEOConfig("/contact")} />
+      {/* Enhanced SEO Meta Tags for Contact Page */}
+      <SEOHead
+        title="Contact Us | Book Your Physiotherapy Session India"
+        description="Get in touch with Tanish Physio & Fitness. Book your physiotherapy consultation, ask questions about our services, or schedule a video appointment with certified therapists."
+        keywords="contact tanish physio, book physiotherapy session, physiotherapy consultation India, video appointment booking, contact physiotherapist, online therapy booking"
+        url="/contact"
+        type="website"
+      />
 
       <div className="min-h-screen bg-background ">
         <div>
@@ -296,7 +303,7 @@ export default function ContactUsPage() {
                   marginWidth={0}
                   src={`https://maps.google.com/maps?q=${encodeURIComponent(
                     contact?.address ||
-                      "5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan"
+                      "5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan",
                   )}&output=embed`}
                   title="Location Map"
                 ></iframe>

@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-interface SEOHeadProps {
+interface PageSEOProps {
   title: string;
   description: string;
   keywords?: string;
@@ -12,9 +12,11 @@ interface SEOHeadProps {
   modifiedTime?: string;
   canonicalUrl?: string;
   addHreflang?: boolean;
+  noindex?: boolean;
+  nofollow?: boolean;
 }
 
-export const SEOHead = ({
+export const PageSEO = ({
   title,
   description,
   keywords,
@@ -26,7 +28,9 @@ export const SEOHead = ({
   modifiedTime,
   canonicalUrl,
   addHreflang = true,
-}: SEOHeadProps) => {
+  noindex = false,
+  nofollow = false,
+}: PageSEOProps) => {
   const siteUrl =
     import.meta.env.VITE_APP_URL || "https://tanishphysiofitness.in";
   const fullUrl = url ? `${siteUrl}${url}` : siteUrl;
@@ -42,8 +46,16 @@ export const SEOHead = ({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords || defaultKeywords} />
       <meta name="author" content={author || "Tanish Physio & Fitness"} />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta name="theme-color" content="#0ea5e9" />
+
+      {/* Robots Meta */}
+      {noindex || nofollow ? (
+        <meta
+          name="robots"
+          content={`${noindex ? "noindex" : ""} ${nofollow ? "nofollow" : ""}`.trim()}
+        />
+      ) : (
+        <meta name="robots" content="index, follow" />
+      )}
 
       {/* Canonical URL */}
       {canonicalUrl ? (
@@ -144,80 +156,7 @@ export const SEOHead = ({
             "https://www.linkedin.com/company/tanishphysio",
             "https://www.youtube.com/@tanishphysio",
           ],
-          hasOfferCatalog: {
-            "@type": "OfferCatalog",
-            name: "Physiotherapy Services",
-            itemListElement: [
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Online Physiotherapy Consultation",
-                },
-              },
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Rehabilitation Therapy",
-                },
-              },
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Sports Injury Treatment",
-                },
-              },
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Pain Management",
-                },
-              },
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Posture Correction Therapy",
-                },
-              },
-              {
-                "@type": "Offer",
-                itemOffered: {
-                  "@type": "Service",
-                  name: "Fitness Training",
-                },
-              },
-            ],
-          },
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: "4.9",
-            reviewCount: "500+",
-            bestRating: "5",
-            worstRating: "1",
-          },
         })}
-      </script>
-
-      {/* Google Analytics Script - Loaded Asynchronously */}
-      <script
-        async
-        src={`https://www.googletagmanager.com/gtag/js?id=${
-          import.meta.env.VITE_GA_ID || "GA_MEASUREMENT_ID"
-        }`}
-      ></script>
-      <script>
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${
-            import.meta.env.VITE_GA_ID || "GA_MEASUREMENT_ID"
-          }');
-        `}
       </script>
     </Helmet>
   );

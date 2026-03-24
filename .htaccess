@@ -1,0 +1,83 @@
+# Apache .htaccess for Tanish Physio & Fitness
+# Place this file in the root of your public_html or www directory
+
+# Enable Rewrite Engine
+RewriteEngine On
+RewriteBase /
+
+# Force HTTPS (SEO Issue #13)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Force WWW to Non-WWW redirect (SEO Issue #5)
+RewriteCond %{HTTP_HOST} ^www\.tanishphysiofitness\.in$ [NC]
+RewriteRule ^(.*)$ https://tanishphysiofitness.in/$1 [R=301,L]
+
+# Remove trailing slash (SEO Issue #4)
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} (.+)/$
+RewriteRule ^ %1 [R=301,L]
+
+# Redirect index.html to root (SEO Issue #7)
+RewriteCond %{THE_REQUEST} \s/index\.html\s [NC]
+RewriteRule ^index\.html$ / [R=301,L]
+
+# Handle React Router - serve index.html for all valid routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule ^(.*)$ /index.html [QSA,L]
+
+# Proxy API requests to Node.js backend (requires mod_proxy)
+# Uncomment if using Apache as reverse proxy
+# ProxyPreserveHost On
+# ProxyPass /api http://localhost:5000/api
+# ProxyPassReverse /api http://localhost:5000/api
+# ProxyPass /socket.io http://localhost:5000/socket.io
+# ProxyPassReverse /socket.io http://localhost:5000/socket.io
+
+# Gzip Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Deny access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Custom 404 page (SEO Issue #6)
+ErrorDocument 404 /404.html

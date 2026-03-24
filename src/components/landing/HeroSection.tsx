@@ -53,13 +53,13 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                 <Star className="h-3 w-3 fill-primary text-primary" />
                 {cmsHero?.trustedBy || "Trusted by 10,000+ patients"}
               </Badge>
-              <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-balance">
+              <h2 className="text-4xl lg:text-6xl font-bold tracking-tight text-balance">
                 {cmsHero?.heading || "Start Your Recovery Journey Today"}
-              </h1>
-              <h2 className="text-xl font-semibold tracking-wide text-balance">
+              </h2>
+              <p className="text-xl font-semibold tracking-wide text-balance text-muted-foreground">
                 {cmsHero?.subHeading ||
                   "Online physiotherapy, rehab, and pain relief"}
-              </h2>
+              </p>
               <p className="text-lg text-muted-foreground max-w-lg">
                 {cmsHero?.description ||
                   "Connect with certified physiotherapist from home. Get personalized treatment plans and video consultations tailored to your needs."}

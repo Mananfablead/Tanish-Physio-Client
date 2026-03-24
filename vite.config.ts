@@ -3,20 +3,22 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
+import SitemapPlugin from "vite-plugin-sitemap";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    // proxy: {
-    //   "/api": {
-    //     target: "http://localhost:5000",
-    //     changeOrigin: true,
-    //     secure: false,
-    //     rewrite: (path) => path.replace(/^\/api/, "/api"),
-    //   },
-    // },
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, "/api"),
+      },
+    },
   },
   build: {
     emptyOutDir: false, // Prevent Vite from trying to empty the directory
@@ -47,6 +49,25 @@ export default defineConfig(({ mode }) => ({
     nodePolyfills({
       protocolImports: true,
       include: ["process", "buffer", "stream", "util", "path"],
+    }),
+    // Image optimization for WebP conversion
+    ViteImageOptimizer({
+      png: {
+        quality: 80,
+      },
+      jpeg: {
+        quality: 80,
+      },
+      jpg: {
+        quality: 80,
+      },
+      webp: {
+        quality: 80,
+      },
+    }),
+    // Sitemap generation
+    SitemapPlugin({
+      hostname: "https://tanishphysiofitness.in",
     }),
   ].filter(Boolean),
   define: {

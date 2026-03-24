@@ -70,7 +70,14 @@ export default function AboutUsPage() {
 
   return (
     <Layout>
-      <SEOHead {...getSEOConfig("/about")} />
+      {/* Enhanced SEO Meta Tags for About Page */}
+      <SEOHead
+        title="About Tanish Physio - Leading Rehabilitation Center in India"
+        description="Learn about Tanish Physio & Fitness, India's trusted physiotherapy clinic with certified therapists specializing in rehabilitation, pain management, and sports injury treatment."
+        keywords="about tanish physio, rehabilitation center India, certified physiotherapists, sports injury treatment, pain management clinic, online physiotherapy India"
+        url="/about"
+        type="website"
+      />
 
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
         {/* Hero Section */}
@@ -352,7 +359,7 @@ export default function AboutUsPage() {
                                 {feature}
                               </span>
                             </motion.div>
-                          )
+                          ),
                         )}
                       </div>
                     </motion.div>

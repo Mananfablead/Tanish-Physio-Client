@@ -112,7 +112,14 @@ export default function ServicesPage() {
 
   return (
     <Layout>
-      <SEOHead {...getSEOConfig("/services")} />
+      {/* Enhanced SEO Meta Tags for Services Page */}
+      <SEOHead
+        title="Our Physiotherapy Services | Pain Relief & Rehabilitation India"
+        description="Comprehensive physiotherapy services including sports injury treatment, rehabilitation therapy, pain management, posture correction, and fitness training. Book your session today."
+        keywords="physiotherapy services, sports injury treatment, rehabilitation therapy, pain relief clinic, posture correction, fitness training India, online physiotherapy"
+        url="/services"
+        type="website"
+      />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-secondary/10 pt-8 pb-10">
