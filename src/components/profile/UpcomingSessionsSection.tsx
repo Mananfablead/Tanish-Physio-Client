@@ -110,61 +110,115 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
   return (
     <>
-      {/* Live Sessions Section - Show only sessions with "live" status */}
-      {upcomingSessions.filter((session) => session.status === "live").length >
-        0 && (
-          <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  Live Sessions
-                </h3>
-              </div>
-              <div className="space-y-4">
-                {liveSessions.map((session) => (
-                  <div
-                    key={session._id || session.id}
-                    className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:shadow-sm transition"
-                  >
-                    {/* Therapist + Session Info */}
-                    <div className="flex-1">
-                      <h4 className="font-black text-slate-900">
-                        {session?.subscriptionId?.planName || session?.bookingId?.serviceName || "Session"}
-                      </h4>
-                      <p className="text-sm text-slate-500 font-medium">
-                        {formatSessionDateTime(
-                          session?.startTime,
-                          session?.endTime
-                        )}
-                      </p>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
-                        {session.status}
-                      </span>
-                      {session.status === "live" && !isSessionTimeArrived(session) && (
-                        <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                          Starts in {Math.ceil((new Date(session.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min
-                        </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="font-bold text-slate-500 hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs"
-                        onClick={() => openSessionDetail(session)}
-                      >
-                        <Info className="h-3 w-3 mr-1" />
-                        Read More
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* Live Sessions Section - Same UI as Next Session */}
+      {liveSessions.length > 0 && (
+        <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between overflow-hidden">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                Live Sessions
+              </h3>
+              <Badge className="bg-primary/10 text-primary hover:text-white border-none font-bold">
+                live
+              </Badge>
             </div>
-          </Card>
-        )}
+
+            {liveSessions.map((session) => (
+              <div key={session._id || session.id}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <InfoBlock
+                    label="Date & Time"
+                    value={new Date(
+                      session.startTime || session.date
+                    ).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                    subValue={`${new Date(
+                      session.startTime || session.date
+                    ).toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })} — ${new Date(
+                      session.endTime || session.date
+                    ).toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`}
+                    icon={Calendar}
+                    iconColor="text-primary"
+                  />
+                  <InfoBlock
+                    label="Session Type"
+                    value={session.location || session.type || "Online"}
+                    subValue={session.type === "group" ? "Group Consultation" : "1 on 1 Consultation"}
+                    icon={VideoIcon}
+                    iconColor="text-accent"
+                  />
+                  <div className="md:col-span-2">
+                    <InfoBlock
+                      label="Session Focus"
+                      value={
+                        session.subscriptionId?.planName ||
+                        "General Consultation"
+                      }
+                      subValue={
+                        session.notes ||
+                        session.description ||
+                        "Status updated to live"
+                      }
+                      icon={Activity}
+                      iconColor="text-success"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 w-full border-t border-slate-50 pt-4">
+                  <Link
+                    to={
+                      session._id && isSessionTimeArrived(session)
+                        ? (session.groupSessionId || (session.type === "group" || session.sessionType === "group"))
+                          ? `/group-video-call/${session.groupSessionId || session._id}`
+                          : `/video-call?sessionId=${session._id}`
+                        : "#"
+                    }
+                    className="flex-1"
+                  >
+                    <Button
+                      className={`w-full h-11 rounded-xl ${
+                        isSessionTimeArrived(session)
+                          ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
+                          : "bg-secondary hover:bg-secondary/90 font-bold"
+                      }`}
+                      disabled={!session._id || !isSessionTimeArrived(session)}
+                    >
+                      <Play className="h-5 w-5 mr-2 fill-white" />
+                      {(() => {
+                        const diffMs = new Date(session.startTime).getTime() - currentTime.getTime();
+                        const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
+                        
+                        if (!isSessionTimeArrived(session)) {
+                          return diffMins === 0 ? 'Starting now' : `Join in ${diffMins} min`;
+                        }
+                        return "Join Session";
+                      })()}
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    className="h-11 px-4"
+                    onClick={() => openSessionDetail(session)}
+                  >
+                    <Info className="h-5 w-5 mr-2" />
+                    Details
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Upcoming Sessions Section - Show pending and scheduled sessions */}
       {upcomingSessions.length > 0 && (
@@ -201,7 +255,11 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     </span>
                     {session.timingStatus === "join_now" && !isSessionTimeArrived(session) && (
                       <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                        Starts in {Math.ceil((new Date(session.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min
+                        {(() => {
+                          const diffMs = new Date(session.startTime).getTime() - currentTime.getTime();
+                          const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
+                          return diffMins === 0 ? 'Starting now' : `Starts in ${diffMins} min`;
+                        })()}
                       </span>
                     )}
                     {session.timingStatus === "join_soon" && (
@@ -320,15 +378,27 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   }
                 >
                   <Play className="h-5 w-5 mr-2 fill-white" />
-                  {nextSession.status === "live" && !isSessionTimeArrived(nextSession)
-                    ? `Starts in ${Math.ceil((new Date(nextSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`
-                    : nextSession.timingStatus === "join_now"
-                      ? isSessionTimeArrived(nextSession)
-                        ? "Join Session"
-                        : `Join in ${Math.ceil((new Date(nextSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`
-                      : nextSession.timingStatus === "join_soon"
-                        ? "Join Soon"
-                        : "Join Session"}
+                  {(() => {
+                    const diffMs = new Date(nextSession.startTime).getTime() - currentTime.getTime();
+                    const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
+                    
+                    if (nextSession.status === "live" && !isSessionTimeArrived(nextSession)) {
+                      return diffMins === 0 ? 'Starting now' : `Starts in ${diffMins} min`;
+                    }
+                    
+                    if (nextSession.timingStatus === "join_now") {
+                      if (isSessionTimeArrived(nextSession)) {
+                        return "Join Session";
+                      }
+                      return diffMins === 0 ? 'Starting now' : `Join in ${diffMins} min`;
+                    }
+                    
+                    if (nextSession.timingStatus === "join_soon") {
+                      return "Join Soon";
+                    }
+                    
+                    return "Join Session";
+                  })()}
                 </Button>
               </Link>
             </div>
@@ -459,9 +529,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 <div className="flex items-center gap-2">
                   {detailSession.timingStatus === "join_now" && (
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                      {isSessionTimeArrived(detailSession)
-                        ? "Ready to join"
-                        : `Starts in ${Math.ceil((new Date(detailSession.startTime).getTime() - currentTime.getTime()) / (1000 * 60))} min`}
+                      {(() => {
+                        const diffMs = new Date(detailSession.startTime).getTime() - currentTime.getTime();
+                        const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
+                        if (isSessionTimeArrived(detailSession)) {
+                          return "Ready to join";
+                        }
+                        return diffMins === 0 ? 'Starting now' : `Starts in ${diffMins} min`;
+                      })()}
                     </span>
                   )}
                   {detailSession.timingStatus === "join_soon" && (

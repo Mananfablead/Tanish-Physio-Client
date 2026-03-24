@@ -207,13 +207,9 @@ export default function SchedulePage() {
       // Check if user can book with subscription first
       if (subscriptionEligible && subscriptionInfo?.remainingSessions > 0) {
         // Use subscription-based booking API which creates a booking without payment required
-        // Determine scheduleType based on whether we have specific scheduled date/time
-        const scheduleType =
-          selectedDate > new Date() ||
-          (selectedDate.toDateString() === new Date().toDateString() &&
-            startTime > new Date().toTimeString().substring(0, 5))
-            ? "later"
-            : "now";
+        // Always use "now" for subscription bookings - sessions will be created automatically
+        // Admin can still review and approve before the session date
+        const scheduleType = "now";
 
         const subscriptionBookingData = {
           date: format(selectedDate, "yyyy-MM-dd"),
@@ -229,6 +225,7 @@ export default function SchedulePage() {
             start: startTime,
             end: endTime || startTime, // Use endTime if provided, otherwise use start time
           },
+          sessionType: sessionTypeValue || "1-on-1", // Include selected session type
         };
 
         const response: any = await createBookingWithSubscription(
@@ -236,30 +233,21 @@ export default function SchedulePage() {
         );
 
         if (response.data?.success) {
-          // Decrement subscription sessions after successful booking
-          dispatch(decrementSubscriptionSessions());
-
-          // Refresh subscription eligibility to get updated counts from API
-          const updatedEligibility = await checkSubscriptionEligibility();
-          const updatedData = updatedEligibility.data.data;
-          const {
-            remainingSessions: newRemainingSessions,
-            totalSessions: newTotalSessions,
-            usedSessions: newUsedSessions,
-            totalUsed: newTotalUsed,
-          } = updatedData;
-
-          // Update subscriptionInfo with fresh API data
-          if (subscriptionInfo) {
+          // Use subscription info directly from response (no need for extra API call)
+          const responseSubscriptionInfo = response.data.subscriptionInfo;
+          
+          if (responseSubscriptionInfo) {
             const safeRemainingSessions =
-              newRemainingSessions != null && !isNaN(newRemainingSessions)
-                ? newRemainingSessions
+              responseSubscriptionInfo.remainingSessions != null && 
+              !isNaN(responseSubscriptionInfo.remainingSessions)
+                ? responseSubscriptionInfo.remainingSessions
                 : 0;
             const safeTotalSessions =
-              newTotalSessions != null && !isNaN(newTotalSessions)
-                ? newTotalSessions
+              responseSubscriptionInfo.totalSessions != null && 
+              !isNaN(responseSubscriptionInfo.totalSessions)
+                ? responseSubscriptionInfo.totalSessions
                 : 0;
-            const safeUsedSessions = newTotalUsed || newUsedSessions || 0;
+            const safeUsedSessions = responseSubscriptionInfo.usedSessions || 0;
 
             setSubscriptionInfo({
               ...subscriptionInfo,
@@ -267,16 +255,18 @@ export default function SchedulePage() {
               remainingServices: safeRemainingSessions,
               totalSessions: safeTotalSessions,
               usedSessions: safeUsedSessions,
-              totalUsed: newTotalUsed || safeUsedSessions,
+              totalUsed: responseSubscriptionInfo.totalUsed || safeUsedSessions,
             });
 
-            console.log("Updated subscription info after booking:", {
+            console.log("✅ Updated subscription info from response:", {
               remainingSessions: safeRemainingSessions,
               totalSessions: safeTotalSessions,
               usedSessions: safeUsedSessions,
-              totalUsed: newTotalUsed || safeUsedSessions,
             });
           }
+          
+          // Also dispatch Redux action for global state update
+          dispatch(decrementSubscriptionSessions());
 
           // Add the new booking to sessions list if available in response
           if (response.data.data?.booking) {
@@ -602,6 +592,12 @@ export default function SchedulePage() {
 
       // Check if slot status is available
       if (slot.status !== "available") return false;
+
+      // Filter by selected session type if specified
+      if (sessionTypeValue && sessionTypeValue !== "1-on-1") {
+        const slotSessionType = slot.sessionType || "1-on-1";
+        if (slotSessionType !== sessionTypeValue) return false;
+      }
 
       // If it's today, check minimum notice period
       if (isToday) {
@@ -1353,14 +1349,33 @@ export default function SchedulePage() {
                                           })}`}
                                       </span>
 
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs font-bold"
-                                      >
-                                        {session.type ||
-                                          session.sessionType ||
-                                          "1-on-1"}
-                                      </Badge>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs font-bold"
+                                        >
+                                          {session.type === "group" || session.sessionType === "group" ? (
+                                            <span className="flex items-center gap-1">
+                                              <Users className="h-3 w-3" />
+                                              Group
+                                            </span>
+                                          ) : (
+                                            "1-on-1"
+                                          )}
+                                        </Badge>
+                                        
+                                        {/* Show participant count for group sessions */}
+                                        {(session.type === "group" || session.sessionType === "group") && 
+                                         session.maxParticipants !== undefined && (
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs font-medium bg-blue-50 text-blue-700"
+                                          >
+                                            <User className="h-3 w-3 mr-1" />
+                                            {session.participants?.length || 0}/{session.maxParticipants}
+                                          </Badge>
+                                        )}
+                                      </div>
 
                                       {/* {session.bookingId && (
                                       <Badge variant="outline" className="text-xs font-bold bg-blue-100 text-blue-800">
@@ -1621,7 +1636,7 @@ export default function SchedulePage() {
                         className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                       >
                         <option value="1-on-1">1-on-1</option>
-                        {/* <option value="group">Group</option> */}
+                        <option value="group">Group</option>
                       </select>
                     </div>
                   </div>
@@ -1771,25 +1786,31 @@ export default function SchedulePage() {
                               // Debug logging to see what's happening
                               // console.log('Slot:', slot, 'Duration:', slotDurationMinutes, 'Service Duration:', serviceDuration, 'Suitable:', isSuitableForService);
 
+                              // Check if this is a group session slot
+                              const isGroupSession = slot.sessionType === "group";
+                              const maxParticipants = slot.maxParticipants || 1;
+                              const bookedParticipants = slot.bookedParticipants || 0;
+                              const availableSpots = isGroupSession ? maxParticipants - bookedParticipants : 1;
+
                               return (
-                                <Button
-                                  key={slot._id}
-                                  size="sm"
-                                  disabled={!isActuallyAvailable}
-                                  onClick={() => {
-                                    if (isActuallyAvailable) {
-                                      const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
-                                      setSelectedTime(timeValue);
-                                      // Store the original 24-hour time slot for backend submission
-                                      setSelectedTimeSlot({
-                                        start: slot.start,
-                                        end: slot.end,
-                                      });
-                                      setBookingError(null); // Clear any previous error when selecting a new time
-                                    }
-                                  }}
-                                  className={`
-          py-2 text-sm font-medium transition-all 
+                                <div key={slot._id} className="relative">
+                                  <Button
+                                    size="sm"
+                                    disabled={!isActuallyAvailable}
+                                    onClick={() => {
+                                      if (isActuallyAvailable) {
+                                        const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
+                                        setSelectedTime(timeValue);
+                                        // Store the original 24-hour time slot for backend submission
+                                        setSelectedTimeSlot({
+                                          start: slot.start,
+                                          end: slot.end,
+                                        });
+                                        setBookingError(null); // Clear any previous error when selecting a new time
+                                      }
+                                    }}
+                                    className={`
+          py-2 text-sm font-medium transition-all w-full
           ${
             isSelected
               ? "bg-green-600 text-white hover:bg-green-600"
@@ -1798,17 +1819,34 @@ export default function SchedulePage() {
                   ? "border border-green-500 text-green-600 bg-green-50"
                   : "border border-yellow-500 text-yellow-600 bg-yellow-50"
                 : isBooked
-                  ? " text-red-500 cursor-not-allowed border border-red-500"
+                  ? "text-red-500 cursor-not-allowed border border-red-500"
                   : isPast
-                    ? " text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
-                    : " text-gray-400 cursor-not-allowed border border-gray-400"
+                    ? "text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
+                    : "text-gray-400 cursor-not-allowed border border-gray-400"
           }
         `}
-                                  variant="outline"
-                                >
-                                  {formatTimeDisplay(slot.start)} –{" "}
-                                  {formatTimeDisplay(slot.end)}
-                                </Button>
+                                    variant="outline"
+                                  >
+                                    <div className="flex flex-col items-center justify-center w-full">
+                                      <span>
+                                        {formatTimeDisplay(slot.start)} –{" "}
+                                        {formatTimeDisplay(slot.end)}
+                                      </span>
+                                      {isGroupSession && isActuallyAvailable && (
+                                        <span className="text-xs mt-1 font-medium">
+                                          {availableSpots} spot{availableSpots !== 1 ? "s" : ""} left
+                                        </span>
+                                      )}
+                                    </div>
+                                  </Button>
+                                  {isGroupSession && !isActuallyAvailable && bookedParticipants >= maxParticipants && (
+                                    <div className="absolute inset-0 bg-red-500/10 rounded flex items-center justify-center">
+                                      <span className="text-xs font-bold text-red-600 bg-white/90 px-2 py-0.5 rounded">
+                                        Full
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
                         </div>
