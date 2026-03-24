@@ -143,20 +143,31 @@ export default function ProfilePage() {
   const bookingList = bookings || [];
   // const activePlan = user?.subscriptionData;
 
-  // Set state based on Redux data - separate sessions by current status
-  // Filtered upcoming sessions: pending and scheduled sessions
+  // Helper function to check if session time has arrived for filtering
+  const isSessionTimeArrivedForFilter = (session: any) => {
+    if (!session?.startTime) return false;
+    const sessionStartTime = new Date(session.startTime);
+    return new Date() >= sessionStartTime;
+  };
+
+  // Set state based on Redux data - separate sessions by current status and time
+  // Filtered upcoming sessions: pending and scheduled sessions ONLY (excluding live)
   const filteredUpcomingSessions = sessions.filter(
     (session: any) =>
       session.status === "pending" || session.status === "scheduled"
   );
 
-  // Live sessions: currently live sessions
+  // Live sessions: sessions with status "live" AND time has arrived
   const liveSessions = sessions.filter(
-    (session: any) => session.status === "live"
+    (session: any) => 
+      session.status === "live" && isSessionTimeArrivedForFilter(session)
   );
 
+  // Next Session: sessions with status "live" but time has NOT arrived yet
   const nextSession =
-    sessions?.find((session: any) => session.status === "live") || null;
+    sessions?.find((session: any) => 
+      session.status === "live" && !isSessionTimeArrivedForFilter(session)
+    ) || null;
 
   const [sessionCompleted, setSessionCompleted] = useState<any[]>([]);
 
