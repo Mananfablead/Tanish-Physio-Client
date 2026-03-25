@@ -3,129 +3,202 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="form-action 'self';">
-    
-    <!-- Preconnect for performance optimization -->
+    <meta http-equiv="Content-Security-Policy" content="form-action 'self';" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Optimize LCP - Preload critical resources -->
+    <link
+      rel="preload"
+      href="./src/assets/hero-physio.png"
+      as="image"
+      type="image/png"
+    />
+    <!-- Optimized Google Fonts with display=swap and preload -->
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      as="style"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      media="print"
+      onload="this.media = 'all'"
+    />
     <link rel="preconnect" href="https://tanishphysiofitness.in" />
     <link rel="preconnect" href="https://api.tanishphysiofitness.in" />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-    
+
+    <!-- Preload main app bundle for faster JavaScript parsing -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+
     <!-- Primary Meta Tags -->
-    <title>Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness</title>
-    <meta name="description" content="Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home.">
-    <meta name="title" content="Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness">
-    <meta name="keywords" content="physiotherapy, online physiotherapy, video consultation, home physiotherapy, physical therapy, rehabilitation, fitness, health, wellness, exercise, therapy sessions, certified physiotherapists">
-    <meta name="author" content="Tanish Physio & Fitness">
-    <meta name="robots" content="index, follow">
-    <meta name="googlebot" content="index, follow">
-    <meta name="theme-color" content="#0ea5e9">
-    
+    <title>
+      Online Physiotherapy & Video Consultations in India | Tanish Physio &
+      Fitness
+    </title>
+    <meta
+      name="description"
+      content="Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home."
+    />
+    <meta
+      name="title"
+      content="Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness"
+    />
+    <meta
+      name="keywords"
+      content="physiotherapy, online physiotherapy, video consultation, home physiotherapy, physical therapy, rehabilitation, fitness, health, wellness, exercise, therapy sessions, certified physiotherapists"
+    />
+    <meta name="author" content="Tanish Physio & Fitness" />
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="theme-color" content="#0ea5e9" />
+
     <!-- Google Site Verification -->
     <meta name="google-site-verification" content="googled11b95f7a82b5d50" />
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="./favicon.png" />
-    <link rel="apple-touch-icon" href="./favicon.png">
-    
+    <link rel="apple-touch-icon" href="./favicon.png" />
+
     <!-- Additional SEO Meta Tags -->
-    <meta name="coverage" content="worldwide">
-    <meta name="distribution" content="global">
-    <meta name="language" content="English">
-    <meta name="target" content="all ages">
-    <meta name="rating" content="professional">
-    
+    <meta name="coverage" content="worldwide" />
+    <meta name="distribution" content="global" />
+    <meta name="language" content="English" />
+    <meta name="target" content="all ages" />
+    <meta name="rating" content="professional" />
+
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://tanishphysiofitness.in/">
-    <meta property="og:title" content="Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness">
-    <meta property="og:description" content="Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home.">
-    <meta property="og:image" content="https://tanishphysiofitness.in/favicon.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Tanish Physio & Fitness - Professional Physiotherapy Services">
-    <meta property="og:site_name" content="Tanish Physio & Fitness">
-    <meta property="og:locale" content="en_US">
-    
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tanishphysiofitness.in/" />
+    <meta
+      property="og:title"
+      content="Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness"
+    />
+    <meta
+      property="og:description"
+      content="Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home."
+    />
+    <meta
+      property="og:image"
+      content="https://tanishphysiofitness.in/favicon.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Tanish Physio & Fitness - Professional Physiotherapy Services"
+    />
+    <meta property="og:site_name" content="Tanish Physio & Fitness" />
+    <meta property="og:locale" content="en_US" />
+
     <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://tanishphysiofitness.in/">
-    <meta name="twitter:title" content="Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness">
-    <meta name="twitter:description" content="Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home.">
-    <meta name="twitter:image" content="https://tanishphysiofitness.in/favicon.png">
-    <meta name="twitter:image:alt" content="Tanish Physio & Fitness - Professional Physiotherapy Services">
-    <meta name="twitter:site" content="@tanishphysio">
-    <meta name="twitter:creator" content="@tanishphysio">
-    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://tanishphysiofitness.in/" />
+    <meta
+      name="twitter:title"
+      content="Online Physiotherapy & Video Consultations in India | Tanish Physio & Fitness"
+    />
+    <meta
+      name="twitter:description"
+      content="Book online physiotherapy with certified therapists in India. Get video consultations, personalized rehab plans, and guided recovery from home."
+    />
+    <meta
+      name="twitter:image"
+      content="https://tanishphysiofitness.in/favicon.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Tanish Physio & Fitness - Professional Physiotherapy Services"
+    />
+    <meta name="twitter:site" content="@tanishphysio" />
+    <meta name="twitter:creator" content="@tanishphysio" />
+
     <!-- LinkedIn -->
-    <meta property="og:image" content="https://tanishphysiofitness.in/favicon.png">
-    <meta name="linkedin:owner" content="Tanish Physio & Fitness">
-    
+    <meta
+      property="og:image"
+      content="https://tanishphysiofitness.in/favicon.png"
+    />
+    <meta name="linkedin:owner" content="Tanish Physio & Fitness" />
+
     <!-- Pinterest -->
-    <meta name="pinterest-rich-pin" content="true">
-    
+    <meta name="pinterest-rich-pin" content="true" />
+
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://tanishphysiofitness.in/">
-    
+    <link rel="canonical" href="https://tanishphysiofitness.in/" />
+
     <!-- Alternate Languages (if needed) -->
-    <link rel="alternate" hreflang="en" href="https://tanishphysiofitness.in/">
-    <link rel="alternate" hreflang="x-default" href="https://tanishphysiofitness.in/">
-    
+    <link
+      rel="alternate"
+      hreflang="en"
+      href="https://tanishphysiofitness.in/"
+    />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://tanishphysiofitness.in/"
+    />
+
     <!-- Structured Data - Organization -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "PhysiotherapyBusiness",
-      "name": "Tanish Physio & Fitness",
-      "url": "https://tanishphysiofitness.in",
-      "logo": "https://tanishphysiofitness.in/favicon.png",
-      "description": "Professional online physiotherapy services with certified therapists providing personalized treatment plans and video consultations.",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "India",
-        "addressCountry": "IN"
-      },
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer service",
+      {
+        "@context": "https://schema.org",
+        "@type": "MedicalBusiness",
+        "name": "Tanish Physio & Fitness",
+        "url": "https://tanishphysiofitness.in",
+        "logo": "https://tanishphysiofitness.in/favicon.png",
+        "image": "https://tanishphysiofitness.in/favicon.png",
         "telephone": "+91-9427555696",
-        "email": "drkhushboo26@gmail.com",
-        "availableLanguage": "en"
-      },
-      "openingHours": "Mo-Su 09:00-21:00",
-      "priceRange": "$$",
-      "serviceArea": {
-        "@type": "Place",
-        "name": "India"
-      },
-      "sameAs": [
-        "https://www.facebook.com/TanishPhysioFitnessandLaserClinic",
-        "https://www.instagram.com/tanish_physio_fitness_clinic",
-        "https://www.linkedin.com/company/tanishphysio"
-      ]
-    }
+        "description": "Professional online physiotherapy services with certified therapists providing personalized treatment plans and video consultations.",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan",
+          "postalCode": "395009",
+          "addressLocality": "Surat",
+          "addressRegion": "Gujarat",
+          "addressCountry": "IN"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer service",
+          "telephone": "+91-9427555696",
+          "email": "drkhushboo26@gmail.com",
+          "availableLanguage": "en"
+        },
+        "openingHours": "Mo-Su 09:00-21:00",
+        "priceRange": "$",
+        "serviceArea": {
+          "@type": "Place",
+          "name": "India"
+        },
+        "sameAs": [
+          "https://www.facebook.com/TanishPhysioFitnessandLaserClinic",
+          "https://www.instagram.com/tanish_physio_fitness_clinic",
+          "https://www.linkedin.com/company/tanishphysio"
+        ]
+      }
     </script>
-    
+
     <!-- Structured Data - Website -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Tanish Physio & Fitness",
-      "url": "https://tanishphysiofitness.in",
-      "description": "Online physiotherapy services with certified therapists",
-      "publisher": {
-        "@type": "Organization",
-        "name": "Tanish Physio & Fitness"
-      },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://tanishphysio.com/search?q={search_term_string}",
-        "query-input": "required name=search_term_string"
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Tanish Physio & Fitness",
+        "url": "https://tanishphysiofitness.in",
+        "description": "Online physiotherapy services with certified therapists",
+        "publisher": {
+          "@type": "Organization",
+          "name": "Tanish Physio & Fitness"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://tanishphysiofitness.in/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
       }
-    }
     </script>
   </head>
 
@@ -134,8 +207,9 @@
       <main>
         <h1>Online Physiotherapy & Video Consultations in India</h1>
         <p>
-          Book online physiotherapy with certified therapists. Get video consultations,
-          personalized rehab plans, and guided recovery from home.
+          Book online physiotherapy with certified therapists. Get video
+          consultations, personalized rehab plans, and guided recovery from
+          home.
         </p>
         <nav aria-label="Quick links">
           <a href="/services">Services</a>
@@ -150,8 +224,9 @@
       </main>
     </noscript>
     <div id="root"></div>
-    
+
     <script type="module" src="/src/main.tsx"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Defer Razorpay checkout script to load after page is interactive -->
+    <script async src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </body>
 </html>

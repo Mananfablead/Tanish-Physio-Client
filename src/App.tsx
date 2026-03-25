@@ -11,10 +11,12 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { store, persistor } from "./store";
 import ScrollToTop from "@/components/ScrollToTop";
-import ChatWidget from "@/components/ChatWidget";
 import { HelmetProvider } from "react-helmet-async";
 import PerformanceOptimizer from "@/components/PerformanceOptimizer";
 import { TimezoneTester } from "@/components/ui/TimezoneTester";
+
+// Lazy load ChatWidget for better initial page performance
+const ChatWidget = lazy(() => import("./components/ChatWidget"));
 
 // Lazy load pages for better performance and loading states
 const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
@@ -163,7 +165,7 @@ const App = () => (
                         path="/profile"
                         element={
                           <ProtectedRoute>
-                          <ProfilePage />
+                            <ProfilePage />
                           </ProtectedRoute>
                         }
                       />
@@ -171,8 +173,6 @@ const App = () => (
                         path="/video-call"
                         element={
                           <ProtectedRoute>
-
-                            
                             <VideoCallPage />
                           </ProtectedRoute>
                         }
@@ -237,7 +237,9 @@ const App = () => (
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     {/* Add the ChatWidget here - it now has access to SocketProvider */}
-                    <ChatWidget />
+                    <Suspense fallback={null}>
+                      <ChatWidget />
+                    </Suspense>
                     {/* Add Performance Optimizer */}
                     <PerformanceOptimizer />
                     {/* Add Timezone Tester for development/testing */}

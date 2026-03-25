@@ -104,11 +104,17 @@ export const SEOHead = ({
           "@type": "PhysiotherapyBusiness",
           name: "Tanish Physio & Fitness",
           url: siteUrl,
+          telephone: "+91-9427555696",
+          image: `${siteUrl}/favicon.png`,
           logo: `${siteUrl}/favicon.png`,
           description: description,
           address: {
             "@type": "PostalAddress",
-            addressLocality: "India",
+            streetAddress:
+              "5, Dhaval Appts, Besides Telephone Exchange, Choksiwadi Road, Ajaramar Chowk, Adajan",
+            postalCode: "395009",
+            addressLocality: "Surat",
+            addressRegion: "Gujarat",
             addressCountry: "IN",
           },
           geo: {
@@ -136,7 +142,7 @@ export const SEOHead = ({
             opens: "09:00",
             closes: "21:00",
           },
-          priceRange: "₹₹",
+          priceRange: "₹",
           acceptsReservations: "true",
           sameAs: [
             "https://www.facebook.com/TanishPhysioFitnessandLaserClinic",
@@ -149,55 +155,54 @@ export const SEOHead = ({
             name: "Physiotherapy Services",
             itemListElement: [
               {
-                "@type": "Offer",
-                itemOffered: {
+                "@type": "ListItem",
+                position: 1,
+                item: {
                   "@type": "Service",
                   name: "Online Physiotherapy Consultation",
                 },
               },
               {
-                "@type": "Offer",
-                itemOffered: {
+                "@type": "ListItem",
+                position: 2,
+                item: {
                   "@type": "Service",
                   name: "Rehabilitation Therapy",
                 },
               },
               {
-                "@type": "Offer",
-                itemOffered: {
+                "@type": "ListItem",
+                position: 3,
+                item: {
                   "@type": "Service",
                   name: "Sports Injury Treatment",
                 },
               },
               {
-                "@type": "Offer",
-                itemOffered: {
+                "@type": "ListItem",
+                position: 4,
+                item: {
                   "@type": "Service",
                   name: "Pain Management",
                 },
               },
               {
-                "@type": "Offer",
-                itemOffered: {
+                "@type": "ListItem",
+                position: 5,
+                item: {
                   "@type": "Service",
                   name: "Posture Correction Therapy",
                 },
               },
               {
-                "@type": "Offer",
-                itemOffered: {
+                "@type": "ListItem",
+                position: 6,
+                item: {
                   "@type": "Service",
                   name: "Fitness Training",
                 },
               },
             ],
-          },
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: "4.9",
-            reviewCount: "500+",
-            bestRating: "5",
-            worstRating: "1",
           },
         })}
       </script>

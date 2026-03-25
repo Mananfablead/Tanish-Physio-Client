@@ -152,8 +152,11 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                 src={cmsHero?.image || heroImage}
                 alt="Physiotherapist helping patient with recovery exercises"
                 className="w-full h-[25rem] object-cover"
-                loading="lazy"
+                loading="eager"
                 decoding="async"
+                width={1200}
+                height={800}
+                fetchPriority="high"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
             </div>

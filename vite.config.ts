@@ -11,58 +11,83 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    proxy: {
-      "/api": {
-        target: "http://localhost:5000",
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, "/api"),
-      },
-    },
+    // proxy: {
+    //   "/api": {
+    //     target: "http://localhost:5000",
+    //     changeOrigin: true,
+    //     secure: false,
+    //     rewrite: (path) => path.replace(/^\/api/, "/api"),
+    //   },
+    // },
   },
   build: {
-    emptyOutDir: false, // Prevent Vite from trying to empty the directory
+    emptyOutDir: false,
     outDir: "dist",
     minify: "terser",
     terserOptions: {
       compress: {
         drop_console: mode === "production",
         drop_debugger: mode === "production",
+        passes: 3,
+      },
+      output: {
+        comments: false,
       },
     },
+    cssMinify: true,
+    polyfillModulePreload: false,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["react", "react-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu"],
+          // Core React libraries - must load first
+          react: ["react", "react-dom"],
+          // Router and state management
           router: ["react-router-dom"],
           redux: ["@reduxjs/toolkit", "react-redux"],
+          // Utilities
+          socket: ["socket.io-client"],
+          query: ["@tanstack/react-query"],
+          charts: ["recharts"],
+          // Animations
+          animations: ["framer-motion"],
         },
       },
     },
+    // Tree-shake unused code
+    treeshake: {
+      moduleSideEffects: false,
+      propertyReadSideEffects: false,
+      tryCatchDeoptimization: false,
+    },
     sourcemap: mode === "development",
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
+    target: "es2020",
+    reportCompressedSize: true,
+    // Aggressive minification
+    minifyIdentifiers: true,
+    minifyInternalExpressions: true,
   },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    // Minimal polyfills for critical modules only
     nodePolyfills({
       protocolImports: true,
-      include: ["process", "buffer", "stream", "util", "path"],
+      include: ["process"],
     }),
-    // Image optimization for WebP conversion
+    // Aggressive image optimization
     ViteImageOptimizer({
       png: {
-        quality: 80,
+        quality: 60,
       },
       jpeg: {
-        quality: 80,
+        quality: 60,
       },
       jpg: {
-        quality: 80,
+        quality: 60,
       },
       webp: {
-        quality: 80,
+        quality: 60,
       },
     }),
     // Sitemap generation
@@ -74,8 +99,9 @@ export default defineConfig(({ mode }) => ({
     global: "globalThis",
     "process.env": JSON.stringify({}),
     "process.browser": true,
-    // FIX Bug 3: Polyfill process.nextTick for simple-peer
     "process.nextTick": "globalThis.queueMicrotask",
+    // Remove console in production
+    // __DEV__: `${mode === "development"}`,
   },
   resolve: {
     alias: {
@@ -88,6 +114,14 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    include: ["buffer", "process", "stream-browserify", "util"],
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "@reduxjs/toolkit",
+      "react-redux",
+      "process",
+    ],
+    exclude: ["framer-motion"],
   },
 }));
