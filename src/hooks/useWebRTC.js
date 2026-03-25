@@ -451,7 +451,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
 
             peer = new Peer({
                 initiator: finalInitiator,
-                trickle: false, // Set to false for more reliable connection
+                trickle: true, // Set to false for more reliable connection
                 stream: finalStream,
                 config: {
                     iceServers: [
@@ -521,7 +521,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                     try {
                         peer = new Peer({
                             initiator,
-                            trickle: false,
+                            trickle: true,
                             stream: finalStream,
                             config: {
                                 iceServers: [
@@ -574,7 +574,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                     roomId,
                     candidate: data,
                     senderId: socket.id,
-                    targetId: userId
+                    targetId: socketId
                 });
             }
         });
