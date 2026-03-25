@@ -918,7 +918,7 @@ export function SessionHistorySection({
                       </Button>
                       
                       {/* Request Google Meet Link - Mobile */}
-                      {!s.googleMeetLink && 
+                      {/* {!s.googleMeetLink && 
                        (s.status === "scheduled" || s.status === "confirmed" || s.status === "live") && (
                         <>
                           {meetRequestSuccess.has(s._id) ? (
@@ -953,7 +953,7 @@ export function SessionHistorySection({
                             </Button>
                           )}
                         </>
-                      )}
+                      )} */}
                       
                       {(s.status === "scheduled" || s.status === "confirmed") &&
                         isSessionInFuture(s) &&
