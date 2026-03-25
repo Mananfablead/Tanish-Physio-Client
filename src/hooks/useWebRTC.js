@@ -574,7 +574,7 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                     roomId,
                     candidate: data,
                     senderId: socket.id,
-                    targetId: socketId
+                    targetId: userId  // ✅ FIXED: was 'socketId' but parameter is named 'userId'
                 });
             }
         });
@@ -663,14 +663,19 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
             }, 1500);
         };
 
-        // Helper function to update video element
-        const updateRemoteVideoElement = (userId, stream) => {
-            // Check if ref exists, if not, try again after a short delay
+        // Helper function to update video element with retry cap
+        const updateRemoteVideoElement = (userId, stream, attempts = 0) => {
+            const MAX_ATTEMPTS = 10;
+            
+            // Check if ref exists, if not, try again after a short delay with max attempts
             if (!remoteVideoRefs.current[userId]) {
-                // console.log(`⚠️ Remote video ref not found for: ${userId}, retrying in 100ms`);
+                if (attempts >= MAX_ATTEMPTS) {
+                    console.warn(`⚠️ Max retry attempts reached for video attach: ${userId}`);
+                    return;
+                }
                 setTimeout(() => {
-                    updateRemoteVideoElement(userId, stream);
-                }, 100);
+                    updateRemoteVideoElement(userId, stream, attempts + 1);
+                }, 200);
                 return;
             }
 
@@ -759,6 +764,11 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         });
 
         peer.on('close', () => {
+            console.log('🔌 CLIENT Peer connection closed for userId:', userId);
+            
+            // Mark peer as destroying to prevent ICE candidate processing
+            peer._destroying = true;
+            
             setRemoteStreams(prev => {
                 const newState = { ...prev };
                 delete newState[userId];
@@ -799,12 +809,26 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
     const createPeerConnection = useCallback((userId, initiator = false) => {
         console.log('🔗 External createPeerConnection called for user:', userId);
         console.log('Initiator:', initiator);
-        if (!localStream) {
+        
+        // CRITICAL: Use ref instead of state to avoid race conditions
+        const currentLocalStream = localStreamRef.current;
+        console.log('Local stream available (ref):', !!currentLocalStream);
+        console.log('Local stream tracks:', currentLocalStream ? currentLocalStream.getTracks().length : 0);
+        
+        if (!currentLocalStream) {
             console.error('❌ No local stream available for peer creation');
             return null;
         }
-        return createPeer(userId, initiator, localStream);
-    }, [createPeer, localStream]);
+        
+        // Validate stream has tracks
+        const tracks = currentLocalStream.getTracks();
+        if (tracks.length === 0) {
+            console.error('❌ Local stream has no tracks');
+            return null;
+        }
+        
+        return createPeer(userId, initiator, currentLocalStream);
+    }, [createPeer]);
 
     // Handle incoming offer
     const handleOffer = useCallback(async (offer, senderId) => {
@@ -813,7 +837,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         console.log("Offer data:", JSON.stringify(offer, null, 2));
         console.log("Socket available:", !!socket);
         console.log("Socket connected:", socket?.connected);
-        console.log("Local stream available:", !!localStream);
+        console.log("Local stream available (state):", !!localStream);
+        console.log("Local stream available (ref):", !!localStreamRef.current);
         
         if (!socket) {
             console.log("❌ No socket connection, cannot handle offer");
@@ -824,27 +849,52 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         const existingPeer = peerRefs.current[senderId];
         if (existingPeer) {
             const connectionState = existingPeer._pc?.connectionState;
-            if (connectionState === 'connected' || connectionState === 'connecting') {
-                console.log('⚠️ Peer already', connectionState, '- skipping offer handling to avoid disrupting call');
-                return; // Don't destroy active connections!
+            
+            if (roomId.startsWith('group')) {
+                // GROUP CALL: always accept new offers — admin may have recreated peer for this user
+                console.log('🔄 Group call: destroying existing peer to accept new offer from:', senderId);
+                try { existingPeer.destroy(); } catch(e) {}
+                delete peerRefs.current[senderId];
+            } else {
+                // 1-ON-1 CALL: keep guard — dont disrupt active connections
+                if (connectionState === 'connected' || connectionState === 'connecting') {
+                    console.log('⚠️ 1-on-1: peer already', connectionState, '- skipping duplicate offer');
+                    return; // Don't destroy active connections!
+                }
+                // Only destroy if disconnected or failed
+                console.log('🧹 Existing peer is in state:', connectionState, '- will recreate');
+                try { existingPeer.destroy(); } catch(e) {}
+                delete peerRefs.current[senderId];
             }
-            // Only destroy if disconnected or failed
-            console.log('🧹 Existing peer is in state:', connectionState, '- will recreate');
-            try {
-                existingPeer.destroy();
-            } catch (destroyErr) {
-                console.error('Error destroying existing peer:', destroyErr);
-            }
-            delete peerRefs.current[senderId];
         }
 
-        if (!localStream) {
-            console.log("📱 Initializing local media...");
+        // CRITICAL FIX: Use localStreamRef.current instead of localStream state
+        // This prevents race conditions where state hasn't updated yet after initLocalMedia()
+        let currentLocalStream = localStreamRef.current;
+        
+        if (!currentLocalStream) {
+            console.log("📱 Local stream not available, initializing media...");
             await initLocalMedia();
+            // Get the updated stream from ref (not state)
+            currentLocalStream = localStreamRef.current;
         }
-
+        
+        // Validate stream is available
+        if (!currentLocalStream) {
+            console.error("❌ Failed to initialize local stream for handling offer");
+            return;
+        }
+        
+        // Validate stream has tracks
+        const tracks = currentLocalStream.getTracks();
+        if (tracks.length === 0) {
+            console.error("❌ Local stream has no tracks after initialization");
+            return;
+        }
+    
         console.log("🔄 Creating peer connection for:", senderId);
-        const peer = createPeer(senderId, false, localStream);
+        console.log("Using stream with", tracks.length, "tracks");
+        const peer = createPeer(senderId, false, currentLocalStream);
         if (!peer) {
             console.error("❌ Failed to create peer connection for:", senderId);
             return;
@@ -979,8 +1029,27 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
     const handleIceCandidate = useCallback(async (candidate, senderId) => {
         if (!socket) return;
 
-        if (peerRefs.current[senderId]) {
-            await peerRefs.current[senderId].signal(candidate);
+        // FIX: Check if peer exists and is not destroyed/destroying before signaling
+        const peer = peerRefs.current[senderId];
+        if (!peer) {
+            console.warn("⚠️ CLIENT: No peer found for ICE candidate from senderId:", senderId);
+            return;
+        }
+        
+        if (peer.destroyed || peer._destroying) {
+            console.warn("⚠️ CLIENT: Peer already destroyed/destroying for senderId:", senderId, "- ignoring ICE candidate");
+            return; // Don't try to signal on destroyed or destroying peer!
+        }
+        
+        try {
+            await peer.signal(candidate);
+        } catch (error) {
+            // Ignore errors if peer was destroyed during signaling
+            if (error.message && error.message.includes('cannot signal after peer is destroyed')) {
+                console.warn("⚠️ CLIENT: Peer destroyed during ICE candidate signaling for senderId:", senderId);
+            } else {
+                console.error("❌ CLIENT: Error signaling ICE candidate:", error);
+            }
         }
     }, [socket]);
 

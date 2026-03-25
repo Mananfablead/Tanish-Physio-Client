@@ -61,7 +61,7 @@ export function NotificationsSection() {
       return "http://localhost:5000/api";
     }
 
-    return "https://apitanishvideo.fableadtech.in/api";
+    return "https://tanishphysiofitness.in/api";
   };
 
   const API_BASE_URL = getApiBaseUrl();
