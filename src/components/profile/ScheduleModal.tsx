@@ -539,7 +539,7 @@ export function ScheduleModal({
                         if (slot.duration !== 45) return false;
                       }
 
-                      // Filter by selected session type
+                      // Filter by selected session type - HIDE slots that don't match
                       if (
                         selectedSessionType &&
                         selectedSessionType !== "all"
@@ -548,12 +548,20 @@ export function ScheduleModal({
                           selectedSessionType === "one-to-one" &&
                           slot.sessionType !== "one-to-one"
                         )
-                          return false;
+                          return false; // Hide group slots when one-to-one is selected
                         if (
                           selectedSessionType === "group" &&
                           slot.sessionType !== "group"
                         )
-                          return false;
+                          return false; // Hide one-to-one slots when group is selected
+                      }
+
+                      // Filter by user's plan type - HIDE slots that don't match
+                      if (userPlanType) {
+                        if (userPlanType === "individual" && slot.sessionType !== "one-to-one")
+                          return false; // Hide group slots for individual plan users
+                        if (userPlanType === "group" && slot.sessionType !== "group")
+                          return false; // Hide one-to-one slots for group plan users
                       }
 
                       return true;
@@ -578,11 +586,7 @@ export function ScheduleModal({
                                 typeof slot.bookedParticipants === "number" &&
                                 typeof slot.maxParticipants === "number" &&
                                 slot.bookedParticipants >=
-                                  slot.maxParticipants) ||
-                              (userPlanType === "individual" &&
-                                slot.sessionType !== "one-to-one") ||
-                              (userPlanType === "group" &&
-                                slot.sessionType !== "group")
+                                  slot.maxParticipants)
                             }
                             onClick={() => {
                               const isPast = isTimeSlotPast(
@@ -619,17 +623,11 @@ export function ScheduleModal({
                                           slot.start,
                                         )
                                       ? "border border-orange-300 text-orange-400 cursor-not-allowed bg-orange-50 opacity-60"
-                                      : (userPlanType === "individual" &&
-                                            slot.sessionType !==
-                                              "one-to-one") ||
-                                          (userPlanType === "group" &&
-                                            slot.sessionType !== "group")
-                                        ? "border border-orange-300 text-orange-400 cursor-not-allowed bg-orange-50 opacity-60"
-                                        : slot.status === "available"
-                                          ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
-                                          : slot.status === "booked"
-                                            ? "border border-red-500 text-red-500 cursor-not-allowed"
-                                            : "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
+                                      : slot.status === "available"
+                                        ? "border border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
+                                        : slot.status === "booked"
+                                          ? "border border-red-500 text-red-500 cursor-not-allowed"
+                                          : "border border-gray-400 text-gray-400 cursor-not-allowed bg-gray-50"
                               }
                             `}
                           >
@@ -650,14 +648,6 @@ export function ScheduleModal({
                                 booked
                               </div>
                             )}
-                            {(userPlanType === "individual" &&
-                              slot.sessionType !== "one-to-one") ||
-                            (userPlanType === "group" &&
-                              slot.sessionType !== "group") ? (
-                              <div className="text-xs mt-1 text-orange-600 font-medium">
-                                Requires {userPlanType} plan
-                              </div>
-                            ) : null}
                           </button>
                         );
                       })}
