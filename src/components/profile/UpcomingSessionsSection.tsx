@@ -45,20 +45,23 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "UTC",
     });
 
     const startTimeStr = startDate.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
+      timeZone: "UTC",
     });
 
     const endTimeStr = endDate
       ? endDate.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      })
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "UTC",
+        })
       : "-";
 
     return `${dateStr} - ${startTimeStr} `;
@@ -129,22 +132,25 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   <InfoBlock
                     label="Date & Time"
                     value={new Date(
-                      session.startTime || session.date
+                      session.startTime || session.date,
                     ).toLocaleDateString(undefined, {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
+                      timeZone: "UTC",
                     })}
                     subValue={`${new Date(
-                      session.startTime || session.date
+                      session.startTime || session.date,
                     ).toLocaleTimeString(undefined, {
                       hour: "2-digit",
                       minute: "2-digit",
+                      timeZone: "UTC",
                     })} — ${new Date(
-                      session.endTime || session.date
+                      session.endTime || session.date,
                     ).toLocaleTimeString(undefined, {
                       hour: "2-digit",
                       minute: "2-digit",
+                      timeZone: "UTC",
                     })}`}
                     icon={Calendar}
                     iconColor="text-primary"
@@ -152,7 +158,11 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   <InfoBlock
                     label="Session Type"
                     value={session.location || session.type || "Online"}
-                    subValue={session.type === "group" ? "Group Consultation" : "1 on 1 Consultation"}
+                    subValue={
+                      session.type === "group"
+                        ? "Group Consultation"
+                        : "1 on 1 Consultation"
+                    }
                     icon={VideoIcon}
                     iconColor="text-accent"
                   />
@@ -178,7 +188,9 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   <Link
                     to={
                       session._id && isSessionTimeArrived(session)
-                        ? (session.groupSessionId || (session.type === "group" || session.sessionType === "group"))
+                        ? session.groupSessionId ||
+                          session.type === "group" ||
+                          session.sessionType === "group"
                           ? `/group-video-call/${session.groupSessionId || session._id}`
                           : `/video-call?sessionId=${session._id}`
                         : "#"
@@ -195,11 +207,18 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     >
                       <Play className="h-5 w-5 mr-2 fill-white" />
                       {(() => {
-                        const diffMs = new Date(session.startTime).getTime() - currentTime.getTime();
-                        const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
-                        
+                        const diffMs =
+                          new Date(session.startTime).getTime() -
+                          currentTime.getTime();
+                        const diffMins = Math.max(
+                          0,
+                          Math.ceil(diffMs / (1000 * 60)),
+                        );
+
                         if (!isSessionTimeArrived(session)) {
-                          return diffMins === 0 ? 'Starting now' : `Join in ${diffMins} min`;
+                          return diffMins === 0
+                            ? "Starting now"
+                            : `Join in ${diffMins} min`;
                         }
                         return "Join Session";
                       })()}
@@ -238,12 +257,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                   {/* Therapist + Session Info */}
                   <div className="flex-1">
                     <h4 className="font-black text-slate-900">
-                      {session?.subscriptionId?.planName || session?.bookingId?.serviceName || "Session"}
+                      {session?.subscriptionId?.planName ||
+                        session?.bookingId?.serviceName ||
+                        "Session"}
                     </h4>
                     <p className="text-sm text-slate-500 font-medium">
                       {formatSessionDateTime(
                         session?.startTime,
-                        session?.endTime
+                        session?.endTime,
                       )}
                     </p>
                   </div>
@@ -253,15 +274,23 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     <span className="text-xs font-black uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
                       {session.status}
                     </span>
-                    {session.timingStatus === "join_now" && !isSessionTimeArrived(session) && (
-                      <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                        {(() => {
-                          const diffMs = new Date(session.startTime).getTime() - currentTime.getTime();
-                          const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
-                          return diffMins === 0 ? 'Starting now' : `Starts in ${diffMins} min`;
-                        })()}
-                      </span>
-                    )}
+                    {session.timingStatus === "join_now" &&
+                      !isSessionTimeArrived(session) && (
+                        <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                          {(() => {
+                            const diffMs =
+                              new Date(session.startTime).getTime() -
+                              currentTime.getTime();
+                            const diffMins = Math.max(
+                              0,
+                              Math.ceil(diffMs / (1000 * 60)),
+                            );
+                            return diffMins === 0
+                              ? "Starting now"
+                              : `Starts in ${diffMins} min`;
+                          })()}
+                        </span>
+                      )}
                     {session.timingStatus === "join_soon" && (
                       <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
                         Join soon
@@ -286,9 +315,10 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
       {/* Next Session Detail View - Only show if there's a next session and no other upcoming sessions */}
       {nextSession &&
-        upcomingSessions.filter(
-          (session) => session.status !== "live" && session.status !== "completed"
-        ).length === 0 ? (
+      upcomingSessions.filter(
+        (session) =>
+          session.status !== "live" && session.status !== "completed",
+      ).length === 0 ? (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -304,22 +334,25 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
               <InfoBlock
                 label="Date & Time"
                 value={new Date(
-                  nextSession.startTime || nextSession.date
+                  nextSession.startTime || nextSession.date,
                 ).toLocaleDateString(undefined, {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
+                  timeZone: "UTC",
                 })}
                 subValue={`${new Date(
-                  nextSession.startTime || nextSession.date
+                  nextSession.startTime || nextSession.date,
                 ).toLocaleTimeString(undefined, {
                   hour: "2-digit",
                   minute: "2-digit",
+                  timeZone: "UTC",
                 })} — ${new Date(
-                  nextSession.endTime || nextSession.date
+                  nextSession.endTime || nextSession.date,
                 ).toLocaleTimeString(undefined, {
                   hour: "2-digit",
                   minute: "2-digit",
+                  timeZone: "UTC",
                 })}`}
                 icon={Calendar}
                 iconColor="text-primary"
@@ -353,7 +386,9 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
               <Link
                 to={
                   nextSession._id && isSessionTimeArrived(nextSession)
-                    ? (nextSession.groupSessionId || (nextSession.type === "group" || nextSession.sessionType === "group"))
+                    ? nextSession.groupSessionId ||
+                      nextSession.type === "group" ||
+                      nextSession.sessionType === "group"
                       ? `/group-video-call/${nextSession.groupSessionId || nextSession._id}`
                       : `/video-call?sessionId=${nextSession._id}`
                     : "#"
@@ -363,40 +398,55 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 <Button
                   className={`w-full h-11 rounded-xl ${
                     // Enabled states
-                    (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") &&
-                      isSessionTimeArrived(nextSession)
+                    (nextSession.timingStatus === "join_now" ||
+                      nextSession.timingStatus === "join_soon") &&
+                    isSessionTimeArrived(nextSession)
                       ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
-                      : (nextSession.timingStatus === "join_now" || nextSession.timingStatus === "join_soon") &&
-                        !isSessionTimeArrived(nextSession)
+                      : (nextSession.timingStatus === "join_now" ||
+                            nextSession.timingStatus === "join_soon") &&
+                          !isSessionTimeArrived(nextSession)
                         ? "bg-secondary hover:bg-secondary/90 font-bold"
                         : "font-bold"
-                    }`}
+                  }`}
                   disabled={
                     !nextSession._id ||
                     nextSession.timingStatus === "normal" ||
-                    (nextSession.status === "live" && !isSessionTimeArrived(nextSession))
+                    (nextSession.status === "live" &&
+                      !isSessionTimeArrived(nextSession))
                   }
                 >
                   <Play className="h-5 w-5 mr-2 fill-white" />
                   {(() => {
-                    const diffMs = new Date(nextSession.startTime).getTime() - currentTime.getTime();
-                    const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
-                    
-                    if (nextSession.status === "live" && !isSessionTimeArrived(nextSession)) {
-                      return diffMins === 0 ? 'Starting now' : `Starts in ${diffMins} min`;
+                    const diffMs =
+                      new Date(nextSession.startTime).getTime() -
+                      currentTime.getTime();
+                    const diffMins = Math.max(
+                      0,
+                      Math.ceil(diffMs / (1000 * 60)),
+                    );
+
+                    if (
+                      nextSession.status === "live" &&
+                      !isSessionTimeArrived(nextSession)
+                    ) {
+                      return diffMins === 0
+                        ? "Starting now"
+                        : `Starts in ${diffMins} min`;
                     }
-                    
+
                     if (nextSession.timingStatus === "join_now") {
                       if (isSessionTimeArrived(nextSession)) {
                         return "Join Session";
                       }
-                      return diffMins === 0 ? 'Starting now' : `Join in ${diffMins} min`;
+                      return diffMins === 0
+                        ? "Starting now"
+                        : `Join in ${diffMins} min`;
                     }
-                    
+
                     if (nextSession.timingStatus === "join_soon") {
                       return "Join Soon";
                     }
-                    
+
                     return "Join Session";
                   })()}
                 </Button>
@@ -405,7 +455,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
           </div>
         </Card>
       ) : (
-        liveSessions.length === 0 && upcomingSessions.length === 0 && (
+        liveSessions.length === 0 &&
+        upcomingSessions.length === 0 && (
           <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[260px] flex flex-col justify-between overflow-hidden">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -450,128 +501,194 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Status
+                    </p>
                     <span
-                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${detailSession.status === "live"
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
+                        detailSession.status === "live"
                           ? "bg-green-600 text-white"
                           : detailSession.status === "confirmed"
                             ? "bg-primary/10 text-primary"
                             : detailSession.status === "scheduled"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-amber-100 text-amber-700"
-                        }`}
+                      }`}
                     >
                       {detailSession.status}
                     </span>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Type</p>
-                    <p className="mt-1 font-semibold text-slate-800">{detailSession.type || "1-on-1"}</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Type
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {detailSession.type || "1-on-1"}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Date</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Date
+                    </p>
                     <p className="mt-1 font-semibold text-slate-800">
                       {detailSession.startTime
-                        ? new Date(detailSession.startTime).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })
+                        ? new Date(detailSession.startTime).toLocaleDateString(
+                            "en-US",
+                            {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                              timeZone: "UTC",
+                            },
+                          )
                         : detailSession.date
-                          ? new Date(detailSession.date).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
+                          ? new Date(detailSession.date).toLocaleDateString(
+                              "en-US",
+                              {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                                timeZone: "UTC",
+                              },
+                            )
                           : "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Time</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                      Time
+                    </p>
                     <p className="mt-1 font-semibold text-slate-800">
                       {detailSession.time ||
                         (detailSession.startTime
-                          ? new Date(detailSession.startTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
+                          ? new Date(
+                              detailSession.startTime,
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              timeZone: "UTC",
+                            })
                           : "—")}
                     </p>
                   </div>
                   {detailSession.duration && (
                     <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Duration</p>
-                      <p className="mt-1 font-semibold text-slate-800">{detailSession.duration} min</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Duration
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {detailSession.duration} min
+                      </p>
                     </div>
                   )}
                   {detailSession.endTime && (
                     <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">End Time</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        End Time
+                      </p>
                       <p className="mt-1 font-semibold text-slate-800">
-                        {new Date(detailSession.endTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(detailSession.endTime).toLocaleTimeString(
+                          [],
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: "UTC",
+                          },
+                        )}
                       </p>
                     </div>
                   )}
                   {detailSession.location && (
                     <div className="col-span-2">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Location</p>
-                      <p className="mt-1 font-semibold text-slate-800">{detailSession.location}</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        Location
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-800">
+                        {detailSession.location}
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Timing status badge */}
-              {detailSession.timingStatus && detailSession.timingStatus !== "normal" && (
-                <div className="flex items-center gap-2">
-                  {detailSession.timingStatus === "join_now" && (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                      {(() => {
-                        const diffMs = new Date(detailSession.startTime).getTime() - currentTime.getTime();
-                        const diffMins = Math.max(0, Math.ceil(diffMs / (1000 * 60)));
-                        if (isSessionTimeArrived(detailSession)) {
-                          return "Ready to join";
-                        }
-                        return diffMins === 0 ? 'Starting now' : `Starts in ${diffMins} min`;
-                      })()}
-                    </span>
-                  )}
-                  {detailSession.timingStatus === "join_soon" && (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">Join Soon</span>
-                  )}
-                </div>
-              )}
+              {detailSession.timingStatus &&
+                detailSession.timingStatus !== "normal" && (
+                  <div className="flex items-center gap-2">
+                    {detailSession.timingStatus === "join_now" && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                        {(() => {
+                          const diffMs =
+                            new Date(detailSession.startTime).getTime() -
+                            currentTime.getTime();
+                          const diffMins = Math.max(
+                            0,
+                            Math.ceil(diffMs / (1000 * 60)),
+                          );
+                          if (isSessionTimeArrived(detailSession)) {
+                            return "Ready to join";
+                          }
+                          return diffMins === 0
+                            ? "Starting now"
+                            : `Starts in ${diffMins} min`;
+                        })()}
+                      </span>
+                    )}
+                    {detailSession.timingStatus === "join_soon" && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                        Join Soon
+                      </span>
+                    )}
+                  </div>
+                )}
 
               {/* Booking Info */}
               {detailSession.bookingId && (
                 <div className="rounded-lg border border-slate-200 p-4 space-y-2">
-                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Booking Info</h4>
+                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                    Booking Info
+                  </h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {detailSession.bookingId.serviceName && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Service</p>
-                        <p className="mt-1 font-semibold text-slate-800">{detailSession.bookingId.serviceName}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Service
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {detailSession.bookingId.serviceName}
+                        </p>
                       </div>
                     )}
                     {detailSession.bookingId.therapistName && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Therapist</p>
-                        <p className="mt-1 font-semibold text-slate-800">{detailSession.bookingId.therapistName}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Therapist
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {detailSession.bookingId.therapistName}
+                        </p>
                       </div>
                     )}
                     {detailSession.bookingId.amount != null && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount</p>
-                        <p className="mt-1 font-semibold text-slate-800">₹{detailSession.bookingId.finalAmount ?? detailSession.bookingId.amount}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Amount
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          ₹
+                          {detailSession.bookingId.finalAmount ??
+                            detailSession.bookingId.amount}
+                        </p>
                       </div>
                     )}
                     {detailSession.bookingId.paymentStatus && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Payment</p>
-                        <p className="mt-1 font-semibold text-slate-800 capitalize">{detailSession.bookingId.paymentStatus}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Payment
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800 capitalize">
+                          {detailSession.bookingId.paymentStatus}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -581,18 +698,28 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
               {/* Subscription Info */}
               {detailSession.subscriptionId && (
                 <div className="rounded-lg border border-slate-200 p-4 space-y-2">
-                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Plan Info</h4>
+                  <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                    Plan Info
+                  </h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {detailSession.subscriptionId.planName && (
                       <div className="col-span-2">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Plan</p>
-                        <p className="mt-1 font-semibold text-slate-800">{detailSession.subscriptionId.planName}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Plan
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {detailSession.subscriptionId.planName}
+                        </p>
                       </div>
                     )}
                     {detailSession.subscriptionId.status && (
                       <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Plan Status</p>
-                        <p className="mt-1 font-semibold text-slate-800 capitalize">{detailSession.subscriptionId.status}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                          Plan Status
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800 capitalize">
+                          {detailSession.subscriptionId.status}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -628,8 +755,12 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
               {/* Notes */}
               {detailSession.notes && (
                 <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Notes</p>
-                  <p className="text-sm text-slate-700">{detailSession.notes}</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+                    Notes
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    {detailSession.notes}
+                  </p>
                 </div>
               )}
 
@@ -637,7 +768,12 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
             </div>
           )}
           <div className="flex justify-end pt-2">
-            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsDetailModalOpen(false)}
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

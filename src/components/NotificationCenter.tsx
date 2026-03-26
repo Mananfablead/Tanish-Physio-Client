@@ -59,7 +59,7 @@ export default function NotificationCenter() {
       return "http://localhost:5000/api";
     }
 
-    return "https://apitanishvideo.fableadtech.in/api";
+    return "https://tanishphysiofitness.in/api";
   };
 
   const API_BASE_URL = getApiBaseUrl();
@@ -112,7 +112,7 @@ export default function NotificationCenter() {
     } else if (import.meta.env.VITE_API_BASE_URL) {
       serverUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, "");
     } else {
-      serverUrl = "https://apitanishvideo.fableadtech.in";
+      serverUrl = "https://tanishphysiofitness.in/api";
     }
 
     const socket = io(serverUrl, {

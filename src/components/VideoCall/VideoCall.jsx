@@ -1373,34 +1373,64 @@ const VideoCall = ({
       // GROUP CALL MESH NETWORK LOGIC
       // In group calls, EVERY participant must create peer connections with EVERY other participant
       // This creates a full mesh network where video/audio can flow between all users
-      if (roomType === "group" && localStream && connected) {
-        console.log("🔗 Creating peer connection for new participant in group call");
+      if (roomType === "group" && connected) {
+        console.log("🔗 Group call peer connection logic triggered");
         console.log("New participant:", participantData);
         console.log("Local stream available:", !!localStream);
         console.log("Socket connected:", connected);
         
-        // Wait a moment to ensure participant is fully added to state
-        setTimeout(() => {
-          try {
-            // Create peer connection with the new participant
-            console.log("🔗 Initiating peer creation with:", participantData.userId);
-            
-            // Use the exposed createPeerConnection function from useWebRTC
-            // The initiator should be the admin/therapist, or the first user who joined
-            const shouldInitiate = user?.role === "admin" || user?.role === "therapist";
-            console.log("Creating peer as:", shouldInitiate ? "INITIATOR (offerer)" : "RECEIVER (answerer)");
-            
-            const peer = createPeerConnection(participantData.socketId, shouldInitiate);
-            
-            if (peer) {
-              console.log("✅ Peer connection created successfully with:", participantData.userId);
-            } else {
-              console.error("❌ Failed to create peer connection with:", participantData.userId);
+        // BUG 5 FIX: Patients only connect to admin/therapist, never to other patients
+        const isTherapistJoining = data.isTherapist ||
+                                   data.role === 'admin' ||
+                                   data.role === 'therapist';
+        
+        if (isTherapistJoining) {
+          // Wait a moment to ensure participant is fully added to state AND local stream is ready
+          setTimeout(async () => {
+            try {
+              // CRITICAL: Use localStreamRef instead of localStream state to avoid race conditions
+              let currentLocalStream = localStreamRef.current;
+              
+              if (!currentLocalStream) {
+                console.log("⚠️ Local stream not ready, initializing media first...");
+                await initLocalMedia();
+                currentLocalStream = localStreamRef.current;
+              }
+              
+              if (!currentLocalStream) {
+                console.error("❌ Failed to initialize local stream for peer creation");
+                return;
+              }
+              
+              // Validate stream has tracks
+              const tracks = currentLocalStream.getTracks();
+              if (tracks.length === 0) {
+                console.error("❌ Local stream has no tracks after initialization");
+                return;
+              }
+              
+              // Create peer connection with the new participant
+              console.log("🔗 Initiating peer creation with therapist/admin:", participantData.userId);
+              
+              // Use the exposed createPeerConnection function from useWebRTC
+              // The initiator should be the admin/therapist, or the first user who joined
+              const shouldInitiate = user?.role === "admin" || user?.role === "therapist";
+              console.log("Creating peer as:", shouldInitiate ? "INITIATOR (offerer)" : "RECEIVER (answerer)");
+              
+              const peer = createPeerConnection(participantData.socketId, shouldInitiate);
+              
+              if (peer) {
+                console.log("✅ Peer connection created successfully with therapist:", participantData.userId);
+              } else {
+                console.error("❌ Failed to create peer connection with therapist:", participantData.userId);
+              }
+            } catch (error) {
+              console.error("❌ Error creating peer connection with therapist:", error);
             }
-          } catch (error) {
-            console.error("❌ Error creating peer connection:", error);
-          }
-        }, 500);
+          }, 800); // Increased timeout to ensure everything is ready
+        } else {
+          console.log('🚫 Patient: skipping peer creation with other patient:', participantData.name);
+        }
       }
 
       // AUTO-JOIN LOGIC - Patient auto-joins when therapist joins
@@ -2089,11 +2119,13 @@ const VideoCall = ({
         </div>
       );
     } else {
-      // Group call - grid of videos
+      // Group call - check if mobile view
+      const isMobile = window.innerWidth < 768;
       const streamKeys = Object.keys(remoteStreams);
       console.log("🎥 GROUP CALL RENDER: Total remote streams:", streamKeys.length);
       console.log("🎥 GROUP CALL RENDER: Stream keys:", streamKeys);
       console.log("🎥 GROUP CALL RENDER: All participants:", participants);
+      console.log("🎥 GROUP CALL RENDER: Is mobile view:", isMobile);
       
       if (streamKeys.length === 0) {
         return (
@@ -2106,7 +2138,111 @@ const VideoCall = ({
         );
       }
 
-      // Always use grid layout for group calls to accommodate all participants
+      // Mobile view: Show only admin/therapist video (like 1-on-1)
+      if (isMobile) {
+        // Find admin/therapist stream
+        const adminSocketId = streamKeys.find((socketId) => {
+          const participant = participants.find((p) => p.socketId === socketId);
+          return participant?.isTherapist || participant?.role === "admin";
+        });
+
+        // If no admin found, use the first stream
+        const displaySocketId = adminSocketId || streamKeys[0];
+        const stream = remoteStreams[displaySocketId];
+        const participant = participants.find(
+          (p) => p.socketId === displaySocketId
+        );
+
+        console.log("📱 MOBILE VIEW: Displaying participant:", {
+          socketId: displaySocketId,
+          isAdmin: participant?.isTherapist,
+          name: participant?.name,
+        });
+
+        return (
+          <div className="relative w-full h-full bg-black rounded-xl overflow-hidden">
+            {/* Hidden audio element for remote audio */}
+            <audio
+              ref={(el) => {
+                if (el && stream) {
+                  remoteAudioRefs.current[displaySocketId] = el;
+                  if (el.srcObject !== stream) {
+                    try {
+                      el.srcObject = stream;
+                      el.muted = false;
+                      el.autoplay = true;
+                      const playPromise = el.play();
+                      if (playPromise !== undefined) {
+                        playPromise.catch((err) => {
+                          console.warn(`⚠️ Audio play failed for ${displaySocketId}:`, err);
+                          el.muted = false;
+                          el.play().catch(() => {});
+                        });
+                      }
+                    } catch (err) {
+                      console.error(`❌ Audio setup error for ${displaySocketId}:`, err);
+                    }
+                  }
+                }
+              }}
+              autoPlay
+              className="hidden"
+            />
+            <video
+              ref={(el) => {
+                if (el && stream) {
+                  remoteVideoRefs.current[displaySocketId] = el;
+                  try {
+                    el.srcObject = stream;
+                    el.muted = true;
+                    el.autoplay = true;
+                    el.playsInline = true;
+                    setTimeout(() => {
+                      if (el && el.srcObject) {
+                        el.play().catch(() => {
+                          // Silently ignore AbortError
+                        });
+                      }
+                    }, 100);
+                  } catch (err) {
+                    console.error(`❌ Video setup error for ${displaySocketId}:`, err);
+                  }
+                }
+              }}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+              <span>
+                {participant?.name &&
+                participant.name !== "Clinician" &&
+                participant.name !== "User Unknown"
+                  ? participant.name
+                  : participant?.isTherapist
+                  ? "Host"
+                  : `Participant`}
+              </span>
+              {participant?.isTherapist && (
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[8px] px-1">
+                  Host
+                </Badge>
+              )}
+            </div>
+            {!stream && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+                <div className="text-center text-slate-500">
+                  <Users className="mx-auto h-8 w-8 mb-2" />
+                  <p className="text-xs">Loading...</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Desktop view: Always use grid layout for group calls to accommodate all participants
       const columns = Math.min(3, Math.ceil(Math.sqrt(streamKeys.length)));
       const rows = Math.ceil(streamKeys.length / columns);
       
@@ -2164,26 +2300,23 @@ const VideoCall = ({
                   ref={(el) => {
                     if (el && stream) {
                       remoteVideoRefs.current[socketId] = el;
-                      if (el.srcObject !== stream) {
-                        try {
-                          el.srcObject = stream;
-                          el.muted = true;
-                          el.autoplay = true;
-                          el.playsInline = true;
-                          
-                          const playPromise = el.play();
-                          if (playPromise !== undefined) {
-                            playPromise.then(() => {
-                              console.log(`✅ Video playing for ${socketId}`);
-                            }).catch((err) => {
-                              console.warn(`⚠️ Video play failed for ${socketId}:`, err);
-                              el.muted = true;
-                              el.play().catch(() => {});
+                      // FIX: Always assign srcObject, not just when different
+                      // The 'interrupted by new load' error is harmless — video still plays
+                      try {
+                        el.srcObject = stream;
+                        el.muted = true;
+                        el.autoplay = true;
+                        el.playsInline = true;
+                        // FIX: Use a small delay before play() to avoid AbortError
+                        setTimeout(() => {
+                          if (el && el.srcObject) {
+                            el.play().catch(() => {
+                              // Silently ignore AbortError — video is already playing
                             });
                           }
-                        } catch (err) {
-                          console.error(`❌ Video setup error for ${socketId}:`, err);
-                        }
+                        }, 100);
+                      } catch (err) {
+                        console.error(`❌ Video setup error for ${socketId}:`, err);
                       }
                     }
                   }}
@@ -2262,34 +2395,21 @@ const VideoCall = ({
       console.log("Setting therapist name to:", therapist.name);
       setLocalTherapistName(therapist.name);
     } else {
-      // If no therapist found, look for other non-self participants
-      const otherParticipant = participants.find(
-        (p) =>
-          !p.isSelf &&
-          p.name &&
-          p.name !== "Clinician" &&
-          p.name !== "User Unknown"
-      );
-      console.log("Found other participant:", otherParticipant);
-
-      if (otherParticipant && otherParticipant.name) {
-        console.log(
-          "Setting therapist name to other participant:",
-          otherParticipant.name
-        );
-        setLocalTherapistName(otherParticipant.name);
-      } else {
-        // Default name if no other participant found
-        const isTherapistRole =
-          user?.role === "therapist" || user?.role === "admin";
-        const userName =
-          user?.name ||
-          (user?.firstName && user?.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : "");
-        const defaultTherapistName = isTherapistRole
-          ? userName || "You (Therapist)"
-          : "Clinician";
+      // FIX: Don't update to other participants' names in group calls
+      // Only set default name once based on user's own role
+      const isTherapistRole =
+        user?.role === "therapist" || user?.role === "admin";
+      const userName =
+        user?.name ||
+        (user?.firstName && user?.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : "");
+      const defaultTherapistName = isTherapistRole
+        ? userName || "You (Therapist)"
+        : "Clinician";
+      
+      // Only update if we don't have a valid therapist name yet
+      if (!localTherapistName || localTherapistName === "Clinician") {
         console.log("Setting default therapist name:", defaultTherapistName);
         setLocalTherapistName(defaultTherapistName);
       }
