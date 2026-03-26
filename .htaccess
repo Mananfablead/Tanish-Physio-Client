@@ -41,6 +41,11 @@ RewriteRule ^(.*)$ /index.html [QSA,L]
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
 </IfModule>
 
+# Brotli Compression (if enabled on hosting)
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml application/wasm
+</IfModule>
+
 # Browser Caching
 <IfModule mod_expires.c>
     ExpiresActive On
@@ -50,6 +55,7 @@ RewriteRule ^(.*)$ /index.html [QSA,L]
     ExpiresByType image/png "access plus 1 year"
     ExpiresByType image/gif "access plus 1 year"
     ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
     ExpiresByType image/svg+xml "access plus 1 year"
     ExpiresByType image/x-icon "access plus 1 year"
     
@@ -72,6 +78,19 @@ RewriteRule ^(.*)$ /index.html [QSA,L]
     Header set X-Content-Type-Options "nosniff"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Long-term caching for Vite hashed build assets (/assets/*)
+    SetEnvIf Request_URI "^/assets/" IS_ASSETS=1
+    Header set Cache-Control "public, max-age=31536000, immutable" env=IS_ASSETS
+
+    # Long-term caching for build-time generated images (/images/*)
+    SetEnvIf Request_URI "^/images/" IS_IMAGES=1
+    Header set Cache-Control "public, max-age=31536000, immutable" env=IS_IMAGES
+
+    # Never cache HTML (ensures new deploys update instantly)
+    <FilesMatch "\.(html)$">
+        Header set Cache-Control "no-store"
+    </FilesMatch>
 </IfModule>
 
 # Deny access to hidden files

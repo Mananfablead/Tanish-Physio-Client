@@ -74,6 +74,39 @@ import {
 import BookingLoginModal from "@/components/BookingLoginModal";
 import { fetchAllServices } from "@/store/slices/serviceSlice";
 import { getCurrencyByLocation, detectUserCountry } from "@/utils/currencyDetector";
+
+declare global {
+  interface Window {
+    Razorpay?: any;
+  }
+}
+
+const loadRazorpaySdk = () =>
+  new Promise<void>((resolve, reject) => {
+    if (typeof window === "undefined") return reject(new Error("No window"));
+    if (window.Razorpay) return resolve();
+
+    const existing = document.querySelector(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    ) as HTMLScriptElement | null;
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Razorpay SDK failed to load")),
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Razorpay SDK failed to load"));
+    document.head.appendChild(script);
+  });
 export default function BookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1557,7 +1590,18 @@ export default function BookingPage() {
         };
 
         // Initialize and open Razorpay checkout
-        if (typeof window !== "undefined" && (window as any).Razorpay) {
+        if (typeof window !== "undefined") {
+          if (!(window as any).Razorpay) {
+            try {
+              await loadRazorpaySdk();
+            } catch (e) {
+              console.error(e);
+              toast.error("Payment gateway not loaded. Please try again.");
+              setIsProcessing(false);
+              return;
+            }
+          }
+
           // Check if key exists before creating Razorpay instance
           // console.log("Razorpay key:", options);
           if (!options.key || options.key === "rzp_test_1234567890") {
@@ -2267,7 +2311,18 @@ export default function BookingPage() {
         };
 
         // Initialize and open Razorpay checkout
-        if (typeof window !== "undefined" && (window as any).Razorpay) {
+        if (typeof window !== "undefined") {
+          if (!(window as any).Razorpay) {
+            try {
+              await loadRazorpaySdk();
+            } catch (e) {
+              console.error(e);
+              toast.error("Payment gateway not loaded. Please try again.");
+              setIsProcessing(false);
+              return;
+            }
+          }
+
           // Check if key exists before creating Razorpay instance
           if (!options.key || options.key === "rzp_test_1234567890") {
             toast.error(
@@ -3622,10 +3677,20 @@ export default function BookingPage() {
                       };
 
                       // Initialize and open Razorpay checkout
-                      if (
-                        typeof window !== "undefined" &&
-                        (window as any).Razorpay
-                      ) {
+                      if (typeof window !== "undefined") {
+                        if (!(window as any).Razorpay) {
+                          try {
+                            await loadRazorpaySdk();
+                          } catch (e) {
+                            console.error(e);
+                            toast.error(
+                              "Payment gateway not loaded. Please try again.",
+                            );
+                            setIsProcessing(false);
+                            return;
+                          }
+                        }
+
                         // Check if key exists before creating Razorpay instance
                         if (
                           !options.key ||

@@ -1,7 +1,20 @@
 // JWT Token Expiration Utility
 // Handles automatic logout when JWT tokens expire
 
-import jwt from "jsonwebtoken";
+const decodeJwtPayload = (token: string): any | null => {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const payload = parts[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
+    const json = atob(payload);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Checks if a JWT token is expired
@@ -12,7 +25,7 @@ export const isTokenExpired = (token: string): boolean => {
   if (!token) return true;
 
   try {
-    const decoded: any = jwt.decode(token);
+    const decoded: any = decodeJwtPayload(token);
     if (!decoded || !decoded.exp) return true;
 
     // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
@@ -33,7 +46,7 @@ export const getTokenTimeRemaining = (token: string): number => {
   if (!token) return 0;
 
   try {
-    const decoded: any = jwt.decode(token);
+    const decoded: any = decodeJwtPayload(token);
     if (!decoded || !decoded.exp) return 0;
 
     const currentTime = Date.now() / 1000;

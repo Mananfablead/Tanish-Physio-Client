@@ -3,17 +3,75 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 
 interface FeaturesProps {
   cmsWhyUs: any;
-  fadeInUp?: any;
-  CountUp?: any;
   setHoveredStat?: any;
   hoveredStat?: any;
 }
 
-export const Features = ({ cmsWhyUs, fadeInUp, CountUp, setHoveredStat, hoveredStat }: FeaturesProps) => {
-  console.log(cmsWhyUs);
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const CountUpValue = ({ value, duration = 2500 }: { value: string; duration?: number }) => {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [displayValue, setDisplayValue] = useState(value);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !value) return;
+
+    const match = value.match(/(\d+\.?\d*)(.*)/);
+    if (!match) {
+      setDisplayValue(value);
+      return;
+    }
+
+    const target = parseFloat(match[1]);
+    const suffix = match[2] || "";
+    if (Number.isNaN(target)) {
+      setDisplayValue(value);
+      return;
+    }
+
+    let raf = 0;
+    let startedAt = 0;
+    const start = 0;
+
+    const step = (ts: number) => {
+      if (!startedAt) startedAt = ts;
+      const progress = Math.min(1, (ts - startedAt) / duration);
+      const current = start + (target - start) * progress;
+      setDisplayValue(
+        `${target % 1 === 0 ? Math.floor(current) : current.toFixed(1)}${suffix}`,
+      );
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          raf = requestAnimationFrame(step);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    );
+    io.observe(el);
+
+    return () => {
+      io.disconnect();
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [value, duration]);
+
+  return <span ref={ref}>{displayValue}</span>;
+};      
+
+export const Features = ({ cmsWhyUs }: FeaturesProps) => {
   return (
     <section className="py-16 relative overflow-hidden border-y border-white/10" style={{ backgroundColor: '#2d8e8d' }}>
       <div className="absolute inset-0 pointer-events-none">
@@ -98,14 +156,7 @@ export const Features = ({ cmsWhyUs, fadeInUp, CountUp, setHoveredStat, hoveredS
                 >
                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
                 <p className="text-4xl lg:text-5xl font-bold text-primary mb-2 tracking-tight relative z-10">
-                  {CountUp && typeof CountUp === 'function' && stat.value ? (
-                    <CountUp 
-                      value={stat.value}
-                      duration={2.5}
-                    />
-                  ) : (
-                    stat.value || '0'
-                  )}
+                  {stat.value ? <CountUpValue value={stat.value} /> : "0"}
                 </p>
                 <p className="text-lg font-semibold text-slate-900 uppercase tracking-wider relative z-10">{stat.label}</p>
                 <p className="text-md text-muted-foreground mt-2 relative z-10">{stat.description}</p>

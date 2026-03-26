@@ -87,7 +87,11 @@ export default defineConfig(({ mode }) => ({
         quality: 60,
       },
       webp: {
-        quality: 60,
+        quality: 70,
+      },
+      // Ensure AVIF doesn't get "re-optimized" into larger files.
+      avif: {
+        quality: 45,
       },
     }),
     // Sitemap generation
