@@ -68,12 +68,24 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
   };
 
   const isSessionTimeArrived = (session: any) => {
-    if (!session?.startTime) return false;
-
-    const sessionStartTime = new Date(session.startTime);
+    if (!session?.startTime && !session?.date) return false;
 
     // Use currentTime state instead of new Date() for real-time updates
-    return currentTime >= sessionStartTime;
+    const now = currentTime;
+
+    // If we have both date and time fields, use them for more accurate local time comparison
+    if (session.date && session.time) {
+      // Parse the local date and time
+      const [hours, minutes] = session.time.split(":").map(Number);
+      const sessionLocalTime = new Date(session.date);
+      sessionLocalTime.setHours(hours, minutes, 0, 0);
+
+      return now >= sessionLocalTime;
+    }
+
+    // Fallback to startTime if date/time not available
+    const sessionStartTime = new Date(session.startTime);
+    return now >= sessionStartTime;
   };
 
   const InfoBlock = ({
@@ -131,27 +143,42 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <InfoBlock
                     label="Date & Time"
-                    value={new Date(
-                      session.startTime || session.date,
-                    ).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      timeZone: "UTC",
-                    })}
-                    subValue={`${new Date(
-                      session.startTime || session.date,
-                    ).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      timeZone: "UTC",
-                    })} — ${new Date(
-                      session.endTime || session.date,
-                    ).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      timeZone: "UTC",
-                    })}`}
+                    value={(() => {
+                      // Use date and time fields from API if available
+                      if (session.date && session.time) {
+                        return new Date(session.date).toLocaleDateString(
+                          undefined,
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        );
+                      }
+                      // Fallback to startTime
+                      return new Date(
+                        session.startTime || session.date,
+                      ).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        timeZone: "UTC",
+                      });
+                    })()}
+                    subValue={(() => {
+                      // Use date and time fields from API if available
+                      if (session.date && session.time) {
+                        return session.time;
+                      }
+                      // Fallback to startTime
+                      return new Date(
+                        session.startTime || session.date,
+                      ).toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "UTC",
+                      });
+                    })()}
                     icon={Calendar}
                     iconColor="text-primary"
                   />
@@ -333,34 +360,53 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InfoBlock
                 label="Date & Time"
-                value={new Date(
-                  nextSession.startTime || nextSession.date,
-                ).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  timeZone: "UTC",
-                })}
-                subValue={`${new Date(
-                  nextSession.startTime || nextSession.date,
-                ).toLocaleTimeString(undefined, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: "UTC",
-                })} — ${new Date(
-                  nextSession.endTime || nextSession.date,
-                ).toLocaleTimeString(undefined, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: "UTC",
-                })}`}
+                value={(() => {
+                  // Use date and time fields from API if available
+                  if (nextSession.date && nextSession.time) {
+                    return new Date(nextSession.date).toLocaleDateString(
+                      undefined,
+                      {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      },
+                    );
+                  }
+                  // Fallback to startTime
+                  return new Date(
+                    nextSession.startTime || nextSession.date,
+                  ).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    // timeZone: "UTC",
+                  });
+                })()}
+                subValue={(() => {
+                  // Use date and time fields from API if available
+                  if (nextSession.date && nextSession.time) {
+                    return nextSession.time;
+                  }
+                  // Fallback to startTime
+                  return new Date(
+                    nextSession.startTime || nextSession.date,
+                  ).toLocaleTimeString(undefined, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    // timeZone: "UTC",
+                  });
+                })()}
                 icon={Calendar}
                 iconColor="text-primary"
               />
               <InfoBlock
                 label="Session Type"
                 value={nextSession.location || nextSession.type || "Online"}
-                subValue="1 on 1 Consultation"
+                subValue={
+                  nextSession.type === "group"
+                    ? "Group Consultation"
+                    : "1 on 1 Consultation"
+                }
                 icon={VideoIcon}
                 iconColor="text-accent"
               />
