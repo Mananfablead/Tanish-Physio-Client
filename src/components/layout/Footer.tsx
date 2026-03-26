@@ -69,6 +69,10 @@ export function Footer() {
                 src={logo}
                 alt="Tanish Physio & Fitness Logo"
                 className="h-20 w-auto object-contain"
+                width={240}
+                height={80}
+                loading="lazy"
+                decoding="async"
               />
 
               <span className="text-xs md:text-[12px] font-semibold tracking-wider text-primary">

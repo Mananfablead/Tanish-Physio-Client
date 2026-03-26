@@ -27,30 +27,11 @@ export const CanonicalLinks = ({
 
   return (
     <Helmet>
-      {/* Canonical URL */}
-      <link rel="canonical" href={fullUrl} />
-
       {/* Hreflang tags for multilingual support */}
       {hreflang &&
         Object.entries(allAlternates).map(([lang, url]) => (
           <link key={lang} rel="alternate" hrefLang={lang} href={url} />
         ))}
-
-      {/* AMP version (if exists) */}
-      <link rel="amphtml" href={`${fullUrl}/amp`} />
-
-      {/* Preconnect to important domains for performance */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossOrigin="anonymous"
-      />
-      <link rel="preconnect" href="https://www.google-analytics.com" />
-
-      {/* DNS prefetch for external resources */}
-      <link rel="dns-prefetch" href="//www.google-analytics.com" />
-      <link rel="dns-prefetch" href="//www.googletagmanager.com" />
     </Helmet>
   );
 };

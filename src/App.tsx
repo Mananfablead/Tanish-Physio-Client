@@ -12,7 +12,6 @@ import { SocketProvider } from "@/context/SocketContext";
 import { store, persistor } from "./store";
 import ScrollToTop from "@/components/ScrollToTop";
 import { HelmetProvider } from "react-helmet-async";
-import PerformanceOptimizer from "@/components/PerformanceOptimizer";
 import { TimezoneTester } from "@/components/ui/TimezoneTester";
 
 // Lazy load ChatWidget for better initial page performance
@@ -240,8 +239,7 @@ const App = () => (
                     <Suspense fallback={null}>
                       <ChatWidget />
                     </Suspense>
-                    {/* Add Performance Optimizer */}
-                    <PerformanceOptimizer />
+                    {/* PerformanceOptimizer intentionally removed from initial render. */}
                     {/* Add Timezone Tester for development/testing */}
                     {import.meta.env.DEV && <TimezoneTester />}
                   </Suspense>

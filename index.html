@@ -3,16 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="content-language" content="en-IN" />
     <meta http-equiv="Content-Security-Policy" content="form-action 'self';" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Optimize LCP - Preload critical resources -->
+    <!-- LCP (hero) image preload: stable public path + responsive candidates -->
     <link
       rel="preload"
-      href="./src/assets/hero-physio.png"
       as="image"
-      type="image/png"
+      href="/images/hero-physio-960.avif"
+      type="image/avif"
+      imagesrcset="/images/hero-physio-480.avif 480w, /images/hero-physio-768.avif 768w, /images/hero-physio-960.avif 960w, /images/hero-physio-1200.avif 1200w"
+      imagesizes="(max-width: 1024px) 100vw, 50vw"
+      fetchpriority="high"
     />
     <!-- Optimized Google Fonts with display=swap and preload -->
     <link
@@ -31,8 +35,7 @@
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
-    <!-- Preload main app bundle for faster JavaScript parsing -->
-    <link rel="modulepreload" href="/src/main.tsx" />
+    <!-- NOTE: Avoid hardcoding modulepreload in Vite; production output rewrites entry/chunks. -->
 
     <!-- Primary Meta Tags -->
     <title>
@@ -66,7 +69,7 @@
     <!-- Additional SEO Meta Tags -->
     <meta name="coverage" content="worldwide" />
     <meta name="distribution" content="global" />
-    <meta name="language" content="English" />
+    <meta name="language" content="en-IN" />
     <meta name="target" content="all ages" />
     <meta name="rating" content="professional" />
 
@@ -132,7 +135,7 @@
     <!-- Alternate Languages (if needed) -->
     <link
       rel="alternate"
-      hreflang="en"
+      hreflang="en-in"
       href="https://tanishphysiofitness.in/"
     />
     <link
@@ -226,7 +229,5 @@
     <div id="root"></div>
 
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Defer Razorpay checkout script to load after page is interactive -->
-    <script async src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </body>
 </html>

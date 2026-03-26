@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { ArrowRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -8,30 +7,45 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import heroImage from "@/assets/hero-physio.png";
 
 interface HeroSectionProps {
   cmsHero: any;
-  heroImage?: string;
 }
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
-};
+export const HeroSection = ({ cmsHero }: HeroSectionProps) => {
+  const cmsImageUrl: string | undefined =
+    typeof cmsHero?.image === "string" && cmsHero.image.length > 0
+      ? cmsHero.image
+      : undefined;
 
-export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
+  // Use CMS image only if it's already optimized (or same-origin). Otherwise use local optimized LCP asset.
+  const shouldUseCmsForLcp =
+    !!cmsImageUrl &&
+    (cmsImageUrl.startsWith("/") ||
+      cmsImageUrl.includes("tanishphysiofitness.in")) &&
+    (cmsImageUrl.endsWith(".avif") ||
+      cmsImageUrl.endsWith(".webp") ||
+      cmsImageUrl.includes(".avif?") ||
+      cmsImageUrl.includes(".webp?"));
+
+  // Public, stable URLs so `index.html` can preload correctly in production.
+  const localHero = {
+    avifSrcSet:
+      "/images/hero-physio-480.avif 480w, /images/hero-physio-768.avif 768w, /images/hero-physio-960.avif 960w, /images/hero-physio-1200.avif 1200w",
+    webpSrcSet:
+      "/images/hero-physio-480.webp 480w, /images/hero-physio-768.webp 768w, /images/hero-physio-960.webp 960w, /images/hero-physio-1200.webp 1200w",
+    fallbackSrc: "/images/hero-physio-960.webp",
+    lqip: "/images/hero-physio-lqip.webp",
+    sizes: "(max-width: 1024px) 100vw, 50vw",
+  };
+
   return (
     <section className="relative  overflow-hidden gradient-hero border-b border-primary/5">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
       <div className="container relative py-5 lg:py-6">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <motion.div
+          <div
             className="space-y-8"
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
           >
             <div className="space-y-6">
               <Badge
@@ -139,28 +153,57 @@ export const HeroSection = ({ cmsHero, heroImage }: HeroSectionProps) => {
                   ))}
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
+          <div
             className="relative"
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="relative rounded-2xl overflow-hidden shadow-large border-8 border-white dark:border-white/5">
-              <img
-                src={cmsHero?.image || heroImage}
-                alt="Physiotherapist helping patient with recovery exercises"
-                className="w-full h-[25rem] object-cover"
-                loading="eager"
-                decoding="async"
-                width={1200}
-                height={800}
-                fetchPriority="high"
-              />
+              {shouldUseCmsForLcp ? (
+                <img
+                  src={cmsImageUrl}
+                  alt="Physiotherapist helping patient with recovery exercises"
+                  className="w-full h-[25rem] object-cover"
+                  loading="eager"
+                  decoding="async"
+                  width={1200}
+                  height={800}
+                  fetchPriority="high"
+                />
+              ) : (
+                <picture>
+                  <source
+                    type="image/avif"
+                    srcSet={localHero.avifSrcSet}
+                    sizes={localHero.sizes}
+                  />
+                  <source
+                    type="image/webp"
+                    srcSet={localHero.webpSrcSet}
+                    sizes={localHero.sizes}
+                  />
+                  <img
+                    src={localHero.fallbackSrc}
+                    srcSet={localHero.webpSrcSet}
+                    sizes={localHero.sizes}
+                    alt="Physiotherapist helping patient with recovery exercises"
+                    className="w-full h-[25rem] object-cover"
+                    loading="eager"
+                    decoding="async"
+                    width={1200}
+                    height={800}
+                    fetchPriority="high"
+                    style={{
+                      backgroundImage: `url(${localHero.lqip})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  />
+                </picture>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent" />
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

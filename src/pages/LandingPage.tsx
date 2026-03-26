@@ -1,63 +1,8 @@
-import { useState, useEffect, useRef, Suspense, lazy } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { SEOHead } from "@/components/SEO/SEOHead";
 import { getSEOConfig } from "@/components/SEO/seoConfig";
-import {
-  ClipboardList,
-  UserCheck,
-  Video,
-  Star,
-  Shield,
-  Award,
-  ArrowRight,
-  CheckCircle,
-  Users,
-  Clock,
-  Activity,
-  HeartPulse,
-  Stethoscope,
-  Bone,
-  Dumbbell,
-  Zap,
-  Quote,
-  HelpCircle,
-  Lock,
-  ShieldCheck,
-  AlertCircle,
-  MapPin,
-  Calendar,
-  Check,
-  FileText,
-  User,
-  Phone,
-  Mail,
-  Home,
-  Briefcase,
-  GraduationCap,
-  Heart,
-  Eye,
-  Settings,
-  Search,
-  Filter,
-  Grid,
-  List,
-  Map,
-  Navigation,
-  Package,
-  ShoppingCart,
-  Tag,
-  Truck,
-  Wrench,
-  X,
-  Plus,
-  Minus,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-} from "lucide-react";
-import { motion, useInView, animate } from "framer-motion";
 
 // Import components
 import { HeroSection } from "@/components/landing/HeroSection";
@@ -128,9 +73,6 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 
-// Import images
-import heroImage from "@/assets/hero-physio.png";
-
 import { useSelector } from "react-redux";
 import { RootState, useAppDispatch } from "@/store";
 import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
@@ -169,94 +111,6 @@ const stagger = {
   },
 };
 
-const CountUp = ({
-  value,
-  duration = 2,
-}: {
-  value: string;
-  duration?: number;
-}) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-  const [displayValue, setDisplayValue] = useState("0");
-
-  useEffect(() => {
-    if (inView && value && typeof value === "string") {
-      const match = value.match(/(\d+\.?\d*)(.*)/);
-      if (match) {
-        const target = parseFloat(match[1]);
-        const suffix = match[2];
-        const controls = animate(0, target, {
-          duration,
-          onUpdate: (latest) => {
-            setDisplayValue(
-              (target % 1 === 0 ? Math.floor(latest) : latest.toFixed(1)) +
-                suffix,
-            );
-          },
-        });
-        return () => controls.stop();
-      }
-    }
-  }, [inView, value, duration]);
-
-  return <span ref={ref}>{value ? displayValue : "0"}</span>;
-};
-
-// Helper function to map icon names to components
-const getIconComponent = (iconName: string) => {
-  const iconMap: Record<string, any> = {
-    ClipboardList: ClipboardList,
-    UserCheck: UserCheck,
-    Video: Video,
-    Star: Star,
-    Shield: Shield,
-    Award: Award,
-    CheckCircle: CheckCircle,
-    Users: Users,
-    Clock: Clock,
-    Activity: Activity,
-    HeartPulse: HeartPulse,
-    Stethoscope: Stethoscope,
-    Bone: Bone,
-    Dumbbell: Dumbbell,
-    Zap: Zap,
-    Quote: Quote,
-    HelpCircle: HelpCircle,
-    Lock: Lock,
-    ShieldCheck: ShieldCheck,
-    AlertCircle: AlertCircle,
-    MapPin: MapPin,
-    Calendar: Calendar,
-    Check: Check,
-    FileText: FileText,
-    User: User,
-    Phone: Phone,
-    Mail: Mail,
-    Home: Home,
-    Briefcase: Briefcase,
-    GraduationCap: GraduationCap,
-    Heart: Heart,
-    Eye: Eye,
-    Settings: Settings,
-    Search: Search,
-    Filter: Filter,
-    Grid: Grid,
-    List: List,
-    Map: Map,
-    Navigation: Navigation,
-    Package: Package,
-    ShoppingCart: ShoppingCart,
-    Tag: Tag,
-    Truck: Truck,
-    Wrench: Wrench,
-    Plus: Plus,
-    Minus: Minus,
-  };
-
-  return iconMap[iconName] || ClipboardList;
-};
-
 export default function LandingPage() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
@@ -268,7 +122,6 @@ export default function LandingPage() {
     loading: subscriptionLoading,
     error: subscriptionError,
   } = useSelector((state: RootState) => state.subscriptions);
-  console.log("object", subscriptionPlans);
   // Fetch testimonials from Redux store
   const featuredTestimonials = useSelector(selectFeaturedTestimonials);
   const testimonialsLoading = useSelector(selectTestimonialsLoading);
@@ -302,10 +155,6 @@ export default function LandingPage() {
     "individual" | "group"
   >("individual");
   // Fetch subscription plans when component mounts or session type changes
-  useEffect(() => {
-    dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
-  }, [dispatch, sessionTypeFilter]);
-  // Fetch featured testimonials when component mounts
   useEffect(() => {
     dispatch(fetchSubscriptionPlans({ sessionType: sessionTypeFilter }));
   }, [dispatch, sessionTypeFilter]);
@@ -354,7 +203,7 @@ export default function LandingPage() {
           Consultations with Certified Therapists
         </h1>
         {/* Hero Section */}
-        <HeroSection cmsHero={cmsHero} heroImage={heroImage} />
+        <HeroSection cmsHero={cmsHero} />
 
         {/* Services Section - Only show if we have featured services */}
         {featuredServices && featuredServices.length > 0 && (
@@ -384,7 +233,6 @@ export default function LandingPage() {
           <ConditionsWeTreat
             cmsConditions={cmsConditions}
             fadeInUp={fadeInUp}
-            getIconComponent={getIconComponent}
           />
         </Suspense>
 
@@ -393,7 +241,6 @@ export default function LandingPage() {
           <Features
             cmsWhyUs={cmsWhyUs}
             fadeInUp={fadeInUp}
-            CountUp={CountUp}
             setHoveredStat={setHoveredStat}
             hoveredStat={hoveredStat}
           />

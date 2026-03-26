@@ -85,6 +85,10 @@ export function Header() {
             src="https://tanishphysio.fableadtech.com/public/uploads/clinic_logos/1758630536_logo%20(1).png"
             alt="Tanish Physio Logo"
             className="h-12 sm:h-14 md:h-16 lg:h-16 w-auto object-contain"
+            width={192}
+            height={64}
+            loading="eager"
+            decoding="async"
           />
           <span className="text-[8px] md:text-[10px] font-semibold tracking-wider text-emerald-700">
             Practising Since 2004
@@ -146,6 +150,10 @@ export function Header() {
                         src={user?.profilePicture}
                         alt={user?.name || "User profile"}
                         className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-border shadow-sm"
+                        width={48}
+                        height={48}
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
@@ -181,6 +189,10 @@ export function Header() {
                           src={user.profilePicture}
                           alt={user?.name || "User profile"}
                           className="h-12 w-12 rounded-full object-cover border-2 border-border"
+                          width={48}
+                          height={48}
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">

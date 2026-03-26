@@ -1,0 +1,19 @@
+{
+  "redirects": [
+    {
+      "source": "https://www.tanishphysiofitness.in/:path*",
+      "destination": "https://tanishphysiofitness.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "http://tanishphysiofitness.in/:path*",
+      "destination": "https://tanishphysiofitness.in/:path*",
+      "permanent": true
+    },
+    {
+      "source": "http://www.tanishphysiofitness.in/:path*",
+      "destination": "https://tanishphysiofitness.in/:path*",
+      "permanent": true
+    }
+  ]
+}
