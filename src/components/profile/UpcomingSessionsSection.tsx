@@ -68,12 +68,24 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
   };
 
   const isSessionTimeArrived = (session: any) => {
-    if (!session?.startTime) return false;
-
-    const sessionStartTime = new Date(session.startTime);
+    if (!session?.startTime && !session?.date) return false;
 
     // Use currentTime state instead of new Date() for real-time updates
-    return currentTime >= sessionStartTime;
+    const now = currentTime;
+
+    // If we have both date and time fields, use them for more accurate local time comparison
+    if (session.date && session.time) {
+      // Parse the local date and time
+      const [hours, minutes] = session.time.split(":").map(Number);
+      const sessionLocalTime = new Date(session.date);
+      sessionLocalTime.setHours(hours, minutes, 0, 0);
+
+      return now >= sessionLocalTime;
+    }
+
+    // Fallback to startTime if date/time not available
+    const sessionStartTime = new Date(session.startTime);
+    return now >= sessionStartTime;
   };
 
   const InfoBlock = ({
