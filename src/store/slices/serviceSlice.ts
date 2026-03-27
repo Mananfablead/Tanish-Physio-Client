@@ -52,7 +52,8 @@ const transformServiceFromAPI = (apiService: any): Service => {
         apiService.duration || apiService.sessionDuration || "30 min",
       price: `₹${apiService.priceINR || apiService.price || 0}`, // For backward compatibility
       priceINR: apiService.priceINR || apiService.price || 0,
-      priceUSD: apiService.priceUSD || 0,
+      // Default to INR value when USD is missing, so UI never falls to 0 USD
+      priceUSD: apiService.priceUSD || apiService.priceINR || apiService.price || 0,
       priceRange: `₹${apiService.priceINR || apiService.price || 0}`,
       prerequisites: Array.isArray(apiService.prerequisites)
         ? apiService.prerequisites.join(", ")

@@ -226,7 +226,8 @@ export const SubscriptionPlans = ({
                               if (priceUSD !== undefined && priceUSD > 0) {
                                 return priceUSD.toLocaleString();
                               }
-                              return "0";
+                              const priceINR = plan.price_inr ?? plan.priceINR ?? plan.price ?? 0;
+                              return priceINR.toLocaleString();
                             }
                           })()}
                         </span>

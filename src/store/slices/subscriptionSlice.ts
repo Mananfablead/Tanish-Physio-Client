@@ -9,6 +9,10 @@ export interface SubscriptionPlan {
   planId: string;
   name: string;
   price: number;
+  price_inr?: number;
+  price_usd?: number;
+  priceINR?: number;
+  priceUSD?: number;
   description: string;
   features: string[];
   duration: string;
@@ -72,7 +76,10 @@ export const fetchSubscriptionPlans = createAsyncThunk(
         params: queryParams
       });
       
-      return response.data.data.plans;
+      return {
+        plans: response.data.data.plans,
+        country: countryInfo.country,
+      };
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.response?.data?.message || 'Failed to fetch subscription plans');
     }
@@ -139,15 +146,25 @@ const subscriptionSlice = createSlice({
       })
       .addCase(fetchSubscriptionPlans.fulfilled, (state, action) => {
         state.loading = false;
-        // The action.payload is already the plans array (since the thunk returns response.data.data.plans)
-        // Transform the data to match the expected format for the UI
-        state.plans = action.payload.map((plan: any) => ({
-          ...plan,
-          id: plan._id,
-          sessions: plan.sessions,
-          
-          popular: plan.planId
-        }));
+        const { plans, country } = action.payload as { plans: any[]; country?: string };
+        const prefersINR = country === 'IN';
+
+        // Normalize plan price so UI can reliably use `plan.price`
+        state.plans = plans.map((plan: any) => {
+          const inrPrice = plan.price_inr ?? plan.priceINR;
+          const usdPrice = plan.price_usd ?? plan.priceUSD;
+          const normalizedPrice = prefersINR
+            ? (inrPrice ?? usdPrice ?? plan.price ?? 0)
+            : (usdPrice ?? inrPrice ?? plan.price ?? 0);
+
+          return {
+            ...plan,
+            id: plan._id,
+            sessions: plan.sessions,
+            price: Number(normalizedPrice) || 0,
+            popular: plan.planId,
+          };
+        });
       })
       .addCase(fetchSubscriptionPlans.rejected, (state, action) => {
         state.loading = false;

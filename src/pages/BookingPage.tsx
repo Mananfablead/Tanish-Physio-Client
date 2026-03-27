@@ -54,6 +54,7 @@ import {
   createBookingWithSubscription,
   checkSubscriptionEligibility,
   checkSubscriptionBookingEligibility,
+  markPaymentFailed,
 } from "@/lib/api";
 import { useAppDispatch, useAppSelector, RootState } from "@/store";
 import { useSelector } from "react-redux";
@@ -443,6 +444,18 @@ export default function BookingPage() {
   // console.log("therapist", therapist)
   const serviceBooking = bookingData?.fromServices === true;
   const subscriptionBooking = bookingData?.fromSubscription === true;
+  const selectedServicePrice =
+    bookingData?.service == null
+      ? 0
+      : Number(
+          detectedCurrency === "INR"
+            ? bookingData.service.price_inr ??
+                bookingData.service.priceINR ??
+                bookingData.service.price
+            : bookingData.service.price_usd ??
+                bookingData.service.priceUSD ??
+                bookingData.service.price,
+        ) || 0;
 
   const plan = bookingData?.plan ?? {
     name:
@@ -455,9 +468,7 @@ export default function BookingPage() {
     price:
       hasActivePlan && !isSessionLimitReached
         ? 0
-        : bookingData.service
-          ? Number(bookingData.service.price)
-          : 0,
+        : selectedServicePrice,
 
     // Add currency field - use detected currency (auto-detected based on location)
     currency: detectedCurrency,
@@ -1565,6 +1576,10 @@ export default function BookingPage() {
           modal: {
             ondismiss: function () {
               // Handle when user closes the payment modal without completing payment
+              void markPaymentFailed({
+                orderId,
+                reason: "Payment modal dismissed by user",
+              });
               toast.info("Payment was cancelled. You can try again later.");
               setIsProcessing(false); // Close the loading state
             },
@@ -1580,6 +1595,10 @@ export default function BookingPage() {
           callback: function (error) {
             // Handle payment failure
             if (error) {
+              void markPaymentFailed({
+                orderId,
+                reason: error?.description || error?.error?.description || "Payment failed in checkout",
+              });
               console.error("Payment failed:", error);
               toast.error(
                 "Payment failed. Please try again or contact support.",
@@ -2286,6 +2305,10 @@ export default function BookingPage() {
           modal: {
             ondismiss: function () {
               // Handle when user closes the payment modal without completing payment
+              void markPaymentFailed({
+                orderId,
+                reason: "Payment modal dismissed by user",
+              });
               toast.info("Payment was cancelled. You can try again later.");
               setIsProcessing(false); // Close the loading state
             },
@@ -2301,6 +2324,10 @@ export default function BookingPage() {
           callback: function (error) {
             // Handle payment failure
             if (error) {
+              void markPaymentFailed({
+                orderId,
+                reason: error?.description || error?.error?.description || "Payment failed in checkout",
+              });
               console.error("Payment failed:", error);
               toast.error(
                 "Payment failed. Please try again or contact support.",
@@ -3650,6 +3677,10 @@ export default function BookingPage() {
                         modal: {
                           ondismiss: function () {
                             // Handle when user closes the payment modal without completing payment
+                            void markPaymentFailed({
+                              orderId,
+                              reason: "Payment modal dismissed by user",
+                            });
                             toast.info(
                               "Payment was cancelled. You can try again later.",
                             );
@@ -3667,6 +3698,10 @@ export default function BookingPage() {
                         callback: function (error) {
                           // Handle payment failure
                           if (error) {
+                            void markPaymentFailed({
+                              orderId,
+                              reason: error?.description || error?.error?.description || "Payment failed in checkout",
+                            });
                             console.error("Payment failed:", error);
                             toast.error(
                               "Payment failed. Please try again or contact support.",
