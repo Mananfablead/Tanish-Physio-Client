@@ -540,6 +540,13 @@ export default function SchedulePage() {
     }
   }, [subscriptionEligible, allServices, user?.subscriptionData]);
 
+  // ✅ Helper to calculate duration in minutes without timezone issues
+  const calcDurationMinutes = (start: string, end: string): number => {
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm);
+  };
+
   // Get available times for selected date from availability API
   const getAvailableTimesForDate = (date: Date | null) => {
     if (!date || !availability) return [];
@@ -556,36 +563,18 @@ export default function SchedulePage() {
 
     // Get minimum notice period from availability (default 15 minutes)
     const minNoticePeriod = dayAvailability.minimumNoticePeriod || 15;
-    const now = new Date();
+    
+    // ✅ CORRECT - Use user's timezone for current time
+    const userTimezone = getUserTimezone();
+    const now = new Date(
+      new Date().toLocaleString("en-US", { timeZone: userTimezone })
+    );
     const isToday = format(date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
 
     // 🔥 RETURN ONLY 45 MINUTE REGULAR SLOTS WITH MINIMUM NOTICE VALIDATION
     return dayAvailability.timeSlots.filter((slot: any) => {
-      // Calculate slot duration in minutes
-      const [startHour, startMinute] = slot.start.split(":").map(Number);
-      const [endHour, endMinute] = slot.end.split(":").map(Number);
-
-      const slotStart = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        startHour,
-        startMinute,
-        0,
-        0,
-      );
-      const slotEnd = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        endHour,
-        endMinute,
-        0,
-        0,
-      );
-      const slotDurationMinutes = Math.round(
-        (slotEnd.getTime() - slotStart.getTime()) / (1000 * 60),
-      );
+      // ✅ CORRECT - Use pure arithmetic, no Date object needed
+      const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
 
       // Only consider 45-minute regular slots
       if (slotDurationMinutes !== 45) return false;
@@ -601,16 +590,13 @@ export default function SchedulePage() {
 
       // If it's today, check minimum notice period
       if (isToday) {
-        const slotDateTime = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate(),
-          startHour,
-          startMinute,
-          0,
-          0,
-        );
-        const minutesUntilSlot = Math.floor((slotDateTime - now) / (1000 * 60));
+        const [startHour, startMinute] = slot.start.split(":").map(Number);
+        
+        // ✅ CORRECT - Build datetime using selected date + slot time
+        const selectedDateStr = format(date, "yyyy-MM-dd");
+        const slotDateTime = new Date(`${selectedDateStr}T${slot.start.padStart(5, "0")}:00`);
+        
+        const minutesUntilSlot = Math.floor((slotDateTime.getTime() - now.getTime()) / (1000 * 60));
 
         // Block slots that don't meet minimum notice requirement
         if (minutesUntilSlot < minNoticePeriod) {
@@ -1141,37 +1127,8 @@ export default function SchedulePage() {
 
                                 return dayAvailability.timeSlots.some(
                                   (slot: any) => {
-                                    // Calculate slot duration in minutes
-                                    const [startHour, startMinute] = slot.start
-                                      .split(":")
-                                      .map(Number);
-                                    const [endHour, endMinute] = slot.end
-                                      .split(":")
-                                      .map(Number);
-                                    const now = new Date();
-                                    const slotStart = new Date(
-                                      now.getFullYear(),
-                                      now.getMonth(),
-                                      now.getDate(),
-                                      startHour,
-                                      startMinute,
-                                      0,
-                                      0,
-                                    );
-                                    const slotEnd = new Date(
-                                      now.getFullYear(),
-                                      now.getMonth(),
-                                      now.getDate(),
-                                      endHour,
-                                      endMinute,
-                                      0,
-                                      0,
-                                    );
-                                    const slotDurationMinutes = Math.round(
-                                      (slotEnd.getTime() -
-                                        slotStart.getTime()) /
-                                        (1000 * 60),
-                                    );
+                                    // ✅ CORRECT - Use pure arithmetic, no Date object needed
+                                    const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
 
                                     // Only consider 45-minute regular slots as available
                                     return (
@@ -1672,36 +1629,8 @@ export default function SchedulePage() {
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                           {availableTimes
                             .filter((slot: any) => {
-                              // Calculate slot duration in minutes
-                              const [startHour, startMinute] = slot.start
-                                .split(":")
-                                .map(Number);
-                              const [endHour, endMinute] = slot.end
-                                .split(":")
-                                .map(Number);
-                              const now = new Date();
-                              const slotStart = new Date(
-                                now.getFullYear(),
-                                now.getMonth(),
-                                now.getDate(),
-                                startHour,
-                                startMinute,
-                                0,
-                                0,
-                              );
-                              const slotEnd = new Date(
-                                now.getFullYear(),
-                                now.getMonth(),
-                                now.getDate(),
-                                endHour,
-                                endMinute,
-                                0,
-                                0,
-                              );
-                              const slotDurationMinutes = Math.round(
-                                (slotEnd.getTime() - slotStart.getTime()) /
-                                  (1000 * 60),
-                              );
+                              // ✅ CORRECT - Use pure arithmetic, no Date object needed
+                              const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
 
                               // Only show 45-minute regular slots (not 15-minute free consultation slots)
                               return slotDurationMinutes === 45;
@@ -1716,61 +1645,25 @@ export default function SchedulePage() {
 
                               // Check if this time slot is in the past
                               const isPastTime = () => {
-                                const now = new Date();
-                                const selectedDateWithoutTime = new Date(
-                                  selectedDate,
+                                // ✅ CORRECT - Use user's timezone for current time
+                                const userTimezone = getUserTimezone();
+                                const nowInUserTZ = new Date(
+                                  new Date().toLocaleString("en-US", { timeZone: userTimezone })
                                 );
 
+                                const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+                                
                                 // Create a date object with the selected date and the slot's start time
-                                const slotDateTime = new Date(
-                                  selectedDateWithoutTime,
-                                );
-                                const [startHour, startMinute] = slot.start
-                                  .split(":")
-                                  .map(Number);
-                                slotDateTime.setHours(
-                                  startHour,
-                                  startMinute,
-                                  0,
-                                  0,
-                                );
+                                const slotDateTime = new Date(`${selectedDateStr}T${slot.start.padStart(5, "0")}:00`);
 
                                 // Check if the slot time is in the past compared to now
-                                return slotDateTime < now;
+                                return slotDateTime.getTime() < nowInUserTZ.getTime();
                               };
 
                               const isSelected = selectedTime === timeValue;
 
-                              // Calculate slot duration in minutes (already calculated in filter)
-                              const [startHour, startMinute] = slot.start
-                                .split(":")
-                                .map(Number);
-                              const [endHour, endMinute] = slot.end
-                                .split(":")
-                                .map(Number);
-                              const now = new Date();
-                              const slotStart = new Date(
-                                now.getFullYear(),
-                                now.getMonth(),
-                                now.getDate(),
-                                startHour,
-                                startMinute,
-                                0,
-                                0,
-                              );
-                              const slotEnd = new Date(
-                                now.getFullYear(),
-                                now.getMonth(),
-                                now.getDate(),
-                                endHour,
-                                endMinute,
-                                0,
-                                0,
-                              );
-                              const slotDurationMinutes = Math.round(
-                                (slotEnd.getTime() - slotStart.getTime()) /
-                                  (1000 * 60),
-                              );
+                              // ✅ CORRECT - Use pure arithmetic, no Date object needed
+                              const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
 
                               // Check if this slot can accommodate the service duration
                               const serviceDuration = getServiceDuration();
