@@ -210,6 +210,14 @@ export const verifySubscriptionPayment = (paymentData: any) => {
   return api.post("/payments/verify-subscription", paymentData);
 };
 
+export const markPaymentFailed = (paymentData: {
+  orderId: string;
+  paymentId?: string;
+  reason?: string;
+}) => {
+  return api.post("/payments/mark-failed", paymentData);
+};
+
 // Guest API functions
 export const createGuestBooking = (bookingData: {
   serviceId: string;

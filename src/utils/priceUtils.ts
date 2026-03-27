@@ -26,10 +26,12 @@ export const getPriceByLocation = async (
   try {
     const countryInfo = await detectUserCountry();
     const isInIndia = countryInfo.country === "India";
+    const hasValidUSD = typeof priceUSD === "number" && priceUSD > 0;
+    const shouldUseINR = isInIndia || !hasValidUSD;
 
-    const amount = isInIndia ? priceINR : priceUSD;
-    const currency = isInIndia ? "₹" : "$";
-    const currencyCode = isInIndia ? "INR" : "USD";
+    const amount = shouldUseINR ? priceINR : priceUSD;
+    const currency = shouldUseINR ? "₹" : "$";
+    const currencyCode = shouldUseINR ? "INR" : "USD";
 
     // Format the price with proper locale
     const formatted = formatPrice(amount, currency);
@@ -65,10 +67,12 @@ export const getPriceByLocationSync = (
   try {
     const countryInfo = getCountryInfoSync();
     const isInIndia = countryInfo.country === "India";
+    const hasValidUSD = typeof priceUSD === "number" && priceUSD > 0;
+    const shouldUseINR = isInIndia || !hasValidUSD;
 
-    const amount = isInIndia ? priceINR : priceUSD;
-    const currency = isInIndia ? "₹" : "$";
-    const currencyCode = isInIndia ? "INR" : "USD";
+    const amount = shouldUseINR ? priceINR : priceUSD;
+    const currency = shouldUseINR ? "₹" : "$";
+    const currencyCode = shouldUseINR ? "INR" : "USD";
 
     const formatted = formatPrice(amount, currency);
 
