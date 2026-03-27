@@ -444,6 +444,18 @@ export default function BookingPage() {
   // console.log("therapist", therapist)
   const serviceBooking = bookingData?.fromServices === true;
   const subscriptionBooking = bookingData?.fromSubscription === true;
+  const selectedServicePrice =
+    bookingData?.service == null
+      ? 0
+      : Number(
+          detectedCurrency === "INR"
+            ? bookingData.service.price_inr ??
+                bookingData.service.priceINR ??
+                bookingData.service.price
+            : bookingData.service.price_usd ??
+                bookingData.service.priceUSD ??
+                bookingData.service.price,
+        ) || 0;
 
   const plan = bookingData?.plan ?? {
     name:
@@ -456,9 +468,7 @@ export default function BookingPage() {
     price:
       hasActivePlan && !isSessionLimitReached
         ? 0
-        : bookingData.service
-          ? Number(bookingData.service.price)
-          : 0,
+        : selectedServicePrice,
 
     // Add currency field - use detected currency (auto-detected based on location)
     currency: detectedCurrency,
