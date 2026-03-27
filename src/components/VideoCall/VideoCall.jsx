@@ -3297,7 +3297,7 @@ const VideoCall = ({
       </div>
 
       {/* Controls */}
-      <div className="bg-slate-900 px-3 py-3 md:px-8 md:py-8 border-t border-slate-800 md:relative fixed bottom-0 left-0 right-0 z-40">
+      <div className="bg-slate-900 px-3 py-3 md:px-8 md:py-4 border-t border-slate-800 md:relative fixed bottom-0 left-0 right-0 z-40">
         <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <div className="w-20 sm:w-32 hidden md:flex items-center gap-2">
             {/* <Badge
