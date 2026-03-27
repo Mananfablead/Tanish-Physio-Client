@@ -1219,9 +1219,11 @@ export default function BookingPage() {
             paymentOrderResult,
           )
         ) {
-          toast.error(
-            "Failed to create subscription payment order. Please try again.",
-          );
+          // Display the actual backend error message
+          const errorMessage = 
+            paymentOrderResult.payload as string || 
+            "Failed to create subscription payment order. Please try again.";
+          toast.error(errorMessage);
           setIsProcessing(false);
           return;
         }

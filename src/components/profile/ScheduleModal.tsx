@@ -60,6 +60,13 @@ export function ScheduleModal({
   const [calendarWeeks, setCalendarWeeks] = useState<any[][]>([]);
   const { toast } = useToast();
 
+  // Auto-set session type based on user's plan type (if they have one)
+  useEffect(() => {
+    if (userPlanType && setSelectedSessionType) {
+      setSelectedSessionType(userPlanType === 'individual' ? 'one-to-one' : 'group');
+    }
+  }, [userPlanType, setSelectedSessionType]);
+
   const isPastDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -87,7 +94,7 @@ export function ScheduleModal({
       typeof timeSlot.bookedParticipants === 'number' &&
       timeSlot.bookedParticipants >= timeSlot.maxParticipants;
 
-    // Filter based on user's plan type
+    // Filter based on user's plan type - STRICT enforcement
     const planTypeMatches = !userPlanType || 
       (userPlanType === 'individual' && timeSlot.sessionType === 'one-to-one') ||
       (userPlanType === 'group' && timeSlot.sessionType === 'group');
@@ -178,7 +185,7 @@ export function ScheduleModal({
         if (selectedSessionType === "group" && slot.sessionType !== "group")
           return false;
       }
-      // Filter based on user's plan type
+      // Filter based on user's plan type - STRICT enforcement (no "individual" check needed)
       if (userPlanType) {
         if (userPlanType === "individual" && slot.sessionType !== "one-to-one")
           return false;
@@ -424,19 +431,32 @@ export function ScheduleModal({
                     Available Time Slots
                   </h4>
 
-                  {/* Session Type Filter Dropdown */}
+                  {/* Session Type Filter Dropdown - Auto-selected if user has a plan, otherwise user can choose */}
                   <select
-                    value={selectedSessionType}
-                    onChange={(e) =>
-                      setSelectedSessionType(
-                        e.target.value as "one-to-one" | "group" | "all",
-                      )
+                    value={
+                      userPlanType === 'individual' ? 'one-to-one' :
+                      userPlanType === 'group' ? 'group' :
+                      selectedSessionType || 'all'
                     }
-                    className="text-xs border border-slate-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={userPlanType !== null} // Disable only if user has an active plan
+                    onChange={(e) => {
+                      if (setSelectedSessionType && userPlanType === null) {
+                        setSelectedSessionType(
+                          e.target.value as "one-to-one" | "group" | "all",
+                        );
+                      }
+                    }}
+                    className="text-xs border border-slate-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:text-gray-500"
                   >
-                    <option value="all">All Types</option>
-                    <option value="one-to-one">1-on-1</option>
-                    <option value="group">Group</option>
+                    {userPlanType === null && (
+                      <option value="all">All Types</option>
+                    )}
+                    {(userPlanType === null || userPlanType === 'individual') && (
+                      <option value="one-to-one">1-on-1</option>
+                    )}
+                    {(userPlanType === null || userPlanType === 'group') && (
+                      <option value="group">Group</option>
+                    )}
                   </select>
                 </div>
 
@@ -556,7 +576,7 @@ export function ScheduleModal({
                           return false; // Hide one-to-one slots when group is selected
                       }
 
-                      // Filter by user's plan type - HIDE slots that don't match
+                      // Filter by user's plan type - STRICT enforcement (no "individual" check needed)
                       if (userPlanType) {
                         if (userPlanType === "individual" && slot.sessionType !== "one-to-one")
                           return false; // Hide group slots for individual plan users
