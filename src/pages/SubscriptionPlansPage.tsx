@@ -49,33 +49,6 @@ export default function SubscriptionPlansPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
-  const [currencySymbol, setCurrencySymbol] = useState<"₹" | "$">("₹");
-  const [currencyCode, setCurrencyCode] = useState<"INR" | "USD">("INR");
-
-  // Detect currency on mount using your backend API
-  useEffect(() => {
-    const checkCurrency = async () => {
-      try {
-        const { getCountryFromIP } =
-          await import("../services/ipLocationService");
-        const countryCode = await getCountryFromIP();
-
-        if (countryCode === "IN") {
-          setCurrencySymbol("₹");
-          setCurrencyCode("INR");
-        } else {
-          setCurrencySymbol("$");
-          setCurrencyCode("USD");
-        }
-      } catch (error) {
-        console.warn("Currency detection failed, using INR");
-        setCurrencySymbol("₹");
-        setCurrencyCode("INR");
-      }
-    };
-
-    checkCurrency();
-  }, []);
 
   // Get tab from URL parameter or default to 'individual'
   const urlTab = searchParams.get("tab") as "individual" | "group" | null;
@@ -324,8 +297,7 @@ export default function SubscriptionPlansPage() {
                           {plan.originalPrice && (
                             <div className="flex items-center justify-center gap-2">
                               <span className="line-through text-muted-foreground text-lg">
-                                {plan.currency || currencySymbol}
-                                {plan.originalPrice}
+                                {plan.currency}{plan.originalPrice}
                               </span>
                               {discountPercentage > 0 && (
                                 <Badge
@@ -339,8 +311,7 @@ export default function SubscriptionPlansPage() {
                           )}
                           <div className="flex items-baseline justify-center gap-1">
                             <span className="text-4xl font-bold">
-                              {plan.currency || currencySymbol}
-                              {plan.price}
+                              {plan.currency}{plan.price}
                             </span>
                             <span className="text-muted-foreground">
                               /{plan.duration}
@@ -526,8 +497,7 @@ export default function SubscriptionPlansPage() {
                       <div className="flex flex-col items-center">
                         <span className="font-bold">{plan.name}</span>
                         <span className="text-sm text-muted-foreground">
-                          {currencySymbol}
-                          {plan.price}/{plan.duration}
+                          {plan.currency}{plan.price}/{plan.duration}
                         </span>
                       </div>
                     </th>
@@ -569,12 +539,11 @@ export default function SubscriptionPlansPage() {
                       <div className="flex flex-col items-center">
                         {plan.originalPrice && (
                           <span className="line-through text-muted-foreground text-sm">
-                            ₹{plan.originalPrice}
+                            {plan.currency}{plan.originalPrice}
                           </span>
                         )}
                         <span className="text-lg font-bold">
-                          {currencySymbol}
-                          {plan.price}
+                          {plan.currency}{plan.price}
                         </span>
                         <span className="text-sm text-muted-foreground">
                           /{plan.duration}
@@ -738,11 +707,11 @@ export default function SubscriptionPlansPage() {
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-3xl font-bold text-primary">
-                      {(
+                      {
                         subscriptionPlans.find(
                           (p) => (p.planId || p.id) === selectedPlan,
-                        ) as any
-                      )?.currency || currencySymbol}
+                        )?.currency
+                      }
                       {
                         subscriptionPlans.find(
                           (p) => (p.planId || p.id) === selectedPlan,
@@ -847,7 +816,7 @@ export default function SubscriptionPlansPage() {
                       id: plan.planId || plan.id,
                       name: plan.name,
                       price: String(plan.price),
-                      currency: currencyCode,
+                      currency: plan.currency === "₹" ? "INR" : "USD",
                       duration: plan.duration,
                     },
                     fromSubscription: true,
