@@ -44,14 +44,34 @@ export default function GroupVideoCallPage() {
         }
 
         // First, get group session details
+        // Used to determine whether approval gate is required for this group call.
+        let fetchedGroupDetails: any = null;
         try {
           const sessionResponse = await videoCallApi.getGroupSessionDetails(id);
           console.log("Group session details:", sessionResponse);
           if (sessionResponse.success) {
+            fetchedGroupDetails = sessionResponse.data;
             setGroupSessionDetails(sessionResponse.data);
           }
         } catch (sessionErr) {
           console.warn("Could not fetch group session details:", sessionErr);
+        }
+
+        // Some "group" calls (e.g., 2-user chat video) may not require waiting-room approval.
+        // Don’t block the UI up-front; only gate when the session clearly has a host/therapist.
+        const detailsForGate = fetchedGroupDetails || groupSessionDetails;
+        const role = user?.role;
+        const isPatientLike = role === "patient" || role === "user";
+        const hasTherapist =
+          !!detailsForGate?.therapistId ||
+          !!detailsForGate?.therapist ||
+          !!detailsForGate?.hostId;
+        const approved = new URLSearchParams(window.location.search).get(
+          "approved"
+        );
+        if (isPatientLike && hasTherapist && approved !== "true") {
+          navigate(`/waiting-room?sessionId=${id}&type=group`);
+          return;
         }
 
         // Participants will be populated through peer connections, not API calls

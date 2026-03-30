@@ -178,9 +178,9 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                         <div className="font-bold text-slate-900">
                           {booking.serviceName || "N/A"}
                         </div>
-                        <div className="text-xs text-slate-400">
+                        {/* <div className="text-xs text-slate-400">
                           {booking.serviceId?.name || "N/A"}
-                        </div>
+                        </div> */}
                       </td>
 
                       {/* DATE & TIME */}

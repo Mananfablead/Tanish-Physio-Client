@@ -560,7 +560,8 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
                 socket.emit('offer', {
                     roomId,
                     offer: data,
-                    senderId: socket.id
+                    senderId: socket.id,
+                    targetId: userId
                 });
             } else if (data.type === 'answer') {
                 socket.emit('answer', {
