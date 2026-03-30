@@ -2120,7 +2120,28 @@ const VideoCall = ({
       );
     } else {
       // Group call - check if mobile view
-      const isMobile = window.innerWidth < 768;
+      // Mobile detection for group calls:
+      // Width-only checks fail on some devices (landscape, tablets, WebViews). Use coarse pointer / no-hover / touch points too.
+      const isMobile = (() => {
+        if (typeof window === "undefined") return false;
+
+        const uaIsMobile =
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          );
+
+        const smallWidth =
+          window.matchMedia?.("(max-width: 767px)")?.matches ||
+          window.innerWidth < 768;
+
+        const coarsePointer =
+          window.matchMedia?.("(pointer: coarse)")?.matches ||
+          window.matchMedia?.("(hover: none)")?.matches ||
+          (typeof navigator !== "undefined" &&
+            (navigator.maxTouchPoints || 0) > 0);
+
+        return Boolean(uaIsMobile || (smallWidth && coarsePointer));
+      })();
       const streamKeys = Object.keys(remoteStreams);
       console.log("🎥 GROUP CALL RENDER: Total remote streams:", streamKeys.length);
       console.log("🎥 GROUP CALL RENDER: Stream keys:", streamKeys);
@@ -2140,14 +2161,18 @@ const VideoCall = ({
 
       // Mobile view: Show only admin/therapist video (like 1-on-1)
       if (isMobile) {
-        // Find admin/therapist stream
-        const adminSocketId = streamKeys.find((socketId) => {
+        // Prefer the host (therapist/admin) stream as the main video
+        const hostSocketId = streamKeys.find((socketId) => {
           const participant = participants.find((p) => p.socketId === socketId);
-          return participant?.isTherapist || participant?.role === "admin";
+          return (
+            participant?.isTherapist ||
+            participant?.role === "admin" ||
+            participant?.role === "therapist"
+          );
         });
 
-        // If no admin found, use the first stream
-        const displaySocketId = adminSocketId || streamKeys[0];
+        // If host stream isn't available yet, fall back to first stream
+        const displaySocketId = hostSocketId || streamKeys[0];
         const stream = remoteStreams[displaySocketId];
         const participant = participants.find(
           (p) => p.socketId === displaySocketId

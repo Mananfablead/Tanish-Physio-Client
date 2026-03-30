@@ -37,15 +37,6 @@ export default function GroupVideoCallPage() {
           return;
         }
 
-        // Route patients through waiting room unless already approved
-        if (user.role === "patient" || user.role === "user") {
-          const approved = searchParams.get("approved");
-          if (approved !== "true") {
-            navigate(`/waiting-room?sessionId=${id}&type=group`);
-            return;
-          }
-        }
-
         // Check for token in localStorage as fallback
         const localStorageToken = localStorage.getItem("token");
         const effectiveToken = token || localStorageToken;
@@ -56,14 +47,35 @@ export default function GroupVideoCallPage() {
         }
 
         // First, get group session details
+        // We use these details to decide if this "group" call requires waiting-room approval
+        // (therapy group sessions) or is a peer-to-peer/group chat call (no approval gate).
+        let fetchedGroupDetails = null;
         try {
           const sessionResponse = await videoCallApi.getGroupSessionDetails(id);
           console.log("Group session details:", sessionResponse);
           if (sessionResponse.success) {
+            fetchedGroupDetails = sessionResponse.data;
             setGroupSessionDetails(sessionResponse.data);
           }
         } catch (sessionErr) {
           console.warn("Could not fetch group session details:", sessionErr);
+        }
+
+        // Route patients through waiting room ONLY when approval is actually required.
+        // In some flows (e.g., 2-user chat group video), the backend may allow joining
+        // without waiting-room approval. Previously we redirected unconditionally and
+        // user #2 never reached the call UI.
+        const approved = searchParams.get("approved");
+        const role = user?.role;
+        const isPatientLike = role === "patient" || role === "user";
+        const detailsForGate = fetchedGroupDetails || groupSessionDetails;
+        const hasTherapist =
+          !!detailsForGate?.therapistId ||
+          !!detailsForGate?.therapist ||
+          !!detailsForGate?.hostId;
+        if (isPatientLike && hasTherapist && approved !== "true") {
+          navigate(`/waiting-room?sessionId=${id}&type=group`);
+          return;
         }
 
         // Then, get participant details for the group session
