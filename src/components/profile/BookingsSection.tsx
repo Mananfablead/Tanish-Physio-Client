@@ -176,10 +176,10 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                       {/* SERVICE */}
                       <td className="px-6 py-4">
                         <div className="font-bold text-slate-900">
-                          {booking.serviceName || "N/A"}
+                          {booking.serviceName }
                         </div>
                         <div className="text-xs text-slate-400">
-                          {booking.serviceId?.name || "N/A"}
+                          {booking.serviceId?.name }
                         </div>
                       </td>
 
@@ -196,7 +196,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
 
                       {/* THERAPIST */}
                       {/* <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                        {booking.therapistName || "N/A"}
+                        {booking.therapistName }
                       </td> */}
 
                       {/* AMOUNT */}
@@ -364,10 +364,10 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        {booking.serviceName || "N/A"}
+                        {booking.serviceName }
                       </h3>
                       <p className="text-xs text-slate-400 mt-1">
-                        {booking.serviceId?.name || "N/A"}
+                        {booking.serviceId?.name }
                       </p>
                     </div>
                     <div className="text-right">
@@ -541,7 +541,7 @@ export function BookingsSection({ bookingList }: BookingsSectionProps) {
               {/* Service & Status */}
               <div className="rounded-lg bg-slate-50 p-4 space-y-3">
                 <h3 className="font-black text-slate-900 text-base">
-                  {detailBooking.serviceName || "N/A"}
+                  {detailBooking.serviceName }
                 </h3>
                 {detailBooking.serviceId?.name &&
                   detailBooking.serviceId.name !==
