@@ -57,14 +57,28 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
     const endTimeStr = endDate
       ? endDate.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-          timeZone: "UTC",
-        })
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "UTC",
+      })
       : "-";
 
     return `${dateStr} - ${startTimeStr} `;
+  };
+
+  // Get session start time as a proper Date object (handles both UTC and local time)
+  const getSessionStartTime = (session: any): Date => {
+    // If we have date and time fields, use them for accurate local time
+    if (session.date && session.time) {
+      const [hours, minutes] = session.time.split(":").map(Number);
+      const sessionLocalTime = new Date(session.date);
+      sessionLocalTime.setHours(hours, minutes, 0, 0);
+      return sessionLocalTime;
+    }
+    
+    // Fallback to startTime (which is in UTC)
+    return new Date(session.startTime);
   };
 
   const isSessionTimeArrived = (session: any) => {
@@ -72,19 +86,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
     // Use currentTime state instead of new Date() for real-time updates
     const now = currentTime;
+    const sessionStartTime = getSessionStartTime(session);
 
-    // If we have both date and time fields, use them for more accurate local time comparison
-    if (session.date && session.time) {
-      // Parse the local date and time
-      const [hours, minutes] = session.time.split(":").map(Number);
-      const sessionLocalTime = new Date(session.date);
-      sessionLocalTime.setHours(hours, minutes, 0, 0);
-
-      return now >= sessionLocalTime;
-    }
-
-    // Fallback to startTime if date/time not available
-    const sessionStartTime = new Date(session.startTime);
     return now >= sessionStartTime;
   };
 
@@ -225,18 +228,16 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     className="flex-1"
                   >
                     <Button
-                      className={`w-full h-11 rounded-xl ${
-                        isSessionTimeArrived(session)
+                      className={`w-full h-11 rounded-xl ${isSessionTimeArrived(session)
                           ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
                           : "bg-secondary hover:bg-secondary/90 font-bold"
-                      }`}
+                        }`}
                       disabled={!session._id || !isSessionTimeArrived(session)}
                     >
                       <Play className="h-5 w-5 mr-2 fill-white" />
                       {(() => {
-                        const diffMs =
-                          new Date(session.startTime).getTime() -
-                          currentTime.getTime();
+                        const sessionStart = getSessionStartTime(session);
+                        const diffMs = sessionStart.getTime() - currentTime.getTime();
                         const diffMins = Math.max(
                           0,
                           Math.ceil(diffMs / (1000 * 60)),
@@ -305,9 +306,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                       !isSessionTimeArrived(session) && (
                         <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
                           {(() => {
-                            const diffMs =
-                              new Date(session.startTime).getTime() -
-                              currentTime.getTime();
+                            const sessionStart = getSessionStartTime(session);
+                            const diffMs = sessionStart.getTime() - currentTime.getTime();
                             const diffMins = Math.max(
                               0,
                               Math.ceil(diffMs / (1000 * 60)),
@@ -342,10 +342,10 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
       {/* Next Session Detail View - Only show if there's a next session and no other upcoming sessions */}
       {nextSession &&
-      upcomingSessions.filter(
-        (session) =>
-          session.status !== "live" && session.status !== "completed",
-      ).length === 0 ? (
+        upcomingSessions.filter(
+          (session) =>
+            session.status !== "live" && session.status !== "completed",
+        ).length === 0 ? (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -446,14 +446,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     // Enabled states
                     (nextSession.timingStatus === "join_now" ||
                       nextSession.timingStatus === "join_soon") &&
-                    isSessionTimeArrived(nextSession)
+                      isSessionTimeArrived(nextSession)
                       ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
                       : (nextSession.timingStatus === "join_now" ||
-                            nextSession.timingStatus === "join_soon") &&
-                          !isSessionTimeArrived(nextSession)
+                        nextSession.timingStatus === "join_soon") &&
+                        !isSessionTimeArrived(nextSession)
                         ? "bg-secondary hover:bg-secondary/90 font-bold"
                         : "font-bold"
-                  }`}
+                    }`}
                   disabled={
                     !nextSession._id ||
                     nextSession.timingStatus === "normal" ||
@@ -463,9 +463,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 >
                   <Play className="h-5 w-5 mr-2 fill-white" />
                   {(() => {
-                    const diffMs =
-                      new Date(nextSession.startTime).getTime() -
-                      currentTime.getTime();
+                    const sessionStart = getSessionStartTime(nextSession);
+                    const diffMs = sessionStart.getTime() - currentTime.getTime();
                     const diffMins = Math.max(
                       0,
                       Math.ceil(diffMs / (1000 * 60)),
@@ -551,15 +550,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                       Status
                     </p>
                     <span
-                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
-                        detailSession.status === "live"
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${detailSession.status === "live"
                           ? "bg-green-600 text-white"
                           : detailSession.status === "confirmed"
                             ? "bg-primary/10 text-primary"
                             : detailSession.status === "scheduled"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-amber-100 text-amber-700"
-                      }`}
+                        }`}
                     >
                       {detailSession.status}
                     </span>
@@ -579,6 +577,16 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     <p className="mt-1 font-semibold text-slate-800">
                       {detailSession.startTime
                         ? new Date(detailSession.startTime).toLocaleDateString(
+                          "en-US",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                            timeZone: "UTC",
+                          },
+                        )
+                        : detailSession.date
+                          ? new Date(detailSession.date).toLocaleDateString(
                             "en-US",
                             {
                               day: "numeric",
@@ -587,16 +595,6 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                               timeZone: "UTC",
                             },
                           )
-                        : detailSession.date
-                          ? new Date(detailSession.date).toLocaleDateString(
-                              "en-US",
-                              {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                                timeZone: "UTC",
-                              },
-                            )
                           : "N/A"}
                     </p>
                   </div>
@@ -608,12 +606,12 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                       {detailSession.time ||
                         (detailSession.startTime
                           ? new Date(
-                              detailSession.startTime,
-                            ).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              timeZone: "UTC",
-                            })
+                            detailSession.startTime,
+                          ).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: "UTC",
+                          })
                           : "—")}
                     </p>
                   </div>
@@ -664,9 +662,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     {detailSession.timingStatus === "join_now" && (
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
                         {(() => {
-                          const diffMs =
-                            new Date(detailSession.startTime).getTime() -
-                            currentTime.getTime();
+                          const sessionStart = getSessionStartTime(detailSession);
+                          const diffMs = sessionStart.getTime() - currentTime.getTime();
                           const diffMins = Math.max(
                             0,
                             Math.ceil(diffMs / (1000 * 60)),
