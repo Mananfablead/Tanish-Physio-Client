@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "optimize:images": "node scripts/optimize-hero-image.mjs",
-    "prebuild": "npm run optimize:images && npm run generate:sitemap",
-    "build": "vite build --outDir dist",
+    // "prebuild": "npm run optimize:images && npm run generate:sitemap",
+    // "build": "vite build --outDir dist",
+    "build": "vite build",
     "postbuild": "node scripts/create-static-pages.js",
     "build:dev": "vite build --mode development --outDir dist",
     "lint": "eslint .",
