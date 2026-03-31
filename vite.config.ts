@@ -6,19 +6,18 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import SitemapPlugin from "vite-plugin-sitemap";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    proxy: {
-      "/api": {
-        target: "http://localhost:5000",
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, "/api"),
-      },
-    },
+    // proxy: {
+    //   "/api": {
+    //     target: "http://localhost:5000",
+    //     changeOrigin: true,
+    //     secure: false,
+    //     rewrite: (path) => path.replace(/^\/api/, "/api"),
+    //   },
+    // },
   },
   build: {
     emptyOutDir: false,
