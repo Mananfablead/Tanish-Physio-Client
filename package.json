@@ -5,33 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "optimize:images": "node scripts/optimize-hero-image.mjs",
-    "prebuild": "npm run optimize:images && npm run generate:sitemap",
-    "build": "vite build --outDir dist",
-    "postbuild": "node scripts/create-static-pages.js",
-    "build:dev": "vite build --mode development --outDir dist",
-    "lint": "eslint .",
-    "preview": "vite preview --dir dist",
-    "generate:sitemap": "node scripts/generate-service-sitemap.js"
-  },
-  "reactSnap": {
-    "puppeteerArgs": [
-      "--no-sandbox",
-      "--disable-setuid-sandbox"
-    ],
-    "include": [
-      "/",
-      "/about",
-      "/services",
-      "/contact",
-      "/faq",
-      "/terms",
-      "/testimonials",
-      "/free-consultation",
-      "/questionnaire"
-    ],
-    "crawl": true,
-    "puppeteerIgnoreHTTPSErrors": true
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

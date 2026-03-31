@@ -203,12 +203,12 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
             alt={`${service.title} image ${currentImageIndex + 1}`}
             className="w-full h-64 md:h-80 object-cover"
             loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(
-                service.title,
-              )}`;
-            }}
+            // onError={(e) => {
+            //   const target = e.target as HTMLImageElement;
+            //   target.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(
+            //     service.title,
+            //   )}`;
+            // }}
           />
 
           {validImages.length > 1 && (
