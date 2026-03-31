@@ -12,8 +12,10 @@ interface ScheduleModalProps {
     date: string,
     time: string,
     timeSlot?: { start: string; end: string },
+    selectedService?: any,
   ) => void;
   availability: any[];
+  services?: any[];
   currentMonth: number;
   currentYear: number;
   selectedDate: string | null;
@@ -32,6 +34,7 @@ interface ScheduleModalProps {
   userPlanType?: 'individual' | 'group' | null; // User's subscription plan type
   selectedSessionType?: 'one-to-one' | 'group' | 'all';
   setSelectedSessionType?: (type: 'one-to-one' | 'group' | 'all') => void;
+  selectedServiceId?: string | null;
 }
 
 export function ScheduleModal({
@@ -39,6 +42,7 @@ export function ScheduleModal({
   onClose,
   onConfirm,
   availability,
+  services = [],
   currentMonth,
   currentYear,
   setCurrentMonth,
@@ -56,9 +60,56 @@ export function ScheduleModal({
   userPlanType = null,
   selectedSessionType = 'all',
   setSelectedSessionType,
+  selectedServiceId = null,
 }: ScheduleModalProps) {
   const [calendarWeeks, setCalendarWeeks] = useState<any[][]>([]);
+  const [localSelectedServiceId, setLocalSelectedServiceId] = useState<string>("");
   const { toast } = useToast();
+
+  // serviceId -> service lookup for labels
+  const serviceNameById = (services || []).reduce<Record<string, string>>(
+    (acc: any, s: any) => {
+      const id = String(s?._id || s?.id || "");
+      if (id) acc[id] = s?.name || "";
+      return acc;
+    },
+    {},
+  );
+
+  const normalizedSelectedServiceId =
+    selectedServiceId && serviceNameById[String(selectedServiceId)]
+      ? String(selectedServiceId)
+      : null;
+
+  const effectiveSelectedServiceId =
+    normalizedSelectedServiceId || localSelectedServiceId || null;
+
+  const getServiceForId = (id: any) => {
+    const idStr = String(id || "");
+    return (services || []).find(
+      (s: any) => String(s?._id || s?.id) === idStr,
+    );
+  };
+
+  const getSlotServiceId = (slot: any) =>
+    slot?.serviceId?._id || slot?.serviceId || null;
+
+  const hasServiceSpecificGroupSlots = availability.some((a: any) =>
+    Array.isArray(a?.timeSlots)
+      ? a.timeSlots.some((s: any) => {
+          const isGroup = String(s?.sessionType || "") === "group";
+          const sid = getSlotServiceId(s);
+          return isGroup && !!sid;
+        })
+      : false,
+  );
+
+  const shouldShowServicePicker =
+    hasServiceSpecificGroupSlots &&
+    !normalizedSelectedServiceId &&
+    // show unless user is explicitly in 1-on-1-only mode
+    userPlanType !== "individual" &&
+    selectedSessionType !== "one-to-one";
 
   // Auto-set session type based on user's plan type (if they have one)
   useEffect(() => {
@@ -66,6 +117,11 @@ export function ScheduleModal({
       setSelectedSessionType(userPlanType === 'individual' ? 'one-to-one' : 'group');
     }
   }, [userPlanType, setSelectedSessionType]);
+
+  useEffect(() => {
+    // reset local selection when modal opens
+    if (isOpen) setLocalSelectedServiceId("");
+  }, [isOpen]);
 
   const isPastDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -99,11 +155,19 @@ export function ScheduleModal({
       (userPlanType === 'individual' && timeSlot.sessionType === 'one-to-one') ||
       (userPlanType === 'group' && timeSlot.sessionType === 'group');
 
+    const slotServiceId = getSlotServiceId(timeSlot);
+    const serviceMatches =
+      timeSlot.sessionType !== "group" ||
+      !slotServiceId ||
+      (effectiveSelectedServiceId &&
+        String(slotServiceId) === String(effectiveSelectedServiceId));
+
     const isValidSlot =
       timeSlot.status === 'available' &&
       durationValid &&
       !isGroupFull &&
-      planTypeMatches;
+      planTypeMatches &&
+      serviceMatches;
 
     if (isValidSlot) {
       // Update both date and time slot to ensure button enables
@@ -125,6 +189,16 @@ export function ScheduleModal({
         title: "Time slot selected",
         description: `Selected ${formatTime(timeSlot.start)} - ${formatTime(timeSlot.end)}`,
         duration: 2000,
+      });
+    } else if (
+      timeSlot?.sessionType === "group" &&
+      timeSlot?.serviceId &&
+      !effectiveSelectedServiceId
+    ) {
+      toast({
+        title: "Select service first",
+        description: "This group slot is tied to a specific service.",
+        variant: "destructive",
       });
     }
   };
@@ -191,6 +265,24 @@ export function ScheduleModal({
           return false;
         if (userPlanType === "group" && slot.sessionType !== "group")
           return false;
+      }
+
+      // Filter group slots by selected service (if slot is service-specific)
+      if (
+        slot.sessionType === "group" &&
+        getSlotServiceId(slot) &&
+        effectiveSelectedServiceId &&
+        String(getSlotServiceId(slot)) !== String(effectiveSelectedServiceId)
+      ) {
+        return false;
+      }
+      // If group slot is service-specific and no service chosen yet, hide it (user must select service)
+      if (
+        slot.sessionType === "group" &&
+        getSlotServiceId(slot) &&
+        !effectiveSelectedServiceId
+      ) {
+        return false;
       }
 
       // If it's today, check minimum notice period
@@ -432,7 +524,28 @@ export function ScheduleModal({
                   </h4>
 
                   {/* Session Type Filter Dropdown - Auto-selected if user has a plan, otherwise user can choose */}
-                  <select
+                  <div className="flex items-center gap-2">
+                    {shouldShowServicePicker && (
+                        <select
+                          value={localSelectedServiceId}
+                          onChange={(e) => setLocalSelectedServiceId(e.target.value)}
+                          className="text-xs border border-slate-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">
+                            Select service (to view group slots)
+                          </option>
+                          {(services || []).map((s: any) => (
+                              <option
+                                key={String(s?._id || s?.id)}
+                                value={String(s?._id || s?.id)}
+                              >
+                                {s.title || s.name}
+                              </option>
+                            ))}
+                        </select>
+                      )}
+
+                    <select
                     value={
                       userPlanType === 'individual' ? 'one-to-one' :
                       userPlanType === 'group' ? 'group' :
@@ -457,7 +570,8 @@ export function ScheduleModal({
                     {(userPlanType === null || userPlanType === 'group') && (
                       <option value="group">Group</option>
                     )}
-                  </select>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Status Legend */}
@@ -584,6 +698,24 @@ export function ScheduleModal({
                           return false; // Hide one-to-one slots for group plan users
                       }
 
+                      // Hide group slots that are tied to a different service
+                      if (
+                        slot.sessionType === "group" &&
+                        getSlotServiceId(slot) &&
+                        effectiveSelectedServiceId &&
+                        String(getSlotServiceId(slot)) !==
+                          String(effectiveSelectedServiceId)
+                      ) {
+                        return false;
+                      }
+                      if (
+                        slot.sessionType === "group" &&
+                        getSlotServiceId(slot) &&
+                        !effectiveSelectedServiceId
+                      ) {
+                        return false;
+                      }
+
                       return true;
                     },
                   );
@@ -668,6 +800,14 @@ export function ScheduleModal({
                                 booked
                               </div>
                             )}
+                            {slot.sessionType === "group" &&
+                              getSlotServiceId(slot) &&
+                              serviceNameById[String(getSlotServiceId(slot))] && (
+                                <div className="text-xs mt-1 opacity-80">
+                                  Service:{" "}
+                                  {serviceNameById[String(getSlotServiceId(slot))]}
+                                </div>
+                              )}
                           </button>
                         );
                       })}
@@ -774,6 +914,9 @@ export function ScheduleModal({
                 scheduleDate,
                 selectedTimeSlot?.start || "",
                 selectedTimeSlot || undefined,
+                effectiveSelectedServiceId
+                  ? getServiceForId(effectiveSelectedServiceId) || undefined
+                  : undefined,
               );
             }}
           >
