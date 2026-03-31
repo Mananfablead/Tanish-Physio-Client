@@ -1638,9 +1638,13 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
         };
 
         // Add WEBRTC signaling listeners
+        // Support both legacy `webrtc-*` events and canonical events.
         socket.on('webrtc-offer-received', handleWebRTCOffer);
         socket.on('webrtc-answer-received', handleWebRTCAnswer);
         socket.on('webrtc-ice-candidate-received', handleWebRTCIceCandidate);
+        socket.on('offer', handleWebRTCOffer);
+        socket.on('answer', handleWebRTCAnswer);
+        socket.on('ice-candidate', handleWebRTCIceCandidate);
                 
         // NEW: Handle backend-initiated peer connection requests
         socket.on('create-peer-connection', (data) => {
@@ -1698,6 +1702,9 @@ const useWebRTC = (roomId, socket, userRole = 'patient', isWaitingRoom = false) 
             socket.off('webrtc-offer-received');
             socket.off('webrtc-answer-received');
             socket.off('webrtc-ice-candidate-received');
+            socket.off('offer');
+            socket.off('answer');
+            socket.off('ice-candidate');
             socket.off('create-peer-connection');
             socket.off('participant-joined');
             socket.off('participant-left');
