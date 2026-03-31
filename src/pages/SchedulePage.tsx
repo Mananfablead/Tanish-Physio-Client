@@ -1128,7 +1128,8 @@ export default function SchedulePage() {
                                 return dayAvailability.timeSlots.some(
                                   (slot: any) => {
                                     // ✅ CORRECT - Use pure arithmetic, no Date object needed
-                                    const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
+                                    const slotDurationMinutes =
+                                      calcDurationMinutes(slot.start, slot.end);
 
                                     // Only consider 45-minute regular slots as available
                                     return (
@@ -1311,7 +1312,8 @@ export default function SchedulePage() {
                                           variant="outline"
                                           className="text-xs font-bold"
                                         >
-                                          {session.type === "group" || session.sessionType === "group" ? (
+                                          {session.type === "group" ||
+                                          session.sessionType === "group" ? (
                                             <span className="flex items-center gap-1">
                                               <Users className="h-3 w-3" />
                                               Group
@@ -1320,18 +1322,22 @@ export default function SchedulePage() {
                                             "1-on-1"
                                           )}
                                         </Badge>
-                                        
+
                                         {/* Show participant count for group sessions */}
-                                        {(session.type === "group" || session.sessionType === "group") && 
-                                         session.maxParticipants !== undefined && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="text-xs font-medium bg-blue-50 text-blue-700"
-                                          >
-                                            <User className="h-3 w-3 mr-1" />
-                                            {session.participants?.length || 0}/{session.maxParticipants}
-                                          </Badge>
-                                        )}
+                                        {(session.type === "group" ||
+                                          session.sessionType === "group") &&
+                                          session.maxParticipants !==
+                                            undefined && (
+                                            <Badge
+                                              variant="secondary"
+                                              className="text-xs font-medium bg-blue-50 text-blue-700"
+                                            >
+                                              <User className="h-3 w-3 mr-1" />
+                                              {session.participants?.length ||
+                                                0}
+                                              /{session.maxParticipants}
+                                            </Badge>
+                                          )}
                                       </div>
 
                                       {/* {session.bookingId && (
@@ -1465,8 +1471,7 @@ export default function SchedulePage() {
             </div>
           </div>
         </div>
-
-        {/* Booking Modal */}
+        ;{/* Booking Modal */}
         <AnimatePresence>
           {isBookingModalOpen && (
             <motion.div
@@ -1592,6 +1597,7 @@ export default function SchedulePage() {
                         onChange={(e) => setSessionTypeValue(e.target.value)}
                         className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                       >
+                        <option value="">All Types</option>
                         <option value="1-on-1">1-on-1</option>
                         <option value="group">Group</option>
                       </select>
@@ -1630,10 +1636,32 @@ export default function SchedulePage() {
                           {availableTimes
                             .filter((slot: any) => {
                               // ✅ CORRECT - Use pure arithmetic, no Date object needed
-                              const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
+                              const slotDurationMinutes = calcDurationMinutes(
+                                slot.start,
+                                slot.end,
+                              );
 
                               // Only show 45-minute regular slots (not 15-minute free consultation slots)
-                              return slotDurationMinutes === 45;
+                              if (slotDurationMinutes !== 45) return false;
+
+                              // Filter by Session Type
+                              if (sessionTypeValue) {
+                                const isGroupSession =
+                                  slot.sessionType === "group";
+                                if (
+                                  sessionTypeValue === "1-on-1" &&
+                                  isGroupSession
+                                )
+                                  return false;
+                                if (
+                                  sessionTypeValue === "group" &&
+                                  !isGroupSession
+                                )
+                                  return false;
+                              }
+                              // When sessionTypeValue is empty ("All Types"), show both 1-on-1 and group sessions
+
+                              return true;
                             })
                             .map((slot: any) => {
                               const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
@@ -1648,22 +1676,34 @@ export default function SchedulePage() {
                                 // ✅ CORRECT - Use user's timezone for current time
                                 const userTimezone = getUserTimezone();
                                 const nowInUserTZ = new Date(
-                                  new Date().toLocaleString("en-US", { timeZone: userTimezone })
+                                  new Date().toLocaleString("en-US", {
+                                    timeZone: userTimezone,
+                                  }),
                                 );
 
-                                const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
-                                
+                                const selectedDateStr = format(
+                                  selectedDate,
+                                  "yyyy-MM-dd",
+                                );
+
                                 // Create a date object with the selected date and the slot's start time
-                                const slotDateTime = new Date(`${selectedDateStr}T${slot.start.padStart(5, "0")}:00`);
+                                const slotDateTime = new Date(
+                                  `${selectedDateStr}T${slot.start.padStart(5, "0")}:00`,
+                                );
 
                                 // Check if the slot time is in the past compared to now
-                                return slotDateTime.getTime() < nowInUserTZ.getTime();
+                                return (
+                                  slotDateTime.getTime() < nowInUserTZ.getTime()
+                                );
                               };
 
                               const isSelected = selectedTime === timeValue;
 
                               // ✅ CORRECT - Use pure arithmetic, no Date object needed
-                              const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
+                              const slotDurationMinutes = calcDurationMinutes(
+                                slot.start,
+                                slot.end,
+                              );
 
                               // Check if this slot can accommodate the service duration
                               const serviceDuration = getServiceDuration();
@@ -1680,10 +1720,14 @@ export default function SchedulePage() {
                               // console.log('Slot:', slot, 'Duration:', slotDurationMinutes, 'Service Duration:', serviceDuration, 'Suitable:', isSuitableForService);
 
                               // Check if this is a group session slot
-                              const isGroupSession = slot.sessionType === "group";
+                              const isGroupSession =
+                                slot.sessionType === "group";
                               const maxParticipants = slot.maxParticipants || 1;
-                              const bookedParticipants = slot.bookedParticipants || 0;
-                              const availableSpots = isGroupSession ? maxParticipants - bookedParticipants : 1;
+                              const bookedParticipants =
+                                slot.bookedParticipants || 0;
+                              const availableSpots = isGroupSession
+                                ? maxParticipants - bookedParticipants
+                                : 1;
 
                               return (
                                 <div key={slot._id} className="relative">
@@ -1725,20 +1769,27 @@ export default function SchedulePage() {
                                         {formatTimeDisplay(slot.start)} –{" "}
                                         {formatTimeDisplay(slot.end)}
                                       </span>
-                                      {isGroupSession && isActuallyAvailable && (
-                                        <span className="text-xs mt-1 font-medium">
-                                          {availableSpots} spot{availableSpots !== 1 ? "s" : ""} left
-                                        </span>
-                                      )}
+                                      {isGroupSession &&
+                                        isActuallyAvailable && (
+                                          <span className="text-xs mt-1 font-medium">
+                                            {availableSpots} spot
+                                            {availableSpots !== 1
+                                              ? "s"
+                                              : ""}{" "}
+                                            left
+                                          </span>
+                                        )}
                                     </div>
                                   </Button>
-                                  {isGroupSession && !isActuallyAvailable && bookedParticipants >= maxParticipants && (
-                                    <div className="absolute inset-0 bg-red-500/10 rounded flex items-center justify-center">
-                                      <span className="text-xs font-bold text-red-600 bg-white/90 px-2 py-0.5 rounded">
-                                        Full
-                                      </span>
-                                    </div>
-                                  )}
+                                  {isGroupSession &&
+                                    !isActuallyAvailable &&
+                                    bookedParticipants >= maxParticipants && (
+                                      <div className="absolute inset-0 bg-red-500/10 rounded flex items-center justify-center">
+                                        <span className="text-xs font-bold text-red-600 bg-white/90 px-2 py-0.5 rounded">
+                                          Full
+                                        </span>
+                                      </div>
+                                    )}
                                 </div>
                               );
                             })}
@@ -1832,8 +1883,7 @@ export default function SchedulePage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Subscription Plans Modal */}
+        ;{/* Subscription Plans Modal */}
         <AnimatePresence>
           {isPlansModalOpen && (
             <motion.div
@@ -2326,7 +2376,6 @@ export default function SchedulePage() {
             </motion.div>
           )}
         </AnimatePresence>
-
         {/* Success Dialog */}
         <AnimatePresence>
           {isSuccessDialogOpen && (
