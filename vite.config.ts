@@ -129,13 +129,11 @@
 //   },
 // }));
 
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   server: {
     host: true,
     port: 8080,
@@ -144,28 +142,13 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    minify: "terser",
-    sourcemap: false,
   },
 
-  plugins: [
-    react(),
-
-    nodePolyfills({
-      protocolImports: true,
-      include: ["process"],
-    }),
-  ],
+  plugins: [react()],
 
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      process: "process/browser",
     },
   },
-
-  define: {
-    global: "globalThis",
-    "process.env": {},
-  },
-}));
+});
