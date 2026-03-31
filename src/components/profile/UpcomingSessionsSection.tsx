@@ -67,24 +67,27 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
     return `${dateStr} - ${startTimeStr} `;
   };
 
+  // Get session start time as a proper Date object (handles both UTC and local time)
+  const getSessionStartTime = (session: any): Date => {
+    // If we have date and time fields, use them for accurate local time
+    if (session.date && session.time) {
+      const [hours, minutes] = session.time.split(":").map(Number);
+      const sessionLocalTime = new Date(session.date);
+      sessionLocalTime.setHours(hours, minutes, 0, 0);
+      return sessionLocalTime;
+    }
+    
+    // Fallback to startTime (which is in UTC)
+    return new Date(session.startTime);
+  };
+
   const isSessionTimeArrived = (session: any) => {
     if (!session?.startTime && !session?.date) return false;
 
     // Use currentTime state instead of new Date() for real-time updates
     const now = currentTime;
+    const sessionStartTime = getSessionStartTime(session);
 
-    // If we have both date and time fields, use them for more accurate local time comparison
-    if (session.date && session.time) {
-      // Parse the local date and time
-      const [hours, minutes] = session.time.split(":").map(Number);
-      const sessionLocalTime = new Date(session.date);
-      sessionLocalTime.setHours(hours, minutes, 0, 0);
-
-      return now >= sessionLocalTime;
-    }
-
-    // Fallback to startTime if date/time not available
-    const sessionStartTime = new Date(session.startTime);
     return now >= sessionStartTime;
   };
 
@@ -233,9 +236,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     >
                       <Play className="h-5 w-5 mr-2 fill-white" />
                       {(() => {
-                        const diffMs =
-                          new Date(session.startTime).getTime() -
-                          currentTime.getTime();
+                        const sessionStart = getSessionStartTime(session);
+                        const diffMs = sessionStart.getTime() - currentTime.getTime();
                         const diffMins = Math.max(
                           0,
                           Math.ceil(diffMs / (1000 * 60)),
@@ -304,9 +306,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                       !isSessionTimeArrived(session) && (
                         <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
                           {(() => {
-                            const diffMs =
-                              new Date(session.startTime).getTime() -
-                              currentTime.getTime();
+                            const sessionStart = getSessionStartTime(session);
+                            const diffMs = sessionStart.getTime() - currentTime.getTime();
                             const diffMins = Math.max(
                               0,
                               Math.ceil(diffMs / (1000 * 60)),
@@ -462,9 +463,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                 >
                   <Play className="h-5 w-5 mr-2 fill-white" />
                   {(() => {
-                    const diffMs =
-                      new Date(nextSession.startTime).getTime() -
-                      currentTime.getTime();
+                    const sessionStart = getSessionStartTime(nextSession);
+                    const diffMs = sessionStart.getTime() - currentTime.getTime();
                     const diffMins = Math.max(
                       0,
                       Math.ceil(diffMs / (1000 * 60)),
@@ -662,9 +662,8 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     {detailSession.timingStatus === "join_now" && (
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
                         {(() => {
-                          const diffMs =
-                            new Date(detailSession.startTime).getTime() -
-                            currentTime.getTime();
+                          const sessionStart = getSessionStartTime(detailSession);
+                          const diffMs = sessionStart.getTime() - currentTime.getTime();
                           const diffMins = Math.max(
                             0,
                             Math.ceil(diffMs / (1000 * 60)),
