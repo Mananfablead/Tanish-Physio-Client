@@ -57,11 +57,11 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
     const endTimeStr = endDate
       ? endDate.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-          timeZone: "UTC",
-        })
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "UTC",
+      })
       : "-";
 
     return `${dateStr} - ${startTimeStr} `;
@@ -225,11 +225,10 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     className="flex-1"
                   >
                     <Button
-                      className={`w-full h-11 rounded-xl ${
-                        isSessionTimeArrived(session)
+                      className={`w-full h-11 rounded-xl ${isSessionTimeArrived(session)
                           ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
                           : "bg-secondary hover:bg-secondary/90 font-bold"
-                      }`}
+                        }`}
                       disabled={!session._id || !isSessionTimeArrived(session)}
                     >
                       <Play className="h-5 w-5 mr-2 fill-white" />
@@ -342,10 +341,10 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
 
       {/* Next Session Detail View - Only show if there's a next session and no other upcoming sessions */}
       {nextSession &&
-      upcomingSessions.filter(
-        (session) =>
-          session.status !== "live" && session.status !== "completed",
-      ).length === 0 ? (
+        upcomingSessions.filter(
+          (session) =>
+            session.status !== "live" && session.status !== "completed",
+        ).length === 0 ? (
         <Card className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6  flex flex-col justify-between overflow-hidden">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -446,14 +445,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     // Enabled states
                     (nextSession.timingStatus === "join_now" ||
                       nextSession.timingStatus === "join_soon") &&
-                    isSessionTimeArrived(nextSession)
+                      isSessionTimeArrived(nextSession)
                       ? "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black"
                       : (nextSession.timingStatus === "join_now" ||
-                            nextSession.timingStatus === "join_soon") &&
-                          !isSessionTimeArrived(nextSession)
+                        nextSession.timingStatus === "join_soon") &&
+                        !isSessionTimeArrived(nextSession)
                         ? "bg-secondary hover:bg-secondary/90 font-bold"
                         : "font-bold"
-                  }`}
+                    }`}
                   disabled={
                     !nextSession._id ||
                     nextSession.timingStatus === "normal" ||
@@ -551,15 +550,14 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                       Status
                     </p>
                     <span
-                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
-                        detailSession.status === "live"
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${detailSession.status === "live"
                           ? "bg-green-600 text-white"
                           : detailSession.status === "confirmed"
                             ? "bg-primary/10 text-primary"
                             : detailSession.status === "scheduled"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-amber-100 text-amber-700"
-                      }`}
+                        }`}
                     >
                       {detailSession.status}
                     </span>
@@ -579,6 +577,16 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                     <p className="mt-1 font-semibold text-slate-800">
                       {detailSession.startTime
                         ? new Date(detailSession.startTime).toLocaleDateString(
+                          "en-US",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                            timeZone: "UTC",
+                          },
+                        )
+                        : detailSession.date
+                          ? new Date(detailSession.date).toLocaleDateString(
                             "en-US",
                             {
                               day: "numeric",
@@ -587,16 +595,6 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                               timeZone: "UTC",
                             },
                           )
-                        : detailSession.date
-                          ? new Date(detailSession.date).toLocaleDateString(
-                              "en-US",
-                              {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                                timeZone: "UTC",
-                              },
-                            )
                           : "N/A"}
                     </p>
                   </div>
@@ -608,12 +606,12 @@ export function UpcomingSessionsSection({ upcomingSessions, liveSessions, nextSe
                       {detailSession.time ||
                         (detailSession.startTime
                           ? new Date(
-                              detailSession.startTime,
-                            ).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              timeZone: "UTC",
-                            })
+                            detailSession.startTime,
+                          ).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: "UTC",
+                          })
                           : "—")}
                     </p>
                   </div>
