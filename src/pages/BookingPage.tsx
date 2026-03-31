@@ -1651,10 +1651,26 @@ export default function BookingPage() {
           : "regular";
         // Get service information - use bookingData.service since selectedService is not available
         const serviceInfo = serviceBooking ? bookingData.service : null;
+        const scheduledService = (() => {
+          try {
+            if (scheduleOption !== "now") return null;
+            const raw = sessionStorage.getItem("qw_scheduled_session");
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed?.service || null;
+          } catch {
+            return null;
+          }
+        })();
+        const effectiveService = serviceInfo || scheduledService || null;
+        const effectiveServiceId =
+          effectiveService?.id || effectiveService?._id || null;
+        const effectiveServiceName =
+          effectiveService?.name || serviceInfo?.name || plan.name;
 
         const bookingPayload = {
-          serviceId: serviceInfo?.id || null,
-          serviceName: serviceInfo?.name || plan.name,
+          serviceId: effectiveServiceId,
+          serviceName: effectiveServiceName,
           therapistId: therapist?.id || null,
           therapistName: therapist?.name || "Default Therapist",
           userId: isGuestUser ? null : localStorage.getItem("user"),
@@ -1691,10 +1707,10 @@ export default function BookingPage() {
         let subscriptionCheckResult = null;
         let subscriptionInfo = null;
 
-        if (!isGuestUser && serviceInfo?.id) {
+        if (!isGuestUser && effectiveServiceId) {
           try {
             subscriptionCheckResult = await checkSubscriptionBookingEligibility(
-              serviceInfo.id,
+              effectiveServiceId,
             );
             useSubscriptionBooking =
               subscriptionCheckResult.data?.data?.eligible === true;
@@ -1726,7 +1742,7 @@ export default function BookingPage() {
           // Use subscription booking (no payment required)
           const subscriptionBookingPayload = {
             ...bookingPayload,
-            serviceId: serviceInfo?.id || null,
+            serviceId: effectiveServiceId,
             // Remove payment-related fields for subscription booking
             amount: 0,
             finalAmount: 0,
@@ -3228,6 +3244,7 @@ export default function BookingPage() {
         onClose={closeScheduleModal}
         onConfirm={handleScheduleConfirm}
         availability={availability}
+        services={services}
         currentMonth={currentMonth}
         currentYear={currentYear}
         setCurrentMonth={setCurrentMonth}
@@ -3246,6 +3263,12 @@ export default function BookingPage() {
         userPlanType={user?.subscriptionData?.sessionType || null}
         selectedSessionType={selectedSessionType}
         setSelectedSessionType={setSelectedSessionType}
+        selectedServiceId={
+          bookingData?.service?.id ||
+          bookingData?.service?._id ||
+          bookingData?.serviceId ||
+          null
+        }
       />
 
       {/* Session Limit Exceeded Modal */}
