@@ -179,6 +179,42 @@ export default function SchedulePage() {
     try {
       setIsBookingLoading(true); // Set loading state to true when booking starts
 
+      // Validate service selection for group slots with specific service
+      if (selectedTimeSlot && selectedTimeSlot.sessionType === "group") {
+        // Find the full slot data from availability to check for serviceId
+        const formattedDate = format(selectedDate, "yyyy-MM-dd");
+        const dayAvailability = availability.find(
+          (item: any) => item.date === formattedDate,
+        );
+        
+        if (dayAvailability && Array.isArray(dayAvailability.timeSlots)) {
+          const selectedSlot = dayAvailability.timeSlots.find(
+            (slot: any) => slot.start === selectedTimeSlot?.start && slot.end === selectedTimeSlot?.end
+          );
+          
+          if (selectedSlot) {
+            const slotServiceId = getSlotServiceId(selectedSlot);
+            
+            // If slot has a specific service attached, validate user has selected it
+            if (slotServiceId && selectedSlot.sessionType === "group") {
+              if (!selectedServiceOrSubscription) {
+                setBookingError("Please select a service to book this group session");
+                setIsBookingLoading(false);
+                toast.error("Please select a service to book this group session");
+                return;
+              }
+              
+              if (String(slotServiceId) !== String(selectedServiceOrSubscription)) {
+                setBookingError("This group slot requires booking with a specific service. Please select the correct service.");
+                setIsBookingLoading(false);
+                toast.error("This group slot requires booking with a specific service");
+                return;
+              }
+            }
+          }
+        }
+      }
+
       // Extract start and end time from the selected time slot
       // Use the stored original 24-hour times from selectedTimeSlot
       let startTime, endTime;
@@ -493,6 +529,7 @@ export default function SchedulePage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
     start: string;
     end: string;
+    sessionType?: string;
   } | null>(null);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] =
     useState<boolean>(false);
@@ -1146,7 +1183,8 @@ export default function SchedulePage() {
                                 return dayAvailability.timeSlots.some(
                                   (slot: any) => {
                                     // ✅ CORRECT - Use pure arithmetic, no Date object needed
-                                    const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
+                                    const slotDurationMinutes =
+                                      calcDurationMinutes(slot.start, slot.end);
 
                                     // Only consider 45-minute regular slots as available
                                     return (
@@ -1329,7 +1367,8 @@ export default function SchedulePage() {
                                           variant="outline"
                                           className="text-xs font-bold"
                                         >
-                                          {session.type === "group" || session.sessionType === "group" ? (
+                                          {session.type === "group" ||
+                                          session.sessionType === "group" ? (
                                             <span className="flex items-center gap-1">
                                               <Users className="h-3 w-3" />
                                               Group
@@ -1338,18 +1377,22 @@ export default function SchedulePage() {
                                             "1-on-1"
                                           )}
                                         </Badge>
-                                        
+
                                         {/* Show participant count for group sessions */}
-                                        {(session.type === "group" || session.sessionType === "group") && 
-                                         session.maxParticipants !== undefined && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="text-xs font-medium bg-blue-50 text-blue-700"
-                                          >
-                                            <User className="h-3 w-3 mr-1" />
-                                            {session.participants?.length || 0}/{session.maxParticipants}
-                                          </Badge>
-                                        )}
+                                        {(session.type === "group" ||
+                                          session.sessionType === "group") &&
+                                          session.maxParticipants !==
+                                            undefined && (
+                                            <Badge
+                                              variant="secondary"
+                                              className="text-xs font-medium bg-blue-50 text-blue-700"
+                                            >
+                                              <User className="h-3 w-3 mr-1" />
+                                              {session.participants?.length ||
+                                                0}
+                                              /{session.maxParticipants}
+                                            </Badge>
+                                          )}
                                       </div>
 
                                       {/* {session.bookingId && (
@@ -1483,8 +1526,7 @@ export default function SchedulePage() {
             </div>
           </div>
         </div>
-
-        {/* Booking Modal */}
+        ;{/* Booking Modal */}
         <AnimatePresence>
           {isBookingModalOpen && (
             <motion.div
@@ -1610,6 +1652,7 @@ export default function SchedulePage() {
                         onChange={(e) => setSessionTypeValue(e.target.value)}
                         className="w-full h-9 px-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
                       >
+                        <option value="">All Types</option>
                         <option value="1-on-1">1-on-1</option>
                         <option value="group">Group</option>
                       </select>
@@ -1658,19 +1701,19 @@ export default function SchedulePage() {
                               <ul className="text-xs text-blue-800 space-y-1">
                                 <li className="flex items-start gap-2">
                                   <span className="font-semibold">•</span>
-                                  <span>Multiple participants can book the same time slot</span>
+                                  <span>Multiple participants can book the same slot</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <span className="font-semibold">•</span>
-                                  <span>The counter shows remaining spots (e.g., "3/5 spots" means 3 spots left out of 5 total)</span>
+                                  <span>Counter shows remaining spots (e.g., "3/5" = 3 left)</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <span className="font-semibold">•</span>
-                                  <span>When a slot shows "FULL", it has reached maximum capacity and is no longer available</span>
+                                  <span>"FULL" means max capacity reached</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                   <span className="font-semibold">•</span>
-                                  <span>Some group slots may require selecting a specific service to book</span>
+                                  <span>Some slots require selecting a specific service to appear</span>
                                 </li>
                               </ul>
                             </div>
@@ -1686,7 +1729,7 @@ export default function SchedulePage() {
                           <div className="flex items-center gap-2">
                             <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
                             <p className="text-sm text-amber-800 font-medium">
-                              📋 Select a service above to view available group time slots
+                              📋 Select a service to view service-specific group slots
                             </p>
                           </div>
                         </div>
@@ -1699,10 +1742,48 @@ export default function SchedulePage() {
                           {availableTimes
                             .filter((slot: any) => {
                               // ✅ CORRECT - Use pure arithmetic, no Date object needed
-                              const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
+                              const slotDurationMinutes = calcDurationMinutes(
+                                slot.start,
+                                slot.end,
+                              );
 
                               // Only show 45-minute regular slots (not 15-minute free consultation slots)
-                              return slotDurationMinutes === 45;
+                              if (slotDurationMinutes !== 45) return false;
+
+                              // Filter by Session Type
+                              if (sessionTypeValue) {
+                                const isGroupSession =
+                                  slot.sessionType === "group";
+                                if (
+                                  sessionTypeValue === "1-on-1" &&
+                                  isGroupSession
+                                )
+                                  return false;
+                                if (
+                                  sessionTypeValue === "group" &&
+                                  !isGroupSession
+                                )
+                                  return false;
+                              }
+                              // When sessionTypeValue is empty ("All Types"), show both 1-on-1 and group sessions
+
+                              // Filter group slots with specific service - HIDE if no service selected or service doesn't match
+                              const slotServiceId = getSlotServiceId(slot);
+                              const isGroupSession = slot.sessionType === "group";
+                              
+                              if (isGroupSession && slotServiceId) {
+                                // This is a group slot tied to a specific service
+                                if (!selectedServiceOrSubscription) {
+                                  // User hasn't selected any service - HIDE this slot
+                                  return false;
+                                }
+                                if (String(slotServiceId) !== String(selectedServiceOrSubscription)) {
+                                  // User selected a different service - HIDE this slot
+                                  return false;
+                                }
+                              }
+
+                              return true;
                             })
                             .map((slot: any) => {
                               const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
@@ -1717,22 +1798,34 @@ export default function SchedulePage() {
                                 // ✅ CORRECT - Use user's timezone for current time
                                 const userTimezone = getUserTimezone();
                                 const nowInUserTZ = new Date(
-                                  new Date().toLocaleString("en-US", { timeZone: userTimezone })
+                                  new Date().toLocaleString("en-US", {
+                                    timeZone: userTimezone,
+                                  }),
                                 );
 
-                                const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
-                                
+                                const selectedDateStr = format(
+                                  selectedDate,
+                                  "yyyy-MM-dd",
+                                );
+
                                 // Create a date object with the selected date and the slot's start time
-                                const slotDateTime = new Date(`${selectedDateStr}T${slot.start.padStart(5, "0")}:00`);
+                                const slotDateTime = new Date(
+                                  `${selectedDateStr}T${slot.start.padStart(5, "0")}:00`,
+                                );
 
                                 // Check if the slot time is in the past compared to now
-                                return slotDateTime.getTime() < nowInUserTZ.getTime();
+                                return (
+                                  slotDateTime.getTime() < nowInUserTZ.getTime()
+                                );
                               };
 
                               const isSelected = selectedTime === timeValue;
 
                               // ✅ CORRECT - Use pure arithmetic, no Date object needed
-                              const slotDurationMinutes = calcDurationMinutes(slot.start, slot.end);
+                              const slotDurationMinutes = calcDurationMinutes(
+                                slot.start,
+                                slot.end,
+                              );
 
                               // Check if this slot can accommodate the service duration
                               const serviceDuration = getServiceDuration();
@@ -1749,37 +1842,37 @@ export default function SchedulePage() {
                               // console.log('Slot:', slot, 'Duration:', slotDurationMinutes, 'Service Duration:', serviceDuration, 'Suitable:', isSuitableForService);
 
                               // Check if this is a group session slot
-                              const isGroupSession = slot.sessionType === "group";
+                              const isGroupSession =
+                                slot.sessionType === "group";
                               const maxParticipants = slot.maxParticipants || 1;
-                              const bookedParticipants = slot.bookedParticipants || 0;
-                              const availableSpots = isGroupSession ? maxParticipants - bookedParticipants : 1;
+                              const bookedParticipants =
+                                slot.bookedParticipants || 0;
+                              const availableSpots = isGroupSession
+                                ? maxParticipants - bookedParticipants
+                                : 1;
 
-                              // Check if group slot has a specific service attached
+                              // Check if this is a service-specific group slot
                               const slotServiceId = getSlotServiceId(slot);
-                              const isServiceSpecificGroupSlot = isGroupSession && !!slotServiceId;
+                              const isServiceSpecificGroupSlot = isGroupSession && slotServiceId;
                               
-                              // Validate service matching for group slots
-                              const serviceMatches = doesServiceMatch(slot);
-                              
-                              // For service-specific group slots, disable if service doesn't match
-                              const isServiceValid = !isServiceSpecificGroupSlot || serviceMatches;
-                              
-                              // Slot is only truly available if it passes all checks including service validation
-                              const isActuallyAvailableAndValid = isActuallyAvailable && isServiceValid;
+                              // Check if user's selected service matches the slot's service
+                              const serviceMatches = !isServiceSpecificGroupSlot || !slotServiceId || 
+                                (selectedServiceOrSubscription && String(slotServiceId) === String(selectedServiceOrSubscription));
 
                               return (
                                 <div key={slot._id} className="relative group">
                                   <Button
                                     size="sm"
-                                    disabled={!isActuallyAvailableAndValid}
+                                    disabled={!isActuallyAvailable}
                                     onClick={() => {
-                                      if (isActuallyAvailableAndValid) {
+                                      if (isActuallyAvailable) {
                                         const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
                                         setSelectedTime(timeValue);
                                         // Store the original 24-hour time slot for backend submission
                                         setSelectedTimeSlot({
                                           start: slot.start,
                                           end: slot.end,
+                                          sessionType: slot.sessionType,
                                         });
                                         setBookingError(null); // Clear any previous error when selecting a new time
                                       } else if (isServiceSpecificGroupSlot && !serviceMatches) {
@@ -1792,7 +1885,7 @@ export default function SchedulePage() {
           ${
             isSelected
               ? "bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 shadow-md"
-              : isActuallyAvailableAndValid
+              : isActuallyAvailable
                 ? isSuitableForService
                   ? "border-2 border-green-500 text-green-700 bg-green-50 hover:border-green-600 hover:bg-green-600 hover:text-white hover:shadow-sm"
                   : "border-2 border-yellow-500 text-yellow-700 bg-yellow-50 hover:border-yellow-600 hover:bg-yellow-600 hover:text-white hover:shadow-sm"
@@ -1813,100 +1906,29 @@ export default function SchedulePage() {
                                         {formatTimeDisplay(slot.start)} –{" "}
                                         {formatTimeDisplay(slot.end)}
                                       </span>
-                                      
-                                      {/* Group session info - compact */}
                                       {isGroupSession && isActuallyAvailable && (
-                                        <div className="flex items-center gap-0.5 mt-0">
-                                          <Users className="h-2.5 w-2.5 text-blue-600 flex-shrink-0" />
-                                          <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                                            {availableSpots}/{maxParticipants}
-                                          </span>
-                                        </div>
+                                        <span className="text-xs mt-1 font-medium">
+                                          {availableSpots} spot{availableSpots !== 1 ? "s" : ""} left
+                                        </span>
                                       )}
-                                      
-                                      {/* Service indicator for service-specific group slots - compact */}
+                                      {/* Show service indicator for service-specific group slots */}
                                       {isServiceSpecificGroupSlot && slotServiceId && (
-                                        <div className={`flex items-center gap-0.5 mt-0 px-1.5 py-0.5 rounded-full ${
-                                          serviceMatches 
-                                            ? 'bg-green-200 text-green-800' 
-                                            : 'bg-orange-100 text-orange-700'
-                                        }`}>
-                                          {serviceMatches ? (
-                                            <CheckCircle className="h-2.5 w-2.5 flex-shrink-0" />
-                                          ) : (
-                                            <Info className="h-2.5 w-2.5 flex-shrink-0" />
-                                          )}
-                                          <span className="text-[10px] font-semibold whitespace-nowrap">
-                                            {serviceMatches ? 'Matched' : 'Select Service'}
+                                        <div className="flex items-center gap-1 mt-1">
+                                          <Package className="h-3 w-3 text-blue-600" />
+                                          <span className="text-[10px] text-blue-700 font-medium truncate max-w-[120px]">
+                                            {selectedServiceOrSubscription && String(slotServiceId) === String(selectedServiceOrSubscription) 
+                                              ? "✓ Your service" 
+                                              : "Service required"}
                                           </span>
                                         </div>
                                       )}
-                                      
-                                      {/* Regular session type indicator */}
-                                      {!isGroupSession && (
-                                        <span className="text-[10px] text-gray-500 mt-0 whitespace-nowrap">
-                                          Individual
-                                        </span>
-                                      )}
                                     </div>
-                                    
-                                    {/* Group session pulse indicator - positioned absolutely */}
-                                    {isGroupSession && (
-                                      <div className="absolute top-0.5 right-0.5">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-                                      </div>
-                                    )}
                                   </Button>
-                                  
-                                  {/* Full badge for completely booked group sessions */}
                                   {isGroupSession && !isActuallyAvailable && bookedParticipants >= maxParticipants && (
-                                    <div className="absolute inset-0 bg-red-500/20 backdrop-blur-[1px] rounded-lg flex items-center justify-center border-2 border-red-300">
-                                      <div className="bg-white/95 px-2 py-1 rounded-md shadow-lg text-center">
-                                        <X className="h-3 w-3 text-red-600 mx-auto mb-0.5" />
-                                        <span className="text-xs font-bold text-red-700">
-                                          FULL
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Service mismatch overlay */}
-                                  {isServiceSpecificGroupSlot && !serviceMatches && (
-                                    <div className="absolute inset-0 bg-orange-500/15 backdrop-blur-[1px] rounded-lg flex items-center justify-center border-2 border-orange-300 pointer-events-none">
-                                      <div className="bg-white/95 px-2 py-1 rounded-md shadow-lg text-center">
-                                        <Info className="h-3 w-3 text-orange-600 mx-auto mb-0.5" />
-                                        <span className="text-xs font-bold text-orange-700">
-                                          Select Service
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Tooltip for group sessions on hover */}
-                                  {isGroupSession && (
-                                    <div className="opacity-0 group-hover:opacity-100 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 whitespace-nowrap pointer-events-none transition-opacity duration-200">
-                                      {isServiceSpecificGroupSlot ? (
-                                        <div>
-                                          <div className="font-semibold mb-1">Group Session</div>
-                                          <div className="text-gray-300">
-                                            {serviceMatches 
-                                              ? `${availableSpots} of ${maxParticipants} spots available`
-                                              : 'Select the matching service to book'}
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div>
-                                          <div className="font-semibold mb-1">Group Session</div>
-                                          <div className="text-gray-300">
-                                            {bookedParticipants >= maxParticipants
-                                              ? 'Session is full'
-                                              : `${availableSpots} of ${maxParticipants} spots available`}
-                                          </div>
-                                        </div>
-                                      )}
-                                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                                        <div className="border-4 border-transparent border-t-gray-900"></div>
-                                      </div>
+                                    <div className="absolute inset-0 bg-red-500/10 rounded flex items-center justify-center">
+                                      <span className="text-xs font-bold text-red-600 bg-white/90 px-2 py-0.5 rounded">
+                                        Full
+                                      </span>
                                     </div>
                                   )}
                                 </div>
@@ -2002,8 +2024,7 @@ export default function SchedulePage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Subscription Plans Modal */}
+        ;{/* Subscription Plans Modal */}
         <AnimatePresence>
           {isPlansModalOpen && (
             <motion.div
@@ -2496,7 +2517,6 @@ export default function SchedulePage() {
             </motion.div>
           )}
         </AnimatePresence>
-
         {/* Success Dialog */}
         <AnimatePresence>
           {isSuccessDialogOpen && (
