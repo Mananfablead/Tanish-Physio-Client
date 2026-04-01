@@ -30,6 +30,7 @@ import {
   Star,
   Check,
   ArrowRight,
+  Info,
 } from "lucide-react";
 import {
   format,
@@ -545,6 +546,23 @@ export default function SchedulePage() {
     const [sh, sm] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
     return (eh * 60 + em) - (sh * 60 + sm);
+  };
+
+  // Get service ID from a slot (same as ScheduleModal)
+  const getSlotServiceId = (slot: any) =>
+    slot?.serviceId?._id || slot?.serviceId || null;
+
+  // Check if user's selected service matches the slot's service
+  const doesServiceMatch = (slot: any) => {
+    const slotServiceId = getSlotServiceId(slot);
+    
+    // If slot has no specific service or no service is selected, consider it a match
+    if (!slotServiceId || !selectedServiceOrSubscription) {
+      return true;
+    }
+    
+    // Compare slot's service ID with selected service/subscription
+    return String(slotServiceId) === String(selectedServiceOrSubscription);
   };
 
   // Get available times for selected date from availability API
@@ -1477,14 +1495,14 @@ export default function SchedulePage() {
               transition={{ duration: 0.3 }}
             >
               <motion.div
-                className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden"
+                className="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 transition={{ duration: 0.3, type: "spring", damping: 25 }}
               >
                 {/* HEADER */}
-                <div className="flex items-center justify-between px-6 py-4 border-b">
+                <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
                   <h3 className="text-xl font-black text-slate-900">
                     Book Session
                   </h3>
@@ -1505,8 +1523,8 @@ export default function SchedulePage() {
                   </Button>
                 </div>
 
-                {/* BODY */}
-                <div className="p-6 space-y-6">
+                {/* SCROLLABLE BODY */}
+                <div className="p-6 space-y-6 overflow-y-auto flex-1">
                   {/* DATE + SESSION TYPE */}
                   <div className="flex flex-col md:flex-row justify-between gap-6 items-start">
                     {/* DATE INFO */}
@@ -1621,7 +1639,58 @@ export default function SchedulePage() {
                           <span className="w-3 h-3 rounded-full bg-red-500"></span>
                           <span className="text-slate-600">Booked</span>
                         </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+                          <span className="text-slate-600">Group Session</span>
+                        </div>
                       </div>
+                      
+                      {/* GROUP SESSION INFO BOX */}
+                      {availableTimes.some((slot: any) => slot.sessionType === "group") && (
+                        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg shadow-sm">
+                          <div className="flex items-start gap-3">
+                            <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <h5 className="font-bold text-blue-900 text-sm mb-1">
+                                Group Sessions Available
+                              </h5>
+                              <ul className="text-xs text-blue-800 space-y-1">
+                                <li className="flex items-start gap-2">
+                                  <span className="font-semibold">•</span>
+                                  <span>Multiple participants can book the same time slot</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="font-semibold">•</span>
+                                  <span>The counter shows remaining spots (e.g., "3/5 spots" means 3 spots left out of 5 total)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="font-semibold">•</span>
+                                  <span>When a slot shows "FULL", it has reached maximum capacity and is no longer available</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="font-semibold">•</span>
+                                  <span>Some group slots may require selecting a specific service to book</span>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* SERVICE SELECTION PROMPT FOR GROUP SLOTS */}
+                      {availableTimes.some((slot: any) => 
+                        slot.sessionType === "group" && getSlotServiceId(slot)
+                      ) && !selectedServiceOrSubscription && (
+                        <div className="mb-4 p-3 bg-amber-50 border-l-4 border-amber-500 rounded-md">
+                          <div className="flex items-center gap-2">
+                            <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                            <p className="text-sm text-amber-800 font-medium">
+                              📋 Select a service above to view available group time slots
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {availableTimes.length > 0 ? (
@@ -1685,13 +1754,26 @@ export default function SchedulePage() {
                               const bookedParticipants = slot.bookedParticipants || 0;
                               const availableSpots = isGroupSession ? maxParticipants - bookedParticipants : 1;
 
+                              // Check if group slot has a specific service attached
+                              const slotServiceId = getSlotServiceId(slot);
+                              const isServiceSpecificGroupSlot = isGroupSession && !!slotServiceId;
+                              
+                              // Validate service matching for group slots
+                              const serviceMatches = doesServiceMatch(slot);
+                              
+                              // For service-specific group slots, disable if service doesn't match
+                              const isServiceValid = !isServiceSpecificGroupSlot || serviceMatches;
+                              
+                              // Slot is only truly available if it passes all checks including service validation
+                              const isActuallyAvailableAndValid = isActuallyAvailable && isServiceValid;
+
                               return (
-                                <div key={slot._id} className="relative">
+                                <div key={slot._id} className="relative group">
                                   <Button
                                     size="sm"
-                                    disabled={!isActuallyAvailable}
+                                    disabled={!isActuallyAvailableAndValid}
                                     onClick={() => {
-                                      if (isActuallyAvailable) {
+                                      if (isActuallyAvailableAndValid) {
                                         const timeValue = `${formatTimeDisplay(slot.start)} - ${formatTimeDisplay(slot.end)}`;
                                         setSelectedTime(timeValue);
                                         // Store the original 24-hour time slot for backend submission
@@ -1700,43 +1782,131 @@ export default function SchedulePage() {
                                           end: slot.end,
                                         });
                                         setBookingError(null); // Clear any previous error when selecting a new time
+                                      } else if (isServiceSpecificGroupSlot && !serviceMatches) {
+                                        // Show toast if user tries to book service-specific group slot without matching service
+                                        toast.error("Please select the matching service to book this group slot");
                                       }
                                     }}
                                     className={`
-          py-2 text-sm font-medium transition-all w-full
+          py-2 px-1 text-xs font-medium transition-all w-full relative overflow-hidden min-h-[70px] h-auto
           ${
             isSelected
-              ? "bg-green-600 text-white hover:bg-green-600"
-              : isActuallyAvailable
+              ? "bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 shadow-md"
+              : isActuallyAvailableAndValid
                 ? isSuitableForService
-                  ? "border border-green-500 text-green-600 bg-green-50"
-                  : "border border-yellow-500 text-yellow-600 bg-yellow-50"
-                : isBooked
-                  ? "text-red-500 cursor-not-allowed border border-red-500"
-                  : isPast
-                    ? "text-gray-400 cursor-not-allowed border border-gray-300 bg-gray-50"
-                    : "text-gray-400 cursor-not-allowed border border-gray-400"
+                  ? "border-2 border-green-500 text-green-700 bg-green-50 hover:border-green-600 hover:bg-green-600 hover:text-white hover:shadow-sm"
+                  : "border-2 border-yellow-500 text-yellow-700 bg-yellow-50 hover:border-yellow-600 hover:bg-yellow-600 hover:text-white hover:shadow-sm"
+                : isServiceSpecificGroupSlot && !serviceMatches
+                  ? "text-gray-400 cursor-not-allowed border-2 border-gray-200 bg-gray-50 opacity-50"
+                  : isBooked
+                    ? "text-red-500 cursor-not-allowed border-2 border-red-200 bg-red-50"
+                    : isPast
+                      ? "text-gray-400 cursor-not-allowed border-2 border-gray-200 bg-gray-50"
+                      : "text-gray-400 cursor-not-allowed border-2 border-gray-200 bg-gray-50"
           }
         `}
                                     variant="outline"
                                   >
-                                    <div className="flex flex-col items-center justify-center w-full">
-                                      <span>
+                                    <div className="flex flex-col items-center justify-center w-full gap-0.5 overflow-hidden">
+                                      {/* Time display - always visible */}
+                                      <span className="font-bold text-sm whitespace-nowrap truncate w-full text-center">
                                         {formatTimeDisplay(slot.start)} –{" "}
                                         {formatTimeDisplay(slot.end)}
                                       </span>
+                                      
+                                      {/* Group session info - compact */}
                                       {isGroupSession && isActuallyAvailable && (
-                                        <span className="text-xs mt-1 font-medium">
-                                          {availableSpots} spot{availableSpots !== 1 ? "s" : ""} left
+                                        <div className="flex items-center gap-0.5 mt-0">
+                                          <Users className="h-2.5 w-2.5 text-blue-600 flex-shrink-0" />
+                                          <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                            {availableSpots}/{maxParticipants}
+                                          </span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Service indicator for service-specific group slots - compact */}
+                                      {isServiceSpecificGroupSlot && slotServiceId && (
+                                        <div className={`flex items-center gap-0.5 mt-0 px-1.5 py-0.5 rounded-full ${
+                                          serviceMatches 
+                                            ? 'bg-green-200 text-green-800' 
+                                            : 'bg-orange-100 text-orange-700'
+                                        }`}>
+                                          {serviceMatches ? (
+                                            <CheckCircle className="h-2.5 w-2.5 flex-shrink-0" />
+                                          ) : (
+                                            <Info className="h-2.5 w-2.5 flex-shrink-0" />
+                                          )}
+                                          <span className="text-[10px] font-semibold whitespace-nowrap">
+                                            {serviceMatches ? 'Matched' : 'Select Service'}
+                                          </span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Regular session type indicator */}
+                                      {!isGroupSession && (
+                                        <span className="text-[10px] text-gray-500 mt-0 whitespace-nowrap">
+                                          Individual
                                         </span>
                                       )}
                                     </div>
+                                    
+                                    {/* Group session pulse indicator - positioned absolutely */}
+                                    {isGroupSession && (
+                                      <div className="absolute top-0.5 right-0.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                                      </div>
+                                    )}
                                   </Button>
+                                  
+                                  {/* Full badge for completely booked group sessions */}
                                   {isGroupSession && !isActuallyAvailable && bookedParticipants >= maxParticipants && (
-                                    <div className="absolute inset-0 bg-red-500/10 rounded flex items-center justify-center">
-                                      <span className="text-xs font-bold text-red-600 bg-white/90 px-2 py-0.5 rounded">
-                                        Full
-                                      </span>
+                                    <div className="absolute inset-0 bg-red-500/20 backdrop-blur-[1px] rounded-lg flex items-center justify-center border-2 border-red-300">
+                                      <div className="bg-white/95 px-2 py-1 rounded-md shadow-lg text-center">
+                                        <X className="h-3 w-3 text-red-600 mx-auto mb-0.5" />
+                                        <span className="text-xs font-bold text-red-700">
+                                          FULL
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Service mismatch overlay */}
+                                  {isServiceSpecificGroupSlot && !serviceMatches && (
+                                    <div className="absolute inset-0 bg-orange-500/15 backdrop-blur-[1px] rounded-lg flex items-center justify-center border-2 border-orange-300 pointer-events-none">
+                                      <div className="bg-white/95 px-2 py-1 rounded-md shadow-lg text-center">
+                                        <Info className="h-3 w-3 text-orange-600 mx-auto mb-0.5" />
+                                        <span className="text-xs font-bold text-orange-700">
+                                          Select Service
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Tooltip for group sessions on hover */}
+                                  {isGroupSession && (
+                                    <div className="opacity-0 group-hover:opacity-100 absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 whitespace-nowrap pointer-events-none transition-opacity duration-200">
+                                      {isServiceSpecificGroupSlot ? (
+                                        <div>
+                                          <div className="font-semibold mb-1">Group Session</div>
+                                          <div className="text-gray-300">
+                                            {serviceMatches 
+                                              ? `${availableSpots} of ${maxParticipants} spots available`
+                                              : 'Select the matching service to book'}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div>
+                                          <div className="font-semibold mb-1">Group Session</div>
+                                          <div className="text-gray-300">
+                                            {bookedParticipants >= maxParticipants
+                                              ? 'Session is full'
+                                              : `${availableSpots} of ${maxParticipants} spots available`}
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                                        <div className="border-4 border-transparent border-t-gray-900"></div>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1787,8 +1957,8 @@ export default function SchedulePage() {
                   </div>
                 </div>
 
-                {/* FOOTER */}
-                <div className="flex gap-3 px-6 py-4 border-t bg-slate-50">
+                {/* FOOTER - Fixed at bottom */}
+                <div className="flex gap-3 px-6 py-4 border-t bg-slate-50 flex-shrink-0">
                   <Button
                     variant="outline"
                     className="flex-1"

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { X, ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Calendar, Clock, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { getUserTimezone, formatTimeDisplay } from "@/utils/timezone.js";
@@ -297,7 +297,8 @@ export function ScheduleModal({
           0,
           0,
         );
-        const minutesUntilSlot = Math.floor((slotDateTime - now) / (1000 * 60));
+        const diffMs = slotDateTime.getTime() - now.getTime();
+        const minutesUntilSlot = Math.floor(diffMs / (1000 * 60));
 
         // Block slots that don't meet minimum notice requirement
         if (minutesUntilSlot < minNoticePeriod) {
@@ -574,6 +575,33 @@ export function ScheduleModal({
                   </div>
                 </div>
 
+                {/* Group Booking Info Note */}
+                {selectedSessionType === 'group' || userPlanType === 'group' ? (
+                  <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-blue-700">
+                        <p className="font-semibold mb-1">How Group Sessions Work:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-1">
+                          <li>Multiple participants can book the same time slot</li>
+                          <li>You'll see how many spots are filled (e.g., 2/5 means 2 booked, 3 available)</li>
+                          <li>Once max capacity is reached, the slot becomes unavailable</li>
+                          <li>All participants join the same group session</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Service Selection Prompt for Group Slots */}
+                {shouldShowServicePicker && (
+                  <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-md text-center">
+                    <p className="text-xs text-amber-800 font-medium">
+                      📋 Select a service above to view available group time slots
+                    </p>
+                  </div>
+                )}
+
                 {/* Status Legend */}
                 <div className="flex flex-wrap gap-3 text-xs mb-3">
                   <div className="flex items-center gap-1">
@@ -591,6 +619,10 @@ export function ScheduleModal({
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-orange-400"></span>
                     <span className="text-slate-600">Too Late to Book</span>
+                  </div>
+                  <div className="flex items-center gap-1" title="Group slots can be booked by multiple participants until max capacity is reached">
+                    <Info className="h-3 w-3 text-blue-500" />
+                    <span className="text-slate-600">Group Session Info</span>
                   </div>
                 </div>
               </div>
@@ -651,9 +683,8 @@ export function ScheduleModal({
                     slotDateTime.setHours(hours, minutes, 0, 0);
 
                     const now = new Date();
-                    const minutesUntilSlot = Math.floor(
-                      (slotDateTime - now) / (1000 * 60),
-                    );
+                    const diffMs = slotDateTime.getTime() - now.getTime();
+                    const minutesUntilSlot = Math.floor(diffMs / (1000 * 60));
 
                     return minutesUntilSlot >= minNotice;
                   };
@@ -764,6 +795,7 @@ export function ScheduleModal({
                               }
                             }}
                             className={`
+                              group relative
                               w-full p-2 rounded-lg border text-left text-sm font-medium transition-all
                               ${
                                 isSelected
@@ -792,12 +824,20 @@ export function ScheduleModal({
                               )
                             </div>
                             {slot.sessionType === "group" && (
-                              <div className="text-xs mt-1">
+                              <div className="text-xs mt-1 flex items-center gap-1">
                                 <span className="font-semibold">
                                   {slot.bookedParticipants ?? 0}/
                                   {slot.maxParticipants ?? 0}
                                 </span>{" "}
                                 booked
+                                <Info className="h-3 w-3 text-blue-500 cursor-help" />
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                                  <div className="bg-slate-800 text-white text-xs rounded-md p-2 w-48 shadow-lg">
+                                    <p className="font-semibold mb-1">Group Session Booking</p>
+                                    <p>This slot can be booked by multiple participants. Once the maximum capacity ({slot.maxParticipants ?? 0}) is reached, no more bookings will be accepted.</p>
+                                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-slate-800"></div>
+                                  </div>
+                                </div>
                               </div>
                             )}
                             {slot.sessionType === "group" &&
