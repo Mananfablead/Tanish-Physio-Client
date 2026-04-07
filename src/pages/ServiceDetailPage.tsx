@@ -77,20 +77,15 @@ const ServiceHero = ({ service }: { service: ExtendedService }) => {
   );
 
   console.log("publicAdmins", publicAdmins);
-  // Combine all images (hero, about, and additional images from backend)
-  const allImages = [
+  // Get only the actual images from media (hero and about)
+  // Do NOT use features array as it contains text features, not images
+  const validImages = [
     service.media?.heroImage,
     service.media?.aboutImage,
-    ...(service.details.features || []), // Assuming features might contain additional images
-  ].filter((img) => img); // Remove any undefined/null values
+  ].filter((img) => img && typeof img === 'string' && img.trim() !== '');
 
-  // If no images from features, just use hero and about images
-  const validImages =
-    allImages.length > 0
-      ? allImages
-      : [service.media?.heroImage, service.media?.aboutImage].filter(
-          (img) => img,
-        );
+  // Debug: Log the images being used
+  console.log('Valid images for slider:', validImages);
 
   const hasNextImage = currentImageIndex < validImages.length - 1;
   const hasPrevImage = currentImageIndex > 0;
