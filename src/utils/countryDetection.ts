@@ -14,6 +14,33 @@ let cachedCountryInfo: CountryInfo | null = null;
 let cacheTimestamp: number | null = null;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
+// localStorage key for persisting detected country across page refreshes
+const LS_COUNTRY_KEY = 'detected_country_info';
+const LS_COUNTRY_TS_KEY = 'detected_country_ts';
+
+const saveCountryToStorage = (info: CountryInfo): void => {
+  try {
+    localStorage.setItem(LS_COUNTRY_KEY, JSON.stringify(info));
+    localStorage.setItem(LS_COUNTRY_TS_KEY, Date.now().toString());
+  } catch (_) { /* ignore storage errors */ }
+};
+
+const loadCountryFromStorage = (): CountryInfo | null => {
+  try {
+    const ts = localStorage.getItem(LS_COUNTRY_TS_KEY);
+    if (!ts) return null;
+    if (Date.now() - parseInt(ts) > CACHE_DURATION) {
+      localStorage.removeItem(LS_COUNTRY_KEY);
+      localStorage.removeItem(LS_COUNTRY_TS_KEY);
+      return null;
+    }
+    const raw = localStorage.getItem(LS_COUNTRY_KEY);
+    return raw ? (JSON.parse(raw) as CountryInfo) : null;
+  } catch (_) {
+    return null;
+  }
+};
+
 // Get country from user profile (if available)
 const getCountryFromProfile = (): string | null => {
   const user = localStorage.getItem("user");
@@ -105,7 +132,7 @@ export const detectUserCountry = async (): Promise<CountryInfo> => {
   const currency: "₹" | "$" = country === "India" ? "₹" : "$";
   const countryCode = country === "India" ? "IN" : "US"; // Simplified
 
-  // Cache the result
+  // Cache the result in memory AND localStorage so page refreshes get it instantly
   const result: CountryInfo = {
     country,
     currency,
@@ -114,6 +141,7 @@ export const detectUserCountry = async (): Promise<CountryInfo> => {
 
   cachedCountryInfo = result;
   cacheTimestamp = now;
+  saveCountryToStorage(result);
 
   return result;
 };
@@ -130,11 +158,20 @@ export const getCountryInfoSync = (): CountryInfo => {
     return cachedCountryInfo;
   }
 
+  // Check localStorage first — this holds the IP-detected country from a previous visit
+  const stored = loadCountryFromStorage();
+  if (stored) {
+    // Restore to in-memory cache too
+    cachedCountryInfo = stored;
+    cacheTimestamp = now;
+    return stored;
+  }
+
   const country = getCountryFromProfile() || getCountryFromLanguage();
   const currency: "₹" | "$" = country === "India" ? "₹" : "$";
   const countryCode = country === "India" ? "IN" : "US";
 
-  // Cache the result
+  // Cache the result (do NOT save to localStorage here — only async IP detection should do that)
   const result: CountryInfo = {
     country,
     currency,
@@ -157,4 +194,8 @@ export const isUserFromIndia = (): boolean => {
 export const clearCountryCache = (): void => {
   cachedCountryInfo = null;
   cacheTimestamp = null;
+  try {
+    localStorage.removeItem(LS_COUNTRY_KEY);
+    localStorage.removeItem(LS_COUNTRY_TS_KEY);
+  } catch (_) { /* ignore */ }
 };
