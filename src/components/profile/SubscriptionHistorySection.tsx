@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SubscriptionWithExpiration } from "@/types/user";
+import { getCountryFromIP } from "@/services/ipLocationService";
 
 interface Subscription extends SubscriptionWithExpiration {
   endDate: string;
@@ -46,8 +47,6 @@ export function SubscriptionHistorySection({
   useEffect(() => {
     const checkCurrency = async () => {
       try {
-        const { getCountryFromIP } =
-          await import("../../services/ipLocationService");
         const countryCode = await getCountryFromIP();
 
         if (countryCode === "IN") {

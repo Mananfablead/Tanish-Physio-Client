@@ -104,7 +104,7 @@ export default defineConfig(({ mode }) => ({
     "process.browser": true,
     "process.nextTick": "globalThis.queueMicrotask",
     // Remove console in production
-    // __DEV__: `${mode === "development"}`,
+    __DEV__: `${mode === "development"}`,
   },
   resolve: {
     alias: {

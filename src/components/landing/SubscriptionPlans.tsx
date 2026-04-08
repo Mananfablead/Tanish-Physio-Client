@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getPriceByLocationSync } from "@/utils/priceUtils";
+import { getCountryFromIP } from "@/services/ipLocationService";
 
 interface SubscriptionPlansProps {
   subscriptionPlans: any[];
@@ -37,8 +38,6 @@ export const SubscriptionPlans = ({
   useEffect(() => {
     const checkCurrency = async () => {
       try {
-        const { getCountryFromIP } =
-          await import("@/services/ipLocationService");
         const countryCode = await getCountryFromIP();
 
         console.log("💳 Subscription Currency Detection:", {
@@ -226,7 +225,11 @@ export const SubscriptionPlans = ({
                               if (priceUSD !== undefined && priceUSD > 0) {
                                 return priceUSD.toLocaleString();
                               }
-                              const priceINR = plan.price_inr ?? plan.priceINR ?? plan.price ?? 0;
+                              const priceINR =
+                                plan.price_inr ??
+                                plan.priceINR ??
+                                plan.price ??
+                                0;
                               return priceINR.toLocaleString();
                             }
                           })()}

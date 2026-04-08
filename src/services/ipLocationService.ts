@@ -13,6 +13,9 @@ let ipLocationCache: {
   timestamp: number;
 } | null = null;
 
+// Promise queue to prevent duplicate concurrent API calls
+let pendingFetchPromise: Promise<IPLocationData | null> | null = null;
+
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export interface IPLocationData {
@@ -108,19 +111,35 @@ export const getCachedIPLocation = async (): Promise<IPLocationData | null> => {
     }
   }
   
-  // Fetch fresh data
-  const locationData = await getIPLocation();
-  
-  if (locationData) {
-    // Cache the result
-    ipLocationCache = {
-      data: locationData,
-      timestamp: Date.now(),
-    };
-    console.log('[Cached IP Location] Data cached successfully');
+  // If there's already a pending fetch, return that promise instead of making a new call
+  if (pendingFetchPromise) {
+    console.log('[Cached IP Location] Using pending fetch promise to avoid duplicate call');
+    return pendingFetchPromise;
   }
   
-  return locationData;
+  // Fetch fresh data
+  pendingFetchPromise = getIPLocation().then((locationData) => {
+    if (locationData) {
+      // Cache the result
+      ipLocationCache = {
+        data: locationData,
+        timestamp: Date.now(),
+      };
+      console.log('[Cached IP Location] Data cached successfully');
+    }
+    
+    // Clear the pending promise
+    pendingFetchPromise = null;
+    
+    return locationData;
+  }).catch((error) => {
+    console.error('[Cached IP Location] Fetch failed:', error);
+    // Clear the pending promise on error too
+    pendingFetchPromise = null;
+    return null;
+  });
+  
+  return pendingFetchPromise;
 };
 
 /**
@@ -129,6 +148,7 @@ export const getCachedIPLocation = async (): Promise<IPLocationData | null> => {
 export const clearIPLocationCache = (): void => {
   console.log('[Cached IP Location] Cache cleared manually');
   ipLocationCache = null;
+  pendingFetchPromise = null;
 };
 
 /**
@@ -190,3 +210,4 @@ export const getTimezoneFromIP = async (): Promise<string | null> => {
     return null;
   }
 };
+

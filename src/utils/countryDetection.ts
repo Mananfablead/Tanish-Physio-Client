@@ -1,6 +1,8 @@
 // Country detection utility
 // This will detect the user's country using IP-based geolocation or user profile
 
+import { getCountryFromIP as fetchCountryFromBackend } from "../services/ipLocationService";
+
 interface CountryInfo {
   country: string;
   currency: "₹" | "$";
@@ -29,25 +31,23 @@ const getCountryFromProfile = (): string | null => {
 // Get country from IP-based geolocation using your backend API
 const getCountryFromIP = async (): Promise<string | null> => {
   try {
-    // Import the service that calls your backend API
-    const { getCountryFromIP: fetchCountryFromBackend } = await import('../services/ipLocationService');
-    
+    // Use the imported function directly
     const countryCode = await fetchCountryFromBackend();
-    
+
     if (countryCode) {
       // Convert country code to country name if needed
       const countryNames: Record<string, string> = {
-        IN: 'India',
-        US: 'United States',
-        GB: 'United Kingdom',
-        AU: 'Australia',
-        CA: 'Canada',
+        IN: "India",
+        US: "United States",
+        GB: "United Kingdom",
+        AU: "Australia",
+        CA: "Canada",
         // Add more as needed
       };
-      
+
       return countryNames[countryCode] || countryCode;
     }
-    
+
     return null;
   } catch (error) {
     console.warn("Failed to detect country from IP:", error);
