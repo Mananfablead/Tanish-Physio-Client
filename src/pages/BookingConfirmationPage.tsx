@@ -28,6 +28,7 @@ import {
   checkUserExists,
   checkSubscriptionEligibility,
 } from "@/lib/api";
+import { getCountryFromIP } from "@/services/ipLocationService";
 import { useAuth } from "@/context/AuthContext";
 import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -54,8 +55,6 @@ export default function BookingConfirmationPage() {
   useEffect(() => {
     const checkCurrency = async () => {
       try {
-        const { getCountryFromIP } =
-          await import("../services/ipLocationService");
         const countryCode = await getCountryFromIP();
 
         if (countryCode === "IN") {

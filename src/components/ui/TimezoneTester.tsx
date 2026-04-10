@@ -41,7 +41,7 @@ export function TimezoneTester() {
   // Get actual browser timezone
   const browserTimezone = getUserTimezone();
 
-  // Fetch IP-based location on mount
+  // Fetch IP-based location on mount (only once)
   useEffect(() => {
     const fetchIPLocation = async () => {
       setLoadingIP(true);
@@ -49,10 +49,6 @@ export function TimezoneTester() {
         const locationData = await getCachedIPLocation();
         if (locationData) {
           setIPLocation(locationData);
-          console.log(
-            "[TimezoneTester] IP Location detected:",
-            getFriendlyLocation(locationData),
-          );
         }
       } catch (error) {
         console.error("[TimezoneTester] Failed to fetch IP location:", error);
@@ -61,10 +57,11 @@ export function TimezoneTester() {
       }
     };
 
-    if (isPanelOpen) {
+    if (isPanelOpen && !ipLocation) {
+      // Only fetch if panel is open AND we don't have location data yet
       fetchIPLocation();
     }
-  }, [isPanelOpen]);
+  }, [isPanelOpen]); // Removed ipLocation from dependencies to prevent re-fetching
 
   // Use selected timezone or browser timezone
   const activeTimezone =

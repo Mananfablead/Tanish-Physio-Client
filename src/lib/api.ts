@@ -24,39 +24,36 @@ const api = axios.create({
 
 // Add timezone header to all requests - enables automatic country-wise conversion
 // Priority order: Manual test > IP-based detection > Browser timezone
+let cachedTimezone: string | null = null;
+
 api.interceptors.request.use(async (config) => {
   // Check if there's a manual test timezone set (from TimezoneTester component)
-  const testTimezone = typeof window !== 'undefined' 
-    ? localStorage.getItem('test-timezone') 
-    : null;
-  
+  const testTimezone =
+    typeof window !== "undefined"
+      ? localStorage.getItem("test-timezone")
+      : null;
+
   let timezone: string | null = null;
-  
-  if (testTimezone && testTimezone !== 'auto') {
+
+  if (testTimezone && testTimezone !== "auto") {
     // Manual override has highest priority
     timezone = testTimezone;
-    console.log('[Timezone Header] Using manual test timezone:', timezone);
   } else {
-    // Try IP-based detection
+    // Try IP-based detection (cached, so very fast)
     const ipLocation = await getCachedIPLocation();
-    
+
     if (ipLocation?.timezone) {
       timezone = ipLocation.timezone;
-      console.log('[Timezone Header] Using IP-detected timezone:', timezone,
-        `(${ipLocation.city}, ${ipLocation.country})`);
     } else {
       // Fallback to browser timezone
       timezone = getUserTimezone();
-      console.log('[Timezone Header] Using browser timezone:', timezone);
     }
   }
-  
+
   if (timezone) {
     config.headers["X-Timezone"] = timezone;
-    console.log("[Timezone Header] Setting X-Timezone header:", timezone);
-  } else {
-    console.warn("[Timezone Header] No timezone detected, not setting header");
   }
+
   return config;
 });
 

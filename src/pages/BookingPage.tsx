@@ -74,7 +74,10 @@ import {
 } from "@/store/slices/authSlice";
 import BookingLoginModal from "@/components/BookingLoginModal";
 import { fetchAllServices } from "@/store/slices/serviceSlice";
-import { getCurrencyByLocation, detectUserCountry } from "@/utils/currencyDetector";
+import {
+  getCurrencyByLocation,
+  detectUserCountry,
+} from "@/utils/currencyDetector";
 
 declare global {
   interface Window {
@@ -129,10 +132,10 @@ export default function BookingPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
   const { admins: publicAdmins } = useSelector(
-    (state: RootState) => state.admins
+    (state: RootState) => state.admins,
   );
   const { offers: storeOffers, loading: offersStoreLoading } = useSelector(
-    (state: RootState) => state.offers
+    (state: RootState) => state.offers,
   );
   // console.log("publicAdmins", publicAdmins)
 
@@ -154,13 +157,16 @@ export default function BookingPage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
     start: string;
     end: string;
+    sessionType?: string;
   } | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<any[]>([]);
-  const [selectedSessionType, setSelectedSessionType] = useState<'one-to-one' | 'group' | 'all'>('all');
+  const [selectedSessionType, setSelectedSessionType] = useState<
+    "one-to-one" | "group" | "all"
+  >("all");
 
   // Subscription state
   const [subscriptionEligible, setSubscriptionEligible] =
@@ -170,11 +176,11 @@ export default function BookingPage() {
     useState<boolean>(false);
   // console.log("availabilitylllllllll", availability)
   const [scheduleOption, setScheduleOption] = useState<"now" | "later" | null>(
-    null
+    null,
   );
 
   const { services, loading, error } = useSelector(
-    (state: RootState) => state.services
+    (state: RootState) => state.services,
   );
 
   console.log("services", services);
@@ -449,12 +455,12 @@ export default function BookingPage() {
       ? 0
       : Number(
           detectedCurrency === "INR"
-            ? bookingData.service.price_inr ??
+            ? (bookingData.service.price_inr ??
                 bookingData.service.priceINR ??
-                bookingData.service.price
-            : bookingData.service.price_usd ??
+                bookingData.service.price)
+            : (bookingData.service.price_usd ??
                 bookingData.service.priceUSD ??
-                bookingData.service.price,
+                bookingData.service.price),
         ) || 0;
 
   const plan = bookingData?.plan ?? {
@@ -465,10 +471,7 @@ export default function BookingPage() {
           ? `${bookingData.service.name} Plan`
           : "Default Plan",
 
-    price:
-      hasActivePlan && !isSessionLimitReached
-        ? 0
-        : selectedServicePrice,
+    price: hasActivePlan && !isSessionLimitReached ? 0 : selectedServicePrice,
 
     // Add currency field - use detected currency (auto-detected based on location)
     currency: detectedCurrency,
@@ -743,7 +746,7 @@ export default function BookingPage() {
     setScheduleTime("");
     setSelectedTimeSlot(null);
     setScheduleError(null);
-    
+
     try {
       // Fetch real availability data from API
       // Timezone will be automatically added by axios interceptor
@@ -1220,8 +1223,8 @@ export default function BookingPage() {
           )
         ) {
           // Display the actual backend error message
-          const errorMessage = 
-            paymentOrderResult.payload as string || 
+          const errorMessage =
+            (paymentOrderResult.payload as string) ||
             "Failed to create subscription payment order. Please try again.";
           toast.error(errorMessage);
           setIsProcessing(false);
@@ -1599,7 +1602,10 @@ export default function BookingPage() {
             if (error) {
               void markPaymentFailed({
                 orderId,
-                reason: error?.description || error?.error?.description || "Payment failed in checkout",
+                reason:
+                  error?.description ||
+                  error?.error?.description ||
+                  "Payment failed in checkout",
               });
               console.error("Payment failed:", error);
               toast.error(
@@ -1709,9 +1715,8 @@ export default function BookingPage() {
 
         if (!isGuestUser && effectiveServiceId) {
           try {
-            subscriptionCheckResult = await checkSubscriptionBookingEligibility(
-              effectiveServiceId,
-            );
+            subscriptionCheckResult =
+              await checkSubscriptionBookingEligibility(effectiveServiceId);
             useSubscriptionBooking =
               subscriptionCheckResult.data?.data?.eligible === true;
             subscriptionInfo = subscriptionCheckResult.data?.data?.subscription;
@@ -2344,7 +2349,10 @@ export default function BookingPage() {
             if (error) {
               void markPaymentFailed({
                 orderId,
-                reason: error?.description || error?.error?.description || "Payment failed in checkout",
+                reason:
+                  error?.description ||
+                  error?.error?.description ||
+                  "Payment failed in checkout",
               });
               console.error("Payment failed:", error);
               toast.error(
@@ -3725,7 +3733,10 @@ export default function BookingPage() {
                           if (error) {
                             void markPaymentFailed({
                               orderId,
-                              reason: error?.description || error?.error?.description || "Payment failed in checkout",
+                              reason:
+                                error?.description ||
+                                error?.error?.description ||
+                                "Payment failed in checkout",
                             });
                             console.error("Payment failed:", error);
                             toast.error(

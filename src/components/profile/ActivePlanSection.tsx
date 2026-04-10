@@ -16,6 +16,7 @@ import { useAppDispatch } from "@/store";
 import { fetchSubscriptionPlans } from "@/store/slices/subscriptionSlice";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
+import { getCountryFromIP } from "@/services/ipLocationService";
 
 interface ActivePlanSectionProps {
   activePlan: any;
@@ -39,8 +40,6 @@ export function ActivePlanSection({
   useEffect(() => {
     const checkCurrency = async () => {
       try {
-        const { getCountryFromIP } =
-          await import("../../services/ipLocationService");
         const countryCode = await getCountryFromIP();
 
         if (countryCode === "IN") {
