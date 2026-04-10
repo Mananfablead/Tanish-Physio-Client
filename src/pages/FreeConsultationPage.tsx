@@ -38,6 +38,8 @@ import { fetchPublicAdmins } from "@/store/slices/adminSlice";
 import { getAvailability, checkSubscriptionEligibility } from "@/lib/api";
 import { register } from "@/store/slices/authSlice";
 import api from "@/lib/api";
+import { ChevronDown } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 
 export default function FreeConsultationPage() {
   const navigate = useNavigate();
@@ -46,8 +48,9 @@ export default function FreeConsultationPage() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
-  const [selectedSlot, setSelectedSlot] = useState<any>(null); // Store the full slot object
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<any | null>(null);
+  const [selectedHourBlock, setSelectedHourBlock] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [guestUserData, setGuestUserData] = useState({
@@ -207,39 +210,55 @@ export default function FreeConsultationPage() {
     if (!date) return;
 
     setLoadingSlots(true);
-    try {
-      const response = await getAvailability();
-      const allAvailability = response.data.data.availability;
 
-      // Filter for free consultation slots only (available slots with bookingType 'free-consultation' from admin therapists)
-      const freeConsultationSlots = allAvailability
-        .filter((avail: any) => avail.therapistId.role === "admin")
-        .flatMap((avail: any) =>
-          avail.timeSlots
-            .filter(
-              (slot: any) =>
-                slot.status === "available" &&
-                slot.bookingType === "free-consultation",
-            )
-            .map((slot: any) => ({
-              ...slot,
-              date: avail.date,
-              therapistId: avail.therapistId._id,
-              therapistName: avail.therapistId.name,
-              // Use originalStart/originalEnd if available (admin's actual time), otherwise use start/end
-              displayStart: slot.originalStart || slot.start,
-              displayEnd: slot.originalEnd || slot.end,
-            })),
-        )
-        .filter((slot: any) => slot.date === date);
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+    const totalCurrentMin = currentHour * 60 + currentMin + 30; // Add 30-min buffer
 
-      setAvailableSlots(freeConsultationSlots);
-    } catch (error) {
-      console.error("Error fetching availability:", error);
-      toast.error("Failed to load available slots");
-    } finally {
-      setLoadingSlots(false);
+    const formatAMPM = (h: number, m: number) => {
+      const period = h >= 12 ? "PM" : "AM";
+      const h12 = h % 12 || 12;
+      return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+    };
+
+    // Generate static 15-minute segments for the whole day (10:00 AM to 8:00 PM)
+    const slots: any[] = [];
+    const startTimeTotal = 10 * 60; // 10:00 AM
+    const endTimeTotal = 20 * 60; // 8:00 PM
+
+    for (let min = startTimeTotal; min + 15 <= endTimeTotal; min += 15) {
+      // If selected date is today, hide slots that are in the past or starting very soon
+      if (date === todayStr && min < totalCurrentMin) {
+        continue;
+      }
+
+      const h1 = Math.floor(min / 60);
+      const m1 = min % 60;
+      const h2 = Math.floor((min + 15) / 60);
+      const m2 = (min + 15) % 60;
+
+      const start = `${String(h1).padStart(2, "0")}:${String(m1).padStart(2, "0")}`;
+      const end = `${String(h2).padStart(2, "0")}:${String(m2).padStart(2, "0")}`;
+
+      slots.push({
+        start,
+        end,
+        displayStart: formatAMPM(h1, m1),
+        displayEnd: formatAMPM(h2, m2),
+        duration: 15,
+        status: "available",
+        bookingType: "free-consultation",
+        date: date,
+      });
     }
+
+    // Simulate minor delay for UX
+    setTimeout(() => {
+      setAvailableSlots(slots);
+      setLoadingSlots(false);
+    }, 300);
   };
 
   useEffect(() => {
@@ -250,13 +269,15 @@ export default function FreeConsultationPage() {
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
-    setSelectedTime("");
+    setSelectedTime(null);
+    setSelectedSlot(null);
+    setSelectedHourBlock(null);
   };
 
   const handleTimeSelect = (slot: any) => {
-    // Use the original admin time (not converted client time)
-    setSelectedTime(`${slot.displayStart}-${slot.displayEnd}`);
-    // Store the actual slot data for booking
+    // Use the 24-hour start time as the unique identifier for selection
+    setSelectedTime(slot.start);
+    // Store the full slot object for booking
     setSelectedSlot(slot);
   };
 
@@ -291,13 +312,20 @@ export default function FreeConsultationPage() {
         scheduledTime: selectedTime,
         timeSlot: selectedSlot
           ? {
-              start: selectedSlot.displayStart || selectedSlot.start,
-              end: selectedSlot.displayEnd || selectedSlot.end,
-            }
+            start: selectedSlot.start,
+            end: selectedSlot.end,
+          }
           : {
-              start: selectedTime.split("-")[0],
-              end: selectedTime.split("-")[1],
-            },
+            start: selectedTime,
+            // Calculate end time (15 mins later) if slot object is missing
+            end: (() => {
+              const [h, m] = selectedTime.split(":").map(Number);
+              const total = h * 60 + m + 15;
+              const h2 = Math.floor(total / 60);
+              const m2 = total % 60;
+              return `${String(h2).padStart(2, "0")}:${String(m2).padStart(2, "0")}`;
+            })(),
+          },
         bookingType: "free-consultation", // Add this field
       };
 
@@ -496,36 +524,80 @@ export default function FreeConsultationPage() {
                                   </p>
                                 </div>
                               ) : availableSlots.length > 0 ? (
-                                <div className="grid grid-cols-3 gap-2">
-                                  {availableSlots.map((slot, index) => (
-                                    <motion.div
-                                      key={index}
-                                      initial={{ opacity: 0, scale: 0.8 }}
-                                      animate={{ opacity: 1, scale: 1 }}
-                                      transition={{ delay: index * 0.05 }}
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                    >
-                                      <Button
-                                        variant={
-                                          selectedTime ===
-                                          `${slot.displayStart}-${slot.displayEnd}`
-                                            ? "hero"
-                                            : "outline"
-                                        }
-                                        onClick={() => handleTimeSelect(slot)}
-                                        className={`w-full h-12 text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ${
-                                          selectedTime ===
-                                          `${slot.displayStart}-${slot.displayEnd}`
-                                            ? "bg-gradient-to-r from-[hsl(174_62%_45%)] to-teal-600 text-white"
-                                            : "bg-white hover:bg-gradient-to-r  border-2"
-                                        }`}
-                                      >
-                                        <Clock className="h-4 w-4 mr-1" />
-                                        {slot.displayStart} - {slot.displayEnd}
-                                      </Button>
-                                    </motion.div>
-                                  ))}
+                                <div className="space-y-4 max-h-[340px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-teal-500 scrollbar-track-transparent">
+                                  {Object.entries(
+                                    availableSlots.reduce((acc: any, slot: any) => {
+                                      const hour = slot.start.split(":")[0] + ":00";
+                                      if (!acc[hour]) acc[hour] = [];
+                                      acc[hour].push(slot);
+                                      return acc;
+                                    }, {})
+                                  ).map(([hour, slots]: [string, any], blockIndex) => {
+                                    const h = parseInt(hour.split(":")[0]);
+                                    const period = h >= 12 ? "PM" : "AM";
+                                    const h12 = h % 12 || 12;
+                                    const nextH = (h + 1) % 24;
+                                    const nextPeriod = nextH >= 12 ? "PM" : "AM";
+                                    const nextH12 = nextH % 12 || 12;
+                                    const label = `${h12}:00 ${period} - ${nextH12}:00 ${nextPeriod}`;
+                                    const isActive = selectedHourBlock === hour;
+
+                                    return (
+                                      <div key={hour} className="border-2 border-teal-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+                                        <button
+                                          onClick={() => setSelectedHourBlock(isActive ? null : hour)}
+                                          className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${isActive ? "bg-teal-50" : "hover:bg-gray-50"
+                                            }`}
+                                        >
+                                          <div className="flex items-center space-x-3">
+                                            <div className={`p-2 rounded-lg ${isActive ? "bg-teal-500 text-white" : "bg-teal-100 text-teal-600"}`}>
+                                              <Clock className="h-5 w-5" />
+                                            </div>
+                                            <span className="font-bold text-gray-700">{label}</span>
+                                          </div>
+                                          <motion.div
+                                            animate={{ rotate: isActive ? 180 : 0 }}
+                                            className="text-teal-500"
+                                          >
+                                            <ChevronDown className="h-5 w-5" />
+                                          </motion.div>
+                                        </button>
+
+                                        <AnimatePresence>
+                                          {isActive && (
+                                            <motion.div
+                                              initial={{ height: 0, opacity: 0 }}
+                                              animate={{ height: "auto", opacity: 1 }}
+                                              exit={{ height: 0, opacity: 0 }}
+                                              className="px-5 pb-5 pt-2"
+                                            >
+                                              <div className="grid grid-cols-2 gap-3">
+                                                {slots.map((slot: any, index: number) => (
+                                                  <motion.div
+                                                    key={index}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                  >
+                                                    <Button
+                                                      variant={selectedTime === slot.start ? "hero" : "outline"}
+                                                      onClick={() => handleTimeSelect(slot)}
+                                                      className={`w-full h-12 text-sm font-bold rounded-xl transition-all ${selectedTime === slot.start
+                                                        ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-md"
+                                                        : "bg-white hover:border-teal-400 text-gray-600"
+                                                        }`}
+                                                    >
+                                                      {slot.displayStart}
+                                                    </Button>
+                                                  </motion.div>
+                                                ))}
+                                              </div>
+                                            </motion.div>
+                                          )}
+                                        </AnimatePresence>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <div className="text-center py-8 bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl border-2 border-dashed border-red-200">

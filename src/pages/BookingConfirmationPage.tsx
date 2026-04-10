@@ -348,7 +348,7 @@ export default function BookingConfirmationPage() {
     bookingData?.session?.duration ||
     bookingData?.service?.duration ||
     bookingData?.plan?.duration ||
-    (isFreeConsultation ? "30 mins" : "60 mins");
+    (isFreeConsultation ? "15 mins" : "45 mins");
 
   const servicePrice =
     // bookingDetails?.amount ||
@@ -364,31 +364,31 @@ export default function BookingConfirmationPage() {
 
   const sessionDate = bookingDetails?.date
     ? new Date(bookingDetails.date).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+    : bookingData?.scheduleDate
+      ? new Date(bookingData.scheduleDate).toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
       })
-    : bookingData?.scheduleDate
-      ? new Date(bookingData.scheduleDate).toLocaleDateString("en-US", {
+      : bookingData?.selectedSlot?.date
+        ? new Date(bookingData.selectedSlot.date).toLocaleDateString("en-US", {
           weekday: "short",
           month: "short",
           day: "numeric",
           year: "numeric",
         })
-      : bookingData?.selectedSlot?.date
-        ? new Date(bookingData.selectedSlot.date).toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
         : new Date().toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
 
   const sessionTime =
     bookingDetails?.time ||
@@ -895,41 +895,38 @@ export default function BookingConfirmationPage() {
           <div class="invoice-details grid grid-cols-2 gap-8 mb-8">
             <div>
               <h3 class="text-lg font-semibold mb-2">Bill To:</h3>
-              <p class="font-medium">${
-                user?.name || guestUser?.name || "Guest User"
-              }</p>
-              <p class="text-gray-600">${
-                user?.email || guestUser?.email || "N/A"
-              }</p>
-              <p class="text-gray-600">${
-                user?.phone || guestUser?.phone || "N/A"
-              }</p>
+              <p class="font-medium">${user?.name || guestUser?.name || "Guest User"
+        }</p>
+              <p class="text-gray-600">${user?.email || guestUser?.email || "N/A"
+        }</p>
+              <p class="text-gray-600">${user?.phone || guestUser?.phone || "N/A"
+        }</p>
             </div>
             
             <div class="text-right">
               <div class="mb-4">
                 <p class="text-gray-600">Invoice Date:</p>
                 <p class="font-medium">${new Date().toLocaleDateString(
-                  "en-US",
-                  {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  },
-                )}</p>
+          "en-US",
+          {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          },
+        )}</p>
               </div>
               <div>
                 <p class="text-gray-600">Due Date:</p>
                 <p class="font-medium">${new Date().toLocaleDateString(
-                  "en-US",
-                  {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  },
-                )}</p>
+          "en-US",
+          {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          },
+        )}</p>
               </div>
             </div>
           </div>
@@ -950,11 +947,10 @@ export default function BookingConfirmationPage() {
                     <td class="p-3 border-t">
                       <div class="font-medium">${serviceName}</div>
                       <div class="text-gray-600 text-sm">
-                        ${
-                          isSubscription
-                            ? "Subscription Plan"
-                            : "Service Booking"
-                        }
+                        ${isSubscription
+          ? "Subscription Plan"
+          : "Service Booking"
+        }
                       </div>
                     </td>
                     <td class="p-3 border-t">
@@ -963,14 +959,13 @@ export default function BookingConfirmationPage() {
                     </td>
                     <td class="p-3 border-t">
                       <div>${therapist.name}</div>
-                      <div class="text-gray-600 text-sm">${
-                        therapist.title
-                      }</div>
+                      <div class="text-gray-600 text-sm">${therapist.title
+        }</div>
                     </td>
                     <td class="p-3 border-t text-right">
                       {currencySymbol}${sanitizedServicePrice
-                        ?.toString()
-                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+          ?.toString()
+          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                     </td>
                   </tr>
                 </tbody>
@@ -982,11 +977,10 @@ export default function BookingConfirmationPage() {
             <div>
               <h3 class="text-lg font-semibold mb-2">Payment Method</h3>
               <p class="text-gray-600">
-                ${
-                  bookingDetails?.paymentMethod ||
-                  bookingData?.paymentMethod ||
-                  "Online Payment"
-                }
+                ${bookingDetails?.paymentMethod ||
+        bookingData?.paymentMethod ||
+        "Online Payment"
+        }
               </p>
             </div>
             
@@ -994,8 +988,8 @@ export default function BookingConfirmationPage() {
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Subtotal:</span>
                 <span>{currencySymbol}${sanitizedServicePrice
-                  ?.toString()
-                  .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+          ?.toString()
+          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
               </div>
               <div class="flex justify-between mb-2">
                 <span class="text-gray-600">Tax:</span>
@@ -1005,16 +999,16 @@ export default function BookingConfirmationPage() {
                 <span class="text-gray-600">Discount:</span>
                 <span>
                   {currencySymbol}${(bookingDetails?.discountAmount || 0)
-                    ?.toString()
-                    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+          ?.toString()
+          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </span>
               </div>
               <div class="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Total:</span>
                 <span>
                   {currencySymbol}${sanitizedServicePrice
-                    ?.toString()
-                    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+          ?.toString()
+          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </span>
               </div>
             </div>
@@ -1548,27 +1542,27 @@ export default function BookingConfirmationPage() {
                             </span>
                             <span className="font-medium">
                               {subscriptionInfo.availableSessions?.remaining !==
-                              undefined
+                                undefined
                                 ? `${subscriptionInfo.availableSessions.remaining} of ${subscriptionInfo.availableSessions.total} sessions remaining`
                                 : "Unlimited"}
                             </span>
                           </div>
                           {subscriptionInfo.availableSessions
                             ?.percentageUsed !== undefined && (
-                            <div>
-                              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                                <div
-                                  className="bg-green-600 h-2 rounded-full"
-                                  style={{
-                                    width: `${subscriptionInfo.availableSessions.percentageUsed}%`,
-                                  }}
-                                ></div>
+                              <div>
+                                <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                  <div
+                                    className="bg-green-600 h-2 rounded-full"
+                                    style={{
+                                      width: `${subscriptionInfo.availableSessions.percentageUsed}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                                <p className="text-xs text-green-700 text-right">
+                                  {subscriptionInfo.availableSessions.used} used
+                                </p>
                               </div>
-                              <p className="text-xs text-green-700 text-right">
-                                {subscriptionInfo.availableSessions.used} used
-                              </p>
-                            </div>
-                          )}
+                            )}
                           {/* <div className="flex justify-between">
                             <span className="text-green-700">Valid Until:</span>
                             <span className="font-medium">

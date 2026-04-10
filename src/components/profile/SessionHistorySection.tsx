@@ -176,10 +176,10 @@ export function SessionHistorySection({
           description: "Your therapist has been notified to generate a Google Meet link for this session.",
           variant: "default",
         });
-        
+
         // Mark this session as having a successful meet request
         setMeetRequestSuccess(prev => new Set(prev).add(sessionId));
-        
+
         // Refresh sessions after a short delay to show the new link
         setTimeout(() => {
           window.location.reload();
@@ -399,9 +399,8 @@ export function SessionHistorySection({
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`w-4 h-4 ${
-              i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
-            }`}
+            className={`w-4 h-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
+              }`}
             onClick={() => {
               if (interactive) {
                 setFeedbackForm({ ...feedbackForm, rating: i + 1 });
@@ -496,10 +495,10 @@ export function SessionHistorySection({
                         <div className="text-sm text-slate-600">
                           {s.date
                             ? new Date(s.date).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
                             : "N/A"}
                         </div>
                         <div className="text-sm text-slate-500">
@@ -554,27 +553,27 @@ export function SessionHistorySection({
                               Starts in{" "}
                               {s.date && s.time
                                 ? (() => {
-                                    const [hours, minutes] = s.time
-                                      .split(":")
-                                      .map(Number);
-                                    const sessionLocalTime = new Date(s.date);
-                                    sessionLocalTime.setHours(
-                                      hours,
-                                      minutes,
-                                      0,
-                                      0
-                                    );
-                                    return Math.ceil(
-                                      (sessionLocalTime.getTime() -
-                                        currentTime.getTime()) /
-                                        (1000 * 60)
-                                    );
-                                  })()
-                                : Math.ceil(
-                                    (new Date(s.startTime).getTime() -
+                                  const [hours, minutes] = s.time
+                                    .split(":")
+                                    .map(Number);
+                                  const sessionLocalTime = new Date(s.date);
+                                  sessionLocalTime.setHours(
+                                    hours,
+                                    minutes,
+                                    0,
+                                    0
+                                  );
+                                  return Math.ceil(
+                                    (sessionLocalTime.getTime() -
                                       currentTime.getTime()) /
-                                      (1000 * 60)
-                                  )}{" "}
+                                    (1000 * 60)
+                                  );
+                                })()
+                                : Math.ceil(
+                                  (new Date(s.startTime).getTime() -
+                                    currentTime.getTime()) /
+                                  (1000 * 60)
+                                )}{" "}
                               min
                             </button>
                           )
@@ -582,17 +581,16 @@ export function SessionHistorySection({
                           <div className="flex flex-col gap-2">
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-black uppercase
-          ${
-            s.status === "scheduled"
-              ? "bg-blue-100 text-blue-700"
-              : s.status === "confirmed"
-              ? "bg-primary/10 text-primary"
-              : s.status === "completed"
-              ? "bg-success/10 text-success"
-              : s.status === "missed"
-              ? "bg-destructive/10 text-destructive"
-              : "bg-amber-100 text-amber-700"
-          }`}
+          ${s.status === "scheduled"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : s.status === "confirmed"
+                                    ? "bg-primary/10 text-primary"
+                                    : s.status === "completed"
+                                      ? "bg-success/10 text-success"
+                                      : s.status === "missed"
+                                        ? "bg-destructive/10 text-destructive"
+                                        : "bg-amber-100 text-amber-700"
+                                }`}
                             >
                               {s.status}
                             </span>
@@ -610,7 +608,7 @@ export function SessionHistorySection({
                             <Info className="h-4 w-4 mr-1" />
                             Read More
                           </Button>
-                          
+
                           {/* Request Google Meet Link - Show if no meet link exists and session is upcoming */}
                           {/* {!s.googleMeetLink && 
                            (s.status === "scheduled" || s.status === "confirmed" || s.status === "live") && (
@@ -648,7 +646,7 @@ export function SessionHistorySection({
                               )}
                             </>
                           )} */}
-                          
+
                           {(s.status === "scheduled" ||
                             s.status === "confirmed") &&
                             isSessionInFuture(s) &&
@@ -781,10 +779,10 @@ export function SessionHistorySection({
                         <p className="text-xs text-slate-500 mt-1">
                           {s.date
                             ? new Date(s.date).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
                             : "N/A"}
                         </p>
                         <p className="text-xs text-slate-500 flex items-center gap-1">
@@ -798,9 +796,9 @@ export function SessionHistorySection({
                             s.time ||
                             (s.startTime
                               ? new Date(s.startTime).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
                               : "—")
                           )}
                         </p>
@@ -831,44 +829,43 @@ export function SessionHistorySection({
                               Starts in{" "}
                               {s.date && s.time
                                 ? (() => {
-                                    const [hours, minutes] = s.time
-                                      .split(":")
-                                      .map(Number);
-                                    const sessionLocalTime = new Date(s.date);
-                                    sessionLocalTime.setHours(
-                                      hours,
-                                      minutes,
-                                      0,
-                                      0
-                                    );
-                                    return Math.ceil(
-                                      (sessionLocalTime.getTime() -
-                                        currentTime.getTime()) /
-                                        (1000 * 60)
-                                    );
-                                  })()
-                                : Math.ceil(
-                                    (new Date(s.startTime).getTime() -
+                                  const [hours, minutes] = s.time
+                                    .split(":")
+                                    .map(Number);
+                                  const sessionLocalTime = new Date(s.date);
+                                  sessionLocalTime.setHours(
+                                    hours,
+                                    minutes,
+                                    0,
+                                    0
+                                  );
+                                  return Math.ceil(
+                                    (sessionLocalTime.getTime() -
                                       currentTime.getTime()) /
-                                      (1000 * 60)
-                                  )}{" "}
+                                    (1000 * 60)
+                                  );
+                                })()
+                                : Math.ceil(
+                                  (new Date(s.startTime).getTime() -
+                                    currentTime.getTime()) /
+                                  (1000 * 60)
+                                )}{" "}
                               min
                             </button>
                           )
                         ) : (
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-black uppercase
-        ${
-          s.status === "scheduled"
-            ? "bg-blue-100 text-blue-700"
-            : s.status === "confirmed"
-            ? "bg-primary/10 text-primary"
-            : s.status === "completed"
-            ? "bg-success/10 text-success"
-            : s.status === "missed"
-            ? "bg-destructive/10 text-destructive"
-            : "bg-amber-100 text-amber-700"
-        }`}
+        ${s.status === "scheduled"
+                                ? "bg-blue-100 text-blue-700"
+                                : s.status === "confirmed"
+                                  ? "bg-primary/10 text-primary"
+                                  : s.status === "completed"
+                                    ? "bg-success/10 text-success"
+                                    : s.status === "missed"
+                                      ? "bg-destructive/10 text-destructive"
+                                      : "bg-amber-100 text-amber-700"
+                              }`}
                           >
                             {s.status}
                           </span>
@@ -916,7 +913,7 @@ export function SessionHistorySection({
                         <Info className="h-4 w-4 mr-1" />
                         Read More
                       </Button>
-                      
+
                       {/* Request Google Meet Link - Mobile */}
                       {/* {!s.googleMeetLink && 
                        (s.status === "scheduled" || s.status === "confirmed" || s.status === "live") && (
@@ -954,7 +951,7 @@ export function SessionHistorySection({
                           )}
                         </>
                       )} */}
-                      
+
                       {(s.status === "scheduled" || s.status === "confirmed") &&
                         isSessionInFuture(s) &&
                         isWithinRescheduleWindow(s) && (
@@ -1093,8 +1090,8 @@ export function SessionHistorySection({
                       currentPage <= 3
                         ? i + 1
                         : currentPage >= totalPages - 2
-                        ? totalPages - 4 + i
-                        : currentPage - 2 + i;
+                          ? totalPages - 4 + i
+                          : currentPage - 2 + i;
 
                     if (pageNum < 1 || pageNum > totalPages) return null;
 
@@ -1180,19 +1177,18 @@ export function SessionHistorySection({
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Status</p>
                     <span
-                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${
-                        detailSession.status === "completed"
+                      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-black uppercase ${detailSession.status === "completed"
                           ? "bg-green-100 text-green-700"
                           : detailSession.status === "cancelled"
-                          ? "bg-red-100 text-red-700"
-                          : detailSession.status === "missed"
-                          ? "bg-destructive/10 text-destructive"
-                          : detailSession.status === "live"
-                          ? "bg-green-600 text-white"
-                          : detailSession.status === "confirmed"
-                          ? "bg-primary/10 text-primary"
-                          : "bg-blue-100 text-blue-700"
-                      }`}
+                            ? "bg-red-100 text-red-700"
+                            : detailSession.status === "missed"
+                              ? "bg-destructive/10 text-destructive"
+                              : detailSession.status === "live"
+                                ? "bg-green-600 text-white"
+                                : detailSession.status === "confirmed"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-blue-100 text-blue-700"
+                        }`}
                     >
                       {detailSession.status}
                     </span>
@@ -1206,10 +1202,10 @@ export function SessionHistorySection({
                     <p className="mt-1 font-semibold text-slate-800">
                       {detailSession.date
                         ? new Date(detailSession.date).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
                         : "N/A"}
                     </p>
                   </div>
@@ -1226,9 +1222,9 @@ export function SessionHistorySection({
                         detailSession.time ||
                         (detailSession.startTime
                           ? new Date(detailSession.startTime).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "—")
                       )}
                     </p>
